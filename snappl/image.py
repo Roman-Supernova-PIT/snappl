@@ -209,7 +209,7 @@ class Image:
 #  HDU 2 : ERR (32-bit float)
 #  HDU 3 : DQ (32-bit integer)
 
-class OpenUniverse2024Image( Image ):
+class OpenUniverse2024FITSImage( Image ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
