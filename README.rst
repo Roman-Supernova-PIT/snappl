@@ -1,6 +1,12 @@
 Library of utilities for Roman SNPIT Photometry
 -----------------------------------------------
 
+These are basic utilities for image reading, PSF acquisition, etc. used
+by both the scene modelling and DIA photometry codes of the Roman SN
+PIT.
+
+
+
 License
 -------
 
