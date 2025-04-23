@@ -1,5 +1,4 @@
 preloads:
-  - testpreload1.yaml
   - testpreload2.yaml
 replaceable_preloads:
   - testreplpreload1.yaml

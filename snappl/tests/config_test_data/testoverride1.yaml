@@ -16,4 +16,4 @@ override1list2:
   - 1_2override1
   - 1_2override2
 
-mainscalar2: override2
+mainscalar2: override1

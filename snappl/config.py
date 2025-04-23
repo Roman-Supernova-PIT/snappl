@@ -1,5 +1,6 @@
 import os
 import pathlib
+import numbers
 import types
 import copy
 import yaml
@@ -22,26 +23,75 @@ class Config:
 
     USAGE
 
-    1. Optional: call Config.init(filename)
-
-    2. Instantiate a config object with
+    1. Instantiate a config object with
 
            confobj = Config.get()
        or
 
            confobj = Config.get(filename)
 
-       in the former case, it will get the default file.  (That's the
-       file that was passed to Config.init, or specified to the first
-       .get call.)  You can't do the first one if you haven't done the
-       second one yet, or if you haven't called Config.init yet.  Do NOT
-       call __init__ (i.e. don't say confobj = Config() or
-       Config(filename)).
+       in the former case, it will get the default file (see below).
+       IMPORTANT : Do NOT instantiate a config item with "config=Config()".
 
-    3. (Optional) Update the config with command line arguments ROB
-       FIGURE THIS OUT.
+       The default file: normally, the default file is specified in the
+       environment variable SNAPPL_CONFIG.  The first time you call
+       Config.get() without any arguments, it will set the default
+       config to be what it read from the file pointed to by
+       $SNAPPL_CONFIG, and return that config.  You can subvert this by
+       calling Config.get(filename,setdefault=True).  In that case, it
+       will read the file in filename, and set the config there to be
+       the default config that you'll thereafter get when calling
+       Config.get() without any arguments.
 
-    3. Get a config value with
+    2. (Optional.)  You can set things up so that (almost) anything in
+       the config can be overridden on the command line.  You must be
+       using argparse for this to work.  First, instantiate your
+       argparse.ArgumentParser object and add your own arguments.  Next,
+       call the augment_argparse() method of your config object.  Run
+       the parse_args() method of your ArgumentParser, and then pass the
+       return value to the parse_args() method of your config object.
+       For example:
+
+         from snappl.config import Config
+         import argparse
+
+         cfg = Config.get()
+    
+         parser = argparse.ArgumentParser( 'test.py', description='Do things' )
+         parser.add_argument( "-m", "--my-argument", help="My argument; there may be more" )
+         cfg.augment_argparse( parser )
+         args = parser.parse_args()
+         cfg.parse_args( args )
+
+       Config.augment_argparse will add all of the "leaf node" config
+       options as config arguments, using the fieldspec (see (3) below),
+       replacing "." with "-".  Exception: if there is a list, it will
+       not work down into the list, but will replace the whole list with
+       as single multi-valued argument.  For example, if your config is:
+
+          scalar: val
+
+          dict:
+            key1: val
+            key2:
+              subkey1: val
+              subkey2: val
+            list:
+              - val
+              - val2
+
+       Then you when you call Config.augment_argparse, you will have new arguments:
+
+           --scalar
+           --dict-key1
+           --dict-key1-subkey1
+           --dict-key1-subkey2
+           --dict-list   ( with nargs="*" )
+
+       You should ignore these; when you call Config.parse_args, it will
+       look for all of them.
+    
+    3. Get the value of something in your config with:
 
            configval = confobj.value( fieldspec )
 
@@ -374,7 +424,7 @@ class Config:
         configfile = str( pathlib.Path(configfile).resolve() )
 
         if configfile not in Config._configs:
-            Config._configs[configfile] = Config( configfile=configfile )
+            Config._configs[configfile] = Config( configfile=configfile, _ok_to_call=True )
 
         if setdefault:
             Config._default = configfile
@@ -382,10 +432,18 @@ class Config:
         if static:
             return Config._configs[configfile]
         else:
-            return Config( clone=Config._configs[configfile] )
+            return Config( clone=Config._configs[configfile], _ok_to_call=True )
 
 
-    def __init__( self, configfile=None, clone=None, files_read=set() ):
+    # SOMETHING I DON'T UNDERSTAND:
+    #    When I had files_read=set() in the function definition,
+    #    later calls to __init__ started this function that did
+    #    not explicitly pass that parmeter did not have an empty
+    #    set for files_read!  My understanding of python is in
+    #    that case, files_read should have been initialized to
+    #    a new set.  But it wasn't!  WTF?  Doing the "None"
+    #    thing as a workaround.
+    def __init__( self, configfile=None, clone=None, files_read=None, _ok_to_call=False ):
         """Don't call this, call static method Config.get().
 
         Parameters
@@ -405,6 +463,12 @@ class Config:
         don't do that!)
 
         """
+
+        if not _ok_to_call:
+            raise RuntimeError( "Don't instantiate a Config directly; use configobj=Config.get(...)." )
+
+        if files_read is None:
+            files_read = set()
 
         self._static = True
 
@@ -433,7 +497,7 @@ class Config:
             if not isinstance( curfiledata, dict ):
                 raise RuntimeError( f"Config file {configfile} doesn't have yaml I like." )
 
-            imports = { 'preloads': [], 'replacable_preloads': [], 'augments': [],
+            imports = { 'preloads': [], 'replaceable_preloads': [], 'augments': [],
                         'overrides': [], 'destructive_appends': [], 'appends': [] }
             for importfile in imports.keys():
                 if importfile in curfiledata:
@@ -442,34 +506,41 @@ class Config:
                     imports[importfile] = curfiledata[importfile]
                     del curfiledata[importfile]
 
-            workingdict = {}
-            for preloadfile in imports['preloads']:
-                cfg = Config( preloadfile, files_read=files_read )
-                workingdict = self._merge_trees( '_top_level', workingdict, cfg._data, mode='augment' )
-
+            def pathify( fname ):
+                fname = pathlib.Path( fname )
+                if fname.is_absolute():
+                    return fname
+                else:
+                    return self._path.parent / fname
+                    
             preloaddict = {}
-            for preloadfile in imports['replaceable_preloads']:
-                cfg = Config( preloadfile, files_read=files_read )
-                preloaddict = self._merge_trees( '_top_level', preloaddict, cfg._data, mode='destructive_append' )
+            for preloadfile in imports['preloads']:
+                cfg = Config( pathify(preloadfile), files_read=files_read, _ok_to_call=True )
+                preloaddict = self._merge_trees( '', preloaddict, cfg._data, mode='augment' )
 
-            workingdict = self._merge_trees( '_top_level', workingdict, curfiledata, mode='destructive_append' )
-            self._data = self._merge_trees( preloaddict, workingdict, mode='augment' )
+            workingdict = {}
+            for preloadfile in imports['replaceable_preloads']:
+                cfg = Config( pathify(preloadfile), files_read=files_read, _ok_to_call=True )
+                workingdict = self._merge_trees( '', workingdict, cfg._data, mode='destructive_append' )
+
+            workingdict = self._merge_trees( '', workingdict, curfiledata, mode='destructive_append' )
+            self._data = self._merge_trees( '', preloaddict, workingdict, mode='augment' )
 
             for augmentfile in imports['augments']:
-                cfg = Config( augmentfile, files_read=files_read )
-                self._data = self._merge_trees( '_top_level', self._data, cfg._data, mode='augment' )
+                cfg = Config( pathify(augmentfile), files_read=files_read, _ok_to_call=True )
+                self._data = self._merge_trees( '', self._data, cfg._data, mode='augment' )
 
             for overridefile in imports['overrides']:
-                cfg = Config( overridefile, files_read=files_read )
-                self._data = self._merge_trees( '_top_level', self._data, cfg._data, mode='override' )
+                cfg = Config( pathify(overridefile), files_read=files_read, _ok_to_call=True )
+                self._data = self._merge_trees( '', self._data, cfg._data, mode='override' )
 
             for appendfile in imports['destructive_appends']:
-                cfg = Config( appendfile, files_read=files_read )
-                self._data = self._merge_trees( '_top_level', self._data, cfg._data, mode='destructive_append' )
+                cfg = Config( pathify(appendfile), files_read=files_read, _ok_to_call=True )
+                self._data = self._merge_trees( '', self._data, cfg._data, mode='destructive_append' )
 
             for appendfile in imports['appends']:
-                cfg = Config( appendfile, files_read=files_read )
-                self._data = self._merge_trees( '_top_level', self._data, cfg._data, mode='append' )
+                cfg = Config( pathify(appendfile), files_read=files_read, _ok_to_call=True )
+                self._data = self._merge_trees( '', self._data, cfg._data, mode='append' )
 
         except Exception as e:
             Lager.exception( f'Exception trying to load config from {configfile}' )
@@ -563,12 +634,12 @@ class Config:
                     return_value = self.value( ".".join(fields[1:]), default, struct[curfield] )
                 except Exception as e:
                     if isinstance(default, NoValue):
-                        raise ValueError( f'Error getting field {curfield}' ) from e
+                        raise ValueError( f'Error getting field {field} from {curfield}' ) from e
                     else:
                         return_value = default
         else:
             if not isleaf:
-                raise ValueError( f'Tried to get field {curfield} of scalar!' )
+                raise ValueError( f'Tried to get field {field} of scalar {curfield}!' )
             return_value = struct
 
         if isinstance(return_value, (dict, list)):
@@ -699,18 +770,21 @@ class Config:
         return fields, isleaf, curfield, ifield
 
     @staticmethod
-    def _merge_trees( keyword, left, right, mode='augment' ):
+    def _merge_trees( keyword, left, right, mode='augment', parentpath='' ):
         """Internal usage, do not call."""
 
+        ppath = f"{parentpath}." if len(parentpath) > 0 else ""
+        errkeyword = f'{ppath}{keyword}'
+        
         if mode not in ( 'append', 'augment', 'destructive_append', 'override' ):
-            raise ValueError( f"Unknown mode {mode}" )
+            raise ValueError( f"Unknown mode {mode} for {errkeyword}" )
         
         if not isinstance( left, dict ):
             if mode == 'override':
                 return copy.deepcopy( right )
 
             if isinstance( left, list ):
-                if isinstance( right, list ) and ( mode == 'append' ):
+                if isinstance( right, list ) and ( mode in ('append', 'destructive_append') ):
                     newlist = copy.deepcopy( left )
                     newlist.extend( copy.deepcopy( right ) )
                     return newlist
@@ -725,16 +799,51 @@ class Config:
                     return copy.deepcopy( right )
             else:
                 newdict = copy.deepcopy( left )
-                for key, value in right.keys():
+                for key, value in right.items():
                     if key not in newdict:
                         newdict[key] = copy.deepcopy( value )
                     else:
-                        newdict[key] = Config._merge_trees( key, newdict[key], value, mode=mode )
+                        newdict[key] = Config._merge_trees( key, newdict[key], value, mode=mode,
+                                                            parentpath=f"{ppath}{keyword}" )
                 return newdict
             
-        raise RuntimeError( f"Error comibining key {keyword} with mode {mode}; left is a {type(left)} "
+        raise RuntimeError( f"Error combining key {errkeyword} with mode {mode}; left is a {type(left)} "
                             f"and right is a {type(right)}" )        
 
+
+
+    def augment_argparse( self, parser, path='', _dict=None ):
+        _dict = self._data if _dict is None else _dict
+
+        for key, val in _dict.items():
+            if isinstance( val, dict ):
+                self.augment_argparse( parser, path=f'{path}{key}-', _dict=val )
+            elif isinstance( val, list ):
+                parser.add_argument( f'--{path}{key}', nargs="*" )
+            elif isinstance( val, str ):
+                parser.add_argument( f'--{path}{key}' )
+            elif isinstance( val, numbers.Real ):
+                parser.add_argument( f'--{path}{key}', type=float )
+            elif isinstance( val, numbers.Integral ):
+                parser.add_argument( f'--{path}{key}', type=int )
+            elif val is None:
+                # Not obvious what to do here, so just add a string argument
+                parser.add_argument( f'--{path}{key}' )
+            else:
+                # If this happens, then it means more code needs to be written here
+                raise RuntimeError( f"Failed to add an argument for {path}{key} which is of type {type(val)}" )
+                
+
+    def parse_args( self, args, path='',_dict=None ):
+        _dict = self._data if _dict is None else _dict
+
+        for key, val in _dict.items():
+            arg = f'{path}{key}'
+            if isinstance( val, dict ):
+                self.parse_args( args, path=f'{arg}_', _dict=val )
+            elif getattr( args, arg ) is not None:
+                _dict[key] = getattr( args, arg )
+                
 
 if __name__ == "__main__":
     Config.init()
