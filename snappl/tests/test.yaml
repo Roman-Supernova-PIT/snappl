@@ -1,0 +1,77 @@
+preloads:
+  - testpreload1.yaml
+  - testpreload2.yaml
+replaceable_preloads:
+  - testreplpreload1.yaml
+  - testreplpreload2.yaml
+augments:
+  - testaugment1.yaml
+  - testaugment2.yaml
+overrides:
+  - testoverride1.yaml
+  - testoverride2.yaml
+destructive_appends:
+  - testdestrapp1.yaml
+  - testdestrapp2.yaml
+  
+preload1dict1:
+  preload2_1val3: main1val3
+  main1val3: main1val3
+
+replpreload1dict2:
+  replpreload1_2val1: main1
+  replpreload1_2val3: main3
+
+replpreload1list1:
+  - main1
+
+replpreload1scalar2: main2
+  
+maindict:
+  mainval1: val1
+  mainval2: val2
+  mainval3: val3
+  
+mainlist1:
+  - main1
+  - main2
+  - main3
+
+mainlist2:
+  - main1
+  - main2
+  - main3
+
+mainlist3:
+  - main1
+  - main2
+
+mainlist4:
+  - main1
+  - main2
+  
+mainscalar1: main1
+mainscalar2: main2
+mainscalar3: main3
+mainnull: null
+
+nest:
+  nest1:
+    - nest1a:
+        val: foo
+    - 42
+  nest2:
+    val: bar
+
+settest:
+  list:
+    - a
+    - b
+  dict:
+    key1: val1
+    key2: val2
+  dict2:
+    key1: 2val1
+    key2: 2val2
+  scalar: thing
+  scalar2: foobar

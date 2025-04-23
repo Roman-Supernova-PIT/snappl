@@ -1,0 +1,19 @@
+preload1scalar2: override2
+
+mainscalar3: override1
+
+mainlist2:
+  - override1
+  - override2
+
+mainlist3: this_is_not_a_list
+  
+override1list1:
+  - 1_1override1
+  - 1_1override2
+
+override1list2:
+  - 1_2override1
+  - 1_2override2
+
+mainscalar2: override2
