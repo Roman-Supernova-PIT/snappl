@@ -169,7 +169,7 @@ class Config:
       earlier in the list.  This config dictionary is set aside for the
       time being.
 
-    replaceable_preploads is list of files read next, in order, to make
+    replaceable_preloads is list of files read next, in order, to make
       a new config dictionary (called the "working config dictionary").
       Files later in the list *destructive_append* files earlier in
       the list.
