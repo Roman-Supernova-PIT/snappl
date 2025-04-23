@@ -84,8 +84,8 @@ class Config:
 
            --scalar
            --dict-key1
-           --dict-key1-subkey1
-           --dict-key1-subkey2
+           --dict-key2-subkey1
+           --dict-key2-subkey2
            --dict-list   ( with nargs="*" )
 
        You should ignore these; when you call Config.parse_args, it will
