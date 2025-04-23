@@ -6,8 +6,8 @@ import pathlib
 
 _rundir = pathlib.Path( __file__ ).parent.resolve()
 # Make sure the parent to this directory is in the path
-sys.path.insert( 0, str( _rundir.parent ) )
-from config import Config
+sys.path.insert( 0, str( _rundir.parent.parent ) )
+from snappl.config import Config
 
 @pytest.fixture( autouse=True )
 def config_cleanup():
