@@ -822,10 +822,10 @@ class Config:
                 parser.add_argument( f'--{path}{key}', nargs="*" )
             elif isinstance( val, str ):
                 parser.add_argument( f'--{path}{key}' )
-            elif isinstance( val, numbers.Real ):
-                parser.add_argument( f'--{path}{key}', type=float )
             elif isinstance( val, numbers.Integral ):
                 parser.add_argument( f'--{path}{key}', type=int )
+            elif isinstance( val, numbers.Real ):
+                parser.add_argument( f'--{path}{key}', type=float )
             elif val is None:
                 # Not obvious what to do here, so just add a string argument
                 parser.add_argument( f'--{path}{key}' )
