@@ -1,5 +1,6 @@
 # this is a module level file
 import pytest
 
-import tox
-from tox.pytest import init_fixture
+# ROB TOOD -- understand tox and pyproject.toml and all of that
+# import tox
+# from tox.pytest import init_fixture
