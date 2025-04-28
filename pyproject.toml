@@ -14,8 +14,10 @@ license = { file = "licenses/LICENSE.rst" }
 authors = [
   { name = "Roman Supernova PIT", email = "raknop@lbl.gov" },
 ]
-dependencies = ["towncrier",
-  "cruft"
+dependencies = [
+  "towncrier",
+  "cruft",
+  "astropy>=7.0.1",
 ]
 dynamic = ["version"]
 
@@ -115,7 +117,7 @@ directory = "docs"
 name = "Documentation"
 showcontent = true
 
-[[tool.towndcrier.type]]
+[[tool.towncrier.type]]
 directory = "snappl"
 name = "snappl"
 showcontent = true
