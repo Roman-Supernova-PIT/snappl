@@ -30,7 +30,7 @@ services:
   runtests:
     image: rknop/roman-snpit-env:cpu
     working_dir: /snappl
-    entrypoint: [ "/bin/sh", "-c", "python -m setuptools_scm --force-write-version-files && cd snappl/tests && pytest -v snappl/tests" ]
+    entrypoint: [ "/bin/sh", "-c", "python -m setuptools_scm --force-write-version-files && cd snappl/tests && pytest -v" ]
     volumes:
       - type: bind
         source: ../..
