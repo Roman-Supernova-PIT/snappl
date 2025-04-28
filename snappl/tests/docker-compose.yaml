@@ -1,0 +1,38 @@
+# This is a compose file that creates an environment in which you can
+# run tests.  Either just do
+#
+#   docker compose run runtests
+#
+# or, do
+#
+#   docker compose up -d shell
+#
+# to get a shell session running the SNPIT cpu image.  Connect to it
+# with
+#
+#   docker compose exec -it shell /bin/bash
+#
+# You can now do things in there, including
+#
+#   cd /snappl/snappl/tests
+#   pytest -v
+
+services:
+  shell:
+    image: rknop/roman-snpit-env:cpu
+    entrypoint: [ "tail", "-f", "/etc/issue" ]
+    working_dir: /snappl
+    volumes:
+      - type: bind
+        source: ../..
+        target: /snappl
+
+  runtests:
+    image: rknop/roman-snpit-env:cpu
+    working_dir: /snappl/snappl/tests
+    entrypoint: [ "pytest", "-v" ]
+    volumes:
+      - type: bind
+        source: ../..
+        target: /snappl
+
