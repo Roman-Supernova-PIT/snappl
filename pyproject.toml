@@ -1,135 +1,125 @@
-# ROB TODO
-# Understand what this is
-#
-# Right now, commenting the whole thing out because it's breaking pytest
+[build-system]
+requires = [
+  "setuptools>=62.1",
+  "setuptools_scm[tomli]>=6.2",
+  "wheel",]
+build-backend = "setuptools.build_meta"
 
-# [build-system]
-# requires = [
-#   "setuptools>=62.1",
-#   "setuptools_scm[tomli]>=6.2",
-#   "wheel",
-#   "extension-helpers",
-#   "numpy>=1.26",
-#   "cython"
-# ]
-# build-backend = "setuptools.build_meta"
+[project]
+name = "snappl"
+description = "Developed by the Roman Supernova PIT"
+requires-python = ">=3.11"
+readme = { file = "README.rst", content-type = "text/x-rst" }
+license = { file = "licenses/LICENSE.rst" }
+authors = [
+  { name = "Roman Supernova PIT", email = "raknop@lbl.gov" },
+]
+dependencies = [
+  "towncrier",
+  "cruft",
+  "astropy>=7.0.1",
+]
+dynamic = ["version"]
 
-# [project]
-# name = "snappl"
-# description = "Library of utilities for Roman SNPIT Photometry"
-# requires-python = ">=3.11"
-# readme = { file = "README.rst", content-type = "text/x-rst" }
-# license = { file = "licenses/LICENSE.rst" }
-# authors = [
-#   { name = "Roman Supernova PIT", email = "raknop@lbl.gov" },
-# ]
-# dependencies = ["towncrier",
-#   "cruft"
-# ]
-# dynamic = ["version"]
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-doctestplus",
+    "pytest-cov"
+]
+docs = [
+    "sphinx",
+    "sphinx-automodapi",
+    "matplotlib",
+    "sphinx",
+    "tomli",
+    "graphviz"
+]
+[project.urls]
+repository = "https://github.com/Roman-Supernova-PIT/snappl"
 
-# [project.scripts]
-# package_template_example = "snappl.example_mod:main"
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
 
-# [project.optional-dependencies]
-# test = [
-#     "pytest",
-#     "pytest-doctestplus",
-#     "pytest-cov"
-# ]
-# docs = [
-#     "sphinx",
-#     "sphinx-automodapi",
-#     "matplotlib",
-#     "sphinx",
-#     "tomli",
-#     "graphviz"
-# ]
-# [project.urls]
-# repository = "https://github.com/Roman-Supernova-PIT"
+[tool.setuptools.packages.find]
+exclude = ["snappl._dev*"]
 
-# [tool.setuptools]
-# zip-safe = false
-# include-package-data = true
+[tool.setuptools_scm]
+write_to = "snappl/_version.py"
 
-# [tool.setuptools.packages.find]
-# exclude = ["snappl._dev*"]
+[tool.pytest.ini_options]
+testpaths = [
+  "snappl",
+  "docs",
+]
+doctest_plus = "enabled"
+text_file_format = "rst"
+addopts = "--doctest-rst"
 
-# [tool.setuptools_scm]
-# write_to = "snappl/_version.py"
+[tool.coverage.run]
+omit = [
+ "snappl/__init*",
+ "snappl/conftest.py",
+ "snappl/*setup_package*",
+ "snappl/tests/*",
+ "snappl/*/tests/*",
+ "snappl/extern/*",
+ "snappl/version*",
+ "*/snappl/__init*",
+ "*/snappl/conftest.py",
+ "*/snappl/*setup_package*",
+ "*/snappl/tests/*",
+ "*/snappl/*/tests/*",
+ "*/snappl/extern/*",
+ "*/snappl/version*",
+]
 
-# [tool.pytest.ini_options]
-# testpaths = [
-#   "snappl",
-#   "docs",
-# ]
-# doctest_plus = "enabled"
-# text_file_format = "rst"
-# addopts = "--doctest-rst"
+[tool.coverage.report]
+exclude_lines = [
+  # Have to re-enable the standard pragma
+  "pragma: no cover",
+  # Don't complain about packages we have installed
+  "except ImportError",
+  # Don't complain if tests don't hit assertions
+  "raise AssertionError",
+  "raise NotImplementedError",
+  # Don't complain about script hooks
+  "def main(.*):",
+  # Ignore branches that don't pertain to this version of Python
+  "pragma: py{ignore_python_version}",
+  # Don't complain about IPython completion helper
+  "def _ipython_key_completions_",
+  # typing.TYPE_CHECKING is False at runtime
+  "if TYPE_CHECKING:",
+  # Ignore typing overloads
+  "@overload",
+]
 
-# [tool.coverage.run]
-# omit = [
-#  "snappl/__init*",
-#  "snappl/conftest.py",
-#  "snappl/*setup_package*",
-#  "snappl/tests/*",
-#  "snappl/*/tests/*",
-#  "snappl/extern/*",
-#  "snappl/version*",
-#  "*/snappl/__init*",
-#  "*/snappl/conftest.py",
-#  "*/snappl/*setup_package*",
-#  "*/snappl/tests/*",
-#  "*/snappl/*/tests/*",
-#  "*/snappl/extern/*",
-#  "*/snappl/version*",
-# ]
+[tool.towncrier]
+# Where you want your news files to come out, filename=`NEWS.rst` is the default.
+# This can be .rst or .md, towncrier's default template works with both.
+filename = "CHANGES.rst"
+directory = "changes"
+package = "snappl"
+title_format = "{version} ({project_date})"
+ignore = [".gitkeep"]
+wrap = true
+issue_format = "`#{issue} <https://github.com/Roman-Supernova-PIT/snappl/issues/{issue}>`_"
 
-# [tool.coverage.report]
-# exclude_lines = [
-#   # Have to re-enable the standard pragma
-#   "pragma: no cover",
-#   # Don't complain about packages we have installed
-#   "except ImportError",
-#   # Don't complain if tests don't hit assertions
-#   "raise AssertionError",
-#   "raise NotImplementedError",
-#   # Don't complain about script hooks
-#   "def main(.*):",
-#   # Ignore branches that don't pertain to this version of Python
-#   "pragma: py{ignore_python_version}",
-#   # Don't complain about IPython completion helper
-#   "def _ipython_key_completions_",
-#   # typing.TYPE_CHECKING is False at runtime
-#   "if TYPE_CHECKING:",
-#   # Ignore typing overloads
-#   "@overload",
-# ]
+[[tool.towncrier.type]]
+directory = "/"
+name = "General"
+showcontent = true
 
-# [tool.towncrier]
-# # Where you want your news files to come out, filename=`NEWS.rst` is the default.
-# # This can be .rst or .md, towncrier's default template works with both.
-# filename = "CHANGES.rst"
-# directory = "changes"
-# package = "snappl"
-# title_format = "{version} ({project_date})"
-# ignore = [".gitkeep"]
-# wrap = true
-# issue_format = "`#{issue} <https://github.com/Roman-Supernova-PIT/snappl/issues/{issue}>`_"
+[[tool.towncrier.type]]
+directory = "docs"
+name = "Documentation"
+showcontent = true
 
-# [[tool.towncrier.type]]
-# directory = "/"
-# name = "General"
-# showcontent = true
-
-# [[tool.towncrier.type]]
-# directory = "docs"
-# name = "Documentation"
-# showcontent = true
-
-# [[tool.towndcrier.type]]
-# directory = "snappl"
-# name = "snappl"
-# showcontent = true
+[[tool.towncrier.type]]
+directory = "snappl"
+name = "snappl"
+showcontent = true
 
 
