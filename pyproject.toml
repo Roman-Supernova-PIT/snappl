@@ -123,7 +123,7 @@ directory = "docs"
 name = "Documentation"
 showcontent = true
 
-[[tool.towndcrier.type]]
+[[tool.towncrier.type]]
 directory = "snappl"
 name = "snappl"
 showcontent = true
