@@ -38,7 +38,7 @@ Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/Roman-Supernova-PIT/snappl/tarball/master
+    $ curl -OJL https://github.com/Roman-Supernova-PIT/snappl/snappl/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/Roman-Supernova-PIT/snappl
-.. _tarball: https://github.com/Roman-Supernova-PIT/snappl/tarball/master
+.. _Github repo: https://github.com/Roman-Supernova-PIT/snappl/snappl
+.. _tarball: https://github.com/Roman-Supernova-PIT/snappl/snappl/tarball/master
