@@ -1,6 +1,7 @@
 [build-system]
 requires = [
   "setuptools>=62.1",
+  "setuptools_scm[tomli]>=6.2",
   "wheel",
   "extension-helpers",
   # "numpy>=1.26",
@@ -22,7 +23,7 @@ dependencies = [
   "cruft",
   "astropy>=7.0.1",
 ]
-version = "0.0.1"
+dynamic = ["version"]
 
 [project.scripts]
 package_template_example = "snappl.example_mod:main"
@@ -50,6 +51,9 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 exclude = ["snappl._dev*"]
+
+[tool.setuptools_scm]
+write_to = "snappl/_version.py"
 
 [tool.pytest.ini_options]
 testpaths = [

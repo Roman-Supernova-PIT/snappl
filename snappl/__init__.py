@@ -1,3 +1,3 @@
-from .version import version as __version__
+from ._version import __version__
 
 __all__ = []
