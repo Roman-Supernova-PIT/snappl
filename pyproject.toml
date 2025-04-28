@@ -18,11 +18,12 @@ license = { file = "licenses/LICENSE.rst" }
 authors = [
   { name = "Roman Supernova PIT", email = "raknop@lbl.gov" },
 ]
-dependencies = ["towncrier",
+dependencies = [
+  "towncrier",
   "cruft",
   "astropy>=7.0.1",
 ]
-dynamic = ["version"]
+version = "0.0.1"
 
 [project.scripts]
 package_template_example = "snappl.example_mod:main"
