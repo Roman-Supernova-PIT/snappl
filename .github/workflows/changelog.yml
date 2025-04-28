@@ -25,6 +25,8 @@ jobs:
           fetch-depth: 0
       - run: pip install .
       - run: pip install towncrier
+      - run: pip install setuptools-scm
+      - run: python -m setuptools_scm
       - run: towncrier check
       - run: towncrier build --draft | grep -P '#${{ github.event.number }}'
   prevent_manually_editing_changlog:
