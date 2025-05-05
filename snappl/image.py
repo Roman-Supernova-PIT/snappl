@@ -9,6 +9,7 @@ from astropy.wcs import WCS as AstropyWCS
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
+
 class Exposure:
     pass
 
@@ -148,6 +149,7 @@ class Image:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
 
+        
     def get_cutout(self, ra, dec):
         """Make a cutout of the image at the given RA and DEC.
 
@@ -181,7 +183,6 @@ class Image:
     def band( self ):
         """Band (str)"""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement band" )
-
 
 
 
@@ -259,7 +260,6 @@ class OpenUniverse2024FITSImage( Image ):
         self._noise = None
         self._flags = None
         self._wcs = None
-
         self._is_cutout = False
         self._image_shape = None
 
