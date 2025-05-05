@@ -157,6 +157,33 @@ class Image:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_cutout" )
 
+    def get_header(self):
+        """Get the header of the image."""
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_header" )
+
+    @property
+    def coord_center(self):
+        '''
+        Get the RA and DEC at the center of the image.
+        Note: By fetching the center from the WCS and not the header,
+              this means that this works for cutouts too.
+
+        Returns:
+        coord_center: array of floats, shape (2,) [RA, DEC] in degrees.
+        '''
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement coord_center" )
+
+    def get_image_shape(self):
+        """Get the shape of the image."""
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_image_shape" )
+
+    @property
+    def band( self ):
+        """Band (str)"""
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement band" )
+
+
+
 
 
     #     # THE REST OF THIS MAY GO AWAY
@@ -242,15 +269,13 @@ class OpenUniverse2024FITSImage( Image ):
             self._load_data()
         return self._data
 
-
-
     def _load_data( self ):
         """Loads the data from disk."""
         raise NotImplementedError( "Do." )
 
     def get_data( self, which='all' ):
         if self._is_cutout:
-            Lager.warning( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Is this your intention?")
+            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported.")
         if which not in Image.data_array_list:
             raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
         Lager.info( f"Reading FITS file {self.inputs.path}" )
@@ -278,7 +303,8 @@ class OpenUniverse2024FITSImage( Image ):
         with fits.open(self.inputs.path) as hdul:
             return hdul[1].header
 
-    def get_image_shape(self):
+    @property
+    def image_shape(self):
         """Get the shape of the image."""
         if not self._is_cutout:
             return (4088, 4088)
@@ -293,9 +319,7 @@ class OpenUniverse2024FITSImage( Image ):
     def coord_center(self):
         '''
         Get the RA and DEC at the center of the image.
-        Note: By fetching the center from the WCS and not the header,
-              this means that this works for cutouts too.
-
+        Works for cutouts too.
         Returns:
         coord_center: array of floats, shape (2,) [RA, DEC] in degrees.
         '''
