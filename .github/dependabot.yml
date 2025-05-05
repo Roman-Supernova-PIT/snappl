@@ -11,7 +11,7 @@ updates:
     interval: weekly
   open-pull-requests-limit: 10
   reviewers:
-    - "raknop"
+    - "rknop"
   allow:
     - dependency-type: direct
     - dependency-type: indirect
@@ -25,7 +25,7 @@ updates:
   directory: ".github/workflows"
   target-branch: "main"
   reviewers:
-    - "raknop"
+    - "rknop"
   schedule:
     interval: monthly
   commit-message:
