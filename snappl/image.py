@@ -1,10 +1,13 @@
 import types
 
 from astropy.io import fits
+from astropy.nddata.utils import Cutout2D
 
 from snappl.logger import Lager
 
 from astropy.wcs import WCS as AstropyWCS
+from astropy.coordinates import SkyCoord
+from astropy import units as u
 
 class Exposure:
     pass
@@ -145,6 +148,16 @@ class Image:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
 
+    def get_cutout(self, ra, dec):
+        """Make a cutout of the image at the given RA and DEC.
+
+        Returns
+        -------
+          snappl.image.Image
+        """
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_cutout" )
+
+
 
     #     # THE REST OF THIS MAY GO AWAY
 
@@ -220,17 +233,24 @@ class OpenUniverse2024FITSImage( Image ):
         self._flags = None
         self._wcs = None
 
+        self._is_cutout = False
+        self._image_shape = None
+
     @property
     def data( self ):
         if self._data is None:
             self._load_data()
         return self._data
 
+
+
     def _load_data( self ):
         """Loads the data from disk."""
         raise NotImplementedError( "Do." )
 
     def get_data( self, which='all' ):
+        if self._is_cutout:
+            Lager.warning( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Is this your intention?")
         if which not in Image.data_array_list:
             raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
         Lager.info( f"Reading FITS file {self.inputs.path}" )
@@ -252,3 +272,78 @@ class OpenUniverse2024FITSImage( Image ):
             with fits.open( self.inputs.path ) as hdul:
                 self._wcs = AstropyWCS( hdul[1].header )
         return self._wcs
+
+    def get_header(self):
+        """Get the header of the image."""
+        with fits.open(self.inputs.path) as hdul:
+            return hdul[1].header
+
+    def get_image_shape(self):
+        """Get the shape of the image."""
+        if not self._is_cutout:
+            return (4088, 4088)
+            # This is a nasty hardcode but these images will always be
+            # this size.....? -Cole
+
+        if self._image_shape is None:
+            self._image_shape = self.data.shape
+        return self._image_shape
+
+    @property
+    def coord_center(self):
+        '''
+        Get the RA and DEC at the center of the image.
+        Note: By fetching the center from the WCS and not the header,
+              this means that this works for cutouts too.
+
+        Returns:
+        coord_center: array of floats, shape (2,) [RA, DEC] in degrees.
+        '''
+        wcs = self.get_wcs()
+        coord_center = wcs.wcs_pix2world(
+            self.get_image_shape()[0] // 2,
+            self.get_image_shape()[1] // 2,
+            1)
+        return coord_center
+
+    @property
+    def band(self):
+        '''
+        Return the band the image is taken in.
+
+        Returns:
+        band: str
+        '''
+        header = self.get_header()
+        return header['FILTER'].strip()
+
+    def get_cutout(self, ra, dec, size):
+        """
+        Make a cutout of the image at the given RA and DEC.
+
+        Returns
+        -------
+          snappl.image.OpenUniverse2024FITSImage
+        """
+
+        if size % 2 != 1:
+            raise ValueError(f"Size must be odd for a well defined central \
+                pixel, you tried to pass a size of {size}.")
+
+        wcs = self.get_wcs()
+        loc = SkyCoord(ra*u.deg, dec*u.deg)
+        data, noise, flags = self.get_data('all')
+        astropy_cutout = Cutout2D(data, loc, size=size,
+                                  wcs=wcs, mode='strict')
+        astropy_noise = Cutout2D(noise, loc, size=size,
+                                  wcs=wcs, mode='strict')
+
+        snappl_cutout = self.__class__(self.inputs.path, self.inputs.exposure, self.inputs.sca)
+        snappl_cutout._data = astropy_cutout.data
+        snappl_cutout._wcs = astropy_cutout.wcs
+        snappl_cutout._noise = astropy_noise.data
+        snappl_cutout._is_cutout = True
+
+        return snappl_cutout
+
+
