@@ -149,7 +149,7 @@ class Image:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
 
-        
+
     def get_cutout(self, ra, dec):
         """Make a cutout of the image at the given RA and DEC.
 
@@ -159,7 +159,7 @@ class Image:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_cutout" )
 
-    def get_header(self):
+    def _get_header(self):
         """Get the header of the image."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_header" )
 
@@ -262,6 +262,7 @@ class OpenUniverse2024FITSImage( Image ):
         self._wcs = None
         self._is_cutout = False
         self._image_shape = None
+        self._header = None
 
     @property
     def data( self ):
@@ -298,10 +299,13 @@ class OpenUniverse2024FITSImage( Image ):
                 self._wcs = AstropyWCS( hdul[1].header )
         return self._wcs
 
-    def get_header(self):
+    def _get_header(self):
         """Get the header of the image."""
-        with fits.open(self.inputs.path) as hdul:
-            return hdul[1].header
+        if self._header is None:
+            with fits.open(self.inputs.path) as hdul:
+                return hdul[1].header
+        else:
+            return self._header
 
     @property
     def image_shape(self):
