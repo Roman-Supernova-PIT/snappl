@@ -819,7 +819,12 @@ class Config:
             if isinstance( val, dict ):
                 self.augment_argparse( parser, path=f'{path}{key}-', _dict=val )
             elif isinstance( val, list ):
-                parser.add_argument( f'--{path}{key}', nargs="*" )
+                if all( isinstance( v, numbers.Integral ) for v in val ):
+                    parser.add_argument( f'--{path}{key}', type=int, nargs="*" )
+                elif all( isinstance( v, numbers.Real ) for v in val ):
+                    parser.add_argument( f'--{path}{key}', type=float, nargs="*" )
+                else:
+                    parser.add_argument( f'--{path}{key}', nargs="*" )
             elif isinstance( val, str ):
                 parser.add_argument( f'--{path}{key}' )
             elif isinstance( val, numbers.Integral ):

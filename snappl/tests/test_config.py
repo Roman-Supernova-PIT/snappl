@@ -1,13 +1,12 @@
 import pytest
 import argparse
-import sys
 import os
 import pathlib
 
-_rundir = pathlib.Path( __file__ ).parent.resolve()
-# Make sure the parent to this directory is in the path
-sys.path.insert( 0, str( _rundir.parent.parent ) )
 from snappl.config import Config
+
+_rundir = pathlib.Path( __file__ ).parent.resolve()
+
 
 @pytest.fixture( autouse=True )
 def config_cleanup():
@@ -20,7 +19,7 @@ def config_cleanup():
     #   aren't really supposed to.
 
     orig_def_def = Config._default_default
-    
+
     yield True
 
     Config._default_default = orig_def_def
@@ -50,43 +49,48 @@ def test_set_default():
     Config._default_default = None
 
     env_exists = 'SNAPPL_CONFIG' in os.environ
-    if env_exists:
-        orig_env = os.getenv( 'SNAPPL_CONFIG' )
-        del os.environ[ 'SNAPPL_CONFIG' ]
+    try:
+        if env_exists:
+            orig_env = os.getenv( 'SNAPPL_CONFIG' )
+            del os.environ[ 'SNAPPL_CONFIG' ]
 
-    # Normally, will not set the default
-    _ = Config.get( _rundir / "config_test_data/test.yaml" )
-    assert Config._default is None
+        # Normally, will not set the default
+        _ = Config.get( _rundir / "config_test_data/test.yaml" )
+        assert Config._default is None
 
-    # Will set the default it we tell it to
-    _ = Config.get( _rundir / "config_test_data/test.yaml", setdefault=True )
-    assert Config._default == str( ( _rundir / "config_test_data/test.yaml" ).resolve() )
+        # Will set the default it we tell it to
+        _ = Config.get( _rundir / "config_test_data/test.yaml", setdefault=True )
+        assert Config._default == str( ( _rundir / "config_test_data/test.yaml" ).resolve() )
 
-    # Will set the default to something else if we tell it to
-    _ = Config.get( _rundir / "config_test_data/testpreload1.yaml", setdefault=True )
-    assert Config._default == str( ( _rundir / "config_test_data/testpreload1.yaml" ).resolve() )
+        # Will set the default to something else if we tell it to
+        _ = Config.get( _rundir / "config_test_data/testpreload1.yaml", setdefault=True )
+        assert Config._default == str( ( _rundir / "config_test_data/testpreload1.yaml" ).resolve() )
 
-    # Reset everything
-    Config._default = None
-    Config._configs = {}
+        # Reset everything
+        Config._default = None
+        Config._configs = {}
 
-    # If there's a default default, but we load something else,
-    #   make sure the default isn't set.
-    Config._default_default = str( ( _rundir / "config_test_data/test.yaml" ).resolve() )
-    _ = Config.get( _rundir / "config_test_data/testpreload1.yaml" )
-    assert Config._default is None
+        # If there's a default default, but we load something else,
+        #   make sure the default isn't set.
+        Config._default_default = str( ( _rundir / "config_test_data/test.yaml" ).resolve() )
+        _ = Config.get( _rundir / "config_test_data/testpreload1.yaml" )
+        assert Config._default is None
 
-    # If there's a default default and we just get config,
-    #   make sure it gets set to the default.
-    cfg = Config.get()
-    assert Config._default == Config._default_default
-    # ...and make sure we got the exact Config object
-    assert cfg is Config._configs[ Config._default ]
-    assert cfg._static
+        # If there's a default default and we just get config,
+        #   make sure it gets set to the default.
+        cfg = Config.get()
+        assert Config._default == Config._default_default
+        # ...and make sure we got the exact Config object
+        assert cfg is Config._configs[ Config._default ]
+        assert cfg._static
 
-    # If we call it again, we get the same object
-    cfg2 = Config.get()
-    assert cfg is cfg2
+        # If we call it again, we get the same object
+        cfg2 = Config.get()
+        assert cfg is cfg2
+
+    finally:
+        if env_exists:
+            os.environ[ 'SNAPPL_CONFG' ] = orig_env
 
 
 def test_config_path( cfg ):
@@ -176,7 +180,7 @@ def test_loading_and_getting( cfg ):
 
     # mainlist4 is set in test.yaml and added to in testdestrapp1
     assert cfg.value( 'mainlist4' ) == [ 'main1', 'main2', 'app1' ]
-    
+
     # mainlist for is in test.yaml and added to in testdestrapp1.yaml
     assert cfg.value( 'mainlist4' ) == [ 'main1', 'main2', 'app1' ]
 
@@ -231,17 +235,17 @@ def test_loading_and_getting( cfg ):
 
 def test_no_overrides():
     with pytest.raises( RuntimeError, match="Error combining key scalar with mode augment" ):
-        cfg = Config.get( "config_test_data/testfail1.yaml" )
+        _cfg = Config.get( "config_test_data/testfail1.yaml" )
 
     with pytest.raises( RuntimeError, match="Error combining key preloaddict2.main with mode augment" ):
-        cfg = Config.get( "config_test_data/testfail2.yaml" )
+        _cfg = Config.get( "config_test_data/testfail2.yaml" )
 
     with pytest.raises( RuntimeError, match="Error combining key mainscalar with mode append" ):
-        cfg = Config.get( "config_test_data/testfail3.yaml" )
+        _cfg = Config.get( "config_test_data/testfail3.yaml" )
 
     with pytest.raises( RuntimeError, match=("Error combining key maindict with mode append; "
                                              "left is a <class 'dict'> and right is a <class 'list'>" ) ):
-        cfg = Config.get( "config_test_data/testfail4.yaml" )
+        _cfg = Config.get( "config_test_data/testfail4.yaml" )
 
 
 def test_command_line( cfg ):
@@ -251,7 +255,7 @@ def test_command_line( cfg ):
 
     arglist = [ '--mainlist2', 'cat', 'dog', '--mainscalar2', 'arg', '--nest-nest2-val', 'arg',
                 '--nest-nest1', 'mouse', 'wombat' ]
-    
+
     args = parser.parse_args( arglist )
 
     # Just spot check a few
@@ -267,9 +271,63 @@ def test_command_line( cfg ):
     assert cfg.value( 'mainscalar2' ) == 'arg'
     assert cfg.value( 'nest.nest2.val' ) == 'arg'
     assert cfg.value( 'nest.nest1' ) == [ 'mouse', 'wombat' ]
-    
 
-        
+    # Verify type checking in lists:
+
+    arglist = [ '--intarray', '4', '5', '6' ]
+    parser = argparse.ArgumentParser()
+    cfg.augment_argparse( parser )
+    args = parser.parse_args( arglist )
+    cfg.parse_args( args )
+
+    assert isinstance( cfg.value('intarray'), list )
+    assert all( isinstance(i, int) for i in cfg.value('intarray') )
+    assert cfg.value('intarray') == [ 4, 5, 6 ]
+
+    arglist = [ '--floatarray', '4', '5', '6' ]
+    parser = argparse.ArgumentParser()
+    cfg.augment_argparse( parser )
+    args = parser.parse_args( arglist )
+    cfg.parse_args( args )
+
+    assert isinstance( cfg.value('floatarray'), list )
+    assert all( isinstance(f, float) for f in cfg.value('floatarray') )
+    assert cfg.value('floatarray') == [ 4., 5., 6. ]
+
+    arglist = [ '--stringarray', '4', '5', '6' ]
+    parser = argparse.ArgumentParser()
+    cfg.augment_argparse( parser )
+    args = parser.parse_args( arglist )
+    cfg.parse_args( args )
+
+    assert isinstance( cfg.value('stringarray'), list )
+    assert all( isinstance(f, str) for f in cfg.value('stringarray') )
+    assert cfg.value('stringarray') == [ '4', '5', '6' ]
+
+    # Make sure we get errors on type mismatches
+    with pytest.raises( SystemExit ):
+        arglist = [ '--intarray', '4.1', '5.1', '6.1' ]
+        parser = argparse.ArgumentParser()
+        cfg.augment_argparse( parser )
+        args = parser.parse_args( arglist )
+        cfg.parse_args( args )
+
+    with pytest.raises( SystemExit ):
+        arglist = [ '--intarray', 'wombat', 'mongoose', 'capybara' ]
+        parser = argparse.ArgumentParser()
+        cfg.augment_argparse( parser )
+        args = parser.parse_args( arglist )
+        cfg.parse_args( args )
+
+    with pytest.raises( SystemExit ):
+        arglist = [ '--floatarray', '1.0', '2.3', 'i_think_you_have_the_wrong_number' ]
+        parser = argparse.ArgumentParser()
+        cfg.augment_argparse( parser )
+        args = parser.parse_args( arglist )
+        cfg.parse_args( args )
+
+
+
 def test_no_direct_instantiation():
     with pytest.raises( RuntimeError, match="Don't instantiate a Config directly; use configobj=Config.get(...)." ):
         _ = Config()
@@ -277,12 +335,12 @@ def test_no_direct_instantiation():
 
 def test_fieldsep( cfg ):
     fields, isleaf, curfield, ifield = cfg._fieldsep( 'nest.nest1.0.nest1a' )
-    assert isleaf == False
+    assert not isleaf
     assert curfield == 'nest'
     assert fields == ['nest', 'nest1', '0', 'nest1a' ]
     assert ifield is None
     fields, isleaf, curfield, ifield = cfg._fieldsep( '0.test' )
-    assert isleaf == False
+    assert not isleaf
     assert ifield == 0
     fields, isleaf, curfield, ifield = cfg._fieldsep( 'mainlist2' )
     assert isleaf

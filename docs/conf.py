@@ -6,15 +6,14 @@
 
 import datetime
 import importlib
-import sys
 import os
 import tomli
 
-from configparser import ConfigParser
+# from configparser import ConfigParser
 
-import sphinx
+# import sphinx
 
-from sphinx.ext.autodoc import AttributeDocumenter
+# from sphinx.ext.autodoc import AttributeDocumenter
 
 # -- Project information -----------------------------------------------------
 

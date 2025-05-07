@@ -45,7 +45,7 @@ Next, create a file ``demo.py`` that has contents::
   print( f"three numbers are {cfg.value('three_numbers')}" )
   print( f"The second number is {cfg.value('three_numbers.1')}" )
   
-Make sure that you have :ref:`installed snappl <installation-docs>`.  The run::
+Make sure that you have :ref:`installed snappl <installation-docs>`.  Then run::
 
   SNAPPL_CONFIG=$PWD/demo.yaml python demo.py
 
@@ -103,19 +103,11 @@ where ``<filename>`` is the name of the ``.yaml`` file you want to read.  Howeve
 Reading config values
 ---------------------
 
-You can get config values by just calling ``cfg.value(<fieldspec>)``, assuming ``cfg`` is a :ref:`Config object <getting-config-object>`.  ``<fieldspec>`` specifies the configuration option ("field") you want.  Configurations may be hierarchical; that is, an field may itself have sub options.  In Python terms, the top-level config object is (bascially) a dictionary, and the values of dictionary entries may themselves be dictionaries.  If you want to just get a top-level field, then just give the name of that field.  If you want to get a sub-field of a top-level field, then ``<fieldspec>`` should be ``field.subfield``.  For example, look at the ``demo.yaml`` file in :ref:`config-quickstart-example`.  If you get a ``Config`` object from this file, then ``cfg.value('option1')`` would return just ``test1``.  Likewise, ``cfg.value('many_options.sub1)`` would return ``subtest``.  If for some reason you want to get an sub-field tree, you can get a higher level config value.  In this example, if you ran ``cfg.value('many_options`)``, you would get back the dictionary ``{'sub1':'subtest1', 'sub2':'subtest2'}``.
+Once you have a Config object (``cfg`` in this example), you can get config values by just calling::
 
+  result = cfg.value('<fieldspec>')
 
-A warning about data types
-***************************
-
-When python reads a ``.yaml`` file, it tries to auto-detect the types of everything, and create quantities of the approriate type (integer, float, or string, or sometimes something more complicated like at timestamp).  However, you might not want to trust this, and you might want to explicitly set the type of everything you read to make sure you're getting the right thing.  So, if you know that ``number_option`` is supposed to be an integer, you might want to do::
-
-  num = int( cfg.value( 'number_option' ) )
-
-instead of just ``cfg.value('number_option')``.  That way, you know you're getting the right type of thing (or you will get an exception if the value in the config file doesn't work for the type you're expecting).
-
-In particular, if you run the examples in at :ref:`config-quickstart-example-command-line`, you will notice that the number array, when overridden on the command line, became an array of strings rather than an array of integers.  This is because the Unix command line itself doesn't know anything about other data types, and treats everything as strings.  (You might argue that we should put more type checking into config itself.  However, this would be a rat's nest of edge cases, is probably not well-defined in the first place, and we expect that command-line overriding is going to be rare enough that it's not worth the effort.)
+``<fieldspec>`` specifies the configuration option ("field") you want.  Configurations may be hierarchical; that is, an field may itself have sub options.  In Python terms, the top-level config object is (bascially) a dictionary, and the values of dictionary entries may themselves be dictionaries.  If you want to just get a top-level field, then just give the name of that field.  If you want to get a sub-field of a top-level field, then ``<fieldspec>`` should be ``field.subfield``.  For example, look at the ``demo.yaml`` file in :ref:`config-quickstart-example`.  If you get a ``Config`` object from this file, then ``cfg.value('option1')`` would return just ``test1``.  Likewise, ``cfg.value('many_options.sub1)`` would return ``subtest``.  If for some reason you want to get an sub-field tree, you can get a higher level config value.  In this example, if you ran ``cfg.value('many_options`)``, you would get back the dictionary ``{'sub1':'subtest1', 'sub2':'subtest2'}``.
 
 
 Creating config files
