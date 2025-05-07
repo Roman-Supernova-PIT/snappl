@@ -74,3 +74,7 @@ settest:
     key2: 2val2
   scalar: thing
   scalar2: foobar
+
+intarray: [ 1, 2, 3 ]
+floatarray: [ 1.0, 2.0, 3.0 ]
+stringarray: [ 'cat', 'dog', 'mouse' ]
