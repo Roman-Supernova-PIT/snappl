@@ -115,7 +115,7 @@ When python reads a ``.yaml`` file, it tries to auto-detect the types of everyth
 
 instead of just ``cfg.value('number_option')``.  That way, you know you're getting the right type of thing (or you will get an exception if the value in the config file doesn't work for the type you're expecting).
 
-In particular, if you look at :ref:`config-quickstart-example-command-line`, you will notice that the number array, when overridden on the command line, became an array of strings rather than an array of integers.  This is because the Unix command line itself doesn't know anything about other data types, and treates everything as strings.  (You might argue that we should put more type checking into config itself.  However, this would be a rat's nest of edge cases, is probably not well-defined in the first place, and we expect that command-line overriding is going to be rare enough that it's not worth the effort.)
+In particular, if you run the examples in at :ref:`config-quickstart-example-command-line`, you will notice that the number array, when overridden on the command line, became an array of strings rather than an array of integers.  This is because the Unix command line itself doesn't know anything about other data types, and treates everything as strings.  (You might argue that we should put more type checking into config itself.  However, this would be a rat's nest of edge cases, is probably not well-defined in the first place, and we expect that command-line overriding is going to be rare enough that it's not worth the effort.)
 
 
 Creating config files
