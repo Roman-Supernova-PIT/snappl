@@ -1,12 +1,25 @@
+.. _installation-docs:
 .. highlight:: shell
 
 ============
 Installation
 ============
 
+SN Pit Docker environment
+-------------------------
+
+As of this writing, ``snappl`` is not in the `SN PIT Docker envirionment
+<https://github.com/Roman-Supernova-PIT/environment>`_.  However, before
+long, we hope to integrate the production release of ``snappl`` into
+that docker image.  Once that happnes, if you're using that image, you
+will not need to do anyting; ``snappl`` will already be installed for you.
+
 
 Stable release
 --------------
+
+**NOTE** -- as of this writing, there is not a stable release, so this
+section won't work.
 
 To install snappl, run this command in your terminal:
 
@@ -44,7 +57,9 @@ Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
-    $ python setup.py install
+    $ pip install .
+
+This will install snappl in your current virtual environment.
 
 
 .. _Github repo: https://github.com/Roman-Supernova-PIT/snappl/snappl
