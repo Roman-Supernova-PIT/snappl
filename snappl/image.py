@@ -311,12 +311,13 @@ class OpenUniverse2024FITSImage( Image ):
     def image_shape(self):
         """Get the shape of the image."""
         if not self._is_cutout:
-            return (4088, 4088)
-            # This is a nasty hardcode but these images will always be
-            # this size.....? -Cole
+            self._header = self.get_header()
+            self._image_shape = (self._header['NAXIS1'], self._header['NAXIS2'])
+            return self._image_shape
 
         if self._image_shape is None:
             self._image_shape = self.data.shape
+            
         return self._image_shape
 
     @property
