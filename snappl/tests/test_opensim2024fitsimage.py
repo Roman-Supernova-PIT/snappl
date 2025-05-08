@@ -11,20 +11,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent/"extern/snappl"))
 import numpy as np
 from snappl.image import OpenUniverse2024FITSImage
 import astropy
+import pytest
 
 
 def test_get_cutout():
-    roman_path = '/hpc/group/cosmology/OpenUniverse2024'
-    truth = 'simple_model'
-    band = 'F184'
-    pointing = 662
-    SCA = 11
-    imagepath = roman_path + (f'/RomanTDS/images/{truth}/{band}/{pointing}'
-                              f'/Roman_TDS_{truth}_{band}_{pointing}_'
-                              f'{SCA}.fits.gz')
-    image = OpenUniverse2024FITSImage(imagepath, None, SCA)
+    imagepath = str(pathlib.Path(__file__).parent/'image_test_data/Roman_TDS_simple_model_F184_662_11.fits.gz')
+    image = OpenUniverse2024FITSImage(imagepath, None, 11)
     ra, dec = 7.5942407686430995, -44.180904726970695
-    cutout = image.get_cutout(ra, dec, 5)
+    cutout = image.get_ra_dec_cutout(ra, dec, 5)
     comparison_cutout = np.load(str(pathlib.Path(__file__).parent/'image_test_data/test_cutout.npy'),
                                 allow_pickle=True)
     message = "The cutout does not match the comparison cutout"
@@ -33,19 +27,15 @@ def test_get_cutout():
     # never actually change, provided the underlying image is unaltered. -Cole
 
     # Now we intentionally try to get a no overlap error.
-    try:
+    with pytest.raises(astropy.nddata.utils.NoOverlapError) as excinfo:
         ra, dec = 7.6942407686430995, -44.280904726970695
-        cutout = image.get_cutout(ra, dec, 5)
-        assert False, 'That should not have worked...'
-    except Exception as e:
-        message = f"This should have caused a NoOverlapError but was actually {e}"
-        assert isinstance(e, astropy.nddata.utils.NoOverlapError), message
+        cutout = image.get_ra_dec_cutout(ra, dec, 5)
+    message = f"This should have caused a NoOverlapError but was actually {str(excinfo.value)}"
+    assert 'do not overlap' in str(excinfo.value), message
 
     # Now we intentionally try to get a partial overlap error.
-    try:
+    with pytest.raises(astropy.nddata.utils.PartialOverlapError) as excinfo:
         ra, dec = 7.69380043,-44.13231831
-        cutout = image.get_cutout(ra, dec, 55)
-        assert False, 'That should not have worked...'
-    except Exception as e:
-        message = f"This should have caused a PartialOverlapError but was actually {e}"
-        assert isinstance(e, astropy.nddata.utils.PartialOverlapError), message
+        cutout = image.get_ra_dec_cutout(ra, dec, 55)
+        message = f"This should have caused a PartialOverlapError but was actually {str(excinfo.value)}"
+        assert 'partial' in str(excinfo.value), message
