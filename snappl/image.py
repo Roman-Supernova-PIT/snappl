@@ -1,10 +1,14 @@
 import types
 
 from astropy.io import fits
+from astropy.nddata.utils import Cutout2D
 
 from snappl.logger import Lager
 
 from astropy.wcs import WCS as AstropyWCS
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+
 
 class Exposure:
     pass
@@ -146,6 +150,40 @@ class Image:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
 
 
+    def get_cutout(self, ra, dec, size):
+        """Make a cutout of the image at the given RA and DEC.
+
+        Returns
+        -------
+          snappl.image.Image
+        """
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_cutout" )
+
+
+    @property
+    def coord_center(self):
+        '''
+        Get the RA and DEC at the center of the image.
+        Note: By fetching the center from the WCS and not the header,
+              this means that this works for cutouts too.
+
+        Returns:
+        coord_center: array of floats, shape (2,) [RA, DEC] in degrees.
+        '''
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement coord_center" )
+
+    def get_image_shape(self):
+        """Get the shape of the image."""
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_image_shape" )
+
+    @property
+    def band( self ):
+        """Band (str)"""
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement band" )
+
+
+
+
     #     # THE REST OF THIS MAY GO AWAY
 
     #     self.pipeline = pipeline
@@ -219,6 +257,9 @@ class OpenUniverse2024FITSImage( Image ):
         self._noise = None
         self._flags = None
         self._wcs = None
+        self._is_cutout = False
+        self._image_shape = None
+        self._header = None
 
     @property
     def data( self ):
@@ -231,6 +272,8 @@ class OpenUniverse2024FITSImage( Image ):
         raise NotImplementedError( "Do." )
 
     def get_data( self, which='all' ):
+        if self._is_cutout:
+            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported.")
         if which not in Image.data_array_list:
             raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
         Lager.info( f"Reading FITS file {self.inputs.path}" )
@@ -252,3 +295,118 @@ class OpenUniverse2024FITSImage( Image ):
             with fits.open( self.inputs.path ) as hdul:
                 self._wcs = AstropyWCS( hdul[1].header )
         return self._wcs
+
+    def _get_header(self):
+        """Get the header of the image."""
+        if self._header is None:
+            with fits.open(self.inputs.path) as hdul:
+                self._header = hdul[1].header
+        return self._header
+
+    @property
+    def image_shape(self):
+        """Get the shape of the image."""
+        if not self._is_cutout:
+            self._header = self.get_header()
+            self._image_shape = (self._header['NAXIS1'], self._header['NAXIS2'])
+            return self._image_shape
+
+        if self._image_shape is None:
+            self._image_shape = self.data.shape
+
+        return self._image_shape
+
+    @property
+    def coord_center(self):
+        '''
+        Get the RA and DEC at the center of the image.
+        Works for cutouts too.
+        Returns:
+        coord_center: array of floats, shape (2,) [RA, DEC] in degrees.
+        '''
+        wcs = self.get_wcs()
+        coord_center = wcs.wcs_pix2world(
+            self.get_image_shape()[0] // 2,
+            self.get_image_shape()[1] // 2,
+            1)
+        return coord_center
+
+    @property
+    def band(self):
+        '''
+        Return the band the image is taken in.
+
+        Returns:
+        band: str
+        '''
+        header = self.get_header()
+        return header['FILTER'].strip()
+
+    def get_cutout(self, x, y, xsize, ysize=None):
+        '''
+        Creates a new snappl image object that is a cutout of the original
+        image, at a location in pixel-space.
+
+        Parameters
+        ----------
+        x : int
+            x pixel coordinate of the center of the cutout.
+        y : int
+            y pixel coordinate of the center of the cutout.
+        xsize : int
+            Width of the cutout in pixels.
+        ysize : int
+            Height of the cutout in pixels. If None, set to xsize.
+        Returns
+        -------
+        cutout : snappl.image.Image
+            A new snappl image object that is a cutout of the original image.
+        '''
+        if ysize is None:
+            ysize = xsize
+        if xsize % 2 != 1 or ysize % 2 != 1:
+            raise ValueError(f"Size must be odd for a well defined central \
+                pixel, you tried to pass a size of {xsize, ysize}.")
+        loc = (x, y)
+        Lager.debug(f'Cutting out at {x , y}')
+        data, noise, flags = self.get_data('all')
+        astropy_cutout = Cutout2D(data, loc, size=(ysize, xsize), # Astropy asks for this order. Beats me. -Cole
+                                   mode='strict')
+        astropy_noise = Cutout2D(noise, loc, size=(ysize, xsize),
+                                   mode='strict')
+
+        snappl_cutout = self.__class__(self.inputs.path, self.inputs.exposure, self.inputs.sca)
+        snappl_cutout._data = astropy_cutout.data
+        snappl_cutout._wcs = astropy_cutout.wcs
+        snappl_cutout._noise = astropy_noise.data
+        snappl_cutout._is_cutout = True
+
+        return snappl_cutout
+
+    def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None):
+        '''
+        Creates a new snappl image object that is a cutout of the original
+        image, at a location in pixel-space.
+        Parameters
+        ----------
+        ra : float
+            RA coordinate of the center of the cutout, in degrees.
+        dec : float
+            DEC coordinate of the center of the cutout, in degrees.
+        xsize : int
+            Width of the cutout in pixels.
+        ysize : int
+            Height of the cutout in pixels. If None, set to xsize.
+            
+        Returns
+        -------
+        cutout : snappl.image.Image
+            A new snappl image object that is a cutout of the original image.
+        '''
+
+        wcs = self.get_wcs()
+        x, y = wcs.wcs_world2pix(ra, dec, 0)  # <--- I DO NOT UNDERSTAND WHY THIS
+        # NEEDS TO BE ZERO, BUT THAT MADE THIS NEW FUNCTION AGREE WITH THE
+        # OUTPUT OF THE OLD FUNCTION. COLE IS CONFUSED!!!!!
+        return self.get_cutout(x, y, xsize, ysize)
+
