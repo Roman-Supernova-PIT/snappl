@@ -1,0 +1,1 @@
+Fixes a bug where cutouts had no wcs by passing self.get_wcs() directly into Astropy's cutout2D.

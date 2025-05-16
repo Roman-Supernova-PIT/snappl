@@ -296,7 +296,6 @@ class OpenUniverse2024FITSImage( Image ):
                 self._wcs = AstropyWCS( hdul[1].header )
         return self._wcs
 
-
     def _get_header(self):
         """Get the header of the image."""
         if self._header is None:
@@ -379,7 +378,6 @@ class OpenUniverse2024FITSImage( Image ):
         snappl_cutout = self.__class__(self.inputs.path, self.inputs.exposure, self.inputs.sca)
         snappl_cutout._data = astropy_cutout.data
         snappl_cutout._wcs = astropy_cutout.wcs
-        Lager.debug(f'Giving cutout a new WCS of {astropy_cutout.wcs}')
         snappl_cutout._noise = astropy_noise.data
         snappl_cutout._is_cutout = True
 
