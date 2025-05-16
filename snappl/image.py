@@ -371,9 +371,9 @@ class OpenUniverse2024FITSImage( Image ):
         Lager.debug(f'Cutting out at {x , y}')
         data, noise, flags = self.get_data('all')
         astropy_cutout = Cutout2D(data, loc, size=(ysize, xsize), # Astropy asks for this order. Beats me. -Cole
-                                   mode='strict')
+                                   mode='strict', wcs=self.get_wcs())
         astropy_noise = Cutout2D(noise, loc, size=(ysize, xsize),
-                                   mode='strict')
+                                   mode='strict', wcs=self.get_wcs())
 
         snappl_cutout = self.__class__(self.inputs.path, self.inputs.exposure, self.inputs.sca)
         snappl_cutout._data = astropy_cutout.data
@@ -397,7 +397,7 @@ class OpenUniverse2024FITSImage( Image ):
             Width of the cutout in pixels.
         ysize : int
             Height of the cutout in pixels. If None, set to xsize.
-            
+
         Returns
         -------
         cutout : snappl.image.Image
