@@ -1,8 +1,8 @@
-snappl Documentation
---------------------
+roman_snpit_snappl Documentation
+--------------------------------
 
 
-This is the documentation for snappl.
+This is the documentation for roman_snpit_snappl.
 
 **Version**: |version|
 
@@ -11,7 +11,7 @@ This package contains the Python software suite developed for use with the Roman
 
 
 If you have questions or concerns regarding the software, please create an issue in
-the github package repository at https://github.com/Roman-Supernova-PIT/snappl/snappl
+the github package repository at https://github.com/Roman-Supernova-PIT/roman_snpit_snappl
 
 --------------------------------
 
@@ -21,6 +21,7 @@ the github package repository at https://github.com/Roman-Supernova-PIT/snappl/s
 
    installation.rst
    usage.rst
+   changes.rst
 
 
 

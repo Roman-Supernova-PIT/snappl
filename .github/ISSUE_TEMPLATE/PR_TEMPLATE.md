@@ -1,5 +1,5 @@
 ---
-name: "Pull Request for snappl"
+name: "Pull Request for roman_snpit_snappl"
 about: Create a pull request to submit new or updated code to the repository
 title: "[PR]: "
 labels: possible solution

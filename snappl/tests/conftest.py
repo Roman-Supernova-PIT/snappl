@@ -1,5 +1,5 @@
 # this is a module level file
-import pytest
+import pytest # noqa: F401
 
-import tox
-from tox.pytest import init_fixture
+import tox # noqa: F401
+from tox.pytest import init_fixture # noqa: F401

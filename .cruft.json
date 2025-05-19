@@ -1,26 +1,25 @@
 {
   "template": "https://github.com/Roman-Supernova-PIT/package-template",
-  "commit": "9978ab5678e80f7db7dc452e75883cb41e8daf7e",
+  "commit": "9d156bb4c476043b6c616e3e41047b68d4d89cdd",
   "checkout": null,
   "context": {
     "cookiecutter": {
-      "package_name": "snappl",
+      "package_name": "roman_snpit_snappl",
       "module_name": "snappl",
-      "short_description": "Developed by the Roman Supernova PIT",
-      "author_name": "Roman Supernova PIT",
+      "short_description": "Photometry utilities for the Roman SNPIT",
+      "author_name": "Roman SN PIT",
       "author_email": "raknop@lbl.gov",
       "github_username": "rknop",
-      "pit_name": "Roman-Supernov-PIT",
-      "project_url": "https://github.com/Roman-Supernova-PIT/snappl",
-      "license": "BSD 3-Clause",
       "minimum_python_version": "3.11",
       "use_compiled_extensions": "n",
-      "enable_dynamic_dev_versions": "y",
       "include_example_code": "n",
       "include_github_workflows": "y",
+      "_project_url": "https://github.com/Roman-Supernova-PIT",
+      "_pit_github_org": "Roman-Supernova-PIT",
+      "_pit_name": "Roman Supernove Project Infrastructure Team",
       "_sphinx_theme": "alabaster",
       "_parent_project": "",
-      "_install_requires": "",
+      "install_requires": "",
       "_copy_without_render": [
         "docs/_templates",
         "docs/_static",
@@ -28,7 +27,7 @@
         ".github/"
       ],
       "_template": "https://github.com/Roman-Supernova-PIT/package-template",
-      "_commit": "9978ab5678e80f7db7dc452e75883cb41e8daf7e"
+      "_commit": "9d156bb4c476043b6c616e3e41047b68d4d89cdd"
     }
   },
   "directory": null

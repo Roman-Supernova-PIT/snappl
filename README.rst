@@ -9,7 +9,6 @@ by both the scene modelling and DIA photometry codes of the Roman SN
 PIT.
 
 
-=======
 Developed by the Roman Supernova PIT
 ------------------------------------
 

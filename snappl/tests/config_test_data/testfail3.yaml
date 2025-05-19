@@ -1,7 +1,0 @@
-appends:
-  - testfailappend3.yaml
-
-maindict:
-  main: main
-
-mainscalar: main
