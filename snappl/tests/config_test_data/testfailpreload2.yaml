@@ -1,7 +1,0 @@
-preloadscalar: preload
-
-preloaddict:
-  preload: preload
-
-preloaddict2:
-  main: preload

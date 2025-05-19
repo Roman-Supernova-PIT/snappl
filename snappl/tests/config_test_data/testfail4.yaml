@@ -1,5 +1,0 @@
-appends:
-  - testfailappend4.yaml
-
-maindict:
-  main: main
