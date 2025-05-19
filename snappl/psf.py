@@ -36,7 +36,7 @@ class PSF:
 
         
 
-class ePSF( PSF ):
+class OversampledImagePSF( PSF ):
     @classmethod
     def create( cls, data, x0, y0, oversample_factor=1., enforce_odd=True, normalize=True ):
         """Parameters
@@ -178,7 +178,7 @@ class ePSF( PSF ):
 
 
         
-class brandX_ePSF( ePSF ):
+class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
     
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
