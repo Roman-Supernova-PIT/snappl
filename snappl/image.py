@@ -3,7 +3,7 @@ import types
 from astropy.io import fits
 from astropy.nddata.utils import Cutout2D
 
-from snappl.logger import Lager
+from snpit_utils.logger import SNLogger
 
 from astropy.wcs import WCS as AstropyWCS
 from astropy.coordinates import SkyCoord
@@ -276,7 +276,7 @@ class OpenUniverse2024FITSImage( Image ):
             raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported.")
         if which not in Image.data_array_list:
             raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
-        Lager.info( f"Reading FITS file {self.inputs.path}" )
+        SNLogger.info( f"Reading FITS file {self.inputs.path}" )
         with fits.open( self.inputs.path ) as hdul:
             self._wcs = AstropyWCS( hdul[1].header )
             if which == 'all':
@@ -368,7 +368,7 @@ class OpenUniverse2024FITSImage( Image ):
             raise ValueError(f"Size must be odd for a well defined central \
                 pixel, you tried to pass a size of {xsize, ysize}.")
         loc = (x, y)
-        Lager.debug(f'Cutting out at {x , y}')
+        SNLogger.debug(f'Cutting out at {x , y}')
         data, noise, flags = self.get_data('all')
         astropy_cutout = Cutout2D(data, loc, size=(ysize, xsize), # Astropy asks for this order. Beats me. -Cole
                                    mode='strict', wcs=self.get_wcs())
