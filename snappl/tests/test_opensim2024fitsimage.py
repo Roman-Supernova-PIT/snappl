@@ -12,6 +12,7 @@ import numpy as np
 from snappl.image import OpenUniverse2024FITSImage
 import astropy
 import pytest
+from snappl.logger import Lager
 
 
 def test_get_cutout():
@@ -39,3 +40,17 @@ def test_get_cutout():
         cutout = image.get_ra_dec_cutout(ra, dec, 55)
         message = f"This should have caused a PartialOverlapError but was actually {str(excinfo.value)}"
         assert 'partial' in str(excinfo.value), message
+
+
+def test_set_data():
+    imagepath = str(pathlib.Path(__file__).parent/'image_test_data/Roman_TDS_simple_model_F184_662_11.fits.gz')
+    image = OpenUniverse2024FITSImage(imagepath, None, 11)
+
+    with pytest.raises(ValueError) as excinfo:
+        image.data = 'cheese'
+        Lager.debug(image.data)
+    message = f"This should have caused a ValueError but was actually {str(excinfo.value)}"
+    assert 'must be a' in str(excinfo.value), message
+    old_data = image.get_data()[0]
+    image._data = old_data + 1
+    assert np.array_equal(image._data, old_data + 1), "The data was not set correctly"

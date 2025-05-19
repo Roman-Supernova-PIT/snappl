@@ -280,7 +280,7 @@ class OpenUniverse2024FITSImage( Image ):
         """Loads the data from disk."""
         raise NotImplementedError( "Do." )
 
-    def get_data( self, which='all', subtract_bg = False):
+    def get_data( self, which='all'):
         if self._is_cutout:
             raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported.")
         if which not in Image.data_array_list:
