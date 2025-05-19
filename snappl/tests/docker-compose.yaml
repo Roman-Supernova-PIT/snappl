@@ -19,7 +19,7 @@
 
 services:
   shell:
-    image: rknop/roman-snpit-env:cpu
+    image: rknop/roman-snpit-env:cpu-dev
     entrypoint: [ "tail", "-f", "/etc/issue" ]
     working_dir: /snappl
     volumes:
@@ -28,7 +28,7 @@ services:
         target: /snappl
 
   runtests:
-    image: rknop/roman-snpit-env:cpu
+    image: rknop/roman-snpit-env:cpu-dev
     working_dir: /snappl
     entrypoint: [ "/bin/sh", "-c", "python -m setuptools_scm --force-write-version-files && cd snappl/tests && pytest -v" ]
     volumes:
