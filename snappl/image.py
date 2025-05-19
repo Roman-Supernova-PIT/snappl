@@ -9,6 +9,8 @@ from astropy.wcs import WCS as AstropyWCS
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
+import numpy as np
+
 
 class Exposure:
     pass
@@ -267,18 +269,27 @@ class OpenUniverse2024FITSImage( Image ):
             self._load_data()
         return self._data
 
+    @data.setter
+    def data(self, new_value):
+        if isinstance(new_value, np.ndarray) and np.issubdtype(new_value.dtype, np.floating):
+            self._data = new_value
+        else:
+            raise ValueError("Data must be a numpy array of floats.")
+
     def _load_data( self ):
         """Loads the data from disk."""
         raise NotImplementedError( "Do." )
 
-    def get_data( self, which='all' ):
+    def get_data( self, which='all', subtract_bg = False):
         if self._is_cutout:
             raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported.")
         if which not in Image.data_array_list:
             raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
         Lager.info( f"Reading FITS file {self.inputs.path}" )
+
         with fits.open( self.inputs.path ) as hdul:
             self._wcs = AstropyWCS( hdul[1].header )
+
             if which == 'all':
                 return [ hdul[1].data, hdul[2].data, hdul[3].data ]
             elif which == 'data':
@@ -302,6 +313,7 @@ class OpenUniverse2024FITSImage( Image ):
             with fits.open(self.inputs.path) as hdul:
                 self._header = hdul[1].header
         return self._header
+
 
     @property
     def image_shape(self):
