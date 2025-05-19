@@ -1,4 +1,4 @@
-Contributing to snappl
+Contributing to roman_snpit_snappl
 ================================================
 
 Reporting Issues
@@ -6,12 +6,12 @@ Reporting Issues
 
 When opening an issue to report a problem, please try to provide a minimal code
 example that reproduces the issue along with details of the operating
-system and the Python, NumPy, and `snappl` versions you are using.
+system and the Python, NumPy, and `roman_snpit_snappl` versions you are using.
 
 Contributing Code and Documentation
 -----------------------------------
 
-So you are interested in contributing to the snappl Project?  Excellent!
+So you are interested in contributing to the roman_snpit_snappl Project?  Excellent!
 We love contributions! We are open source, built on open source, and
 we'd love to have you hang out in our community.
 
@@ -52,7 +52,7 @@ How to Contribute, Best Practices
 
 Most contributions are done via [pull
 requests](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests)
-from GitHub users' forks of snappl If you are new to this
+from GitHub users' forks of roman_snpit_snappl If you are new to this
 style of development, you will want to read over our development workflow in the docs.
 
 When you open a pull request (which should be opened against the ``main``

@@ -9,8 +9,8 @@ repos:
       - id: mixed-line-ending
       # Ignore the template for checks which will be confused by jinja syntax
       - id: check-ast
-        exclude: "snappl"
+        exclude: "roman_snpit_snappl"
       - id: check-yaml
-        exclude: "snappl"
+        exclude: "roman_snpit_snappl"
       - id: debug-statements
-        exclude: "snappl"
+        exclude: "roman_snpit_snappl"

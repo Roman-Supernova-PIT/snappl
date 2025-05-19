@@ -23,7 +23,7 @@ from sphinx.ext.autodoc import AttributeDocumenter
 with open("../pyproject.toml", "rb") as metadata_file:
     metadata = tomli.load(metadata_file)['project']
     project = metadata['name']
-    author = metadata["authors"][0]["name"]
+    author = 'Roman Supernova PIT'
 
 copyright = f'{datetime.datetime.today().year}, {author}'
 

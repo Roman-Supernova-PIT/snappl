@@ -23,19 +23,8 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           fetch-depth: 0
-
-      - shell: bash
-        run: |
-          if [[ -f snappl/_version.py ]]; then
-             /bin/false
-          else
-             /bin/true
-          fi
-
       - run: pip install .
       - run: pip install towncrier
-      - run: pip install setuptools-scm
-      - run: python -m setuptools_scm --force-write-version-files
       - run: towncrier check
       - run: towncrier build --draft | grep -P '#${{ github.event.number }}'
   prevent_manually_editing_changlog:

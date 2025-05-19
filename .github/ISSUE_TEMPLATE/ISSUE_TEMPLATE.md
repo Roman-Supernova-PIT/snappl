@@ -1,5 +1,5 @@
 ---
-name: "🐞 Issue report for snappl"
+name: "🐞 Issue report for roman_snpit_snappl"
 about: Create a report describing unexpected or incorrect behavior.
 title: "[Issue]: <title>"
 labels: bug
