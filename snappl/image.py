@@ -53,6 +53,10 @@ class Image:
         """The image data, a 2d numpy array."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement data" )
 
+    @data.setter
+    def data( self, new_value ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement data setter" )
+
     @property
     def noise( self ):
         """The 1σ pixel noise, a 2d numpy array."""
@@ -255,7 +259,7 @@ class OpenUniverse2024FITSImage( Image ):
         """Loads the data from disk."""
         raise NotImplementedError( "Do." )
 
-    def get_data( self, which='all'):
+    def get_data( self, which='all' ):
         if self._is_cutout:
             raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
                                 "Currently not supported.")

@@ -12,7 +12,7 @@ import numpy as np
 from snappl.image import OpenUniverse2024FITSImage
 import astropy
 import pytest
-from snappl.logger import Lager
+from snpit_utils.logger import SNLogger
 
 
 def test_get_cutout():
@@ -48,7 +48,7 @@ def test_set_data():
 
     with pytest.raises(ValueError) as excinfo:
         image.data = 'cheese'
-        Lager.debug(image.data)
+        SNLogger.debug(image.data)
     message = f"This should have caused a ValueError but was actually {str(excinfo.value)}"
     assert 'must be a' in str(excinfo.value), message
     old_data = image.get_data()[0]
