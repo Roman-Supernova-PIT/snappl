@@ -4,7 +4,7 @@ __all__ = []
 
 
 try:
-    __version__ = version("snappl")
+    __version__ = version("roman_snpit_snappl")
 except PackageNotFoundError:
     # package is not installed
     pass
