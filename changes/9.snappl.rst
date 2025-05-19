@@ -1,0 +1,1 @@
+Added ability to set data from outside of the Image object for sky mean subtraction.

@@ -8,6 +8,8 @@ from snpit_utils.logger import SNLogger
 from astropy.wcs import WCS as AstropyWCS
 # from astropy.coordinates import SkyCoord
 
+import numpy as np
+
 
 class Exposure:
     pass
@@ -50,6 +52,10 @@ class Image:
     def data( self ):
         """The image data, a 2d numpy array."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement data" )
+
+    @data.setter
+    def data( self, new_value ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement data setter" )
 
     @property
     def noise( self ):
@@ -242,6 +248,13 @@ class OpenUniverse2024FITSImage( Image ):
             self._load_data()
         return self._data
 
+    @data.setter
+    def data(self, new_value):
+        if isinstance(new_value, np.ndarray) and np.issubdtype(new_value.dtype, np.floating):
+            self._data = new_value
+        else:
+            raise ValueError("Data must be a numpy array of floats.")
+
     def _load_data( self ):
         """Loads the data from disk."""
         raise NotImplementedError( "Do." )
@@ -255,6 +268,7 @@ class OpenUniverse2024FITSImage( Image ):
         SNLogger.info( f"Reading FITS file {self.inputs.path}" )
         with fits.open( self.inputs.path ) as hdul:
             self._wcs = AstropyWCS( hdul[1].header )
+
             if which == 'all':
                 return [ hdul[1].data, hdul[2].data, hdul[3].data ]
             elif which == 'data':
@@ -278,6 +292,7 @@ class OpenUniverse2024FITSImage( Image ):
             with fits.open(self.inputs.path) as hdul:
                 self._header = hdul[1].header
         return self._header
+
 
     @property
     def image_shape(self):
