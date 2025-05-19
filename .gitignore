@@ -1,10 +1,15 @@
-# Emacs backup files
+# Emcas backup files
 **~
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+.DS_Store
+.project
+.pydevproject
+.vscode
+*code-workspace
 
 # C extensions
 *.so
@@ -24,11 +29,13 @@ sdist/
 var/
 wheels/
 share/python-wheels/
+pip-wheel-metadata/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 snappl/_version.py
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -46,6 +53,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+.tmp/
 nosetests.xml
 coverage.xml
 *.cover
@@ -80,6 +88,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*/.ipynb_checkpoints/*.ipynb
 
 # IPython
 profile_default/

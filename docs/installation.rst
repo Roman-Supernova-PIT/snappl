@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install snappl, run this command in your terminal:
+To install roman_snpit_snappl, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install snappl
+    $ pip install roman_snpit_snappl
 
-This is the preferred method to install snappl, as it will always install the most recent stable release.
+This is the preferred method to install roman_snpit_snappl, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,26 +26,33 @@ you through the process.
 From sources
 ------------
 
-The sources for snappl can be downloaded from the `Github repo`_.
+The sources for roman_snpit_snappl can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git@github.com:Roman-Supernov-PIT/snappl.git
+    $ git clone git@github.com:Roman-Supernova-PIT/roman_snpit_snappl.git
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/Roman-Supernova-PIT/snappl/snappl/tarball/master
+    $ curl -OJL https://github.com/Roman-Supernova-PIT/roman_snpit_snappl/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
-    $ python setup.py install
+    $ pip install .
+
+If you would like to do an editable install:
+
+.. code-block:: console
+
+    $ pip install -e .
+    $ pip install -e .[docs]  # install document build packages during install
 
 
-.. _Github repo: https://github.com/Roman-Supernova-PIT/snappl/snappl
-.. _tarball: https://github.com/Roman-Supernova-PIT/snappl/snappl/tarball/master
+.. _Github repo: https://github.com/Roman-Supernova-PIT/roman_snpit_snappl
+.. _tarball: https://github.com/Roman-Supernova-PIT/roman_snpit_snappl/tarball/master
