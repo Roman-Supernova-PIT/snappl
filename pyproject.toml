@@ -1,5 +1,5 @@
 [project]
-name = "snappl"
+name = "roman_snpit_snappl"
 description = "Photometry utilities for the Roman SNPIT"
 requires-python = ">=3.11"
 dynamic = ["version"]
@@ -167,12 +167,12 @@ select = [ 'F', 'E101', 'E111', 'E112', 'E113', 'E115', 'E117',
 # This can be .rst or .md, towncrier's default template works with both.
 filename = "CHANGES.rst"
 directory = "changes"
-package = "snappl"
+package = "roman_snpit_snappl"
 package_dir = "snappl"
 title_format = "{version} ({project_date})"
 ignore = [".gitkeep"]
 wrap = true
-issue_format = "`#{issue} <https://github.com/Roman-Supernova-PIT/roman_snpit_snappl/issues/{issue}>`_"
+issue_format = "`#{issue} <https://github.com/Roman-Supernova-PIT/snappl/issues/{issue}>`_"
 
 [[tool.towncrier.type]]
 directory = "/"
