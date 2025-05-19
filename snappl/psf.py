@@ -3,6 +3,7 @@ import base64
 
 import numpy as np
 
+
 class PSF:
     def __init__( self, *args, **kwargs ):
         # Will define a PSF with a nominal position
@@ -34,7 +35,7 @@ class PSF:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_stamp" )
 
-        
+
 
 class OversampledImagePSF( PSF ):
     @classmethod
@@ -62,7 +63,7 @@ class OversampledImagePSF( PSF ):
         """
         # TODO : implement enforce_odd
         # TODO : enforce square
-        
+
         psf = cls()
         psf._data = data
         if normalize:
@@ -75,7 +76,7 @@ class OversampledImagePSF( PSF ):
     @property
     def x0( self ):
         return self._x0
-    
+
     @property
     def y0( self ):
         return self._x0
@@ -92,7 +93,7 @@ class OversampledImagePSF( PSF ):
     def clip_size( self ):
         """The size of the PSF image clip at image resolution."""
         return int( np.floor( self._data.shape[0] / self._oversamp ) )
-        
+
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
         self._data = None
@@ -103,7 +104,7 @@ class OversampledImagePSF( PSF ):
     def get_stamp( self, x=None, y=None, normalize=True ):
         x = float(x) if x is not None else self._x0
         y = float(y) if y is not None else self._y0
-        
+
         # round() isn't the right thing to use here, because it will
         #   behave differently when x - round(x) = 0.5 based on whether
         #   floor(x) is even or odd.  What we *want* is for the psf to
@@ -174,12 +175,10 @@ class OversampledImagePSF( PSF ):
             clip /= clip.sum()
 
         return clip
-        
 
 
-        
 class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
-    
+
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
@@ -190,7 +189,7 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
         self._oversamp = y['oversamp']
         self._data = np.frombuffer( base64.b64decode( y['data'] ), dtype=y['dtype'] )
         self._data = self._data.reshape( ( y['shape0'], y['shape1'] ) )
-        
+
     def write( self, filepath ):
         out = { 'x0': float( self._x0 ),
                 'y0': float( self._y0 ),

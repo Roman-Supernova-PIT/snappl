@@ -5,7 +5,8 @@ import pytest
 
 import numpy as np
 
-from snappl.psf import OversampledImagePSF, YamlSerialized_OversampledImagePSF
+from snappl.psf import YamlSerialized_OversampledImagePSF
+
 
 @pytest.fixture
 def testpsf():
@@ -13,6 +14,7 @@ def testpsf():
     arr = loaded['args']
     mypsf = YamlSerialized_OversampledImagePSF.create( arr, 3832., 255., oversample_factor=3. )
     return mypsf
+
 
 def test_write( testpsf ):
     barf = pathlib.Path( ''.join( random.choices( 'abcdefghijklmnopqrstuvwxyz', k=10 ) ) )
@@ -29,6 +31,7 @@ def test_write( testpsf ):
         assert isinstance( y['data'], str )
     finally:
         barf.unlink( missing_ok=True )
+
 
 def test_read( testpsf ):
     barf = pathlib.Path( ''.join( random.choices( 'abcdefghijklmnopqrstuvwxyz', k=10 ) ) )

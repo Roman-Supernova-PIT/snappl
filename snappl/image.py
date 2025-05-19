@@ -6,39 +6,20 @@ from astropy.nddata.utils import Cutout2D
 from snpit_utils.logger import SNLogger
 
 from astropy.wcs import WCS as AstropyWCS
-from astropy.coordinates import SkyCoord
-from astropy import units as u
+# from astropy.coordinates import SkyCoord
 
 
 class Exposure:
     pass
 
+
 class OpenUniverse2024Exposure:
     def __init__( self, pointing ):
         self.pointing = pointing
 
+
 class Image:
-    """Cole did this (with software):
-                    ___
-                   / _ \___  __ _  ___ ____
-                  / , _/ _ \/  ' \/ _ `/ _ \
-                 /_/|_|\___/_/_/_/\_,_/_//_/
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣔⣴⣦⣔⣠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⣿⣭⣿⣟⣿⣿⣿⣅⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣾⣷⣾⣿⣿⣿⣿⣿⣿⣿⡶⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣄⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠄⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⠤⢤⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⢒⣿⣿⣿⣠⠋⠀⠀⠀⠀⠀⠀⣀⣀⠤⠶⠿⠿⠛⠿⠿⠿⢻⢿⣿⣿⣿⠿⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⡞⢀⣿⣿⣿⡟⠃⠀⠀⠀⣀⡰⠶⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠀⠃⠘⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠘⢧⣤⣈⣡⣤⠤⠴⠒⠊⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-
-
-                 _____  __     ___  __________
-                / __/ |/ /    / _ \/  _/_  __/
-               _\ \/    /    / ___// /  / /
-              /___/_/|_/    /_/  /___/ /_/
-
-       """
+    """Encapsulates a single 2d image."""
 
     data_array_list = [ 'all', 'data', 'noise', 'flags' ]
 
@@ -162,26 +143,19 @@ class Image:
 
     @property
     def coord_center(self):
-        '''
-        Get the RA and DEC at the center of the image.
+        """Get the RA and DEC at the center of the image.
+
         Note: By fetching the center from the WCS and not the header,
               this means that this works for cutouts too.
 
         Returns:
         coord_center: array of floats, shape (2,) [RA, DEC] in degrees.
-        '''
+        """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement coord_center" )
 
     def get_image_shape(self):
         """Get the shape of the image."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_image_shape" )
-
-    @property
-    def band( self ):
-        """Band (str)"""
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement band" )
-
-
 
 
     #     # THE REST OF THIS MAY GO AWAY
@@ -235,7 +209,8 @@ class Image:
     #     psf_path = self.pipeline.temp_dir / f"psf_{self.image_name}"
     #     get_imsim_psf( self.image_path, self.pipeline.ra, self.pipeline.dec, self.pipeline.band,
     #                    self.pointing, self.sca,
-    #                    size=201, psf_path=psf_path, config_yaml_file=self.pipeline.galsim_config_file, include_photonOps=True )
+    #                    size=201, psf_path=psf_path, config_yaml_file=self.pipeline.galsim_config_file,
+    #                    include_photonOps=True )
     #     return psf_path
 
     # def save_psf_path( self, psf_path ):
@@ -273,7 +248,8 @@ class OpenUniverse2024FITSImage( Image ):
 
     def get_data( self, which='all' ):
         if self._is_cutout:
-            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported.")
+            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
+                                "Currently not supported.")
         if which not in Image.data_array_list:
             raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
         SNLogger.info( f"Reading FITS file {self.inputs.path}" )
@@ -318,13 +294,14 @@ class OpenUniverse2024FITSImage( Image ):
 
     @property
     def coord_center(self):
-        '''
+        """The RA and Dec at the cnter of the image (
         Get the RA and DEC at the center of the image.
         Works for cutouts too.
         Returns:
         coord_center: array of floats, shape (2,) [RA, DEC] in degrees.
-        '''
+        """
         wcs = self.get_wcs()
+        # ...this next method isn't defined for our WCS objects.  Something is broken.
         coord_center = wcs.wcs_pix2world(
             self.get_image_shape()[0] // 2,
             self.get_image_shape()[1] // 2,
@@ -333,19 +310,12 @@ class OpenUniverse2024FITSImage( Image ):
 
     @property
     def band(self):
-        '''
-        Return the band the image is taken in.
-
-        Returns:
-        band: str
-        '''
+        """The band the image is taken in (str)."""
         header = self.get_header()
         return header['FILTER'].strip()
 
     def get_cutout(self, x, y, xsize, ysize=None):
-        '''
-        Creates a new snappl image object that is a cutout of the original
-        image, at a location in pixel-space.
+        """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
 
         Parameters
         ----------
@@ -361,7 +331,8 @@ class OpenUniverse2024FITSImage( Image ):
         -------
         cutout : snappl.image.Image
             A new snappl image object that is a cutout of the original image.
-        '''
+
+        """
         if ysize is None:
             ysize = xsize
         if xsize % 2 != 1 or ysize % 2 != 1:
@@ -369,7 +340,7 @@ class OpenUniverse2024FITSImage( Image ):
                 pixel, you tried to pass a size of {xsize, ysize}.")
         loc = (x, y)
         SNLogger.debug(f'Cutting out at {x , y}')
-        data, noise, flags = self.get_data('all')
+        data, noise, _flags = self.get_data('all')
         astropy_cutout = Cutout2D(data, loc, size=(ysize, xsize), # Astropy asks for this order. Beats me. -Cole
                                    mode='strict', wcs=self.get_wcs())
         astropy_noise = Cutout2D(noise, loc, size=(ysize, xsize),
@@ -384,9 +355,8 @@ class OpenUniverse2024FITSImage( Image ):
         return snappl_cutout
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None):
-        '''
-        Creates a new snappl image object that is a cutout of the original
-        image, at a location in pixel-space.
+        """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
+
         Parameters
         ----------
         ra : float
@@ -402,11 +372,10 @@ class OpenUniverse2024FITSImage( Image ):
         -------
         cutout : snappl.image.Image
             A new snappl image object that is a cutout of the original image.
-        '''
+        """
 
         wcs = self.get_wcs()
         x, y = wcs.wcs_world2pix(ra, dec, 0)  # <--- I DO NOT UNDERSTAND WHY THIS
         # NEEDS TO BE ZERO, BUT THAT MADE THIS NEW FUNCTION AGREE WITH THE
         # OUTPUT OF THE OLD FUNCTION. COLE IS CONFUSED!!!!!
         return self.get_cutout(x, y, xsize, ysize)
-
