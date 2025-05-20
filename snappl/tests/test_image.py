@@ -55,6 +55,29 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
 # ======================================================================
 # FITSImage tests
 
+# Need to use the ou2024image_model fixture here because we need
+#   _get_header, which isn't implemented in FITSImage.  However,
+#   test_cutout is implemented in FITSImage, which is why this test is
+#   here.
+def test_cutout( ou2024image_module ):
+    image = ou2024image_module
+    assert image.image_shape == ( 4088, 4088 )
+    cutout = image.get_cutout( 200, 400, 11 )
+    assert isinstance( cutout, FITSImage )
+    assert isinstance( cutout._data, np.ndarray )
+    assert cutout.image_shape == ( 11, 11 )
+    # Remember numpy arrays are indexed y, x
+    assert np.all( cutout._data == image._data[ 395:406, 195:206  ] )
+    assert np.all( cutout._noise == image._noise[ 395:406, 195:206 ] )
+    assert np.all( cutout._flags == image._flags[ 395:406 , 195:206 ] )
+
+    with pytest.raises( astropy.nddata.utils.PartialOverlapError ):
+        _ = image.get_cutout( 5, 2048, 21 )
+
+    with pytest.raises( astropy.nddata.utils.PartialOverlapError ):
+        _ = image.get_cutout( 2048, 4085, 21 )
+
+
 @pytest.mark.skip( reason="Currently broken, see RuntimeError in image.py" )
 def test_get_ra_dec_cutout( fitsimage_module ):
     image = fitsimage_module
@@ -166,13 +189,16 @@ def test_get_data( ou2024image ):
             assert isinstance( res[0], np.ndarray )
             assert res[0].shape == ( 4088, 4088 )
             assert res[0] is getattr( ou2024image, f"_{prop}" )
+            assert isinstance( ou2024image._header, astropy.io.fits.header.Header )
             for otherprop in props:
                 if otherprop == prop:
                     continue
                 assert getattr( ou2024image, f"_{otherprop}" ) is None
             setattr( ou2024image, f"_{prop}", None)
+            setattr( ou2024image, "_header", None )
 
         data3, noise3, flags3 = ou2024image.get_data( cache=True )
+        assert isinstance( ou2024image._header, astropy.io.fits.header.Header )
         assert np.all( data3 == data )
         assert np.all( noise3 == noise )
         assert np.all( flags3 == flags )
@@ -195,4 +221,18 @@ def test_get_data( ou2024image ):
         assert np.all( flags4 == flags )
     finally:
         # ...I don't think there's anything needing cleaning up
+        # We didn't use the module-scope fixture
         pass
+
+
+def test_band( ou2024image_module ):
+    assert ou2024image_module.band == 'F184'
+
+
+def test_get_header( ou2024image, ou2024image_module ):
+    assert isinstance( ou2024image_module._header, astropy.io.fits.header.Header )
+    assert ou2024image_module._header == ou2024image_module._get_header()
+    assert ou2024image._header is None
+    hdr = ou2024image._get_header()
+    assert isinstance( hdr, astropy.io.fits.header.Header )
+    assert hdr is ou2024image._header

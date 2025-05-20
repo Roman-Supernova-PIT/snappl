@@ -1,14 +1,12 @@
 import types
 
+import numpy as np
 from astropy.io import fits
 from astropy.nddata.utils import Cutout2D
-
-from snpit_utils.logger import SNLogger
-
-from astropy.wcs import WCS as AstropyWCS
 # from astropy.coordinates import SkyCoord
 
-import numpy as np
+from snpit_utils.logger import SNLogger
+from snappl.wcs import AstropyWCS
 
 
 class Exposure:
@@ -310,7 +308,7 @@ class FITSImage( Numpy2DImage ):
         """tuple: (ny, nx) shape of image"""
 
         if not self._is_cutout:
-            hdr = self.get_header()
+            hdr = self._get_header()
             self._image_shape = ( hdr['NAXIS1'], hdr['NAXIS2'] )
             return self._image_shape
 
@@ -335,7 +333,7 @@ class FITSImage( Numpy2DImage ):
     def get_wcs( self ):
         if self._wcs is None:
             hdr = self._get_header()
-            self._wcs = AstropyWCS( hdr )
+            self._wcs = AstropyWCS.from_header( hdr )
         return self._wcs
 
     def get_cutout(self, x, y, xsize, ysize=None):
@@ -373,22 +371,20 @@ class FITSImage( Numpy2DImage ):
             raise ValueError( f"Size must be odd for a well defined central "
                               f"pixel, you tried to pass a size of {xsize, ysize}.")
 
-        # IS THIS RIGHT?  Or should it be (y, x)?  TODO : do an experiment with
-        #   Cutout2D to verify.
-        loc = (x, y)
         SNLogger.debug(f'Cutting out at {x , y}')
-        data, noise, flags = self.get_data('all')
+        data, noise, flags = self.get_data( 'all', always_reload=False )
 
         wcs = self.get_wcs()
         if ( wcs is not None ) and ( not isinstance( wcs, AstropyWCS ) ):
             raise TypeError( "Error, FITSImage.get_cutout only works with AstropyWCS wcses" )
+        apwcs = None if wcs is None else wcs._wcs
 
-        astropy_cutout = Cutout2D(data, loc, size=(ysize, xsize), # Astropy asks for this order. Beats me. -Cole
-                                   mode='strict', wcs=wcs)
-        astropy_noise = Cutout2D(noise, loc, size=(ysize, xsize),
-                                   mode='strict', wcs=wcs)
-        astropy_flags = Cutout2D(flags, loc, size=(ysize, xsize),
-                                 mode='string', wcs=wcs)
+        astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), # Astropy asks for this order. Beats me. -Cole
+                                   mode='strict', wcs=apwcs)
+        astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize),
+                                   mode='strict', wcs=apwcs)
+        astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize),
+                                 mode='strict', wcs=apwcs)
 
         snappl_cutout = self.__class__(self.inputs.path, self.inputs.exposure, self.inputs.sca)
         snappl_cutout._data = astropy_cutout.data
@@ -464,6 +460,8 @@ class OpenUniverse2024FITSImage( FITSImage ):
 
         SNLogger.info( f"Reading FITS file {self.inputs.path}" )
         with fits.open( self.inputs.path ) as hdul:
+            if cache:
+                self._header = hdul[1].header
             if which == 'all':
                 imgs = [ hdul[1].data, hdul[2].data, hdul[3].data ]
                 if cache:
@@ -496,5 +494,5 @@ class OpenUniverse2024FITSImage( FITSImage ):
     @property
     def band(self):
         """The band the image is taken in (str)."""
-        header = self.get_header()
+        header = self._get_header()
         return header['FILTER'].strip()
