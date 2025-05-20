@@ -20,13 +20,33 @@ class OpenUniverse2024Exposure:
         self.pointing = pointing
 
 
+# ======================================================================
+# The base class for all images.  This is not useful by itself, you need
+#   to instantiate a subclass.  However, everything that you call on an
+#   object you instantiate should have its interface defined in this
+#   class.
+
 class Image:
     """Encapsulates a single 2d image."""
 
     data_array_list = [ 'all', 'data', 'noise', 'flags' ]
 
     def __init__( self, path, exposure, sca ):
-        """type things here
+        """Instantiate an image.  You probably don't want to do that.
+
+        This is an abstract base class that has limited functionality.
+        You probably want to instantiate a subclass.
+
+        For all implementations, the properties data, noise, and flags
+        are lazy-loaded.  That is, they start empty, but when you access
+        them, an internal buffer gets loaded with that data.  This means
+        it can be very easy for lots of memory to get used without your
+        realizing it.  There are a couple of solutions.  The first, is
+        to call Image.free() when you're sure you don't need the data
+        any more, or if you know you want to get rid of it for a while
+        and re-read it from disk later.  The second is just not to
+        access the data, noise, and flags properties, instead use
+        Image.get_data(), and manage the data object lifetime yourself.
 
         Parameters
         ----------
@@ -35,7 +55,8 @@ class Image:
             that allows the class to find the image.
 
           exposure : Exposure (or instance of Exposure subclass)
-            The exposure this image is associated with
+            The exposure this image is associated with, or None if it's
+            not associated with an Exposure (or youdon't care)
 
           sca : int
             The Sensor Chip Assembly that would be called the
@@ -47,6 +68,8 @@ class Image:
         self.inputs.path = path
         self.inputs.exposure = exposure
         self.inputs.sca = sca
+        self._wcs = None      # a BaseWCS object (in wcs.py)
+        self._is_coutout = False
 
     @property
     def data( self ):
@@ -62,10 +85,23 @@ class Image:
         """The 1σ pixel noise, a 2d numpy array."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement noise" )
 
+    @noise.setter
+    def nosie( self, new_value ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement noise setter" )
+
     @property
     def flags( self ):
         """An integer 2d numpy array of pixel masks / flags TBD"""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement flags" )
+
+    @flags.setter
+    def flags( self, new_value ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement flags setter" )
+
+    @property
+    def image_shape( self ):
+        """Tuple: (ny, nx) pixel size of image."""
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement image_shape" )
 
     @property
     def sky_level( self ):
@@ -92,27 +128,33 @@ class Image:
         """Position angle in degrees east of north (or what)?"""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement position_angle" )
 
-    @property
-    def image_shape( self ):
-        """ny, nx pixel size of the image"""
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement image_shape" )
-
-
     def fraction_masked( self ):
         """Fraction of pixels that are masked."""
         raise NotImplementedError( "Do.")
 
-    def get_data( self, which='all' ):
+    def get_data( self, which='all', always_reload=False ):
         """Read the data from disk and return one or more 2d numpy arrays of data.
+
+        Does *not* do any caching of the read data inside the object
+        (e.g. what you'd access with the data, noise, and flags
+        properties).  However, may *used* cached data; see always_reload
+        below.
 
         Parameters
         ----------
           which : str
             What to read:
-              all : data, noise, and flags
-              data :
-              noise :
-               flags :
+              'data' : just the image data
+              'noise; : just the noise data
+              'flags' : just the flags data
+              'all' : data, noise, and flags
+
+          always_reload: bool, default False
+            Whether this is supported depends on the subclass.  If this
+            is false, then get_data() has the option of returning the
+            values of self.data, self.noise, and/or self.flags instead
+            of always loading the data.  If this is True, then
+            get_data() will ignore the self._data et al. properties.
 
         The data read not stored in the class, so when the caller goes
         out of scope, the data will be freed (unless the caller saved it
@@ -126,16 +168,19 @@ class Image:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_data" )
 
 
+    def free( self ):
+        """Try to free memory."""
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement free" )
+
     def get_wcs( self ):
-        """Get an abstract WCS thingy
+        """Get image WCS.  Will be an object of type BaseWCS (from wcs.py) (really likely a subclass).
 
         Returns
         -------
-          snappl.wcs.WCS
+          snappl.wcs.BaseWCS
 
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
-
 
     def get_cutout(self, ra, dec, size):
         """Make a cutout of the image at the given RA and DEC.
@@ -149,98 +194,22 @@ class Image:
 
     @property
     def coord_center(self):
-        """Get the RA and DEC at the center of the image.
-
-        Note: By fetching the center from the WCS and not the header,
-              this means that this works for cutouts too.
-
-        Returns:
-        coord_center: array of floats, shape (2,) [RA, DEC] in degrees.
-        """
+        """[RA, DEC] (both floats) in degrees at the center of the image"""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement coord_center" )
-
-    def get_image_shape(self):
-        """Get the shape of the image."""
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_image_shape" )
-
-
-    #     # THE REST OF THIS MAY GO AWAY
-
-    #     self.pipeline = pipeline
-    #     self.logger = self.pipeline.logger
-    #     self.sims_dir = pathlib.Path( os.getenv( 'SIMS_DIR', None ) )
-    #     if self.sims_dir is None:
-    #         raise ValueError( "Env var SIMS_DIR must be set" )
-    #     self.image_path = self.sims_dir / path
-    #     self.image_name = self.image_path.name
-    #     if self.image_name[-3:] == '.gz':
-    #         self.image_name = self.image_name[:-3]
-    #     if self.image_name[-5:] != '.fits':
-    #         raise ValueError( f"Image name {self.image_name} doesn't end in .fits, I don't know how to cope." )
-    #     self.basename = self.image_name[:-5]
-    #     self.pointing = pointing
-    #     self.sca = sca
-    #     self.mjd = mjd
-    #     self.psf_path = None
-    #     self.detect_mask_path = None
-    #     self.skyrms = None
-    #     self.skysub_path = None
-
-    #     self.decorr_psf_path = {}
-    #     self.decorr_zptimg_path = {}
-    #     self.decorr_diff_path = {}
-    #     self.zpt_stamp_path = {}
-    #     self.diff_stamp_path = {}
-
-    # def run_sky_subtract( self ):
-    #     try:
-    #         self.logger.debug( f"Process {multiprocessing.current_process().pid} run_sky_subtract {self.image_name}" )
-    #         self.skysub_path = self.pipeline.temp_dir / f"skysub_{self.image_name}"
-    #         self.detmask_path = self.pipeline.temp_dir / f"detmask_{self.image_name}"
-    #         self.skyrms = sky_subtract( self.image_path, self.skysub_path, self.detmask_path,
-    #                                     temp_dir=self.pipeline.temp_dir, force=self.pipeline.force_sky_subtract )
-    #         return ( self.skysub_path, self.detmask_path, self.skyrms )
-    #     except Exception as ex:
-    #         self.logger.error( f"Process {multiprocessing.current_process().pid} exception: {ex}" )
-    #         raise
-
-    # def save_sky_subtract_info( self, info ):
-    #     self.logger.debug( f"Saving sky_subtract info for path {info[0]}" )
-    #     self.skysub_path = info[0]
-    #     self.detmask_path = info[1]
-    #     self.skyrms = info[2]
-
-
-    # def run_get_imsim_psf( self ):
-    #     psf_path = self.pipeline.temp_dir / f"psf_{self.image_name}"
-    #     get_imsim_psf( self.image_path, self.pipeline.ra, self.pipeline.dec, self.pipeline.band,
-    #                    self.pointing, self.sca,
-    #                    size=201, psf_path=psf_path, config_yaml_file=self.pipeline.galsim_config_file,
-    #                    include_photonOps=True )
-    #     return psf_path
-
-    # def save_psf_path( self, psf_path ):
-    #     self.psf_path = psf_path
 
 
 # ======================================================================
-# OpenUniverse 2024 Images are gzipped FITS files
-#  HDU 0 : (something, no data)
-#  HDU 1 : SCI (32-bit float)
-#  HDU 2 : ERR (32-bit float)
-#  HDU 3 : DQ (32-bit integer)
+# Lots of classes will probably internally store all of data, noise, and
+#   flags as 2d numpy arrays.  Common code for those classes is here.
 
-class OpenUniverse2024FITSImage( Image ):
+class Numpy2DImage( Image ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
         self._data = None
         self._noise = None
         self._flags = None
-        self._wcs = None
-        self._is_cutout = False
         self._image_shape = None
-        self._header = None
 
     @property
     def data( self ):
@@ -250,56 +219,90 @@ class OpenUniverse2024FITSImage( Image ):
 
     @data.setter
     def data(self, new_value):
-        if isinstance(new_value, np.ndarray) and np.issubdtype(new_value.dtype, np.floating):
+        if ( isinstance(new_value, np.ndarray)
+             and np.issubdtype(new_value.dtype, np.floating)
+             and len(new_value.shape) ==2
+            ):
             self._data = new_value
         else:
-            raise ValueError("Data must be a numpy array of floats.")
+            raise TypeError( "Data must be a 2d numpy array of floats." )
+
+    @property
+    def noise( self ):
+        if self._noise is None:
+            self._load_data()
+        return self._noise
+
+    @noise.setter
+    def noise( self, new_value ):
+        if ( isinstance( new_value, np.ndarray )
+             and np.issubdtype( new_value.dtype, np.floating )
+             and len( new_value.shape ) == 2
+            ):
+            self._noise = new_value
+        else:
+            raise TypeError( "Noise must be a 2d numpy array of floats." )
+
+    @property
+    def flags( self, new_value ):
+        if ( isinstance( new_value, np.ndarray )
+             and np.issubdtype( new_value.dtype, np.integer )
+             and len( new_value.shape ) == 2
+            ):
+            self._flags = new_value
+        else:
+            raise TypeError( "Flags must be a 2d numpy array of integers." )
+
+    @property
+    def image_shape( self ):
+        """Subclasses probably want to override this!
+
+        This implementation accesses the .data property, which will load the data
+        from disk if it hasn't been already.  Actual images are likely to have
+        that information availble in a manner that doesn't require loading all
+        the image data (e.g. in a header), so subclasses should do that.
+
+        """
+        if self._image_shape is None:
+            self._image_shape = self.data.shape
+        return self._image_shape
 
     def _load_data( self ):
-        """Loads the data from disk."""
-        raise NotImplementedError( "Do." )
+        """Loads (or reloads) the data from disk."""
+        imgs = self.get_data()
+        self._data = imgs[0]
+        self._noise = imgs[1]
+        self._flags = imgs[2]
 
-    def get_data( self, which='all' ):
-        if self._is_cutout:
-            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
-                                "Currently not supported.")
-        if which not in Image.data_array_list:
-            raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
-        SNLogger.info( f"Reading FITS file {self.inputs.path}" )
-        with fits.open( self.inputs.path ) as hdul:
-            self._wcs = AstropyWCS( hdul[1].header )
+    def free( self ):
+        self._data = None
+        self._noise = None
+        self._flags = None
 
-            if which == 'all':
-                return [ hdul[1].data, hdul[2].data, hdul[3].data ]
-            elif which == 'data':
-                return [ hdul[1].data ]
-            elif which == 'noise':
-                return [ hdul[2].data ]
-            elif which == 'flags':
-                return [ hdul[3].data ]
-            else:
-                raise RuntimeError( f"{self.__class__.__name__} doesn't understand data plane {which}" )
 
-    def get_wcs( self ):
-        if self._wcs is None:
-            with fits.open( self.inputs.path ) as hdul:
-                self._wcs = AstropyWCS( hdul[1].header )
-        return self._wcs
+# ======================================================================
+# A base class for FITSImages which use an AstropyWCS wcs.  Not useful
+#   by itself, because which image you load will have different
+#   assumptions about which HDU holds image, weight, flags, plus header
+#   information will be different etc.  However, there will be some
+#   shared code between all FITS implementations, so that's here.
 
-    def _get_header(self):
-        """Get the header of the image."""
-        if self._header is None:
-            with fits.open(self.inputs.path) as hdul:
-                self._header = hdul[1].header
-        return self._header
+class FITSImage( Numpy2DImage ):
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
 
+        self._data = None
+        self._noise = None
+        self._flags = None
+        self._header = None
 
     @property
     def image_shape(self):
-        """Get the shape of the image."""
+        """tuple: (ny, nx) shape of image"""
+
         if not self._is_cutout:
-            self._header = self.get_header()
-            self._image_shape = (self._header['NAXIS1'], self._header['NAXIS2'])
+            hdr = self.get_header()
+            self._image_shape = ( hdr['NAXIS1'], hdr['NAXIS2'] )
             return self._image_shape
 
         if self._image_shape is None:
@@ -309,28 +312,27 @@ class OpenUniverse2024FITSImage( Image ):
 
     @property
     def coord_center(self):
-        """The RA and Dec at the cnter of the image (
-        Get the RA and DEC at the center of the image.
-        Works for cutouts too.
-        Returns:
-        coord_center: array of floats, shape (2,) [RA, DEC] in degrees.
-        """
+        """[ RA and Dec ] at the cnter of the image."""
+
+        raise RuntimeError( "This is broken right now, will be fixed after we clean up and document the WCS classes." )
         wcs = self.get_wcs()
         # ...this next method isn't defined for our WCS objects.  Something is broken.
-        coord_center = wcs.wcs_pix2world(
-            self.get_image_shape()[0] // 2,
-            self.get_image_shape()[1] // 2,
-            1)
+        coord_center = wcs.wcs_pix2world( self.image_shape[1] //2, self.image_shape[0] //2, 1 )
         return coord_center
 
-    @property
-    def band(self):
-        """The band the image is taken in (str)."""
-        header = self.get_header()
-        return header['FILTER'].strip()
+    def _get_header( self ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_header()" )
+
+    def get_wcs( self ):
+        if self._wcs is None:
+            hdr = self._get_header()
+            self._wcs = AstropyWCS( hdr )
+        return self._wcs
 
     def get_cutout(self, x, y, xsize, ysize=None):
         """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
+
+        This implementation (in FITSImage) assumes that the image WCS is an AstropyWCS.
 
         Parameters
         ----------
@@ -342,29 +344,48 @@ class OpenUniverse2024FITSImage( Image ):
             Width of the cutout in pixels.
         ysize : int
             Height of the cutout in pixels. If None, set to xsize.
+
         Returns
         -------
         cutout : snappl.image.Image
             A new snappl image object that is a cutout of the original image.
 
         """
+        if not all( [ isinstance( x, (int, np.integer) ),
+                      isinstance( y, (int, np.integer) ),
+                      isinstance( xsize, (int, np.integer) ),
+                      ( ysize is None or isinstance( ysize, (int, np.integer) ) )
+                     ] ):
+            raise TypeError( "All of x, y, xsize, and ysize must be integers." )
+
         if ysize is None:
             ysize = xsize
         if xsize % 2 != 1 or ysize % 2 != 1:
-            raise ValueError(f"Size must be odd for a well defined central \
-                pixel, you tried to pass a size of {xsize, ysize}.")
+            raise ValueError( f"Size must be odd for a well defined central "
+                              f"pixel, you tried to pass a size of {xsize, ysize}.")
+
+        # IS THIS RIGHT?  Or should it be (y, x)?  TODO : do an experiment with
+        #   Cutout2D to verify.
         loc = (x, y)
         SNLogger.debug(f'Cutting out at {x , y}')
-        data, noise, _flags = self.get_data('all')
+        data, noise, flags = self.get_data('all')
+
+        wcs = self.get_wcs()
+        if ( wcs is not None ) and ( not isinstance( wcs, AstropyWCS ) ):
+            raise TypeError( "Error, FITSImage.get_cutout only works with AstropyWCS wcses" )
+
         astropy_cutout = Cutout2D(data, loc, size=(ysize, xsize), # Astropy asks for this order. Beats me. -Cole
-                                   mode='strict', wcs=self.get_wcs())
+                                   mode='strict', wcs=wcs)
         astropy_noise = Cutout2D(noise, loc, size=(ysize, xsize),
-                                   mode='strict', wcs=self.get_wcs())
+                                   mode='strict', wcs=wcs)
+        astropy_flags = Cutout2D(flags, loc, size=(ysize, xsize),
+                                 mode='string', wcs=wcs)
 
         snappl_cutout = self.__class__(self.inputs.path, self.inputs.exposure, self.inputs.sca)
         snappl_cutout._data = astropy_cutout.data
-        snappl_cutout._wcs = astropy_cutout.wcs
+        snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
         snappl_cutout._noise = astropy_noise.data
+        snappl_cutout._flags = astropy_flags.data
         snappl_cutout._is_cutout = True
 
         return snappl_cutout
@@ -389,8 +410,71 @@ class OpenUniverse2024FITSImage( Image ):
             A new snappl image object that is a cutout of the original image.
         """
 
+        raise RuntimeError( "This is broken right now, will be fixed after we clean up and document the WCS classes." )
         wcs = self.get_wcs()
         x, y = wcs.wcs_world2pix(ra, dec, 0)  # <--- I DO NOT UNDERSTAND WHY THIS
         # NEEDS TO BE ZERO, BUT THAT MADE THIS NEW FUNCTION AGREE WITH THE
         # OUTPUT OF THE OLD FUNCTION. COLE IS CONFUSED!!!!!
         return self.get_cutout(x, y, xsize, ysize)
+
+
+# ======================================================================
+# OpenUniverse 2024 Images are gzipped FITS files
+#  HDU 0 : (something, no data)
+#  HDU 1 : SCI (32-bit float)
+#  HDU 2 : ERR (32-bit float)
+#  HDU 3 : DQ (32-bit integer)
+
+class OpenUniverse2024FITSImage( FITSImage ):
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
+
+    def get_data( self, which='all', always_reload=False ):
+        if self._is_cutout:
+            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
+                                "Currently not supported.")
+        if which not in Image.data_array_list:
+            raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
+
+        if not always_reload:
+            if ( ( which == 'all' )
+                 and ( self._data is not None )
+                 and ( self._noise is not None )
+                 and ( self._flags is not None )
+                ):
+                return [ self._data, self._noise, self._flags ]
+
+            if ( which == 'data' ) and ( self._data is not None ):
+                return [ self._data ]
+
+            if ( which == 'noise' ) and ( self._noise is not None ):
+                return [ self._noise ]
+
+            if ( which == 'flags' ) and ( self._flags is not None ):
+                return [ self._flags ]
+
+        SNLogger.info( f"Reading FITS file {self.inputs.path}" )
+        with fits.open( self.inputs.path ) as hdul:
+            if which == 'all':
+                return [ hdul[1].data, hdul[2].data, hdul[3].data ]
+            elif which == 'data':
+                return [ hdul[1].data ]
+            elif which == 'noise':
+                return [ hdul[2].data ]
+            elif which == 'flags':
+                return [ hdul[3].data ]
+            else:
+                raise RuntimeError( f"{self.__class__.__name__} doesn't understand data plane {which}" )
+
+    def _get_header(self):
+        """Get the header of the image."""
+        if self._header is None:
+            with fits.open(self.inputs.path) as hdul:
+                self._header = hdul[1].header
+        return self._header
+
+    @property
+    def band(self):
+        """The band the image is taken in (str)."""
+        header = self.get_header()
+        return header['FILTER'].strip()

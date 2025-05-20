@@ -15,8 +15,8 @@ class BaseWCS:
 
 
 class AstropyWCS(BaseWCS):
-    def __init__( self ):
-        self._wcs = None
+    def __init__( self, apwcs=None ):
+        self._wcs = apwcs
 
     @classmethod
     def from_header( cls, header ):
