@@ -9,3 +9,4 @@ prune snappl/_version.py
 include LICENSE
 include README.rst
 include pyproject.toml
+prune snappl/tests
