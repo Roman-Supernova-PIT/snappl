@@ -1,65 +1,30 @@
 import pytest
-import pathlib
 
 import numpy as np
 import astropy
 
-from snappl.image import FITSImage, OpenUniverse2024FITSImage
-
-
-@pytest.fixture( scope='module' )
-def ou2024imagepath():
-    return str(pathlib.Path(__file__).parent/'image_test_data/Roman_TDS_simple_model_F184_662_11.fits.gz')
-
-
-@pytest.fixture
-def ou2024image( ou2024imagepath ):
-    image = OpenUniverse2024FITSImage( ou2024imagepath, None, 11 )
-    return image
-
-
-# If you use this next fixture, you aren't supposed
-#   to modify the image!  Make sure any modifications
-#   you make are undone at the end of your test.
-@pytest.fixture( scope='module' )
-def ou2024image_module( ou2024imagepath ):
-    """A module-scope test image with data loaded."""
-    image = OpenUniverse2024FITSImage( ou2024imagepath, None, 11 )
-    image.get_data( which='all', cache=True )
-    return image
-
-
-# If you use this next fixture, you aren't supposed
-#   to modify the image!  Make sure any modifications
-#   you make are undone at the end of your test.
-@pytest.fixture( scope='module' )
-def fitsimage_module( ou2024imagepath, ou2024image_module ):
-    # Hack our way into having an object of the FITSImage type.
-    #   Normally you don't instantiate a FITS image, but for our tests
-    #   builde one up.  Never do something like this (i.e. accessing the
-    #   underscored members of an object) in code outside this test
-    #   fixture.
-    fitsim = FITSImage( ou2024imagepath, None, 11 )
-    orighdr = ou2024image_module._header
-    fitsim._header = ou2024image_module._get_header()
-    # Undo the internal change that _get_header made to ou2024image
-    ou2024image._header = orighdr
-    img, noi, flg = ou2024image_module.get_data( always_reload=False )
-    fitsim._data = img
-    fitsim._noise = noi
-    fitsim._flags = flg
-
-    return fitsim
+from snappl.image import FITSImage
+from snappl.wcs import AstropyWCS
 
 
 # ======================================================================
 # FITSImage tests
+# Note that some of these tests use the ou2024image fixtures.
+#   The reason is that the functions we're testing requires some
+#   stuff that isn't defined in FITSImage.  However, all the
+#   tests in this section tests the functions which themselves
+#   are defined in FITSImage.
 
-# Need to use the ou2024image_model fixture here because we need
-#   _get_header, which isn't implemented in FITSImage.  However,
-#   test_cutout is implemented in FITSImage, which is why this test is
-#   here.
-def test_cutout( ou2024image_module ):
+def test_get_wcs( ou2024image, fitsimage_module ):
+    assert isinstance( fitsimage_module._wcs, AstropyWCS )
+    assert fitsimage_module.get_wcs() is fitsimage_module._wcs
+    assert ou2024image._wcs is None
+    wcs = ou2024image.get_wcs()
+    assert isinstance( wcs, AstropyWCS )
+    assert wcs is ou2024image._wcs
+
+
+def test_get_cutout( ou2024image_module ):
     image = ou2024image_module
     assert image.image_shape == ( 4088, 4088 )
     cutout = image.get_cutout( 200, 400, 11 )
@@ -77,32 +42,34 @@ def test_cutout( ou2024image_module ):
     with pytest.raises( astropy.nddata.utils.PartialOverlapError ):
         _ = image.get_cutout( 2048, 4085, 21 )
 
+    with pytest.raises( astropy.nddata.utils.NoOverlapError ):
+        _ = image.get_cutout( 2048, 4200, 21 )
 
-@pytest.mark.skip( reason="Currently broken, see RuntimeError in image.py" )
-def test_get_ra_dec_cutout( fitsimage_module ):
-    image = fitsimage_module
+
+def test_get_ra_dec_cutout( ou2024image_module ):
+    image = ou2024image_module
     ra, dec = 7.5942407686430995, -44.180904726970695
+
+    wcs = image.get_wcs()
+    x, y = wcs.world_to_pixel( ra, dec )
+    x = int( np.floor( x + 0.5 ) )
+    y = int( np.floor( y + 0.5 ) )
+
     cutout = image.get_ra_dec_cutout(ra, dec, 5)
-    comparison_cutout = np.load(str(pathlib.Path(__file__).parent/'image_test_data/test_cutout.npy'),
-                                allow_pickle=True)
-    message = "The cutout does not match the comparison cutout"
-    assert np.array_equal(cutout._data, comparison_cutout), message
-    # I am directly comparing for equality here because these numbers should
-    # never actually change, provided the underlying image is unaltered. -Cole
+    # assert isinstance( cutout, FITSImage )    # Won't work because we didn't pass a FITSImage...
+    assert cutout.image_shape == ( 5, 5 )
+
+    assert np.all( cutout.data == image.data[ y-2:y+3, x-2:x+3 ] )
 
     # Now we intentionally try to get a no overlap error.
-    with pytest.raises(astropy.nddata.utils.NoOverlapError) as excinfo:
+    with pytest.raises(astropy.nddata.utils.NoOverlapError):
         ra, dec = 7.6942407686430995, -44.280904726970695
         cutout = image.get_ra_dec_cutout(ra, dec, 5)
-    message = f"This should have caused a NoOverlapError but was actually {str(excinfo.value)}"
-    assert 'do not overlap' in str(excinfo.value), message
 
     # Now we intentionally try to get a partial overlap error.
-    with pytest.raises(astropy.nddata.utils.PartialOverlapError) as excinfo:
+    with pytest.raises(astropy.nddata.utils.PartialOverlapError):
         ra, dec = 7.69380043,-44.13231831
         cutout = image.get_ra_dec_cutout(ra, dec, 55)
-        message = f"This should have caused a PartialOverlapError but was actually {str(excinfo.value)}"
-        assert 'partial' in str(excinfo.value), message
 
 
 def test_set_data( fitsimage_module ):

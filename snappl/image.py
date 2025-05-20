@@ -319,13 +319,10 @@ class FITSImage( Numpy2DImage ):
 
     @property
     def coord_center(self):
-        """[ RA and Dec ] at the cnter of the image."""
+        """[ RA and Dec ] at the center of the image."""
 
-        raise RuntimeError( "This is broken right now, will be fixed after we clean up and document the WCS classes." )
         wcs = self.get_wcs()
-        # ...this next method isn't defined for our WCS objects.  Something is broken.
-        coord_center = wcs.wcs_pix2world( self.image_shape[1] //2, self.image_shape[0] //2, 1 )
-        return coord_center
+        return wcs.pixel_to_world( self.image_shape[1] //2, self.image_shape[0] //2 )
 
     def _get_header( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_header()" )
@@ -379,12 +376,10 @@ class FITSImage( Numpy2DImage ):
             raise TypeError( "Error, FITSImage.get_cutout only works with AstropyWCS wcses" )
         apwcs = None if wcs is None else wcs._wcs
 
-        astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), # Astropy asks for this order. Beats me. -Cole
-                                   mode='strict', wcs=apwcs)
-        astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize),
-                                   mode='strict', wcs=apwcs)
-        astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize),
-                                 mode='strict', wcs=apwcs)
+        # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
+        astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), mode='strict', wcs=apwcs)
+        astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), mode='strict', wcs=apwcs)
+        astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), mode='strict', wcs=apwcs)
 
         snappl_cutout = self.__class__(self.inputs.path, self.inputs.exposure, self.inputs.sca)
         snappl_cutout._data = astropy_cutout.data
@@ -415,12 +410,11 @@ class FITSImage( Numpy2DImage ):
             A new snappl image object that is a cutout of the original image.
         """
 
-        raise RuntimeError( "This is broken right now, will be fixed after we clean up and document the WCS classes." )
         wcs = self.get_wcs()
-        x, y = wcs.wcs_world2pix(ra, dec, 0)  # <--- I DO NOT UNDERSTAND WHY THIS
-        # NEEDS TO BE ZERO, BUT THAT MADE THIS NEW FUNCTION AGREE WITH THE
-        # OUTPUT OF THE OLD FUNCTION. COLE IS CONFUSED!!!!!
-        return self.get_cutout(x, y, xsize, ysize)
+        x, y = wcs.world_to_pixel( ra, dec )
+        x = int( np.floor( x + 0.5 ) )
+        y = int( np.floor( y + 0.5 ) )
+        return self.get_cutout( x, y, xsize, ysize )
 
 
 # ======================================================================
