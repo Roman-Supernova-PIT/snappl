@@ -69,7 +69,7 @@ class Image:
         self.inputs.exposure = exposure
         self.inputs.sca = sca
         self._wcs = None      # a BaseWCS object (in wcs.py)
-        self._is_coutout = False
+        self._is_cutout = False
 
     @property
     def data( self ):
@@ -132,13 +132,8 @@ class Image:
         """Fraction of pixels that are masked."""
         raise NotImplementedError( "Do.")
 
-    def get_data( self, which='all', always_reload=False ):
+    def get_data( self, which='all', always_reload=False, cache=False ):
         """Read the data from disk and return one or more 2d numpy arrays of data.
-
-        Does *not* do any caching of the read data inside the object
-        (e.g. what you'd access with the data, noise, and flags
-        properties).  However, may *used* cached data; see always_reload
-        below.
 
         Parameters
         ----------
@@ -155,6 +150,14 @@ class Image:
             values of self.data, self.noise, and/or self.flags instead
             of always loading the data.  If this is True, then
             get_data() will ignore the self._data et al. properties.
+
+          cache: bool, default False
+            Normally, get_data() just reads the data and does not do any
+            internal caching.  If this is True, and the subclass
+            supports it, then the object will cache the loaded data so
+            that future calls with always_reload will not need to reread
+            the data, nor will accessing the data, noise, and flags
+            properties.
 
         The data read not stored in the class, so when the caller goes
         out of scope, the data will be freed (unless the caller saved it
@@ -244,6 +247,12 @@ class Numpy2DImage( Image ):
             raise TypeError( "Noise must be a 2d numpy array of floats." )
 
     @property
+    def flags( self ):
+        if self._flags is None:
+            self._load_data()
+        return self._flags
+
+    @flags.setter
     def flags( self, new_value ):
         if ( isinstance( new_value, np.ndarray )
              and np.issubdtype( new_value.dtype, np.integer )
@@ -429,7 +438,7 @@ class OpenUniverse2024FITSImage( FITSImage ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
-    def get_data( self, which='all', always_reload=False ):
+    def get_data( self, which='all', always_reload=False, cache=False ):
         if self._is_cutout:
             raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
                                 "Currently not supported.")
@@ -456,12 +465,23 @@ class OpenUniverse2024FITSImage( FITSImage ):
         SNLogger.info( f"Reading FITS file {self.inputs.path}" )
         with fits.open( self.inputs.path ) as hdul:
             if which == 'all':
-                return [ hdul[1].data, hdul[2].data, hdul[3].data ]
+                imgs = [ hdul[1].data, hdul[2].data, hdul[3].data ]
+                if cache:
+                    self._data = imgs[0]
+                    self._noise = imgs[1]
+                    self._flags = imgs[2]
+                return imgs
             elif which == 'data':
+                if cache:
+                    self._data = hdul[1].data
                 return [ hdul[1].data ]
             elif which == 'noise':
+                if cache:
+                    self._noise = hdul[2].data
                 return [ hdul[2].data ]
             elif which == 'flags':
+                if cache:
+                    self._flags = hdul[3].data
                 return [ hdul[3].data ]
             else:
                 raise RuntimeError( f"{self.__class__.__name__} doesn't understand data plane {which}" )
