@@ -84,7 +84,7 @@ class Image:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement noise" )
 
     @noise.setter
-    def nosie( self, new_value ):
+    def noise( self, new_value ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement noise setter" )
 
     @property
