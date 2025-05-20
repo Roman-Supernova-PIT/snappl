@@ -25,11 +25,11 @@ class BaseWCS:
 
         Returns
         -------
-          ra, dec : floats or lists of floats, decimal degrees
+          ra, dec : floats or arrays of floats, decimal degrees
 
           You will get back two floats if x an y were floats.  If x and
-          y were lists (or other sequences), you will get back two lists
-          of floats.
+          y were lists (or other sequences), you will get back two numpy
+          arrays of floats.
 
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement pixel_to_world" )
@@ -47,12 +47,12 @@ class BaseWCS:
 
         Returns
         -------
-           x, y: floats or list of floats
+           x, y: floats or arrays of floats
 
            Pixel position on the image; the center of the lower-left pixel is (0.0, 0.0).
 
            If ra and dec were floats, x and y are floats.  If ra and dec
-           were sequences of floats, x and y will be lists of floats.
+           were sequences of floats, x and y will be numpy arrays of floats.
 
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement world_to_pixel" )

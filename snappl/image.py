@@ -138,7 +138,7 @@ class Image:
           which : str
             What to read:
               'data' : just the image data
-              'noise; : just the noise data
+              'noise' : just the noise data
               'flags' : just the flags data
               'all' : data, noise, and flags
 
