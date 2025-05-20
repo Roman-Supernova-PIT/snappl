@@ -42,7 +42,7 @@ jobs:
 
       - name: pull latest SNPIT cpu image
         run: |
-          docker pull rknop/roman-snpit-env:cpu
+          docker pull rknop/roman-snpit-env:cpu-dev
 
       - name: run test
         run: |
