@@ -177,11 +177,6 @@ class Image:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement coord_center" )
 
-    def get_image_shape(self):
-        """Get the shape of the image."""
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_image_shape" )
-
-
     #     # THE REST OF THIS MAY GO AWAY
 
     #     self.pipeline = pipeline
@@ -336,8 +331,8 @@ class OpenUniverse2024FITSImage( Image ):
         wcs = self.get_wcs()
         # ...this next method isn't defined for our WCS objects.  Something is broken.
         coord_center = wcs.wcs_pix2world(
-            self.get_image_shape()[0] // 2,
-            self.get_image_shape()[1] // 2,
+            self.image_shape[0] // 2,
+            self.image_shape[1] // 2,
             1)
         return coord_center
 
@@ -597,6 +592,6 @@ class RomanDatamodelL2Image( Image ):
                     del newdm
 
     def get_wcs( self ):
-        raise NotImplementedError( 
-            
->>>>>>> Stashed changes
+        raise NotImplementedError( "WCS not yet implemented for RomanDatamodelL2Image" )
+
+
