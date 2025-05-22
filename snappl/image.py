@@ -3,6 +3,8 @@ import types
 from astropy.io import fits
 from astropy.nddata.utils import Cutout2D
 
+import roman_datamodels as rdm
+
 from snpit_utils.logger import SNLogger
 
 from astropy.wcs import WCS as AstropyWCS
@@ -50,7 +52,16 @@ class Image:
 
     @property
     def data( self ):
-        """The image data, a 2d numpy array."""
+        """The image data, a 2d numpy array or something that behaves similarly.
+        
+        Don't assume it's exactly a 2d numpy array; it might actually be
+        something else.  However, for the most part, you can do things
+        to it that you do to numpy arrays.  Indexing, slicing, .shape,
+        .sum, .mean, .std, etc. should all work more or less as it does
+        in numpy.  You can also pass it, often, to functions requiring a
+        numpy array.
+        """
+
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement data" )
 
     @data.setter
@@ -59,12 +70,19 @@ class Image:
 
     @property
     def noise( self ):
-        """The 1σ pixel noise, a 2d numpy array."""
+        """The 1σ pixel noise, type the same as the type of data."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement noise" )
 
     @property
     def flags( self ):
-        """An integer 2d numpy array of pixel masks / flags TBD"""
+        """An integer array of pixel masks / flags TBD; see data for datatype warnings.
+
+        NOTE : we currently do not document the meaning of anything in
+        these flags!  If you need to use them, let's talk.  Do NOT
+        assume that 0 = good, not 0 = bad, because that may well not be
+        the case!
+
+        """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement flags" )
 
     @property
@@ -120,7 +138,7 @@ class Image:
 
         Returns
         -------
-          list (length 1 or 3 ) of 2d numpy arrays
+          list (length 1 or 3 ) of 2d numpy arrays.  If 3, is in the order data, noise, flags
 
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_data" )
@@ -390,7 +408,195 @@ class OpenUniverse2024FITSImage( Image ):
         """
 
         wcs = self.get_wcs()
+<<<<<<< Updated upstream
         x, y = wcs.wcs_world2pix(ra, dec, 0)  # <--- I DO NOT UNDERSTAND WHY THIS
         # NEEDS TO BE ZERO, BUT THAT MADE THIS NEW FUNCTION AGREE WITH THE
         # OUTPUT OF THE OLD FUNCTION. COLE IS CONFUSED!!!!!
         return self.get_cutout(x, y, xsize, ysize)
+=======
+        x, y = wcs.world_to_pixel( ra, dec )
+        x = int( np.floor( x + 0.5 ) )
+        y = int( np.floor( y + 0.5 ) )
+        return self.get_cutout( x, y, xsize, ysize )
+
+
+# ======================================================================
+# OpenUniverse 2024 Images are gzipped FITS files
+#  HDU 0 : (something, no data)
+#  HDU 1 : SCI (32-bit float)
+#  HDU 2 : ERR (32-bit float)
+#  HDU 3 : DQ (32-bit integer)
+
+class OpenUniverse2024FITSImage( FITSImage ):
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
+
+    def get_data( self, which='all', always_reload=False, cache=False ):
+        if self._is_cutout:
+            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
+                                "Currently not supported.")
+        if which not in Image.data_array_list:
+            raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
+
+        if not always_reload:
+            if ( ( which == 'all' )
+                 and ( self._data is not None )
+                 and ( self._noise is not None )
+                 and ( self._flags is not None )
+                ):
+                return [ self._data, self._noise, self._flags ]
+
+            if ( which == 'data' ) and ( self._data is not None ):
+                return [ self._data ]
+
+            if ( which == 'noise' ) and ( self._noise is not None ):
+                return [ self._noise ]
+
+            if ( which == 'flags' ) and ( self._flags is not None ):
+                return [ self._flags ]
+
+        SNLogger.info( f"Reading FITS file {self.inputs.path}" )
+        with fits.open( self.inputs.path ) as hdul:
+            if cache:
+                self._header = hdul[1].header
+            if which == 'all':
+                imgs = [ hdul[1].data, hdul[2].data, hdul[3].data ]
+                if cache:
+                    self._data = imgs[0]
+                    self._noise = imgs[1]
+                    self._flags = imgs[2]
+                return imgs
+            elif which == 'data':
+                if cache:
+                    self._data = hdul[1].data
+                return [ hdul[1].data ]
+            elif which == 'noise':
+                if cache:
+                    self._noise = hdul[2].data
+                return [ hdul[2].data ]
+            elif which == 'flags':
+                if cache:
+                    self._flags = hdul[3].data
+                return [ hdul[3].data ]
+            else:
+                raise RuntimeError( f"{self.__class__.__name__} doesn't understand data plane {which}" )
+
+    def _get_header(self):
+        """Get the header of the image."""
+        if self._header is None:
+            with fits.open(self.inputs.path) as hdul:
+                self._header = hdul[1].header
+        return self._header
+
+    @property
+    def band(self):
+        """The band the image is taken in (str)."""
+        header = self._get_header()
+        return header['FILTER'].strip()
+
+# ======================================================================
+
+class RomanDatamodelL2Image( Image ):
+    """A Roman L2 image in ASDF, read using roman_datamodels."""
+
+    def __init__( self, path, exposure, sca ):
+        super().__init__( path, exposure, sca )
+        self._dm_file = rdm.open( path )
+        if len( self._dm_file.shape ) != 2:
+            raise ValueError( f"Error, {path} has shape {self._dm_file.shape}, which is not 2d." )
+
+    def __del__( self ):
+        if self._dm_file is not None:
+            self._dm_file.close()
+        
+    @property
+    def data( self ):
+        return self._dm_file.data
+
+    @data.setter
+    def data( self, val ):
+        # TODO : figure out the right way to wholesale replace the data array
+        #   in a datamodel file.
+        raise NotImplementedError( f"RomanDatamodelL2Image doesn't support setting data" )
+
+    @property
+    def noise( self, val ):
+        return self._dm_file.err
+
+    @noise.setter
+    def noise( self, val ):
+        # TODO : figure out the right way to wholesale replace the err array
+        #   in a datamodel file.
+        raise NotImplementedError( f"RomanDatamodelL2Image doesn't support setting noise" )
+    
+    @property
+    def flags( self ):
+        return self._dm_file.dq
+
+    @flags.setter
+    def flags( self, val ):
+        # TODO : figure out the right way to wholesale replace the dq array
+        #   in a datamodel file.
+        raise NotImplementedError( f"RomanDatamodelL2Image doesn't support setting noise" )
+        
+    @property
+    def image_shape( self ):
+        return self._dm_file.shape
+    
+    @property
+    def exptime( self ):
+        # TODO : is this the right thing?  Or should we bse using "exposure_time"?
+        return self._dm_file.meta.exposure[ 'effective_exposure_time' ]
+
+    @property
+    def band( self ):
+        # TODO : this looks right based on my inspection of a file, but
+        #   I haven't found any documentation telling me that I'm doing
+        #   the right thing.
+        return self._dm_file.meta.instrument['optical_element']
+
+    def get_data( self, which='all', always_reload=False, cache=False ):
+        if not always_reload:
+            # In this case, we're going to ignore cache; because of
+            #   how the roman_datamodel works, I don't know how
+            #   to read the data but then not have it use up memory.
+            if not cache:
+                SCLogger.warning( f"get_data ignoring cache=False for RomanDatamodelL2Image" )
+            if which == 'all':
+                return [ self.data, self.noise, self.flags ]
+            else:
+                return [ getattr( self, which ) ]
+
+        else:
+            # We said always reload, so open a different datamodel file, pull out the data, then close it
+            if cache:
+                # TODO : think about the right way to support this if we want to.  Maybe
+                #   just reopen the whole file?  But that would cache everything, not just
+                #   the plane we want.
+                raise NotImplementedError( f"get_data with always_reload=True and cache=True not supported "
+                                           f"for RomanDatamodelL2Image" )
+            newdm = None
+            try:
+                newdm = roman_datamodel( self.inputs.path )
+                if which == 'all':
+                    rval [ newdm.data[:], newdm.err[:], newdm.dq[:] ]
+                elif which == 'data':
+                    rval [ newdm.data[:] ]
+                elif which == 'noise':
+                    rval [ newdm.err[:] ]
+                elif which == 'flags':
+                    rval [ newdm.dq[:] ]
+                else:
+                    raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
+                
+            finally:
+                # Even though we're closing the file, the arrays we accessed above will stil
+                #   be in memory.  (In fact, I think that a copy was made when we did [:].)
+                if newdm is not None:
+                    newdm.close()
+                    del newdm
+
+    def get_wcs( self ):
+        raise NotImplementedError( 
+            
+>>>>>>> Stashed changes
