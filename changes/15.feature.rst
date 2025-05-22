@@ -1,0 +1,1 @@
+Write tests for wcs.py and image.py, and in so doing fix a bunch of problems.  Bit of image.py refactoring.
