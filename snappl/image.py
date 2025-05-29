@@ -6,7 +6,7 @@ from astropy.nddata.utils import Cutout2D
 # from astropy.coordinates import SkyCoord
 
 from snpit_utils.logger import SNLogger
-from snappl.wcs import AstropyWCS
+from snappl.wcs import AstropyWCS, GalsimWCS
 
 
 class Exposure:
@@ -173,12 +173,21 @@ class Image:
         """Try to free memory."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement free" )
 
-    def get_wcs( self ):
+    def get_wcs( self, wcsclass=None ):
         """Get image WCS.  Will be an object of type BaseWCS (from wcs.py) (really likely a subclass).
+
+        Parameters
+        ----------
+          wcsclass : str or None
+            By default, the subclass of BaseWCS you get back will be
+            defined by the Image subclass of the object you call this
+            on.  If you want a specific subclass of BaseWCS, you can put
+            the name of that class here.  It may not always work; not
+            all types of images are able to return all types of wcses.
 
         Returns
         -------
-          snappl.wcs.BaseWCS
+          object of a subclass of snappl.wcs.BaseWCS
 
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
@@ -327,10 +336,15 @@ class FITSImage( Numpy2DImage ):
     def _get_header( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_header()" )
 
-    def get_wcs( self ):
-        if self._wcs is None:
-            hdr = self._get_header()
-            self._wcs = AstropyWCS.from_header( hdr )
+    def get_wcs( self, wcsclass=None ):
+        wcsclass = "AstropyWCS" if wcsclass is None else wcsclass
+        if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
+            if wcsclass == "AstropyWCS":
+                hdr = self._get_header()
+                self._wcs = AstropyWCS.from_header( hdr )
+            elif wcsclass == "GalsimWCS":
+                hdr = self._get_header()
+                self._wcs = GalsimWCS.from_header( hdr )
         return self._wcs
 
     def get_cutout(self, x, y, xsize, ysize=None):
