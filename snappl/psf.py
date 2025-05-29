@@ -7,6 +7,8 @@ from roman_imsim.utils import roman_utils
 import galsim
 
 from snpit_utils.config import Config
+from snpit_utils.logger import SNLogger
+
 
 class PSF:
     # Thought required: how to deal with oversampling.
@@ -252,7 +254,7 @@ class ou24PSF( PSF ):
 
     def __init__( self, pointing=None, sca=None, config_file=None, size=201, include_photonOps=True, **kwargs ):
         if len(kwargs) > 0:
-            SNLogger.warning( f"Unused arguments to ou24PSF.__init__: {[k for i in kwargs]}" )
+            SNLogger.warning( f"Unused arguments to ou24PSF.__init__: {[k for k in kwargs]}" )
 
         if ( pointing is None ) or ( sca is None ):
             raise ValueError( "Need a pointing and an sca to make an ou24PSF" )
@@ -276,5 +278,3 @@ class ou24PSF( PSF ):
             # TODO THOUGHT REQUIRED : does this need to be transposed?  Search for THINK in
             #    phrosty/phrostpy/pipeline.py
         return self._stamps[(x, y)]
-
-
