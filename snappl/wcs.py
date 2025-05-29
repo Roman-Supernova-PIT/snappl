@@ -106,14 +106,14 @@ class AstropyWCS(BaseWCS):
 
 
 class GalsimWCS(BaseWCS):
-    def __init__( self, gimswcs=None ):
+    def __init__( self, gsimwcs=None ):
         super().__init__()
         self._gsimwcs = gsimwcs
 
     @classmethod
     def from_header( cls, header ):
         wcs = GalsimWCS()
-        wcs._gswcs = galsim.AstropyWCS( header=header )
+        wcs._gsimwcs = galsim.AstropyWCS( header=header )
         return wcs
 
     def to_fits_header( self ):
@@ -127,7 +127,7 @@ class GalsimWCS(BaseWCS):
             x = np.array( x )
             y = np.array( y )
         # Galsim WCSes are 1-indexed
-        ra, dec = self._galsimwcs.toWorld( x+1, y+1, units='deg' )
+        ra, dec = self._gsimwcs.toWorld( x+1, y+1, units='deg' )
         if not ( isinstance( x, collections.abc.Sequence )
                  or ( isinstance( x, np.ndarray ) and ra.size > 1 )
                 ):
@@ -139,7 +139,7 @@ class GalsimWCS(BaseWCS):
         if isinstance( ra, collections.abc.Sequence ) and not isinstance( ra, np.ndarray ):
             ra = np.array( ra )
             dec = np.array( dec )
-        x, y = self._galsimwcs.toImage( ra, dec, units='deg' )
+        x, y = self._gsimwcs.toImage( ra, dec, units='deg' )
         # Convert from 1-indexed galsim pixel coordaintes to 0-indexec
         x -= 1
         y -= 1
