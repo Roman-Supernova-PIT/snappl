@@ -218,7 +218,7 @@ class Image:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
 
     def _get_zeropoint( self ):
-        """Set self._zeropoint"""
+        """Set self._zeropoint; see "zeropoint" property above."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_zeropoint" )
 
     def get_cutout(self, ra, dec, size):
@@ -535,3 +535,8 @@ class OpenUniverse2024FITSImage( FITSImage ):
         """The mjd of the image."""
         header = self._get_header()
         return float( header['MJD-OBS'] )
+
+    @property
+    def _get_zeropoint( self ):
+        header = self._get_header()
+        return galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
