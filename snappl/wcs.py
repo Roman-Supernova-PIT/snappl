@@ -7,6 +7,7 @@ import astropy.wcs
 
 import galsim
 
+
 class BaseWCS:
     def __init__( self ):
         self._wcs = None
@@ -78,7 +79,7 @@ class BaseWCS:
         """
         # This is a dubious function, since it will only work for WCSes based out of FITS, and
         #   won't work for all FITS subclasses.
-        raise NotImplementedError( f"{self.__class__.__name__} can't do from_header" )
+        raise NotImplementedError( f"{cls.__name__} can't do from_header" )
 
     def get_galsim_wcs( self ):
         """Return a glasim.AstropyWCS object, if possible."""

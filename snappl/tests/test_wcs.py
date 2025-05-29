@@ -1,59 +1,60 @@
-import pytest
-
-import numpy as np
 import astropy
+import galsim
 
-from snappl.wcs import BaseWCS, AstropyWCS
+from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS
 
 
-# TODO : this is really a regression test,
-#   not a unit test, since the test values
-#   are empirical
-# We should make sure all the SIP stuff and so
-#   forth is getting applied and we're
-#   really getting precise positions!
-#   Compare to DS9?
-def test_astropywcs( ou2024image ):
+def test_astropywcs( ou2024image, check_wcs ):
     wcs = ou2024image.get_wcs()
     assert isinstance( wcs, BaseWCS )
     assert isinstance( wcs, AstropyWCS )
     assert isinstance( wcs._wcs, astropy.wcs.WCS )
+    assert wcs._wcs_is_astropy
+    check_wcs( wcs )
 
-    testdata = [ { 'x': 0, 'y': 0, 'ra': 7.49441896, 'dec': -44.22945209 },
-                 { 'x': 4087, 'y': 4087, 'ra': 7.69394648, 'dec': -44.13224703 },
-                 { 'x': 0, 'y': 4087, 'ra': 7.52381115, 'dec': -44.11151047 },
-                 { 'x': 4087, 'y': 0, 'ra': 7.66488541, 'dec': -44.25023227 },
-                 { 'x': 2043.5, 'y': 2043.5, 'ra': 7.59426518, 'dec': -44.18089283 } ]
+    # Using ou2024image._get_header() here, which is naughty; we
+    #   aren't supposed to use underscore functions outside
+    #   the class.  But, this is a test, and we know that
+    #   it's a OpenUniverse2024FITSImage.
+    wcs = AstropyWCS.from_header( ou2024image._get_header() )
+    assert isinstance( wcs, BaseWCS )
+    assert isinstance( wcs, AstropyWCS )
+    assert isinstance( wcs._wcs, astropy.wcs.WCS )
+    assert wcs._wcs_is_astropy
+    check_wcs( wcs )
 
-    for data in testdata:
-        ra, dec = wcs.pixel_to_world( data['x'], data['y'] )
-        assert isinstance( ra, float )
-        assert isinstance( dec, float )
-        assert ra == pytest.approx( data['ra'], abs=0.01/3600./np.cos(data['dec'] * np.pi/180.))
-        assert dec == pytest.approx( data['dec'], abs=0.01/3600. )
+    apwcs = astropy.wcs.WCS( ou2024image._get_header() )
+    wcs = AstropyWCS( apwcs )
+    assert isinstance( wcs, BaseWCS )
+    assert isinstance( wcs, AstropyWCS )
+    assert isinstance( wcs._wcs, astropy.wcs.WCS )
+    assert wcs._wcs_is_astropy
+    check_wcs( wcs )
 
-        # ...I would have expected better than this, but empirically the
-        # WCS as compared to the inverse WCS are only good to several
-        # hundreths of a pixel.
-        x, y = wcs.world_to_pixel( data['ra'], data['dec'] )
-        assert isinstance( x, float )
-        assert isinstance( y, float )
-        assert x == pytest.approx( data['x'], abs=0.1 )
-        assert y == pytest.approx( data['y'], abs=0.1 )
 
-    xvals = np.array( [ t['x'] for t in testdata ] )
-    yvals = np.array( [ t['y'] for t in testdata ] )
-    ravals = np.array( [ t['ra'] for t in testdata ] )
-    decvals = np.array( [ t['dec'] for t in testdata ] )
+def test_galsimwcs( ou2024image, check_wcs ):
+    # Again, naughty use of _get_header
+    wcs = GalsimWCS.from_header( ou2024image._get_header() )
+    assert isinstance( wcs, BaseWCS )
+    assert isinstance( wcs, GalsimWCS )
+    assert wcs._wcs is None
+    assert not wcs._wcs_is_astropy
+    assert isinstance( wcs._gsimwcs, galsim.AstropyWCS )
+    check_wcs( wcs )
 
-    ras, decs = wcs.pixel_to_world( xvals, yvals )
-    assert isinstance( ras, np.ndarray )
-    assert isinstance( decs, np.ndarray )
-    assert np.all( ras == pytest.approx(ravals, abs=0.01/3600./np.cos(decs[0] * np.pi/180.) ) )
-    assert np.all( decs == pytest.approx(decvals, abs=0.01/3600. ) )
+    wcs =  GalsimWCS( gsimwcs = wcs._gsimwcs )
+    assert isinstance( wcs, BaseWCS )
+    assert isinstance( wcs, GalsimWCS )
+    assert wcs._wcs is None
+    assert not wcs._wcs_is_astropy
+    assert isinstance( wcs._gsimwcs, galsim.AstropyWCS )
+    check_wcs( wcs )
 
-    xs, ys = wcs.world_to_pixel( ravals, decvals )
-    assert isinstance( xs, np.ndarray )
-    assert isinstance( ys, np.ndarray )
-    assert np.all( xs == pytest.approx( xvals, abs=0.1 ) )
-    assert np.all( ys == pytest.approx( yvals, abs=0.1 ) )
+
+def test_get_astropywcs_get_galsimwcs( ou2024image, check_wcs ):
+    wcs = ou2024image.get_wcs()
+    assert isinstance( wcs, AstropyWCS )
+    rawgswcs = wcs.get_galsim_wcs()
+    assert isinstance( rawgswcs, galsim.AstropyWCS )
+    gswcs = GalsimWCS( rawgswcs )
+    check_wcs( gswcs )

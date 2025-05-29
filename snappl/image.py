@@ -67,7 +67,6 @@ class Image:
         self.inputs.exposure = exposure
         self.inputs.sca = sca
         self._wcs = None      # a BaseWCS object (in wcs.py)
-        self._wcsclass = None
         self._is_cutout = False
 
     @property
@@ -174,12 +173,21 @@ class Image:
         """Try to free memory."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement free" )
 
-    def get_wcs( self ):
+    def get_wcs( self, wcsclass=None ):
         """Get image WCS.  Will be an object of type BaseWCS (from wcs.py) (really likely a subclass).
+
+        Parameters
+        ----------
+          wcsclass : str or None
+            By default, the subclass of BaseWCS you get back will be
+            defined by the Image subclass of the object you call this
+            on.  If you want a specific subclass of BaseWCS, you can put
+            the name of that class here.  It may not always work; not
+            all types of images are able to return all types of wcses.
 
         Returns
         -------
-          snappl.wcs.BaseWCS
+          object of a subclass of snappl.wcs.BaseWCS
 
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
@@ -330,7 +338,7 @@ class FITSImage( Numpy2DImage ):
 
     def get_wcs( self, wcsclass=None ):
         wcsclass = "AstropyWCS" if wcsclass is None else wcsclass
-        if ( self._wcs is None ) or ( self._wcsclass != wcsclass ):
+        if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
             if wcsclass == "AstropyWCS":
                 hdr = self._get_header()
                 self._wcs = AstropyWCS.from_header( hdr )
