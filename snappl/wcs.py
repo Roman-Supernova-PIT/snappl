@@ -164,7 +164,7 @@ class GalsimWCS(BaseWCS):
             ra = np.array( ra )
             dec = np.array( dec )
         x, y = self._gsimwcs.toImage( ra, dec, units='deg' )
-        # Convert from 1-indexed galsim pixel coordaintes to 0-indexec
+        # Convert from 1-indexed galsim pixel coordaintes to 0-indexed
         x -= 1
         y -= 1
         if not ( isinstance( ra, collections.abc.Sequence )
