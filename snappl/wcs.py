@@ -5,9 +5,12 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 import astropy.wcs
 
+import galsim
 
 class BaseWCS:
     def __init__( self ):
+        self._wcs = None
+        self._wcs_is_astropy = False
         pass
 
     def pixel_to_world( self, x, y ):
@@ -57,16 +60,29 @@ class BaseWCS:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement world_to_pixel" )
 
+    def get_galsim_wcs( self )
+        """Return a glasim.AstropyWCS object, if possible."""
+        raise NotImplementedError( f"{self.__class__.__name__} can't return a galsim.AstropyWCS" )
+
+    def to_fits_header( self ):
+        """Return an astropy.io.fits.Header object, if possible, with the WCS in it."""
+        raise NotImplementedError( f"{self.__class__.__name__} can't save itself to a FITS header." )
+
 
 class AstropyWCS(BaseWCS):
     def __init__( self, apwcs=None ):
+        super().__init__()
         self._wcs = apwcs
+        self._wcs_is_astropy = True
 
     @classmethod
     def from_header( cls, header ):
         wcs = AstropyWCS()
         wcs._wcs = astropy.wcs.WCS( header )
         return wcs
+
+    def to_fits_header( self ):
+        return self._wcs.to_header( relax=True )
 
     def pixel_to_world( self, x, y ):
         ra, dec = self._wcs.pixel_to_world_values( x, y )
@@ -88,6 +104,49 @@ class AstropyWCS(BaseWCS):
             y = float( y )
         return x, y
 
+
+class GalsimWCS(BaseWCS):
+    def __init__( self, gimswcs=None ):
+        super().__init__()
+        self._gsimwcs = gsimwcs
+
+    @classmethod
+    def from_header( cls, header ):
+        self._gswcs = galsim.AstropyWCS( header=header )
+
+    def to_fits_header( self ):
+        return self._gsimwcs.wcs.to_header( relax=True )
+
+    def get_galsim_wcs( self ):
+        return self._gsimwcs
+
+    def pixel_to_world( self, x, y ):
+        if isinstance( x, collections.abc.Sequence ) and not isinstance( x, np.ndarray ):
+            x = np.array( x )
+            y = np.array( y )
+        # Galsim WCSes are 1-indexed
+        ra, dec = self._galsimwcs.toWorld( x+1, y+1, units='deg' )
+        if not ( isinstance( x, collections.abc.Sequence )
+                 or ( isinstance( x, np.ndarray ) and ra.size > 1 )
+                ):
+            ra = float( ra )
+            dec = float( dec )
+        return ra, dec
+
+    def world_to_pixel( self, ra, dec ):
+        if isinstance( ra, collections.abc.Sequence ) and not isinstance( ra, np.ndarray ):
+            ra = np.array( ra )
+            dec = np.array( dec )
+        x, y = self._galsimwcs.toImage( ra, dec, units='deg' )
+        # Convert from 1-indexed galsim pixel coordaintes to 0-indexec
+        x -= 1
+        y -= 1
+        if not ( isinstance( ra, collections.abc.Sequence )
+                 or ( isinstance( ra, np.ndarray ) and y.size > 1 )
+                ):
+            x = float( x )
+            y = float( y )
+        return x, y
 
 
 class TotalDisasterASDFWCS(BaseWCS):

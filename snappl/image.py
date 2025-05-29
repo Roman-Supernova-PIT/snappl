@@ -6,7 +6,7 @@ from astropy.nddata.utils import Cutout2D
 # from astropy.coordinates import SkyCoord
 
 from snpit_utils.logger import SNLogger
-from snappl.wcs import AstropyWCS
+from snappl.wcs import AstropyWCS, GalsimWCS
 
 
 class Exposure:
@@ -67,6 +67,7 @@ class Image:
         self.inputs.exposure = exposure
         self.inputs.sca = sca
         self._wcs = None      # a BaseWCS object (in wcs.py)
+        self._wcsclass = None
         self._is_cutout = False
 
     @property
@@ -327,10 +328,15 @@ class FITSImage( Numpy2DImage ):
     def _get_header( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_header()" )
 
-    def get_wcs( self ):
-        if self._wcs is None:
-            hdr = self._get_header()
-            self._wcs = AstropyWCS.from_header( hdr )
+    def get_wcs( self, wcsclass=None ):
+        wcsclass = "AstropyWCS" if wcsclass is None else wcsclass
+        if ( self._wcs is None ) or ( self._wcsclass != wcsclass ):
+            if wcsclass == "AstropyWCS":
+                hdr = self._get_header()
+                self._wcs = AstropyWCS.from_header( hdr )
+            elif wcsclass == "GalsimWCS":
+                hdr = self._get_header()
+                self._wcs = GalsimWCS.from_header( hdr )
         return self._wcs
 
     def get_cutout(self, x, y, xsize, ysize=None):
