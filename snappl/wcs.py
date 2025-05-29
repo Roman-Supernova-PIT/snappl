@@ -60,6 +60,26 @@ class BaseWCS:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement world_to_pixel" )
 
+    @classmethod
+    def from_header( cls, header ):
+        """Create an object from a FITS header.
+
+        May not be implemented for all subclasses.
+
+        Parmaeters
+        ----------
+          header : astropi.io.fits.Header or dict
+             Something that an astropy WCS is able to create itself from.
+
+        Returns
+        -------
+          An object of the class this class method was called on.
+
+        """
+        # This is a dubious function, since it will only work for WCSes based out of FITS, and
+        #   won't work for all FITS subclasses.
+        raise NotImplementedError( f"{self.__class__.__name__} can't do from_header" )
+
     def get_galsim_wcs( self ):
         """Return a glasim.AstropyWCS object, if possible."""
         raise NotImplementedError( f"{self.__class__.__name__} can't return a galsim.AstropyWCS" )
@@ -83,6 +103,9 @@ class AstropyWCS(BaseWCS):
 
     def to_fits_header( self ):
         return self._wcs.to_header( relax=True )
+
+    def get_galsim_wcs( self ):
+        return galsim.AstropyWCS( wcs=self._wcs )
 
     def pixel_to_world( self, x, y ):
         ra, dec = self._wcs.pixel_to_world_values( x, y )
