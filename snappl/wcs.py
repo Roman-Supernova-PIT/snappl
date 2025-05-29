@@ -60,7 +60,7 @@ class BaseWCS:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement world_to_pixel" )
 
-    def get_galsim_wcs( self )
+    def get_galsim_wcs( self ):
         """Return a glasim.AstropyWCS object, if possible."""
         raise NotImplementedError( f"{self.__class__.__name__} can't return a galsim.AstropyWCS" )
 
