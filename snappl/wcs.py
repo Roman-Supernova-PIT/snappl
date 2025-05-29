@@ -112,7 +112,9 @@ class GalsimWCS(BaseWCS):
 
     @classmethod
     def from_header( cls, header ):
-        self._gswcs = galsim.AstropyWCS( header=header )
+        wcs = GalsimWCS()
+        wcs._gswcs = galsim.AstropyWCS( header=header )
+        return wcs
 
     def to_fits_header( self ):
         return self._gsimwcs.wcs.to_header( relax=True )
