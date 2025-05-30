@@ -70,7 +70,7 @@ class PSF:
 
           flux: float, default 1.
              Make the sum of the clip this.  If None, just let the clip
-             be scaled however it's naturally scaled.  Fo rsome
+             be scaled however it's naturally scaled.  For some
              subclasses, that may be what you actually want.
 
         Returns
