@@ -23,8 +23,8 @@ def test_write( testpsf ):
 
         y = yaml.safe_load( open(barf) )
         assert isinstance( y, dict )
-        assert y['x0'] == 3832.
-        assert y['y0'] == 255.
+        assert y['x'] == 3832.
+        assert y['y'] == 255.
         assert y['oversamp'] == 3.
         assert y['shape0'] == 77
         assert y['shape1'] == 77
@@ -40,8 +40,8 @@ def test_read( testpsf ):
 
         bpsf = YamlSerialized_OversampledImagePSF()
         bpsf.read( barf )
-        assert bpsf._x0 == 3832.
-        assert bpsf._y0 == 255.
+        assert bpsf._x == 3832.
+        assert bpsf._y == 255.
         assert bpsf._oversamp == 3.
         assert bpsf._data.shape == (77,77)
         assert bpsf._data.sum() == pytest.approx( 1., rel=1e-9 )
