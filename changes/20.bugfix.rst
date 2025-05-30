@@ -1,0 +1,1 @@
+Properly support creation of PSFs at non-integral pixel positions in OversampledImagePSF
