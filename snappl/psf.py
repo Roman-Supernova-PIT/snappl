@@ -268,6 +268,20 @@ class ou24PSF( PSF ):
         self._stamps = {}
 
     def get_stamp( self, x, y, flux=1., seed=None ):
+        """Return a 2d numpy image of the PSF at the image resolution.
+
+        Parameters are as in PSF.get_stamp, plus:
+
+        Parameters
+        ----------
+          seed : int
+            A random seed to pass to galsim.BaseDeviate for photonOps.
+            NOTE: this is not part of the base PSF interface (at least,
+            as of yet), so don't use it in production pipeline code.
+            However, it will be useful in tests for purposes of testing
+            reproducibility.
+
+        """
         if (x, y) not in self._stamps:
             rmutils = roman_utils( self.config_file, self.pointing, self.sca )
             if seed is not None:
@@ -275,6 +289,4 @@ class ou24PSF( PSF ):
             self._stamps[(x, y)] = rmutils.getPSF_Image( self.size, x, y,
                                                          include_photonOps=self.include_photonOps ).array
             self._stamps[(x, y)] *= flux / self._stamps[(x, y)].sum()
-            # TODO THOUGHT REQUIRED : does this need to be transposed?  Search for THINK in
-            #    phrosty/phrostpy/pipeline.py
         return self._stamps[(x, y)]
