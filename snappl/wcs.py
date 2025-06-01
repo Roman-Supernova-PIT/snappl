@@ -78,8 +78,17 @@ class AstropyWCS(BaseWCS):
             dec = float( dec )
         return ra, dec
 
-    def world_to_pixel( self, ra, dec ):
-        scs = SkyCoord( ra, dec, unit=(u.deg, u.deg) )
+    def world_to_pixel( self, ra, dec):
+        # OpenUniverse Images are in fk5 coordinates, i.e. they use
+        # EQUINOX = 2000.0, but astropy SkyCoord defaults to ICRS.
+        # Therefore, we enforce the frame to match the radesys of the WCS.
+        # -Cole, 6/1/2025
+        # Astropy docs:
+        # https://docs.astropy.org/en/stable/api/astropy.coordinates.SkyCoord.html
+        # "Type of coordinate frame this SkyCoord should represent.
+        # Defaults to to ICRS if not given or given as None.""
+        frame = self._wcs.wcs.radesys.lower()  # Needs to be lowercase for SkyCoord
+        scs = SkyCoord( ra, dec, unit=(u.deg, u.deg), frame = frame)
         x, y = self._wcs.world_to_pixel( scs )
         if not ( isinstance( ra, collections.abc.Sequence )
                  or ( isinstance( ra, np.ndarray ) and y.size > 1 )
