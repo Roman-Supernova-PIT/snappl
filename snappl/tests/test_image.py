@@ -4,7 +4,7 @@ import numpy as np
 import astropy
 
 from snappl.image import FITSImage
-from snappl.wcs import AstropyWCS
+from snappl.wcs import AstropyWCS, GalsimWCS
 
 
 # ======================================================================
@@ -15,13 +15,28 @@ from snappl.wcs import AstropyWCS
 #   tests in this section tests the functions which themselves
 #   are defined in FITSImage.
 
-def test_get_wcs( ou2024image, fitsimage_module ):
+def test_get_wcs( ou2024image, fitsimage_module, check_wcs ):
     assert isinstance( fitsimage_module._wcs, AstropyWCS )
     assert fitsimage_module.get_wcs() is fitsimage_module._wcs
     assert ou2024image._wcs is None
     wcs = ou2024image.get_wcs()
     assert isinstance( wcs, AstropyWCS )
     assert wcs is ou2024image._wcs
+    check_wcs( wcs )
+
+    apwcs = ou2024image.get_wcs( wcsclass="AstropyWCS" )
+    assert apwcs is wcs
+    assert apwcs is ou2024image._wcs
+
+    gswcs = ou2024image.get_wcs( wcsclass="GalsimWCS" )
+    assert isinstance( gswcs, GalsimWCS )
+    assert gswcs is ou2024image._wcs
+    check_wcs( gswcs )
+
+    # Make sure it's not recreated if we get the same class again
+    newgswcs = ou2024image.get_wcs( wcsclass="GalsimWCS" )
+    assert newgswcs is gswcs
+    assert newgswcs is ou2024image._wcs
 
 
 def test_get_cutout( ou2024image_module ):

@@ -1,12 +1,15 @@
 import types
+import pathlib
 
 import numpy as np
 from astropy.io import fits
 from astropy.nddata.utils import Cutout2D
 # from astropy.coordinates import SkyCoord
 
+import galsim.roman
+
 from snpit_utils.logger import SNLogger
-from snappl.wcs import AstropyWCS
+from snappl.wcs import AstropyWCS, GalsimWCS
 
 
 class Exposure:
@@ -63,11 +66,12 @@ class Image:
 
         """
         self.inputs = types.SimpleNamespace()
-        self.inputs.path = path
+        self.inputs.path = pathlib.Path( path )
         self.inputs.exposure = exposure
         self.inputs.sca = sca
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
+        self._zeropoint = None
 
     @property
     def data( self ):
@@ -102,6 +106,18 @@ class Image:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement image_shape" )
 
     @property
+    def sca( self ):
+        return self.inputs.sca
+
+    @property
+    def path( self ):
+        return self.inputs.path
+
+    @property
+    def name( self ):
+        return self.inputs.path.name
+
+    @property
     def sky_level( self ):
         """Estimate of the sky level in ADU."""
         raise NotImplementedError( "Do.")
@@ -115,6 +131,24 @@ class Image:
     def band( self ):
         """Band (str)"""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement band" )
+
+    @property
+    def zeropoint( self ):
+        """Image zeropoint for AB magnitudes.
+
+        The zeropoint zp is defined so that an object with total counts
+        c has magnitude m:
+
+           m = -2.5 * log(10) + zp
+
+        """
+        if self._zeropoint is None:
+            self._get_zeropoint()
+        return self._zeropoint
+
+    @zeropoint.setter
+    def zeropoint( self, val ):
+        self._zeropoint = val
 
     @property
     def mjd( self ):
@@ -173,17 +207,31 @@ class Image:
         """Try to free memory."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement free" )
 
-    def get_wcs( self ):
+    def get_wcs( self, wcsclass=None ):
         """Get image WCS.  Will be an object of type BaseWCS (from wcs.py) (really likely a subclass).
+
+        Parameters
+        ----------
+          wcsclass : str or None
+            By default, the subclass of BaseWCS you get back will be
+            defined by the Image subclass of the object you call this
+            on.  If you want a specific subclass of BaseWCS, you can put
+            the name of that class here.  It may not always work; not
+            all types of images are able to return all types of wcses.
 
         Returns
         -------
-          snappl.wcs.BaseWCS
+          object of a subclass of snappl.wcs.BaseWCS
 
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
 
+    def _get_zeropoint( self ):
+        """Set self._zeropoint; see "zeropoint" property above."""
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_zeropoint" )
+
     def get_cutout(self, ra, dec, size):
+
         """Make a cutout of the image at the given RA and DEC.
 
         Returns
@@ -327,10 +375,15 @@ class FITSImage( Numpy2DImage ):
     def _get_header( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_header()" )
 
-    def get_wcs( self ):
-        if self._wcs is None:
-            hdr = self._get_header()
-            self._wcs = AstropyWCS.from_header( hdr )
+    def get_wcs( self, wcsclass=None ):
+        wcsclass = "AstropyWCS" if wcsclass is None else wcsclass
+        if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
+            if wcsclass == "AstropyWCS":
+                hdr = self._get_header()
+                self._wcs = AstropyWCS.from_header( hdr )
+            elif wcsclass == "GalsimWCS":
+                hdr = self._get_header()
+                self._wcs = GalsimWCS.from_header( hdr )
         return self._wcs
 
     def get_cutout(self, x, y, xsize, ysize=None):
@@ -490,3 +543,14 @@ class OpenUniverse2024FITSImage( FITSImage ):
         """The band the image is taken in (str)."""
         header = self._get_header()
         return header['FILTER'].strip()
+
+    @property
+    def mjd(self):
+        """The mjd of the image."""
+        header = self._get_header()
+        return float( header['MJD-OBS'] )
+
+    @property
+    def _get_zeropoint( self ):
+        header = self._get_header()
+        return galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']

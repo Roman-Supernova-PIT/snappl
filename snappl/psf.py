@@ -3,10 +3,17 @@ import base64
 
 import numpy as np
 
+from roman_imsim.utils import roman_utils
+import galsim
+
+from snpit_utils.config import Config
+from snpit_utils.logger import SNLogger
+
 
 class PSF:
+    # Thought required: how to deal with oversampling.
+
     def __init__( self, *args, **kwargs ):
-        # Will define a PSF with a nominal position
         pass
 
     def get_stamp( self, x, y, flux=1. ):
@@ -35,11 +42,39 @@ class PSF:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_stamp" )
 
+    @classmethod
+    def get_psf_object( cls, psfclass, **kwargs ):
+        """Return a PSF object whose type is specified by psfclass.
+
+        Parameters
+        ----------
+          psfclass : str
+             The name of the class of the PSF to instantiate.
+
+          **kwargs : further keyword arguments
+             TODO : we need to standardize on these so that things can
+             just call PSF.get_psf_object() without having to have their
+             own if statements on the type to figure out what kwargs to
+             pass!
+
+        """
+        if psfclass == "OversampledImagePSF":
+            return OversampledImagePSF.create( **kwargs )
+
+        if psfclass == "YamlSerialized_OversampledImagePSF":
+            return YamlSerialized_OversampledImagePSF( **kwargs )
+
+        if psfclass == "ou24PSF":
+            return ou24PSF( **kwargs )
+
+        raise ValueError( f"Unknown PSF class {psfclass}" )
 
 
 class OversampledImagePSF( PSF ):
     @classmethod
-    def create( cls, data, x0, y0, oversample_factor=1., enforce_odd=True, normalize=True ):
+    def create( cls, data=None, x0=None, y0=None, oversample_factor=1., enforce_odd=True, normalize=True,
+                **kwargs ):
+
         """Parameters
         ----------
           data: 2d numpy array
@@ -61,8 +96,18 @@ class OversampledImagePSF( PSF ):
           object of type cls
 
         """
+
+        if len(kwargs) > 0:
+            SNLogger.warning( f"Unused arguments to OversampledImagePSF.create: {[k for k in kwargs]}" )
+
         # TODO : implement enforce_odd
         # TODO : enforce square
+
+        if not isinstance( data, np.ndarray ) or ( len(data.shape) != 2 ):
+            raise TypeError( "data must be a 2d numpy array" )
+
+        x0 = float( x0 )
+        y0 = float( y0 )
 
         psf = cls()
         psf._data = data
@@ -203,5 +248,45 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
         yaml.dump( out, open( filepath, 'w' ) )
 
 
-class galsimPSF( PSF ):
-    pass
+class ou24PSF( PSF ):
+    # Currently, does not support any oversampling, because SFFT doesn't
+    # TODO: support oversampling!
+
+    def __init__( self, pointing=None, sca=None, config_file=None, size=201, include_photonOps=True, **kwargs ):
+        if len(kwargs) > 0:
+            SNLogger.warning( f"Unused arguments to ou24PSF.__init__: {[k for k in kwargs]}" )
+
+        if ( pointing is None ) or ( sca is None ):
+            raise ValueError( "Need a pointing and an sca to make an ou24PSF" )
+        if config_file is None:
+            config_file = Config.get().value( 'ou24psf.config_file' )
+        self.config_file = config_file
+        self.pointing = pointing
+        self.sca = sca
+        self.size = size
+        self.include_photonOps = include_photonOps
+        self._stamps = {}
+
+    def get_stamp( self, x, y, flux=1., seed=None ):
+        """Return a 2d numpy image of the PSF at the image resolution.
+
+        Parameters are as in PSF.get_stamp, plus:
+
+        Parameters
+        ----------
+          seed : int
+            A random seed to pass to galsim.BaseDeviate for photonOps.
+            NOTE: this is not part of the base PSF interface (at least,
+            as of yet), so don't use it in production pipeline code.
+            However, it will be useful in tests for purposes of testing
+            reproducibility.
+
+        """
+        if (x, y) not in self._stamps:
+            rmutils = roman_utils( self.config_file, self.pointing, self.sca )
+            if seed is not None:
+                rmutils.rng = galsim.BaseDeviate( seed )
+            self._stamps[(x, y)] = rmutils.getPSF_Image( self.size, x, y,
+                                                         include_photonOps=self.include_photonOps ).array
+            self._stamps[(x, y)] *= flux / self._stamps[(x, y)].sum()
+        return self._stamps[(x, y)]
