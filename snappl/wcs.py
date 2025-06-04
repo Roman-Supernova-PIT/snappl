@@ -118,8 +118,9 @@ class AstropyWCS(BaseWCS):
             dec = float( dec )
         return ra, dec
 
-    def world_to_pixel( self, ra, dec ):
-        scs = SkyCoord( ra, dec, unit=(u.deg, u.deg) )
+    def world_to_pixel( self, ra, dec):
+        frame = self._wcs.wcs.radesys.lower()  # Needs to be lowercase for SkyCoord
+        scs = SkyCoord( ra, dec, unit=(u.deg, u.deg), frame = frame)
         x, y = self._wcs.world_to_pixel( scs )
         if not ( isinstance( ra, collections.abc.Sequence )
                  or ( isinstance( ra, np.ndarray ) and y.size > 1 )

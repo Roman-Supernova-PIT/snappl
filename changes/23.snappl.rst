@@ -1,0 +1,1 @@
+AstropyWCS now automatically determines appropriate frame.
