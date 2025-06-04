@@ -1,5 +1,6 @@
 import yaml
 import base64
+import pathlib
 
 import numpy as np
 
@@ -102,6 +103,9 @@ class PSF:
         if psfclass == "YamlSerialized_OversampledImagePSF":
             return YamlSerialized_OversampledImagePSF( **kwargs )
 
+        if psfclass == "A25ePSF":
+            return A25ePSF( **kwargs )
+        
         if psfclass == "ou24PSF":
             return ou24PSF( **kwargs )
 
@@ -319,15 +323,15 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
 
     def read( self, filepath ):
         y = yaml.safe_load( open( filepath ) )
-        self._x = y['x']
-        self._y = y['y']
+        self._x = y['x0']
+        self._y = y['y0']
         self._oversamp = y['oversamp']
         self._data = np.frombuffer( base64.b64decode( y['data'] ), dtype=y['dtype'] )
         self._data = self._data.reshape( ( y['shape0'], y['shape1'] ) )
 
     def write( self, filepath ):
-        out = { 'x': float( self._x ),
-                'y': float( self._y ),
+        out = { 'x0': float( self._x ),
+                'y0': float( self._y ),
                 'oversamp': self._oversamp,
                 'shape0': self._data.shape[0],
                 'shape1': self._data.shape[1],
@@ -337,6 +341,29 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
         # TODO : check overwriting etc.
         yaml.dump( out, open( filepath, 'w' ) )
 
+class A25ePSF( YamlSerialized_OversampledImagePSF ):
+
+    def __init__( self, band, sca, x, y, *args, **kwargs ):
+
+        super().__init__( *args, **kwargs )
+        
+        cfg = Config.get()
+        basepath = pathlib.Path( cfg.value( 'photometry.snappl.A25ePSF_path' ) )
+
+        grid_centers = np.linspace(0.5 * 511, 4088 - 0.5 * 511, 8)
+
+        dist_x = np.abs(grid_centers - x)
+        dist_y = np.abs(grid_centers - y)
+
+        x_idx = np.argmin(dist_x)
+        y_idx = np.argmin(dist_y)
+
+        x_cen = grid_centers[x_idx]
+        y_cen = grid_centers[y_idx]
+        
+        psfpath = basepath / band / str(sca) / f'511_{x_cen:.1f}_{y_cen:.1f}_-_19.0_21.5_-_{band}_{sca}.psf'
+
+        self.read(psfpath)
 
 class ou24PSF( PSF ):
     # Currently, does not support any oversampling, because SFFT doesn't
