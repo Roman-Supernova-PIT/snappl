@@ -5,8 +5,8 @@ import numpy as np
 import scipy
 from astropy.io import fits
 
-from snpit_utils.logger import SNLogger
 from snappl.psf import OversampledImagePSF
+from snpit_utils.logger import SNLogger
 
 
 @pytest.fixture

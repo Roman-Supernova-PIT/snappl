@@ -276,8 +276,8 @@ class OversampledImagePSF( PSF ):
         ymax = yc + stampwid // 2 + 1
 
         psfsamp = 1. / self._oversamp
-        xs = np.array( np.arange( xmin, xmax ) )
-        ys = np.array( np.arange( ymin, ymax ) )
+        xs = np.arange( xmin, xmax )
+        ys = np.arange( ymin, ymax )
         xsincarg = psfdex1d[:, np.newaxis] - ( xs - natxfrac - x ) / psfsamp
         xsincvals = np.sinc( xsincarg ) * np.sinc( xsincarg/4. )
         xsincvals[ ( xsincarg > 4 ) | ( xsincarg < -4 ) ] = 0.
