@@ -1,9 +1,12 @@
-import pytest
+# IMPORTS Standard
 import numpy as np
+import pytest
 from scipy.stats import moment
+
+# IMPORTS Internal
+from snappl.psf import PSF
 from snpit_utils.config import Config
 from snappl.psf import PSF
-
 
 def test_A25ePSF():
     
@@ -39,6 +42,6 @@ def test_A25ePSF():
     for sca in [2, 3]:
         for x in [0, 3500]:
             with pytest.raises( FileNotFoundError, match='No such file or directory' ):
-                psf = PSF.get_psf_object ('A25ePSF', band = 'J129', sca = sca, x = x, y = 1300 )
+                psf = PSF.get_psf_object ('A25ePSF', band='J129', sca=sca, x=x, y=1300 )
 
     

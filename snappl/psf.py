@@ -1,12 +1,14 @@
-import yaml
+# IMPORTS Standard
 import base64
-import pathlib
-
 import numpy as np
+import pathlib
+import yaml
 
-from roman_imsim.utils import roman_utils
+# IMPORTS Astro
 import galsim
 
+# IMPORTS Internal
+from roman_imsim.utils import roman_utils
 from snpit_utils.config import Config
 from snpit_utils.logger import SNLogger
 
@@ -350,7 +352,10 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
         cfg = Config.get()
         basepath = pathlib.Path( cfg.value( 'photometry.snappl.A25ePSF_path' ) )
 
-        grid_centers = np.linspace(0.5 * 511, 4088 - 0.5 * 511, 8)
+        arr_size = 4088
+        gridsize = 8
+        cutoutsize = int(arr_size/gridsize)
+        grid_centers = np.linspace(0.5 * cutoutsize, arr_size - 0.5 * cutoutsize, gridsize)
 
         dist_x = np.abs(grid_centers - x)
         dist_y = np.abs(grid_centers - y)
@@ -361,7 +366,9 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
         x_cen = grid_centers[x_idx]
         y_cen = grid_centers[y_idx]
         
-        psfpath = basepath / band / str(sca) / f'511_{x_cen:.1f}_{y_cen:.1f}_-_19.0_21.5_-_{band}_{sca}.psf'
+        min_mag = 19.0
+        max_mag = 21.5
+        psfpath = basepath / band / str(sca) / f'{cutoutsize}_{x_cen:.1f}_{y_cen:.1f}_-_{min_mag}_{max_mag}_-_{band}_{sca}.psf'
 
         self.read(psfpath)
 
