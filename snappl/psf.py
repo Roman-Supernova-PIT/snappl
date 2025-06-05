@@ -352,6 +352,18 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
         cfg = Config.get()
         basepath = pathlib.Path( cfg.value( 'photometry.snappl.A25ePSF_path' ) )
 
+        """
+        The array size is the size of one image (nx, ny).
+        The grid size is the number of times we divide that image
+        into smaller parts for the purposes of assigning the
+        correct ePSF (8 x 8 = 64 ePSFs).
+        
+        4088 px/8 = 511 px. So, int(arr_size/gridsize) is just a type
+        conversion. In the future, we may have a class where these things
+        are variable, but for now, we are using only the 8 x 8 grid of
+        ePSFs from Aldoroty et al. 2025a. So, it's hardcoded. 
+
+        """
         arr_size = 4088
         gridsize = 8
         cutoutsize = int(arr_size/gridsize)
