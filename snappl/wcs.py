@@ -6,7 +6,7 @@ import astropy.units as u
 import astropy.wcs
 
 import galsim
-
+import roman_datamodels as rdm
 
 class BaseWCS:
     def __init__( self ):
@@ -176,5 +176,52 @@ class GalsimWCS(BaseWCS):
         return x, y
 
 
-class TotalDisasterASDFWCS(BaseWCS):
-    pass
+class ASDFWCS(BaseWCS):
+    def __init__( self, asdfwcs=None ):
+        super().__init__()
+        self._asdfwcs = asdfwcs
+
+    @classmethod
+    def from_adsf( cls, asdf_file ):
+        # read the ASDF file and get the WCS
+        dm = rdm.open(asdf_file)
+        wcs = ASDFWCS()
+        wcs._asdfwcs = dm.meta.wcs
+        return wcs
+
+    def pixel_to_world( self, x, y ):
+        if isinstance( x, collections.abc.Sequence ) and not isinstance( x, np.ndarray ):
+            x = np.array( x )
+            y = np.array( y )
+
+        # ADSF WCSes are 0-indexed
+        SkyCoord = self._asdfwcs.pixel_to_world(x, y)
+        ra, dec = SkyCoord.ra.deg, SkyCoord.dec.deg
+        if not ( isinstance( x, collections.abc.Sequence )
+                 or ( isinstance( x, np.ndarray ) and ra.size > 1 )
+                ):
+            ra = float( ra )
+            dec = float( dec )
+        return ra, dec
+
+    def world_to_pixel( self, ra, dec ):
+        if isinstance( ra, collections.abc.Sequence ) and not isinstance( ra, np.ndarray ):
+            ra = np.array( ra )
+            dec = np.array( dec )
+        
+        # ADSF WCSes are 0-indexed
+        # FIXME: frame is hard-coded to 'icrs', I don't find where the ASDF WCS specifies frame.
+        skyCoord = SkyCoord( ra, dec, unit=(u.deg, u.deg), frame = 'icrs')   
+        x, y = self._asdfwcs.world_to_pixel(skyCoord)
+        if not ( isinstance( ra, collections.abc.Sequence )
+                 or ( isinstance( ra, np.ndarray ) and y.size > 1 )
+                ):
+            x = float( x )
+            y = float( y )
+        return x, y
+
+    def transform_to_AstropyWCS( self , degree = 5 ):
+        wcs = AstropyWCS()
+        hdr = self._asdfwcs.to_fits(degree=degree)[0]
+        wcs._wcs = astropy.wcs.WCS( hdr )
+        return wcs
