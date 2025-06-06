@@ -1,0 +1,3 @@
+Added A25ePSF class, made tests, updated yaml save format for YamlSerialized_OversampledImagePSF.
+Added clarifying variable names, blocked and alphabetized imports.
+Added comment about the gridsize int() conversion in A25ePSF.

@@ -1,11 +1,14 @@
-import yaml
+# IMPORTS Standard
 import base64
-
 import numpy as np
+import pathlib
+import yaml
 
-from roman_imsim.utils import roman_utils
+# IMPORTS Astro
 import galsim
 
+# IMPORTS Internal
+from roman_imsim.utils import roman_utils
 from snpit_utils.config import Config
 from snpit_utils.logger import SNLogger
 
@@ -102,6 +105,9 @@ class PSF:
         if psfclass == "YamlSerialized_OversampledImagePSF":
             return YamlSerialized_OversampledImagePSF( **kwargs )
 
+        if psfclass == "A25ePSF":
+            return A25ePSF( **kwargs )
+        
         if psfclass == "ou24PSF":
             return ou24PSF( **kwargs )
 
@@ -319,15 +325,15 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
 
     def read( self, filepath ):
         y = yaml.safe_load( open( filepath ) )
-        self._x = y['x']
-        self._y = y['y']
+        self._x = y['x0']
+        self._y = y['y0']
         self._oversamp = y['oversamp']
         self._data = np.frombuffer( base64.b64decode( y['data'] ), dtype=y['dtype'] )
         self._data = self._data.reshape( ( y['shape0'], y['shape1'] ) )
 
     def write( self, filepath ):
-        out = { 'x': float( self._x ),
-                'y': float( self._y ),
+        out = { 'x0': float( self._x ),
+                'y0': float( self._y ),
                 'oversamp': self._oversamp,
                 'shape0': self._data.shape[0],
                 'shape1': self._data.shape[1],
@@ -337,6 +343,46 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
         # TODO : check overwriting etc.
         yaml.dump( out, open( filepath, 'w' ) )
 
+class A25ePSF( YamlSerialized_OversampledImagePSF ):
+
+    def __init__( self, band, sca, x, y, *args, **kwargs ):
+
+        super().__init__( *args, **kwargs )
+        
+        cfg = Config.get()
+        basepath = pathlib.Path( cfg.value( 'photometry.snappl.A25ePSF_path' ) )
+
+        """
+        The array size is the size of one image (nx, ny).
+        The grid size is the number of times we divide that image
+        into smaller parts for the purposes of assigning the
+        correct ePSF (8 x 8 = 64 ePSFs).
+        
+        4088 px/8 = 511 px. So, int(arr_size/gridsize) is just a type
+        conversion. In the future, we may have a class where these things
+        are variable, but for now, we are using only the 8 x 8 grid of
+        ePSFs from Aldoroty et al. 2025a. So, it's hardcoded. 
+
+        """
+        arr_size = 4088
+        gridsize = 8
+        cutoutsize = int(arr_size/gridsize)
+        grid_centers = np.linspace(0.5 * cutoutsize, arr_size - 0.5 * cutoutsize, gridsize)
+
+        dist_x = np.abs(grid_centers - x)
+        dist_y = np.abs(grid_centers - y)
+
+        x_idx = np.argmin(dist_x)
+        y_idx = np.argmin(dist_y)
+
+        x_cen = grid_centers[x_idx]
+        y_cen = grid_centers[y_idx]
+        
+        min_mag = 19.0
+        max_mag = 21.5
+        psfpath = basepath / band / str(sca) / f'{cutoutsize}_{x_cen:.1f}_{y_cen:.1f}_-_{min_mag}_{max_mag}_-_{band}_{sca}.psf'
+
+        self.read(psfpath)
 
 class ou24PSF( PSF ):
     # Currently, does not support any oversampling, because SFFT doesn't

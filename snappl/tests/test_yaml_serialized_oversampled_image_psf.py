@@ -23,8 +23,8 @@ def test_write( testpsf ):
 
         y = yaml.safe_load( open(barf) )
         assert isinstance( y, dict )
-        assert y['x'] == 3832.
-        assert y['y'] == 255.
+        assert y['x0'] == 3832.
+        assert y['y0'] == 255.
         assert y['oversamp'] == 3.
         assert y['shape0'] == 77
         assert y['shape1'] == 77
