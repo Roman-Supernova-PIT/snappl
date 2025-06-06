@@ -7,6 +7,7 @@ from astropy.nddata.utils import Cutout2D
 # from astropy.coordinates import SkyCoord
 
 import galsim.roman
+import roman_datamodels as rdm
 
 from snpit_utils.logger import SNLogger
 from snappl.wcs import AstropyWCS, GalsimWCS
@@ -554,3 +555,32 @@ class OpenUniverse2024FITSImage( FITSImage ):
     def _get_zeropoint( self ):
         header = self._get_header()
         return galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+
+# ======================================================================
+
+class RomanDatamodelImage( Image ):
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
+        self._dm = None
+
+    @property
+    def dm( self ):
+        """This property should usually not be used outside of this class."""
+        # THOUGHT REQUIRED : worry a little about accessing members of
+        #   the dm object and memory getting eaten.  Perhaps implement
+        #   a "free" method for Image and subclasses.  Alas, for this
+        #   class, based on feedback from ST people, the only way to free
+        #   things is to delete and reopen the self._dm object.  Make sure
+        #   to do that carefully if we do that.
+        if self._dm is None:
+            self._dm = rdm.open( self.input.path )
+        return self._dm
+
+    def get_wcs( self, wcsclass=None ):
+        wcsclass = "ASDFWCS" if wcsclsas is None else wcsclass
+        if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
+            if wcsclass == "ASDFWCS":
+                self._wcs = ASDFWCS( asdfwcs=self.dm.meta.wcs )
+            else:
+                raise NotImplementedError( "RomanDataModelImage can't (yet?) get a WCS of type {wcsclass}" )
+        return self._wcs
