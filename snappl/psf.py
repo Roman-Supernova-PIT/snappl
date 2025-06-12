@@ -33,7 +33,7 @@ class PSF:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement stamp_size." )
 
 
-    def get_stamp( self, x, y, x0=None, y0=None, flux=1. ):
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
         """Return a 2d numpy image of the PSF at the image resolution.
 
         (Aside: for all of this docstring, read "stamp", "clip", and
@@ -269,12 +269,12 @@ class PSF:
 
 
           flux: float, default 1.
-             The sum of the PSF before it's rendered into the clip.  For
-             some PSF subclasses, this is basically the same as saying
-             "the sum of the returned clip is this".  However, if you
-             have a non-zero (x0,y0) such that the natural size of the
-             PSF slops off of the edge of the returned clip, those two
-             things could easily be different.
+             Ideally, the full flux of the PSF.  If your stamp is big
+             enough, and the PSF is centered, then this will be the sum
+             of the returned stamp image.  However, if some of the wings
+             of the PSF are not captured by the boundaries of the PSF,
+             then the sum of the returned stamp image will be less than
+             this value.
 
         Returns
         -------
@@ -322,6 +322,9 @@ class OversampledImagePSF( PSF ):
         ----------
           data: 2d numpy array
             The image data of the oversampled PSF.  Required.
+            data.sum() should be equal to the fraction of the PSF flux
+            captured within the boundaries of the data array.  (However,
+            see "normalize" below.)
 
           x, y: float
             Position on the source image where this PSF is evaluated.
@@ -357,7 +360,12 @@ class OversampledImagePSF( PSF ):
             Enforce x_edges and y_edges having an odd width.
 
           normalize: bool, default True
-            Make sure internally stored PSF sums to 1 ; you usually don't want to change this.
+            Make sure internally stored PSF sums to 1.  If you think
+            that the data array is big enough that you're effectively
+            capturing 100% of the PSDF flux, then you should set
+            normalize to True.  If not, then you should make sure that
+            the data array you pass sums to the fraction of the PSF flux
+            that you're passing, and set normalize to False.
 
         Returns
         -------
@@ -506,10 +514,13 @@ class OversampledImagePSF( PSF ):
         #                                      * ysincvals[:, np.newaxis]
         #                                      * psfbase ).sum()
 
-        # Because the internally stored PSF sums to 1 (assuming
-        # normlization), we need to rescale by self.oversample_factor
-        # squared
-        clip *= flux / ( self.oversampled_data.sum() / ( self.oversample_factor **2 ) )
+        # We're assuming that the stored PSF data is properly
+        # normalized, i.e. its sum is equal to the fraction of the PSF
+        # flux captured by the boundaries of self._data.  (The
+        # documentation of the create method tells you to do things this
+        # way.)  For a large enough size of self._data, this means we
+        # expect its sum to be 1.
+        clip *= flux
 
         return clip
 
@@ -603,6 +614,7 @@ class ou24PSF( PSF ):
         self.pointing = pointing
         self.sca = sca
         self.size = size
+        self.sca_size = 4088
         self.include_photonOps = include_photonOps
         self._stamps = {}
 
@@ -612,7 +624,7 @@ class ou24PSF( PSF ):
         return self.size
 
 
-    def get_stamp( self, x, y, x0=None, y0=None, flux=1., seed=None ):
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None ):
         """Return a 2d numpy image of the PSF at the image resolution.
 
         Parameters are as in PSF.get_stamp, plus:
@@ -628,6 +640,12 @@ class ou24PSF( PSF ):
 
         """
 
+        # If a position is not given, assume the middle of the SCA
+        #   (within 1/2 pixel; by default, we want to make x and y
+        #   centered on a pixel).
+        x = x if x is not None else float( self.sca_size // 2 )
+        y = y if y is not None else float( self.sca_size // 2 )
+
         xc = int( np.floor( x + 0.5 ) )
         yc = int( np.floor( y + 0.5 ) )
         x0 = xc if x0 is None else x0
@@ -639,29 +657,38 @@ class ou24PSF( PSF ):
 
         if ( dx > self.size ) or ( dy > self.size ):
             raise RuntimeError( "Can't offset PSF from the center by more than the stamp size." )
-        
+
         if (x, y, dx, dy) not in self._stamps:
-            # We want to get a psf size big enough that the subimage we're going
-            #   to pull off will be completed in the rendered image.
-            psfimsize = self.size + max( abs(dx), abs(dy) )
+            # We want to render a psf image big enough that the subimage we're going
+            #   to pull for our stamp off will be fully there in the rendered image.
+            psfimsize = self.size + max( abs(2*dx), abs(2*dy) )
             psfimsize += 1 if psfimsize % 2 == 0 else 0
 
             rmutils = roman_utils( self.config_file, self.pointing, self.sca )
             if seed is not None:
                 rmutils.rng = galsim.BaseDeviate( seed )
 
-                # VERIFY THIS -- roman_imsim positions are 1-indexed, hence the +1 below
-                psfim = rmutils.getPSF_Image( psfimsize, x+1, y+1,
-                                              include_photonOps=self.include_photonOps ).array
-                psfim *= flux / psfim.sum()
+            # VERIFY THIS -- roman_imsim positions are 1-indexed, hence the +1 below
+            # (This should really not make much difference; the PSF is not going to
+            # vary significantly over one pixel!  So, this isn't all that urgent to verify.)
+            psfim = rmutils.getPSF_Image( psfimsize, x+1, y+1,
+                                          include_photonOps=self.include_photonOps ).array
+
+            # ASSUMPTION : the roman_utils psfs are intrinsically
+            #   properly normalized.  That is, psfim.sum() will be equal
+            #   to the fraction of the psf flux that is captured by the
+            #   boundaries of that psfim.  (For an infinitely-sized
+            #   psfim, the sum would be 1.)  TODO : VERIFY THIS
+            #   ASSUMPTION.
+            psfim *= flux
 
             if ( dx == 0 ) and ( dy == 0 ):
                 self._stamps[(x, y, dx, dy)] = psfim
             else:
-                xlow = psfimsize // 2 + dx - self.size // 2
-                xhigh = x0 + self.size
-                ylow = psfimsize // 2 + dy - self.size // 2
-                yhigh = y0 + self.size
+                xlow = psfimsize // 2 - dx - self.size // 2
+                xhigh = xlow + self.size
+                ylow = psfimsize // 2 - dy - self.size // 2
+                yhigh = ylow + self.size
                 self._stamps[(x, y, dx, dy)] = psfim[ ylow:yhigh, xlow:xhigh ]
-                
-        return self._stamps[(x, y)]
+
+        return self._stamps[(x, y, dx, dy)]

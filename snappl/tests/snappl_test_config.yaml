@@ -1,5 +1,5 @@
-ou2024psf:
-  config_file: /snappl/snappl/tests/tds.yaml
+ou24psf:
+  config_file: /sn_info_dir/tds.yaml
 
 photometry:
     snappl:
