@@ -1,3 +1,6 @@
+ou2024psf:
+  config_file: /snappl/snappl/tests/tds.yaml
+
 photometry:
     snappl:
         A25ePSF_path: /snappl/snappl/tests/testdata/A25ePSF

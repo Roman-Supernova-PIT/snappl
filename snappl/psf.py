@@ -612,7 +612,7 @@ class ou24PSF( PSF ):
         return self.size
 
 
-    def get_stamp( self, x, y, flux=1., seed=None ):
+    def get_stamp( self, x, y, x0=None, y0=None, flux=1., seed=None ):
         """Return a 2d numpy image of the PSF at the image resolution.
 
         Parameters are as in PSF.get_stamp, plus:
@@ -627,11 +627,41 @@ class ou24PSF( PSF ):
             reproducibility.
 
         """
-        if (x, y) not in self._stamps:
+
+        xc = int( np.floor( x + 0.5 ) )
+        yc = int( np.floor( y + 0.5 ) )
+        x0 = xc if x0 is None else x0
+        y0 = yc if y0 is None else y0
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+        dx = xc - x0
+        dy = yc - y0
+
+        if ( dx > self.size ) or ( dy > self.size ):
+            raise RuntimeError( "Can't offset PSF from the center by more than the stamp size." )
+        
+        if (x, y, dx, dy) not in self._stamps:
+            # We want to get a psf size big enough that the subimage we're going
+            #   to pull off will be completed in the rendered image.
+            psfimsize = self.size + max( abs(dx), abs(dy) )
+            psfimsize += 1 if psfimsize % 2 == 0 else 0
+
             rmutils = roman_utils( self.config_file, self.pointing, self.sca )
             if seed is not None:
                 rmutils.rng = galsim.BaseDeviate( seed )
-            self._stamps[(x, y)] = rmutils.getPSF_Image( self.size, x, y,
-                                                         include_photonOps=self.include_photonOps ).array
-            self._stamps[(x, y)] *= flux / self._stamps[(x, y)].sum()
+
+                # VERIFY THIS -- roman_imsim positions are 1-indexed, hence the +1 below
+                psfim = rmutils.getPSF_Image( psfimsize, x+1, y+1,
+                                              include_photonOps=self.include_photonOps ).array
+                psfim *= flux / psfim.sum()
+
+            if ( dx == 0 ) and ( dy == 0 ):
+                self._stamps[(x, y, dx, dy)] = psfim
+            else:
+                xlow = psfimsize // 2 + dx - self.size // 2
+                xhigh = x0 + self.size
+                ylow = psfimsize // 2 + dy - self.size // 2
+                yhigh = y0 + self.size
+                self._stamps[(x, y, dx, dy)] = psfim[ ylow:yhigh, xlow:xhigh ]
+                
         return self._stamps[(x, y)]
