@@ -1,14 +1,17 @@
-# IMPORTS Standard
+# python standard library imports
 import base64
-import numpy as np
+import numbers
 import pathlib
+
+# common library imports
+import numpy as np
 import yaml
 
-# IMPORTS Astro
+# astro library imports
 import galsim
-
-# IMPORTS Internal
 from roman_imsim.utils import roman_utils
+
+# roman snpit library imports
 from snpit_utils.config import Config
 from snpit_utils.logger import SNLogger
 
@@ -30,28 +33,97 @@ class PSF:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement stamp_size." )
 
 
-    def get_stamp( self, x, y, flux=1. ):
+    def get_stamp( self, x, y, x0=None, y0=None, flux=1. ):
         """Return a 2d numpy image of the PSF at the image resolution.
 
-        The PSF will be centered as best possible on the stamp*.  So, if
-        x ends in 0.8, it will be left of center, and if x ends in 0.2,
-        it will be right of center.  If the fractional part of x or y is
-        exactly 0.5, there's an ambituity as to where on the image you
-        should place the stamp of the PSF.  The position of the PSF on
-        the returned stamp will always round *down* in this case.  (The
-        pixel on the image that corresponds to the center pixel on the
-        clip is at floor(x+0.5),floor(y+0.5), *not*
-        round(x+0.5),round(y+0.5).  Those two things are different, and
-        round is not consistent; see the comment in
-        OversampledImagePSF.get_stamp for more if you care.)
+        (Aside: for all of this docstring, read "stamp", "clip", and
+        "thumbnail" as synonyms.)
 
-        So, for example, assuming the PSF is intrinsically centered*,
-        if the stamp size is 5×5 and you ask for the PSF at x=1023,
-        y=1023, then you're going to want to put the stamp on to the
-        image at image[1021:1026,1021:1026].  However, if you ask for
-        the PSF at x=1023.5,y=1023., you'll want to put the stamp on the
-        image at image[1021:1026,1022:1027].  (Remember that default
-        numpy arrays of astronomy images are indexed [y,x].)
+        INDEXING IMAGES
+        ---------------
+
+        For discussion of pixel positions below, remember the
+        conventions for astronomical arrays.  Consider four points:
+
+        First, in python, numpy arrays are 0-indexed.  That is, if you
+        have a 3-element numpy array named arr, the first element of the
+        array is arr[0], the second arr[1], and the last arr[2].  Some
+        other languages (e.g. FORTRAN) assume 1-indexed arrays.  That
+        is, the first element of FORTRAN array A is A[1], not A[0].
+        This matters for us because we are using some astronomical
+        formats that have been around since everybody spoke Latin and
+        everybody programmed in FORTRAN, so there are some legacy
+        conventions left over.  Some libraries (e.g. galsim) at least
+        sometimes require you to specify array indexes (such as pixel
+        positions) assuming 1-indexed arrays.  Be very careful and read
+        lots of documentation!  If we've done it right, everything in
+        snpit_utils and snappl uses standard python numpy 0-based array
+        indexes, so you will hopefully not become confused.  What's more
+        more, the astropy.wcs.WCS class also uses the convention of
+        0-based arrays.  (However, be careful, because astropy.wcs has
+        an alternate interface that uses the other convention.)
+
+        Another place you will find 1-indexed arrays are in the WCSes
+        defined in FITS headers, and in at least some FITS image display
+        programs.  If you use ds9 (the standard FITS image display
+        program), and hover your pointer over the center of the
+        lower-left pixel, you will notice that it tells you it's at
+        (1.0,1.0).  This means that if you're reading positions off of
+        ds9, you always have to be careful to mentally convert when
+        comparing to positions in your code!  Likewise, if you try to
+        manually apply the WCS transformation from a FITS header (doing
+        the matrix multiplication yourself, rather than relying on a
+        snappl or astropy library), you have to make sure you're using
+        1-offset pixel coordinates.  Generally, you will not have to
+        worry about this; the WCS classes in snappl (just as in astropy)
+        will internally take care of all these off-by-1 errors.  As
+        stated above, all snappl classes assume 0-based array indexing.
+
+        **If you find yourself manually correcting for 1-offset pixel
+        positions in your code, there's a good chance you're doing it
+        wrong.**
+
+        Second, following how numpy arrays are indexed, the lower-left
+        pixel of an astronomical image is at x=0, y=0.  Furthermore, by
+        convention, the *center* of the lower-left pixel is at x=0.0,
+        y=0.0.  That means that for a 512×512 image, the whole array
+        spans (-0.5,-0.5) to (511.5,511.5); the lower-left corner of the
+        array, which is the lower-left corner of the lower-left pixel,
+        is at (-0.5,-0.5).
+
+        Third, because numpy arrays are (by default) stored in "row
+        major" format, their indexing is *backwards* from what we might
+        expect.  That is, to get to pixel (x,y) on a numpy array image,
+        you'd do image[y,x].
+
+        Fourth, it follows that a pixel position whose fractional part
+        is *exactly* 0.5 is right on the edge between two pixels.  For
+        example, the position x=0.5, y=0.5 is the corner between the
+        four lower-left-most pixels on the image.  If you want to ask
+        for "the closest pixel center" in this case, there is an
+        ambiguity, so we have to pick a convention; that convention is
+        described below.
+
+        PSF CENTERING FOR get_stamp
+        ---------------------------
+
+        If (x0, y0) are not given, the PSF will be centered as best
+        possible on the stamp*.  So, if x ends in 0.8, it will be left
+        of center, and if x ends in 0.2, it will be right of center.  If
+        the fractional part of x or y is exactly 0.5, there's an
+        ambituity as to where on the image you should place the stamp of
+        the PSF.  The position of the PSF on the returned stamp will
+        always round *down* in this case.  (The pixel on the image that
+        corresponds to the center pixel on the clip is at
+        floor(x+0.5),floor(y+0.5), *not* round(x+0.5),round(y+0.5).
+        Those two things are different, and round is not consistent.
+        round(i.5) will round up if i is odd, but down if i is even.
+        This makes it very difficult to understand where your PSF is; by
+        using floor(x+0.5), we get consistent results regardless of
+        whether the integer part of x is even or odd.)
+
+        For further discusison of centering, see the discusison of the
+        (x0, y0) parameters below.
 
         * "The PSF will be centered as best possible on the stamp": this
           is only true if the PSF itself is intrinsically centered.  See
@@ -60,21 +132,149 @@ class PSF:
 
         Parameters
         ----------
-          x: float
+          x, y: floats
             Position on the image of the center of the psf.  If not
             given, defaults to something sensible that was defined when
             the object was constructed.  If you want to do sub-pixel
             shifts, then the fractional part of x will (usually) not be
             0.
 
-          y: float
-            Position on the image of the center of the psf.  Same kind
-            of default as x.
+          x0, y0: int, default None
+            The pixel position on the image corresponding to the center
+            pixel of the returned PSF.  If either is None, they default
+            to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above for why
+            we don't use round().)
+
+            For example: if you call psfobj.get_stamp(111., 113.), and
+            if the PSF object as a clip_size of 5, then you will get
+            back an image that looks something like:
+
+                   -----------
+                   | | | | | |
+                   -----------
+                   | |.|o|.| |
+                   -----------
+                   | |o|O|o| |
+                   -----------
+                   | |.|o|.| |
+                   -----------
+                   | | | | | |
+                   -----------
+
+             the PSF is centered on the center pixel of the clip
+             (i.e. 2,2), and that pixel should get placed on pixel
+             (x,y)=(111,113) of the image for which you're rendering a
+             PSF.  (Suppose you wanted to add this as an injected source
+             to the image; in that case, you'd add the returned PSF clip
+             to image[111:116,109:114] (remembering that numpy arrays of
+             astronomical images using all the defaults that we use in
+             this software are indexed [y,x]).)
+
+             If you want an offset PSF, then you would use a different
+             x0, y0.  So, if you call psfobj.get_stamp(111., 113.,
+             x0=112, y0=114), you'd get back:
+
+                   -----------
+                   | | | | | |
+                   -----------
+                   | | | | | |
+                   -----------
+                   |.|o|.| | |
+                   -----------
+                   |o|O|o| | |
+                   -----------
+                   |.|o|.| | |
+                   -----------
+
+             In this case, center pixel of the returned stamp
+             corresponds to pixel (x,y)=(112,114) on the image, but the
+             PSF is supposed to be centered at (x,y)=(111,113).  So, the
+             PSF is one pixel down and to the left of the center of the
+             returned stamp.  If you wanted to add this as an injected
+             source on to the image, you'd add the PSF clip to
+             image[112:117,110:116] (again, remembering that numpy
+             arrays are indexed [y,x]).
+
+             If you call psfobj.get_stamp(111.5,113.5), then you'd get
+             back something like:
+
+                   -----------
+                   | | | | | |
+                   -----------
+                   | |.|.| | |
+                   -----------
+                   |.|o|o|.| |
+                   -----------
+                   |.|o|o|.| |
+                   -----------
+                   | |.|.| | |
+                   -----------
+
+            Because your pixel position ended in (0.5, 0.5), the PSF is
+            centered on the corner of the pixel.  The center of the clip
+            (x,y)=(2,2) corresponds to (floor(111.5+0.5), floor(113.5+0.5))
+            on the image, or (x,y)=(112,114).
+
+            If you call psfobj.get_stamp(111.5, 113.5, x0=111, y0=113)
+            then you'd get back a clip:
+
+                   -----------
+                   | | |.|.| |
+                   -----------
+                   | |.|o|o|.|
+                   -----------
+                   | |.|o|o|.|
+                   -----------
+                   | | |.|.| |
+                   -----------
+                   | | | | | |
+                   -----------
+
+           Finally, to belabor the point, a couple of more examples.  If
+           you call psfobj.get_stamp(111.25, 113.0), you'd get back a
+           clip with the peak of the psf at (x,y)=(2.25,2.0) on the
+           thumbnail image, with the center pixel corresponding to
+           (x,y)=(floor(111.25+0.5), floor(113.+0.5)), or (111,113).
+           You would add it to image[111:116,109:114], and the stamp
+           would look like:
+
+                   -----------
+                   | | | | | |
+                   -----------
+                   | | |o|.| |
+                   -----------
+                   | |.|O|o|.|
+                   -----------
+                   | | |o|.| |
+                   -----------
+                   | | | | | |
+                   -----------
+
+            If you call psfobj.get_stamp(111.25, 113.0, x0=110, y0=114),
+            then you'd get a PSF back with the peak of the PSF on the
+            clip at (x,y)=(3.5,1.0), the center pixel corresponding to
+            (x,y)=(110,114) on the image, and a clip that looks like:
+
+                   -----------
+                   | | | | | |
+                   -----------
+                   | | | | | |
+                   -----------
+                   | | | |o|.|
+                   -----------
+                   | | |.|O|o|
+                   -----------
+                   | | | |o|.|
+                   -----------
+
 
           flux: float, default 1.
-             Make the sum of the clip this.  If None, just let the clip
-             be scaled however it's naturally scaled.  For some
-             subclasses, that may be what you actually want.
+             The sum of the PSF before it's rendered into the clip.  For
+             some PSF subclasses, this is basically the same as saying
+             "the sum of the returned clip is this".  However, if you
+             have a non-zero (x0,y0) such that the natural size of the
+             PSF slops off of the edge of the returned clip, those two
+             things could easily be different.
 
         Returns
         -------
@@ -107,7 +307,7 @@ class PSF:
 
         if psfclass == "A25ePSF":
             return A25ePSF( **kwargs )
-        
+
         if psfclass == "ou24PSF":
             return ou24PSF( **kwargs )
 
@@ -195,14 +395,6 @@ class OversampledImagePSF( PSF ):
         return self._y
 
     @property
-    def x0( self ):
-        return self._x0
-
-    @property
-    def y0( self ):
-        return self._x0
-
-    @property
     def oversample_factor( self ):
         return self._oversamp
 
@@ -223,30 +415,32 @@ class OversampledImagePSF( PSF ):
         self._data = None
         self._x = None
         self._y = None
-        self._x0 = None
-        self._y0 = None
         self._oversamp = None
 
-    def get_stamp( self, x=None, y=None, flux=1. ):
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
         # (x, y) is the position on the image for which we want to render the PSF.
         x = float(x) if x is not None else self._x
         y = float(y) if y is not None else self._y
 
-        # (xc, yc) is the closest pixel center to (x, y) on the image--
+        # (x0, y0) is the position on the image that corresponds to the center of the clip
         #
-        # round() isn't the right thing to use here, because it will
-        #   behave differently when x - round(x) = 0.5 based on whether
-        #   floor(x) is even or odd.  What we *want* is for the psf to
-        #   be as close to the center of the clip as possible.  In the
-        #   case where the fractional part of x is exactly 0.5, it's
-        #   ambiguous what that means-- there are four places you could
-        #   stick the PSF to statisfy that criterion.  By using
-        #   floor(x+0.5), we will consistently have the psf leaning down
-        #   and to the left when the fractional part of x (and y) is
-        #   exactly 0.5, whereas using round would give different
-        #   results based on the integer part of x (and y).
-        xc = int( np.floor( x + 0.5 ) )
-        yc = int( np.floor( y + 0.5 ) )
+        # For the defaults, round() isn't the right thing to use here,
+        #   because it will behave differently when x - round(x) = 0.5
+        #   based on whether floor(x) is even or odd.  What we *want* is
+        #   for the psf to be as close to the center of the clip as
+        #   possible (when x0 and y0 are None).  In the case where the
+        #   fractional part of x is exactly 0.5, it's ambiguous what
+        #   that means-- there are four places you could stick the PSF
+        #   to statisfy that criterion.  By using floor(x+0.5), we will
+        #   consistently have the psf leaning down and to the left when
+        #   the fractional part of x (and y) is exactly 0.5, whereas
+        #   using round would give different results based on the
+        #   integer part of x (and y).
+        x0 = int( np.floor(x + 0.5) ) if x0 is None else x0
+        y0 = int( np.floor(y + 0.5) ) if y0 is None else y0
+
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
 
         # (natx, naty) is the "natural position" on the image for the
         # psf.  This is simply (int(x), int(y)) if the fractional part
@@ -268,7 +462,6 @@ class OversampledImagePSF( PSF ):
         #      https://en.wikipedia.org/wiki/Lanczos_resampling
         #   ...though of course, the choice of a=4 comes from PSFEx.
 
-
         psfwid = self._data.shape[0]
         stampwid = self.clip_size
 
@@ -276,10 +469,10 @@ class OversampledImagePSF( PSF ):
 
         # If the returned clip is to be added to the image, it should
         #   be added to image[ymin:ymax, xmin:xmax].
-        xmin = xc - stampwid // 2
-        xmax = xc + stampwid // 2 + 1
-        ymin = yc - stampwid // 2
-        ymax = yc + stampwid // 2 + 1
+        xmin = x0 - stampwid // 2
+        xmax = x0 + stampwid // 2 + 1
+        ymin = y0 - stampwid // 2
+        ymax = y0 + stampwid // 2 + 1
 
         psfsamp = 1. / self._oversamp
         xs = np.arange( xmin, xmax )
@@ -313,7 +506,10 @@ class OversampledImagePSF( PSF ):
         #                                      * ysincvals[:, np.newaxis]
         #                                      * psfbase ).sum()
 
-        clip *= flux / clip.sum()
+        # Because the internally stored PSF sums to 1 (assuming
+        # normlization), we need to rescale by self.oversample_factor
+        # squared
+        clip *= flux / ( self.oversampled_data.sum() / ( self.oversample_factor **2 ) )
 
         return clip
 
@@ -343,12 +539,13 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
         # TODO : check overwriting etc.
         yaml.dump( out, open( filepath, 'w' ) )
 
+
 class A25ePSF( YamlSerialized_OversampledImagePSF ):
 
     def __init__( self, band, sca, x, y, *args, **kwargs ):
 
         super().__init__( *args, **kwargs )
-        
+
         cfg = Config.get()
         basepath = pathlib.Path( cfg.value( 'photometry.snappl.A25ePSF_path' ) )
 
@@ -357,11 +554,11 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
         The grid size is the number of times we divide that image
         into smaller parts for the purposes of assigning the
         correct ePSF (8 x 8 = 64 ePSFs).
-        
+
         4088 px/8 = 511 px. So, int(arr_size/gridsize) is just a type
         conversion. In the future, we may have a class where these things
         are variable, but for now, we are using only the 8 x 8 grid of
-        ePSFs from Aldoroty et al. 2025a. So, it's hardcoded. 
+        ePSFs from Aldoroty et al. 2025a. So, it's hardcoded.
 
         """
         arr_size = 4088
@@ -377,12 +574,14 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
 
         x_cen = grid_centers[x_idx]
         y_cen = grid_centers[y_idx]
-        
+
         min_mag = 19.0
         max_mag = 21.5
-        psfpath = basepath / band / str(sca) / f'{cutoutsize}_{x_cen:.1f}_{y_cen:.1f}_-_{min_mag}_{max_mag}_-_{band}_{sca}.psf'
+        psfpath = ( basepath / band / str(sca) /
+                    f'{cutoutsize}_{x_cen:.1f}_{y_cen:.1f}_-_{min_mag}_{max_mag}_-_{band}_{sca}.psf' )
 
         self.read(psfpath)
+
 
 class ou24PSF( PSF ):
     # Currently, does not support any oversampling, because SFFT doesn't
