@@ -304,4 +304,35 @@ def test_get_stamp_offset_oversampled():
                     assert cx == pytest.approx( xctr, abs=0.01 )
                     assert cy == pytest.approx( yctr, abs=0.01 )
 
-    SNLogger.debug( f"Average get_stamp runtime: {t/n}" )
+    # OMGOMG, N⁶
+    # (Minimize number of cases, and don't bother testing near-the-edge
+    #  stuff that got tested for intrinsically centered psfs.)
+    psfposfracs = [ 0.3792, 0.8 ]
+    for xposfrac in psfposfracs:
+        xpos = 1023 + xposfrac
+        for yposfrac in psfposfracs:
+            ypos = 511 + yposfrac
+            psf = make_psf_for_test_stamp( xpos, ypos, oversamp=oversamp )
+
+            relpos = [ -2.5, -0.1,  0.2 ]
+            ctrexp = [ 13.5, 13.9, 14.2 ]
+            off = [ -3, 0, None, 2 ]
+            for xrel, xctr in zip( relpos, ctrexp ):
+                for yrel, yctr in zip( relpos, ctrexp ):
+                    for xoff in off:
+                        x0 = 1023 + xoff if xoff is not None else None
+                        xpeak = 14. + xrel - xoff if xoff is not None else xctr
+                        for yoff in off:
+                            y0 = 511 + yoff if yoff is not None else None
+                            ypeak = 14. + yrel - yoff if yoff is not None else yctr
+
+                            t0 = time.perf_counter()
+                            clip = psf.get_stamp( 1023 + xrel, 511 + yrel, x0=x0, y0=y0 )
+                            t += time.perf_counter() - t0
+                            n += 1
+                            assert clip.shape == ( 29, 29 )
+                            cy, cx = scipy.ndimage.center_of_mass( clip )
+                            assert cx == pytest.approx( xpeak, abs=0.01 )
+                            assert cy == pytest.approx( ypeak, abs=0.01 )
+
+    SNLogger.debug( f"test_get_stamp_offset_oversampled: average get_stamp runtime: {t/n} over {n} runs" )
