@@ -5,11 +5,12 @@ import scipy
 
 from astropy.io import fits  # noqa: F401
 
-from snappl.psf import ou24PSF
+import snappl.psf
+from snappl.psf import PSF
 
 # These tests won't work on github until we get the right subset of galsim data
 #   properly imported.
-
+#
 # They depend on a tds.yaml file existing in /sn_info_dir, and some of
 #   the directories referred therein to have the right stuff in them.
 #   Look in the phrosty archive under phrosty/examples/perlmutter/tds.yaml for
@@ -17,23 +18,24 @@ from snappl.psf import ou24PSF
 #   podman instance using the interactive_perlmutter.sh script in that
 #   same directory.
 
-
 @pytest.mark.skipif( os.getenv('GITHUB_SKIP'), reason="Skipping test until we have galsim data" )
-def test_normalization():
-    # This isn't really testing snappl code, it's checking out galsim We
-    # use a random seed here for repeatibility.  Empirically, the PSF
-    # normalization in the smaller clip varies by at least several
-    # tenths of a percent when you use different random numbers.
+def test_slow_normalization():
+    # This isn't really testing snappl code, it's checking out galsim.
+    # Empirically, the PSF normalization in the smaller clip varies by
+    # at least several tenths of a percent when you use different random
+    # seeds.
     bigsize = 201
     smallsize = 41
-    bigpsfobj = ou24PSF( pointing=6, sca=17, size=bigsize )
+    bigpsfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=bigsize )
     bigstamp = bigpsfobj.get_stamp( seed=42 )
-    smallpsfobj = ou24PSF( pointing=6, sca=17, size=smallsize )
+    assert bigstamp.shape == ( 201, 201 )
+    smallpsfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=smallsize )
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
     smallstamp = smallpsfobj.get_stamp( seed=42 )
-
+    assert smallstamp.shape == ( 41, 41 )
+    
     assert bigstamp.sum() == pytest.approx( 1., abs=0.001 )
 
     x0 = bigsize // 2 - smallsize // 2
@@ -42,11 +44,13 @@ def test_normalization():
 
 
 @pytest.mark.skipif( os.getenv('GITHUB_SKIP'), reason="Skipping test until we have galsim data" )
-def test_get_stamp():
-    psfobj = ou24PSF( pointing=6, sca=17, size=41. )
+def test_slow_get_stamp():
+    psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41. )
+    assert isinstance( psfobj, snappl.psf.ou24PSF_slow )
 
     # It's slow getting galsim PSFs with photon ops, so we're not going to
-    #   do as exhaustive of tets as we do for OversampledImagePSF
+    #   do as exhaustive of tets as we do for OversampledImagePSF.  Use
+    #   an explicit seed here so tests are reproducible.
 
     # Try a basic centered PSF
     stamp = psfobj.get_stamp( seed=42 )
@@ -81,4 +85,35 @@ def test_get_stamp():
             assert ( stamp[ 20 + yoff + 2048-2040, 20 + xoff + 2048-2050 ] ==
                      pytest.approx( centerstamp[ 20 + yoff, 20 + xoff ], abs=absoff ) )
 
-    # KEEP GOING
+    # Try a PSF centered between two pixels.  Because of how we
+    #   define 0.5 behavior in PSF.get_stamp, this should be
+    #   centered to the *left* of the center of the image.
+    stamp = psfobj.get_stamp( 2048.5, 2048., seed=42 )
+    assert stamp.shape == ( 41, 41 )
+    assert stamp.sum() == pytest.approx( 0.986, abs=0.001 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert cx == pytest.approx( 19.22, abs=0.02 )
+    assert cy == pytest.approx( 19.92, abs=0.02 )
+
+    # Try an offcenter PSF that's centered on a corner
+    # The PSF center should be at -1.5, +2.5 pixels
+    # relative to the stamp center... but then
+    # offset because of the asymmetry of the roman PSF.
+    stamp = psfobj.get_stamp( 2048.5, 2048.5, x0=2050, y0=2046, seed=42 )
+    assert stamp.shape == ( 41, 41 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert cx == pytest.approx( 18.22, abs=0.02 )
+    assert cy == pytest.approx( 22.42, abs=0.03 )
+    
+    
+@pytest.mark.skipif( os.getenv('GITHUB_SKIP'), reason="Skipping test until we have galsim data" )
+def test_get_stamp():
+    # Use the defaults, which will be an internal image of size 201 and a stamp size of 41
+    psfobj = PSF.get_psf_object( "ou24PSF", pointing=6, sca=17, oversample_factor=11,  oversampled_size=451 )
+    assert isinstance( psfobj, snappl.psf.ou24PSF )
+
+    # Try a basic centered PSDF
+    stamp = psfobj.get_stamp()
+    assert stamp.shape == ( 41, 41 )
+    import pdb; pdb.set_trace()
+    pass

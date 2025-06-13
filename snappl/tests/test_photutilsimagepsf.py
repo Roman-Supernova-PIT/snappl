@@ -6,7 +6,7 @@ import numpy as np
 import scipy
 from astropy.io import fits
 
-from snappl.psf import PSF, OversampledImagePSF
+from snappl.psf import PSF, photutilsImagePSF
 from snpit_utils.logger import SNLogger
 
 
@@ -14,12 +14,12 @@ from snpit_utils.logger import SNLogger
 def testpsf():
     loaded = np.load('psf_test_data/testpsfarray.npz')
     arr = loaded['args']
-    mypsf = PSF.get_psf_object( "OversampledImagePSF", data=arr, x=3832., y=255., oversample_factor=3., normalize=True )
+    mypsf = PSF.get_psf_object( "photutilsImagePSF", data=arr, x=3832., y=255., oversample_factor=3., normalize=True )
     return mypsf
 
 
 def test_create( testpsf ):
-    assert isinstance( testpsf, OversampledImagePSF )
+    assert isinstance( testpsf, photutilsImagePSF )
     assert testpsf._data.sum() == pytest.approx( 1., rel=1e-9 )
     # data array was 77×77, we are oversampled by 3x, so nominally
     #  it's 25.7×25.7 on the image.  But, the array size is an integer,
@@ -41,7 +41,7 @@ def test_interactive_write_stamp_to_fits_for_visual_inspection( testpsf ):
     fits.writeto( 'test_deleteme_resamp.fits', testpsf.get_stamp(), overwrite=True )
 
 
-def make_psf_for_test_stamp( x=1023, y=511, oversamp=3, sigma=1.2 ):
+def make_psf_for_test_stamp( x=1023, y=511, oversamp=3, sigmax=1.2, sigmay=None ):
     # Make a 3x oversampled PSF that's a gaussian with sigma 1.2 (in
     # image pixel units, not oversampled units).  2√(2ln2)*1.2 = FWHM of
     # 2.83, so for a radius of 5 FWHMs (to be really anal), we want a
@@ -50,6 +50,8 @@ def make_psf_for_test_stamp( x=1023, y=511, oversamp=3, sigma=1.2 ):
     # 3× oversampled means an 87×87 data array.  87 // 2 = 43
     # 5× oversampled means a 145×145 data array.  145 // 2 = 72
 
+    sigmay = sigmax if sigmay is None else sigmay
+    
     assert isinstance( oversamp, int )
     size = int( np.ceil( oversamp * 29 ) )
     size += 1 if size % 2 == 0 else 0
@@ -57,20 +59,35 @@ def make_psf_for_test_stamp( x=1023, y=511, oversamp=3, sigma=1.2 ):
 
     xvals = np.arange( -ctr, ctr+1 ) + oversamp * ( np.floor( x + 0.5 ) - x )
     yvals = np.arange( -ctr, ctr+1 ) + oversamp * ( np.floor( y + 0.5 ) - y )
-    ovsigma = oversamp * sigma
-    data = np.exp( -( xvals[np.newaxis,:]**2 + yvals[:,np.newaxis]**2 ) / ( 2. * ovsigma**2 ) )
+    ovsigmax = oversamp * sigmax
+    ovsigmay = oversamp * sigmay
+    data = np.exp( -( xvals[np.newaxis,:]**2 / ( 2. * ovsigmax**2 ) +
+                      yvals[:,np.newaxis]**2 / ( 2. * ovsigmay**2 ) ) )
     data /= data.sum()
-    psf = PSF.get_psf_object( "OversampledImagePSF", data=data, x=x, y=y, oversample_factor=oversamp )
+    psf = PSF.get_psf_object( "photutilsImagePSF", data=data, x=x, y=y, oversample_factor=oversamp )
 
     return psf
 
 
+def test_get_stamp_orientation():
+    oversamp = 3
+    sigmax = 1.2
+    sigmay = 2.4
+    psf = make_psf_for_test_stamp( oversamp=oversamp, sigmax=sigmax, sigmay=sigmay )
+    clip = psf.get_stamp()
+    assert clip.sum() == pytest.approx( 1., abs=0.005 )
+    cy, cx = scipy.ndimage.center_of_mass( clip )
+    assert cy == pytest.approx( 14., abs=0.01 )
+    assert cx == pytest.approx( 14., abs=0.01 )
+    import pdb; pdb.set_trace()
+    pass
+    
 # "centered" here means the original PSF is centered; we're going to
 #   render it offset
 def test_get_stamp_centered_oversampled():
     oversamp = 3
     sigma = 1.2
-    psf = make_psf_for_test_stamp( oversamp=oversamp, sigma=sigma )
+    psf = make_psf_for_test_stamp( oversamp=oversamp, sigmax=sigma )
 
     # If we just get_stamp(), we should get a 29×29 image centered on the middle
     # We don't actually really expect the stamp to be exactly expectedgauss, because
@@ -278,7 +295,7 @@ def test_get_stamp_offset_oversampled():
         xpos = 1023 + xposfrac
         for yposfrac in psfposfracs:
             ypos = 511 + yposfrac
-            psf = make_psf_for_test_stamp( xpos, ypos, oversamp=oversamp, sigma=sigma )
+            psf = make_psf_for_test_stamp( xpos, ypos, oversamp=oversamp, sigmax=sigma )
             # Make sure the raw data array we passed is at the right spot
             xround = np.floor( xpos + 0.5 )
             yround = np.floor( ypos + 0.5 )
@@ -317,7 +334,7 @@ def test_get_stamp_offset_oversampled():
         xpos = 1023 + xposfrac
         for yposfrac in psfposfracs:
             ypos = 511 + yposfrac
-            psf = make_psf_for_test_stamp( xpos, ypos, oversamp=oversamp, sigma=sigma )
+            psf = make_psf_for_test_stamp( xpos, ypos, oversamp=oversamp, sigmax=sigma )
 
             relpos = [ -2.5, -0.1,  0.2 ]
             ctrexp = [ 13.5, 13.9, 14.2 ]
