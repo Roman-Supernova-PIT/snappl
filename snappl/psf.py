@@ -366,7 +366,7 @@ class PSF:
             return OversampledImagePSF( called_from_get_psf_object=True, **kwargs )
 
         if psfclass == "YamlSerialized_OversampledImagePSF":
-            return YamlSerialized_OversampledImagePSF( called_from_get_psf_object=True **kwargs )
+            return YamlSerialized_OversampledImagePSF( called_from_get_psf_object=True, **kwargs )
 
         if psfclass == "A25ePSF":
             return A25ePSF( called_from_get_psf_object=True, **kwargs )
@@ -483,6 +483,8 @@ class photutilsImagePSF( PSF ):
 
         """
         super().__init__( *args, **kwargs )
+        self._consumed_args.update( [ 'x', 'y', 'peakx', 'peaky', 'oversample_factor', 'data',
+                                      'enforce_odd', 'normalize' ] )
         self._warn_unknown_kwargs( kwargs )
 
         self._x = x
@@ -509,6 +511,11 @@ class photutilsImagePSF( PSF ):
             raise TypeError( "data must be a square 2d numpy array" )
         if enforce_odd and ( data.shape[0] % 2 != 1 ):
             raise ValueError( "The length of each axis of data must be odd" )
+
+        if ( peakx is not None ) or ( peaky is not None ):
+            # Actually, it *might* be implemented, but we need to write tests to
+            #   make sure we did it right, so don't use it until we do that.
+            raise NotImplementedError( "Non-default peakx/peaky not currently supported." )
 
         # If data.shape[1] is odd, then the center is data.shape[1] // 2   (if side is 5, center is at pixel 2.0)
         # If data.shape[1] is even, then the center is data.shape[1] / 2. - 0.5  (side 4, center at pixel 1.5 )
@@ -547,6 +554,8 @@ class photutilsImagePSF( PSF ):
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
         """See PSF.get_stamp for documentation.
+
+        --> CURRENTLY BROKEN FOR UNDERSAMPLED PSFs.  See Issue #30.
 
         Everything below is implementation notes, which can be ignored
         by people just using the class, but which will be useful for
@@ -601,8 +610,15 @@ class photutilsImagePSF( PSF ):
         yfrac -= 1. if yfrac == 0.5 else 0.
 
         # x0, y0 is position of the center pixel of the stamp.
-        x0 = int( np.floor( self._x + 0.5 ) ) if x0 is None else x0
-        y0 = int( np.floor( self._y + 0.5 ) ) if y0 is None else y0
+        # If they're not passed, then we know we want the peak of the
+        #   psf within 0.5 pixels of the center of the stamp,
+        #   so adjust x and y to make that happen
+        if x0 is None:
+            x0 = int( np.floor( self._x + 0.5 ) )
+            x = x0 + xfrac
+        if y0 is None:
+            y0 = int( np.floor( self._y + 0.5 ) )
+            y = y0 + yfrac
         if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
             raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
 
@@ -610,10 +626,23 @@ class photutilsImagePSF( PSF ):
         # returned stamp.  Our photutils.ImagePSF in self._pupsf thinks
         # that the center of self._data is at (self._x, self._y).  On the oversampled image,
         # the peak of the PSF is at (self._peakx, self._peaky).
+        #
+        # So.  Consider just the x axis.
+        #
+        # The pixel position of the center pixel of the returned array
+        # we have to pass to photutils.ImagePSF.call() needs to be the
+        # position of the peak minus (x-x0).  That will then put the
+        # peak at (x-x0).  The position of the peak is self._x +
+        # (self._peakx - (self._data.shape[1]/2 - 0.5))/oversample_factor.
+
         sz = self.stamp_size
         # // is scary.  -15 // 2 is 8, but -(15 // 2) is 7.  - here is not the same as * -1 !!!!!
-        xvals = np.arange( -(sz // 2), sz // 2 + 1 ) + x0 - xfrac + ( self._peakx - ( self._data.shape[1] / 2. - 0.5 ) )
-        yvals = np.arange( -(sz // 2), sz // 2 + 1 ) + y0 - yfrac + ( self._peaky - ( self._data.shape[0] / 2. - 0.5 ) )
+        xvals = ( np.arange( -(sz // 2), sz // 2 + 1 )
+                  + self._x + ( self._peakx - ( self._data.shape[1] / 2. - 0.5 ) ) / self.oversample_factor
+                  - ( x - x0 ) )
+        yvals = ( np.arange( -(sz // 2), sz // 2 + 1 )
+                  + self._y + ( self._peaky - ( self._data.shape[0] / 2. - 0.5 ) ) / self.oversample_factor
+                  - ( y - y0 ) )
         xvals, yvals = np.meshgrid( xvals, yvals )
 
         return self._pupsf( xvals, yvals ) * ( self.oversample_factor ** 2 )
@@ -726,6 +755,7 @@ class OversampledImagePSF( PSF ):
         """
 
         super().__init__( *args, **kwargs )
+        self._consumed_args.update( [ 'x', 'y', 'oversample_factor', 'data', 'enforce_odd', 'normalize' ] )
         self._warn_unknown_kwargs( kwargs )
 
         # TODO : implement enforce_odd
@@ -774,6 +804,11 @@ class OversampledImagePSF( PSF ):
 
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
+        """See PSF.get_stamp for documentation
+
+        --> CURRENTLY BROKEN FOR UNDERSAMPLED PSFs.  See Issue #30.
+
+        """
         # (x, y) is the position on the image for which we want to render the PSF.
         x = float(x) if x is not None else self._x
         y = float(y) if y is not None else self._y
@@ -797,18 +832,14 @@ class OversampledImagePSF( PSF ):
         natxfrac = natx - self._x
         natyfrac = naty - self._y
 
-        # See Chapter 5, "How PSFEx Works", of the PSFEx manual
-        #     https://psfex.readthedocs.io/en/latest/Working.html
-        # We're using this method for both image and psfex PSFs,
-        #   as the interpolation is more general than PSFEx:
-        #      https://en.wikipedia.org/wiki/Lanczos_resampling
-        #   ...though of course, the choice of a=4 comes from PSFEx.
+        # Interpolate the PSF using Lanczos resampling:
+        #     https://en.wikipedia.org/wiki/Lanczos_resampling
         #
-        # SADNESS : this algorithm does not do a good job when
-        #   the PSF is undersampled on the original image;
-        #   it ends up overestimating the central pixel (and
-        #   maybe others?)
-
+        # We use this because it's what PSFex uses; see Chapter 5, "How
+        #   PSFEx Works", of the PSFEx manual
+        #     https://psfex.readthedocs.io/en/latest/Working.html
+        # That's also where the factor a=4 comes from
+        a = 4
 
         psfwid = self.oversampled_data.shape[0]
         stampwid = self.stamp_size
@@ -826,11 +857,11 @@ class OversampledImagePSF( PSF ):
         xs = np.arange( xmin, xmax )
         ys = np.arange( ymin, ymax )
         xsincarg = psfdex1d[:, np.newaxis] - ( xs - natxfrac - x ) / psfsamp
-        xsincvals = np.sinc( xsincarg ) * np.sinc( xsincarg/4. )
-        xsincvals[ ( xsincarg > 4 ) | ( xsincarg < -4 ) ] = 0.
+        xsincvals = np.sinc( xsincarg ) * np.sinc( xsincarg/a )
+        xsincvals[ ( xsincarg > a ) | ( xsincarg < -a ) ] = 0.
         ysincarg = psfdex1d[:, np.newaxis] - ( ys - natyfrac - y ) / psfsamp
-        ysincvals = np.sinc( ysincarg ) * np.sinc( ysincarg/4. )
-        ysincvals[ ( ysincarg > 4 ) | ( ysincarg < -4 ) ] = 0.
+        ysincvals = np.sinc( ysincarg ) * np.sinc( ysincarg/a )
+        ysincvals[ ( ysincarg > a ) | ( ysincarg < -a ) ] = 0.
         tenpro = np.tensordot( ysincvals[:, :, np.newaxis], xsincvals[:, :, np.newaxis], axes=0 )[ :, :, 0, :, :, 0 ]
         clip = ( self.oversampled_data[:, np.newaxis, :, np.newaxis ] * tenpro ).sum( axis=0 ).sum( axis=1 )
 
@@ -904,6 +935,7 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
+        self._warn_unknown_kwargs( kwargs )
 
     def read( self, filepath ):
         y = yaml.safe_load( open( filepath ) )
@@ -935,7 +967,9 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
     """
 
     def __init__( self, band, sca, x, y, *args, **kwargs ):
-        super().__init__( *args, **kwargs )
+        super().__init__( x=x, y=y, *args, **kwargs )
+        self._consumed_args.update( [ 'band', 'sca', 'x',' y' ] )
+        self._warn_unknown_kwargs( kwargs )
 
         cfg = Config.get()
         basepath = pathlib.Path( cfg.value( 'photometry.snappl.A25ePSF_path' ) )
@@ -974,153 +1008,6 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
         self.read(psfpath)
 
 
-class ou24PSF( OversampledImagePSF ):
-    """An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.
-
-    Use this just like you use an OversampledImagePSF.  However, to construct one, you need to give
-    it a pointing and an SCA from the OpenUniverse2024 sims.  It will only work if all that OU2024
-    data is available on disk.
-
-    """
-
-    def __init__( self, x=2044., y=2044., oversample_factor=5, oversampled_size=201,
-                  pointing=None, sca=None, sed=None, config_file=None,
-                  include_photonOps=True, n_photons=1000000, seed=None,
-                  **kwargs ):
-        """Construct an ou24PSF.
-
-        Will render an image oversampled by oversample_factor and save
-        it internally.  Thereafter, get_stamp will just interpolate and
-        resample this image.  This should be faster than re-rendering a
-        galsim PSF every time.
-
-        Parameters
-        ----------
-          x, y : float
-            Position on the SCA where to evalute the PSF.  Will use (2044, 2044) if not passed.
-
-          oversample_factor: int (or float?), default 5
-            The once-generated, interally-stored PSF image will be
-            oversampled by this factor.  You probably want this to be an
-            odd integer so that the center of the PSF is not ambiguous.
-            TODO: experiment with different oversample_factors to figure
-            out what the smallest oversampling we can get away with is.
-
-          oversampled_size: int, default 201
-            The size of a stamp in image pixels on the image for which
-            this is the PSF.  Must be an odd integer.  The stamp you get
-            from get_stamp will have size
-            floor(oversampled_size/oversample_factor), though the size
-            will be increated by one if it would come out to an even
-            number.  (So get_stamp will always return a stamp with an
-            odd side length.)
-
-            The default of oversampled_size=201 and oversample_factor=5
-            will yield a 41-pixel stamp from get_stamp (since 201/5 =
-            40.2, the floor of which is 40, which is even, so 1 is added
-            to make it an odd 41).
-
-            (You can read a psf object's stamp_size property to figure
-            out what size of a stamp you'll get when you run
-            get_stamp().)
-
-          pointing: int
-            Required.  The OpenUniverse2024 pointing.
-
-          sca: int
-            Required.  The SCA.
-
-          sed: galsim.SED
-            The SED to render the PSF for.  If not given, will use a flat SED.
-
-          config_file: str or Path
-            The OU2024 config file that tells it where to find all of
-            its images and so forth.  Usually you don't want to pass
-            this, in which case it will use the ou24psf.config_file
-            config value.
-
-          include_photonOps: bool, default True
-            TODO
-
-          n_photons: int, default 1000000
-            Number of photons with photon ops
-
-          seed: int, default None
-            If given, use this random seed when generating the
-            internally stored oversampled psf image.  Usually you
-            probably want this to be None (and if you don't leave it at
-            None, you may be repeating an error that was made in the
-            OU2024 simulations...), but pass an integer for tests if you
-            need precise reproducibility.
-
-        """
-        super().__init__( x=x, y=y, oversample_factor=oversample_factor, **kwargs )
-        self._warn_unknown_kwargs( kwargs )
-
-        if self._data is not None:
-            raise ValueError( "Error, do not pass data when constructing an ou24PSF" )
-
-        if ( pointing is None ) or ( sca is None ):
-            raise ValueError( "Need a pointing and an sca to make an ou24PSF" )
-        if ( oversampled_size % 2 == 0 ) or ( int(oversampled_size) != oversampled_size ):
-            raise ValueError( "Size must be an odd integer." )
-        oversampled_size = int( oversampled_size )
-
-        if sed is None:
-            SNLogger.warning( f"No sed passed to ou24PSF, using a flat SED between 0.1μm and 2.6μm" )
-            self.sed = galsim.SED( galsim.LookupTable( [1000, 26000], [1, 1], interpolant='linear' ),
-                              wave_type='Angstrom', flux_type='fphotons' )
-        elif not instance( sed, galsim.SED ):
-            raise TypeError( f"sed must be a galsim.SED, not a {type(sed)}" )
-        else:
-            self.sed = sed
-
-        if config_file is None:
-            config_file = Config.get().value( 'ou24psf.config_file' )
-        self.config_file = config_file
-        self.pointing = pointing
-        self.sca = sca
-        self.oversampled_size = oversampled_size
-        self.sca_size = 4088
-        self.include_photonOps = include_photonOps
-        self.n_photons = n_photons
-        self.seed = seed
-
-    @property
-    def oversampled_data( self ):
-        if self._data is None:
-            # Render the oversampled PSF
-            x = self._x
-            y = self._y
-            # (xc, yc) is the pixel on the image in which the center falls
-            xc = int( np.floor( x + 0.5 ) )
-            yc = int( np.floor( y + 0.5 ) )
-            stampx = self.oversampled_size // 2
-            stampy = self.oversampled_size // 2
-
-            rmutils = roman_utils( self.config_file, self.pointing, self.sca )
-            if self.seed is not None:
-                rmutils.rng = galsim.BaseDeviate( self.seed )
-            wcs = rmutils.getLocalWCS( x+1, y+1 )
-            wcs = galsim.JacobianWCS(dudx=wcs.dudx / self.oversample_factor,
-                                     dudy=wcs.dudy / self.oversample_factor,
-                                     dvdx=wcs.dvdx / self.oversample_factor,
-                                     dvdy=wcs.dvdy / self.oversample_factor)
-            stamp = galsim.Image( self.oversampled_size, self.oversampled_size, wcs=wcs )
-            point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1., rmutils.bpass )
-            photon_ops = [ rmutils.getPSF( x+1, y+1, pupil_bin=8 ) ]
-            if self.include_photonOps:
-                photon_ops += rmutils.photon_ops
-
-            point.drawImage( rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
-                             n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
-                             center=galsim.PositionD( stampx+1, stampy+1 ), use_true_center=True,
-                             image=stamp )
-            self._data = stamp.array
-
-        return self._data
-
-
 class ou24PSF_slow( PSF ):
     """Wrap the roman_imsim PSFs.
 
@@ -1140,6 +1027,8 @@ class ou24PSF_slow( PSF ):
                   size=201, include_photonOps=True, n_photons=1000000, **kwargs
                  ):
         super().__init__( **kwargs )
+        self._consumed_args.update( [ 'pointing', 'sca', 'sed', 'config_file',
+                                      'size', 'include_photonOps', 'n_photons' ] )
         self._warn_unknown_kwargs( kwargs )
 
         if ( pointing is None ) or ( sca is None ):
@@ -1149,10 +1038,10 @@ class ou24PSF_slow( PSF ):
         size = int( size )
 
         if sed is None:
-            SNLogger.warning( f"No sed passed to ou24PSF_slow, using a flat SED between 0.1μm and 2.6μm" )
+            SNLogger.warning( "No sed passed to ou24PSF_slow, using a flat SED between 0.1μm and 2.6μm" )
             self.sed = galsim.SED( galsim.LookupTable( [1000, 26000], [1, 1], interpolant='linear' ),
                               wave_type='Angstrom', flux_type='fphotons' )
-        elif not instance( sed, galsim.SED ):
+        elif not isinstance( sed, galsim.SED ):
             raise TypeError( f"sed must be a galsim.SED, not a {type(sed)}" )
         else:
             self.sed = sed
@@ -1238,3 +1127,151 @@ class ou24PSF_slow( PSF ):
 
 
         return self._stamps[(x, y, stampx, stampy)]
+
+
+# TODO : make a ou24PSF that makes an image and caches... when things are working better
+class ou24PSF( ou24PSF_slow ):
+    pass
+
+# class ou24PSF( OversampledImagePSF ):
+#     """An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.
+
+#     Use this just like you use an OversampledImagePSF.  However, to construct one, you need to give
+#     it a pointing and an SCA from the OpenUniverse2024 sims.  It will only work if all that OU2024
+#     data is available on disk.
+
+#     """
+
+#     def __init__( self, x=2044., y=2044., oversample_factor=5, oversampled_size=201,
+#                   pointing=None, sca=None, sed=None, config_file=None,
+#                   include_photonOps=True, n_photons=1000000, seed=None,
+#                   **kwargs ):
+#         """Construct an ou24PSF.
+
+#         Will render an image oversampled by oversample_factor and save
+#         it internally.  Thereafter, get_stamp will just interpolate and
+#         resample this image.  This should be faster than re-rendering a
+#         galsim PSF every time.
+
+#         Parameters
+#         ----------
+#           x, y : float
+#             Position on the SCA where to evalute the PSF.  Will use (2044, 2044) if not passed.
+
+#           oversample_factor: int (or float?), default 5
+#             The once-generated, interally-stored PSF image will be
+#             oversampled by this factor.  You probably want this to be an
+#             odd integer so that the center of the PSF is not ambiguous.
+#             TODO: experiment with different oversample_factors to figure
+#             out what the smallest oversampling we can get away with is.
+
+#           oversampled_size: int, default 201
+#             The size of a stamp in image pixels on the image for which
+#             this is the PSF.  Must be an odd integer.  The stamp you get
+#             from get_stamp will have size
+#             floor(oversampled_size/oversample_factor), though the size
+#             will be increated by one if it would come out to an even
+#             number.  (So get_stamp will always return a stamp with an
+#             odd side length.)
+
+#             The default of oversampled_size=201 and oversample_factor=5
+#             will yield a 41-pixel stamp from get_stamp (since 201/5 =
+#             40.2, the floor of which is 40, which is even, so 1 is added
+#             to make it an odd 41).
+
+#             (You can read a psf object's stamp_size property to figure
+#             out what size of a stamp you'll get when you run
+#             get_stamp().)
+
+#           pointing: int
+#             Required.  The OpenUniverse2024 pointing.
+
+#           sca: int
+#             Required.  The SCA.
+
+#           sed: galsim.SED
+#             The SED to render the PSF for.  If not given, will use a flat SED.
+
+#           config_file: str or Path
+#             The OU2024 config file that tells it where to find all of
+#             its images and so forth.  Usually you don't want to pass
+#             this, in which case it will use the ou24psf.config_file
+#             config value.
+
+#           include_photonOps: bool, default True
+#             TODO
+
+#           n_photons: int, default 1000000
+#             Number of photons with photon ops
+
+#           seed: int, default None
+#             If given, use this random seed when generating the
+#             internally stored oversampled psf image.  Usually you
+#             probably want this to be None (and if you don't leave it at
+#             None, you may be repeating an error that was made in the
+#             OU2024 simulations...), but pass an integer for tests if you
+#             need precise reproducibility.
+
+#         """
+#         super().__init__( x=x, y=y, oversample_factor=oversample_factor, **kwargs )
+#         self._warn_unknown_kwargs( kwargs )
+
+#         if self._data is not None:
+#             raise ValueError( "Error, do not pass data when constructing an ou24PSF" )
+
+#         if ( pointing is None ) or ( sca is None ):
+#             raise ValueError( "Need a pointing and an sca to make an ou24PSF" )
+#         if ( oversampled_size % 2 == 0 ) or ( int(oversampled_size) != oversampled_size ):
+#             raise ValueError( "Size must be an odd integer." )
+#         oversampled_size = int( oversampled_size )
+
+#         if sed is None:
+#             SNLogger.warning( "No sed passed to ou24PSF, using a flat SED between 0.1μm and 2.6μm" )
+#             self.sed = galsim.SED( galsim.LookupTable( [1000, 26000], [1, 1], interpolant='linear' ),
+#                               wave_type='Angstrom', flux_type='fphotons' )
+#         elif not isinstance( sed, galsim.SED ):
+#             raise TypeError( f"sed must be a galsim.SED, not a {type(sed)}" )
+#         else:
+#             self.sed = sed
+
+#         if config_file is None:
+#             config_file = Config.get().value( 'ou24psf.config_file' )
+#         self.config_file = config_file
+#         self.pointing = pointing
+#         self.sca = sca
+#         self.oversampled_size = oversampled_size
+#         self.sca_size = 4088
+#         self.include_photonOps = include_photonOps
+#         self.n_photons = n_photons
+#         self.seed = seed
+
+#     @property
+#     def oversampled_data( self ):
+#         if self._data is None:
+#             # Render the oversampled PSF
+#             x = self._x
+#             y = self._y
+#             stampx = self.oversampled_size // 2
+#             stampy = self.oversampled_size // 2
+
+#             rmutils = roman_utils( self.config_file, self.pointing, self.sca )
+#             if self.seed is not None:
+#                 rmutils.rng = galsim.BaseDeviate( self.seed )
+#             wcs = rmutils.getLocalWCS( x+1, y+1 )
+#             wcs = galsim.JacobianWCS(dudx=wcs.dudx / self.oversample_factor,
+#                                      dudy=wcs.dudy / self.oversample_factor,
+#                                      dvdx=wcs.dvdx / self.oversample_factor,
+#                                      dvdy=wcs.dvdy / self.oversample_factor)
+#             stamp = galsim.Image( self.oversampled_size, self.oversampled_size, wcs=wcs )
+#             point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1., rmutils.bpass )
+#             photon_ops = [ rmutils.getPSF( x+1, y+1, pupil_bin=8 ) ]
+#             if self.include_photonOps:
+#                 photon_ops += rmutils.photon_ops
+
+#             point.drawImage( rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
+#                              n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
+#                              center=galsim.PositionD( stampx+1, stampy+1 ), use_true_center=True,
+#                              image=stamp )
+#             self._data = stamp.array
+
+#         return self._data

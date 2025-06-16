@@ -1,8 +1,8 @@
 import numpy as np
 
-from astropy.io import fits
 import astropy.table
 import photutils.psf
+
 
 # You probably want stampsize = 2 * 5 * 2√(2ln2) * max(sigmax,sigmay)
 def make_gaussian_psf( oversamp=3, sigmax=1.2, sigmay=None, stampsize=None, x0=511, y0=511 ):
@@ -54,6 +54,7 @@ def make_fake_image( skynoise=10., starflux=100000., nx=1024, ny=1024, x=511, y=
 
     return image, psf
 
+
 # **********************************************************************
 # Actual experiments
 
@@ -91,12 +92,20 @@ image, psf = make_fake_image( oversamp=5, sigmax=0.42, stampsize=11 )
 fit_shape = ( 7, 7 )
 photor = photutils.psf.PSFPhotometry( psf, fit_shape )
 phot = photor( image, error=noiseim,
-               init_params=astropy.table.Table( { 'x_init': [511.2], 'y_init': [510.9], 'flux_init': [95000] } ) )
+               init_params=astropy.table.Table( { 'x_init': [511.2], 'y_init': [510.9], 'flux_init': [120000] } ) )
 print( f"Fit flux of 100000-flux star for sigma = 0.42: {phot['flux_fit'][0]}; "
        f"(x,y)=({phot['x_fit'][0]}, {phot['y_fit'][0]}" )
-import pdb; pdb.set_trace()
-pass
 
 
-
-
+# CONCLUSION:
+#
+# For PSFs whose FWHM is less than ~2 pixels on the original
+# image, the stamps you get from the __call__ method of a photutils
+# ImagePSF are not properly normalize.  (Interestingly, they are too big
+# by the same factor that lanczos4 interpolation gives....)  However,
+# photutils PSFPhotometry works in such a way that it takes this into
+# account (...or just doesn't use __call__) and produces reliable results.
+#
+# Which is all well and good if you just want to use PSFPhotometry, but
+# if you need thumbnails for other purposes (e.g. schene modelling),
+# that is very sad.

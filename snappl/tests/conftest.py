@@ -10,9 +10,11 @@ from snappl.image import FITSImage, OpenUniverse2024FITSImage
 
 from snpit_utils.config import Config
 
+
 @pytest.fixture( scope='session', autouse = True )
 def init_config():
     Config.init( '/snappl/snappl/tests/snappl_test_config.yaml', setdefault = True )
+
 
 @pytest.fixture( scope='module' )
 def ou2024imagepath():

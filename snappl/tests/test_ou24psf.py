@@ -18,6 +18,7 @@ from snappl.psf import PSF
 #   podman instance using the interactive_perlmutter.sh script in that
 #   same directory.
 
+
 @pytest.mark.skipif( os.getenv('GITHUB_SKIP'), reason="Skipping test until we have galsim data" )
 def test_slow_normalization():
     # This isn't really testing snappl code, it's checking out galsim.
@@ -35,7 +36,7 @@ def test_slow_normalization():
     #   downsampled.  But, maybe it is.  Go read the code to find out.
     smallstamp = smallpsfobj.get_stamp( seed=42 )
     assert smallstamp.shape == ( 41, 41 )
-    
+
     assert bigstamp.sum() == pytest.approx( 1., abs=0.001 )
 
     x0 = bigsize // 2 - smallsize // 2
@@ -104,16 +105,16 @@ def test_slow_get_stamp():
     cy, cx = scipy.ndimage.center_of_mass( stamp )
     assert cx == pytest.approx( 18.22, abs=0.02 )
     assert cy == pytest.approx( 22.42, abs=0.03 )
-    
-    
-@pytest.mark.skipif( os.getenv('GITHUB_SKIP'), reason="Skipping test until we have galsim data" )
-def test_get_stamp():
-    # Use the defaults, which will be an internal image of size 201 and a stamp size of 41
-    psfobj = PSF.get_psf_object( "ou24PSF", pointing=6, sca=17, oversample_factor=11,  oversampled_size=451 )
-    assert isinstance( psfobj, snappl.psf.ou24PSF )
 
-    # Try a basic centered PSDF
-    stamp = psfobj.get_stamp()
-    assert stamp.shape == ( 41, 41 )
-    import pdb; pdb.set_trace()
-    pass
+
+# Continue this when ou24psf is more than a wrapper around ou24PSF_slow
+# @pytest.mark.skipif( os.getenv('GITHUB_SKIP'), reason="Skipping test until we have galsim data" )
+# def test_get_stamp():
+#     # Use the defaults, which will be an internal image of size 201 and a stamp size of 41
+#     psfobj = PSF.get_psf_object( "ou24PSF", pointing=6, sca=17, oversample_factor=11,  oversampled_size=451 )
+#     assert isinstance( psfobj, snappl.psf.ou24PSF )
+#
+#     # Try a basic centered PSDF
+#     stamp = psfobj.get_stamp()
+#     assert stamp.shape == ( 41, 41 )
+#     # TODO MORE
