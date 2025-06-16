@@ -97,6 +97,13 @@ print( f"Fit flux of 100000-flux star for sigma = 0.42: {phot['flux_fit'][0]}; "
        f"(x,y)=({phot['x_fit'][0]}, {phot['y_fit'][0]}" )
 
 
+# RESULTS OF A RUN:
+#    root@655734bb3457:/snappl/experimentation# python play_with_photutils.py
+#    1.2-sigma PSF clip sums to 1.0000000000018092
+#    0.42-sigma PSF clip sums to 1.1267689222010988
+#    Fit flux of 100000-flux star for sigma = 1.2: 99833.32184334665; (x,y)=(511.00130567398907, 510.99895105013127
+#    Fit flux of 100000-flux star for sigma = 0.42: 100005.90585339173; (x,y)=(511.0002593061244, 511.0001099684552
+#
 # CONCLUSION:
 #
 # For PSFs whose FWHM is less than ~2 pixels on the original
