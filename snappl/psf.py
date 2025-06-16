@@ -659,7 +659,7 @@ class OversampledImagePSF( PSF ):
     PSF is intrnsically undersampled, that is, on the original image the
     FWHM is not at least a couple of pixels.  (TODO: explore how the
     algorithm does with PSFex-extracted PSFs on undersampled data, since
-    the algorithm here was written for and tested with PSFex PSFs.)
+    the algorithm here was written for and tested with PSFex PSFs.)  See Issue #30.
 
     """
 
