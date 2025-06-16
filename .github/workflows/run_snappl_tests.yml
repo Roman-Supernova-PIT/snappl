@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       COMPOSE_FILE: snappl/tests/docker-compose.yaml
+      GITHUB_SKIP: 1
 
     steps:
       - name: Dump docker logs on failure

@@ -1,0 +1,1 @@
+Offcenter PSFs in get_stamp(); test for ou24PSF; photutilsImagePSF
