@@ -25,10 +25,19 @@ class PSF:
     the class method PSF.get_psf_object.
 
     """
-    
+
     # Thought required: how to deal with oversampling.
 
     def __init__( self, called_from_get_psf_object=False, *args, **kwargs ):
+        """Don't call this or the constructor of a subclass directly, call PSF.get_psf_object().
+
+        See documentation on the various subclass constructors for the
+        arguments to apss to get_psf_object and what they all mean.
+        Different types of PSF need different arguments, and sometimes
+        the same argument names will mean different things for different
+        subclasses!
+
+        """
         self._consumed_args = set()
         if not called_from_get_psf_object:
             raise RuntimeError( f"Don't instantiate a {self.__class__.__name__} directly, call PSF.get_psf_object" )
@@ -38,7 +47,7 @@ class PSF:
         if any( k not in self._consumed_args for k in kwargs ):
             SNLogger.warning( f"Unused arguments to {self.__class__.__name__}.__init__: "
                               f"{[k for k in kwargs if k not in self._consumed_args]}" )
-        
+
     # This is here for backwards compatibility
     @property
     def clip_size( self ):
@@ -53,32 +62,33 @@ class PSF:
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
         """Return a 2d numpy image of the PSF at the image resolution.
 
-        (Aside: for all of this docstring, read "stamp", "clip", and
-        "thumbnail" as synonyms.)
+        There are a distressing number of subtleties here, warranting an
+        extended discussion.
 
         INDEXING IMAGES
         ---------------
 
         For discussion of pixel positions below, remember the
-        conventions for astronomical arrays.  Consider four points:
+        conventions for astronomical arrays.  Consider four things:
 
-        First, in python, numpy arrays are 0-indexed.  That is, if you
-        have a 3-element numpy array named arr, the first element of the
-        array is arr[0], the second arr[1], and the last arr[2].  Some
-        other languages (e.g. FORTRAN) assume 1-indexed arrays.  That
-        is, the first element of FORTRAN array A is A[1], not A[0].
-        This matters for us because we are using some astronomical
-        formats that have been around since everybody spoke Latin and
-        everybody programmed in FORTRAN, so there are some legacy
-        conventions left over.  Some libraries (e.g. galsim) at least
-        sometimes require you to specify array indexes (such as pixel
-        positions) assuming 1-indexed arrays.  Be very careful and read
-        lots of documentation!  If we've done it right, everything in
-        snpit_utils and snappl uses standard python numpy 0-based array
-        indexes, so you will hopefully not become confused.  What's more
-        more, the astropy.wcs.WCS class also uses the convention of
-        0-based arrays.  (However, be careful, because astropy.wcs has
-        an alternate interface that uses the other convention.)
+        First thing to consider: in python, numpy arrays are 0-indexed.
+        That is, if you have a 3-element numpy array named arr, the
+        first element of the array is arr[0], the second arr[1], and the
+        last arr[2].  Some other languages (e.g. FORTRAN) assume
+        1-indexed arrays.  That is, the first element of FORTRAN array A
+        is A[1], not A[0].  This matters for us because we are using
+        some astronomical formats that have been around since everybody
+        spoke Latin and everybody programmed in FORTRAN, so there are
+        some legacy conventions left over.  Some libraries (e.g. galsim)
+        at least sometimes require you to specify array indexes (such as
+        pixel positions) assuming 1-indexed arrays.  Be very careful and
+        read lots of documentation!  If we've done it right, everything
+        in snpit_utils and snappl uses standard python numpy 0-based
+        array indexes, so you will hopefully not become confused.
+        What's more more, the astropy.wcs.WCS class also uses the
+        convention of 0-based arrays.  (However, be careful, because
+        astropy.wcs has an alternate interface that uses the other
+        convention.)
 
         Another place you will find 1-indexed arrays are in the WCSes
         defined in FITS headers, and in at least some FITS image display
@@ -98,40 +108,40 @@ class PSF:
 
         **If you find yourself manually correcting for 1-offset pixel
         positions in your code, there's a good chance you're doing it
-        wrong.**
+        wrong.  snappl is supposed to take care of all of that.**
 
-        Second, following how numpy arrays are indexed, the lower-left
-        pixel of an astronomical image is at x=0, y=0.  Furthermore, by
-        convention, the *center* of the lower-left pixel is at x=0.0,
-        y=0.0.  That means that for a 512×512 image, the whole array
-        spans (-0.5,-0.5) to (511.5,511.5); the lower-left corner of the
-        array, which is the lower-left corner of the lower-left pixel,
-        is at (-0.5,-0.5).
+        Second thing to consider: following how numpy arrays are
+        indexed, the lower-left pixel of an astronomical image is at
+        x=0, y=0.  Furthermore, by convention, the *center* of the
+        lower-left pixel is at x=0.0, y=0.0.  That means that for a
+        512×512 image, the whole array spans (-0.5,-0.5) to
+        (511.5,511.5); the lower-left corner of the array, which is the
+        lower-left corner of the lower-left pixel, is at (-0.5,-0.5).
 
-        Third, because numpy arrays are (by default) stored in "row
-        major" format, their indexing is *backwards* from what we might
-        expect.  That is, to get to pixel (x,y) on a numpy array image,
-        you'd do image[y,x].
+        Third thing to consider: because numpy arrays are (by default)
+        stored in "row major" format, their indexing is *backwards* from
+        what we might expect.  That is, to get to pixel (x,y) on a numpy
+        array image, you'd do image[y,x].
 
-        Fourth, it follows that a pixel position whose fractional part
-        is *exactly* 0.5 is right on the edge between two pixels.  For
-        example, the position x=0.5, y=0.5 is the corner between the
-        four lower-left-most pixels on the image.  If you want to ask
-        for "the closest pixel center" in this case, there is an
-        ambiguity, so we have to pick a convention; that convention is
-        described below.
+        Fourth thing to consider: it follows that a pixel position whose
+        fractional part is *exactly* 0.5 is right on the edge between
+        two pixels.  For example, the position x=0.5, y=0.5 is the
+        corner between the four lower-left-most pixels on the image.  If
+        you want to ask for "the closest pixel center" in this case,
+        there is an ambiguity, so we have to pick a convention; that
+        convention is described below.
 
         PSF CENTERING FOR get_stamp
         ---------------------------
 
         If (x0, y0) are not given, the PSF will be centered as best
-        possible on the stamp*.  So, if x ends in 0.8, it will be left
+        possible on the stamp*†.  So, if x ends in 0.8, it will be left
         of center, and if x ends in 0.2, it will be right of center.  If
         the fractional part of x or y is exactly 0.5, there's an
         ambituity as to where on the image you should place the stamp of
         the PSF.  The position of the PSF on the returned stamp will
         always round *down* in this case.  (The pixel on the image that
-        corresponds to the center pixel on the clip is at
+        corresponds to the center pixel on the stamp is at
         floor(x+0.5),floor(y+0.5), *not* round(x+0.5),round(y+0.5).
         Those two things are different, and round is not consistent.
         round(i.5) will round up if i is odd, but down if i is even.
@@ -143,9 +153,31 @@ class PSF:
         (x0, y0) parameters below.
 
         * "The PSF will be centered as best possible on the stamp": this
-          is only true if the PSF itself is intrinsically centered.  See
-          OversampledImagePSF.create for a discussion of
-          non-intrinsically-centered PSFs.
+          is only true if the PSF itself is intrinsically centered.
+          It's possible that some subclasses will have
+          non-intrinsically-centered PSFs.  See the documentation on the
+          __init__ and get_stamp methods of those subclasses
+          (e.g. OversampledImagePSF and photutilsImagePSF) to make sure
+          you understand how each subclass handles those cases.  In all
+          cases, get_stamp should return stamps that are consistent with
+          the description in this docstring.  If a subclass does
+          something different, that subclass is broken.
+
+        † "Centered" is obvious when a PSF is perfectly radially
+          symmetric: the center of the PSF is its peak, or mode.  If the
+          PSF is not radially symmetric, then this becomes potentially
+          ambiguous.  The "center" of the PSF really becomes a "fiducial
+          point", and cannot be assumed to be the centroid or mode of
+          the PSF (and the centroid and mode may well be different in
+          this case).  Hopefully it's somewhere close.  If you use
+          consistent PSFs, then *relative* positions should be
+          realiable.  That is, if you do a PSF fit to an image to find
+          positions of stars, and use the PSF positions of those stars
+          with a WCS to find ra and dec, this will only work if you used
+          the *same* PSFs to find the standard stars you used to solve
+          for the WCS!  For most of this discussion, for simplicitly,
+          we'll be assuming a radially symmetric PSF so that "peak" and
+          "center" and "fiducial point" all mean the same thing.
 
         Parameters
         ----------
@@ -160,10 +192,15 @@ class PSF:
             The pixel position on the image corresponding to the center
             pixel of the returned PSF.  If either is None, they default
             to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above for why
-            we don't use round().)
+            we don't use round().)  The peak* of the PSF on the returned
+            stamp will be at (x-x0,y-y0) relative to the center pixel of
+            the returned stamp.
+
+               * "peak" assumes the PSF is radially symmetric.  If it's
+                 not, by "peak" read "center" or "fiducial point".
 
             For example: if you call psfobj.get_stamp(111., 113.), and
-            if the PSF object as a clip_size of 5, then you will get
+            if the PSF object as a stamp_size of 5, then you will get
             back an image that looks something like:
 
                    -----------
@@ -178,11 +215,11 @@ class PSF:
                    | | | | | |
                    -----------
 
-             the PSF is centered on the center pixel of the clip
+             the PSF is centered on the center pixel of the stamp
              (i.e. 2,2), and that pixel should get placed on pixel
              (x,y)=(111,113) of the image for which you're rendering a
              PSF.  (Suppose you wanted to add this as an injected source
-             to the image; in that case, you'd add the returned PSF clip
+             to the image; in that case, you'd add the returned PSF stamp
              to image[111:116,109:114] (remembering that numpy arrays of
              astronomical images using all the defaults that we use in
              this software are indexed [y,x]).)
@@ -207,10 +244,11 @@ class PSF:
              corresponds to pixel (x,y)=(112,114) on the image, but the
              PSF is supposed to be centered at (x,y)=(111,113).  So, the
              PSF is one pixel down and to the left of the center of the
-             returned stamp.  If you wanted to add this as an injected
-             source on to the image, you'd add the PSF clip to
-             image[112:117,110:116] (again, remembering that numpy
-             arrays are indexed [y,x]).
+             returned stamp.  The peak of the PSF is at pixel
+             (x-x0,y-y0)=(-1,-1) relative to the center of the stamp.
+             If you wanted to add this as an injected source on to the
+             image, you'd add the PSF stamp to image[112:117,110:116]
+             (again, remembering that numpy arrays are indexed [y,x]).
 
              If you call psfobj.get_stamp(111.5,113.5), then you'd get
              back something like:
@@ -228,12 +266,12 @@ class PSF:
                    -----------
 
             Because your pixel position ended in (0.5, 0.5), the PSF is
-            centered on the corner of the pixel.  The center of the clip
+            centered on the corner of the pixel.  The center of the stamp
             (x,y)=(2,2) corresponds to (floor(111.5+0.5), floor(113.5+0.5))
             on the image, or (x,y)=(112,114).
 
             If you call psfobj.get_stamp(111.5, 113.5, x0=111, y0=113)
-            then you'd get back a clip:
+            then you'd get back a stamp:
 
                    -----------
                    | | |.|.| |
@@ -249,8 +287,8 @@ class PSF:
 
            Finally, to belabor the point, a couple of more examples.  If
            you call psfobj.get_stamp(111.25, 113.0), you'd get back a
-           clip with the peak of the psf at (x,y)=(2.25,2.0) on the
-           thumbnail image, with the center pixel corresponding to
+           stamp with the peak of the psf at (x,y)=(2.25,2.0) on the
+           stamp image, with the center pixel corresponding to
            (x,y)=(floor(111.25+0.5), floor(113.+0.5)), or (111,113).
            You would add it to image[111:116,109:114], and the stamp
            would look like:
@@ -269,8 +307,8 @@ class PSF:
 
             If you call psfobj.get_stamp(111.25, 113.0, x0=110, y0=114),
             then you'd get a PSF back with the peak of the PSF on the
-            clip at (x,y)=(3.5,1.0), the center pixel corresponding to
-            (x,y)=(110,114) on the image, and a clip that looks like:
+            stamp at (x,y)=(3.5,1.0), the center pixel corresponding to
+            (x,y)=(110,114) on the image, and a stamp that looks like:
 
                    -----------
                    | | | | | |
@@ -284,6 +322,8 @@ class PSF:
                    | | | |o|.|
                    -----------
 
+            The peak of the PSF is at (x-x0,y-y0)=(1.25,-1.0) relative
+            to the center of the returned stamp.
 
           flux: float, default 1.
              Ideally, the full flux of the PSF.  If your stamp is big
@@ -310,7 +350,7 @@ class PSF:
         figure out what kwargs you need to pass to this function, look
         at the __init__ docstring for the class corresponding to the
         psfclass you're passing.
-        
+
         Parameters
         ----------
           psfclass : str
@@ -321,7 +361,7 @@ class PSF:
         """
         if psfclass == "photutilsImagePSF":
             return photutilsImagePSF( called_from_get_psf_object=True, **kwargs )
-        
+
         if psfclass == "OversampledImagePSF":
             return OversampledImagePSF( called_from_get_psf_object=True, **kwargs )
 
@@ -336,30 +376,129 @@ class PSF:
 
         if psfclass == "ou24PSF":
             return ou24PSF( called_from_get_psf_object=True, **kwargs )
-        
+
         raise ValueError( f"Unknown PSF class {psfclass}" )
 
 
 class photutilsImagePSF( PSF ):
-    def __init__( self, x=None, y=None, oversample_factor=1., data=None, enforce_odd=True, normalize=False,
+    def __init__( self, x=None, y=None, peakx=None, peaky=None,
+                  oversample_factor=1, data=None, enforce_odd=True, normalize=False,
                   *args, **kwargs ):
+        """Create a photutilsImagePSF.  WARNING: x and y have a different meaning from OversampledImagePSF constructor!
+
+        Parmaeters
+        ----------
+          data : 2d numpy array
+            The oversampled PSF.  data.sum() should be equal to the
+            fraction of the PSF flux captured within the boundarys of
+            the data array.  (However, see "normalize" below.)  The data
+            array must be square, and (unless enforced_odd is false)
+            must have an odd side length.
+
+            The peak* of the PSF in the passed data array must be at
+            position (peakx,peaky) in pixel coordinates of the passed
+            data array.  If you leave those at default (None), then the
+            PSF must be perfectly centered on the passed data array.
+            (For an odd side-length, which is normal, that means the
+            center of the PSF is at the center of the center pixel.)
+
+               * For "peak" vs. "center" vs. "fiducial point", see the
+                 caveats in the PSF.get_stamp docstring.
+
+          oversample_factor: integer
+            Must be an integer for photutilsImagePSF.  There are this
+            many pixels along one axis in the past data array in one
+            pixel on the original image that the PSF is for.
+
+          peakx, peaky: float, float
+            The position *in oversampled pixel coordinates* on the data
+            array where the peak is found.  If these values are not,
+            then we assume the peak is at (data.shape[1]//2,
+            data.shape[0]//2) (i.e. the center of the center pixel).
+            (If you pass an even-length data array, and there is no
+            "center pixel", then expect everything to go wrong and the
+            world to end.)  See (x, y) below for some examples of
+            passing peakx and peaky.
+
+            The safest thing to do is to leave peakx and peaky at their
+            defaults of None and make sure that the PSF is centered on
+            the passed data array.
+
+          x, y : float, float
+            Position on the original source image (i.e. the astronomical
+            image for which this object is the PSF) that corresponds to
+            the center of the data array.  WARNING: this is not the same
+            as the x and y parameters given to the OversampledImagePSF
+            constructor!  *If* the PSF is centered, and x and y have a
+            zero fractional part, then the numbers will be the same for
+            both classes.  But, for an off-center PSF, the numbers will
+            be different in the two cases!  Use intrinsically off-center
+            PSFs at your own peril.  (Note that you can always *render*
+            stamps with off-centered PSFs in get_stamp(), regardless of
+            whether the PSF itself is intrinsically centered or not.)
+
+            Usually you want x and y to have no fractional part, you
+            want peakx and peaky to be None, and you want the
+            oversampled PSF to be centered on the passed data array.
+
+            data must be consistent with these numbers.  Supposed you
+            have an 11×11 PSF oversampled by a factor of 3 that is
+            centered on the original image at 1023, 511.  In this case,
+            the data array should be 33×33 in size (11 times 3).  If the
+            PSF is centered on the data array (i.e. on the center of
+            pixel (16,16)), then you would pass x=1023, y=511.
+
+            If your PSF is centered on the original image at 1023.5,
+            511.5, but you pass x=1023, y=511, that means that the PSF
+            needs to be shifted half a pixel to the right and up on the
+            (non-oversampled) stamp, or 1.5 pixels right and up on the
+            oversampled data array.  The peak of the PSF on the passed
+            data array should be at (17.5,17.5), and you must pass
+            peakx=17.5 and peaky=17.5
+
+            If your PSF is centered on the original image at 1023.,
+            511., but for some reason you pass x=1020, y=512, that means
+            that the center of the data array is three (non-oversampled)
+            pixels to the left and one (non-oversampled) pixel above the
+            peak of the PSF, or 9 oversampled left and 3 oversampled
+            above.  In this case, the passed data array should have its
+            peak (assuming a symmetric PSF) at the center of pixel
+            (13,17), and you must pass peakx=13 and peaky=17.
+
+            CHECK THESE NUMBERS IN THESE EXAMPLES TO VERIFY I DID IT RIGHT.
+
+          enforce_odd: bool, default True
+            Scream and yell if data doesn't have odd side-lengths.  You
+            probably do not want to set this to False.
+
+          normalize: bool, default False
+            If this is True, then the constructor will divide data by
+            data.sum() (WARNING: which modifies the passed array!).  Do
+            this if you are very confident that, for your purposes,
+            close enough to 100% of the PSF flux falls within the
+            boundaries of the passed data array.  Better, ensure that
+            the sum of the passed data array equals the fraction of the
+            PSF flux that falls within its boundaries, and leave
+            normalize to False.
+
+        """
         super().__init__( *args, **kwargs )
         self._warn_unknown_kwargs( kwargs )
 
         self._x = x
         self._y = y
 
-        # If self._x or self._y aren't integers, then photutils is going
-        # to say that that is the coordinate that maps to the center of
-        # the center pixel of the ovsampled array.  That's different
-        # from our OversampledImagePSF convention, where the center of the center
-        # pixel of a image-scale sampled array is treated as
-        # ( int(floor(x+0.5)), int(floor(y+0.5)) ).  So, tell photutilsImagePSF
-        # that that is the reference point of the PSF, and I *think*
-        # it will all work out.
-        pux0 = np.floor( x + 0.5 )
-        puy0 = np.floor( y + 0.5 )
-        
+        # # If self._x or self._y aren't integers, then photutils is going
+        # # to say that that is the coordinate that maps to the center of
+        # # the center pixel of the ovsampled array.  That's different
+        # # from our OversampledImagePSF convention, where the center of the center
+        # # pixel of a image-scale sampled array is treated as
+        # # ( int(floor(x+0.5)), int(floor(y+0.5)) ).  So, tell photutilsImagePSF
+        # # that that is the reference point of the PSF, and I *think*
+        # # it will all work out.
+        # pux0 = np.floor( x + 0.5 )
+        # puy0 = np.floor( y + 0.5 )
+
         if oversample_factor != int( oversample_factor ):
             raise ValueError( "For photUtilsImagePSF, oversample_factor must be an integer." )
         self._oversamp = int( oversample_factor )
@@ -371,11 +510,17 @@ class photutilsImagePSF( PSF ):
         if enforce_odd and ( data.shape[0] % 2 != 1 ):
             raise ValueError( "The length of each axis of data must be odd" )
 
+        # If data.shape[1] is odd, then the center is data.shape[1] // 2   (if side is 5, center is at pixel 2.0)
+        # If data.shape[1] is even, then the center is data.shape[1] / 2. - 0.5  (side 4, center at pixel 1.5 )
+        # Both of these are equal to data.shape[1] / 2. - 0.5
+        self._peakx = data.shape[1] / 2. - 0.5 if peakx is None else peakx
+        self._peaky = data.shape[0] / 2. - 0.5 if peaky is None else peaky
+
         if normalize:
             data /= data.sum()
 
         self._data = data
-        self._pupsf = photutils.psf.ImagePSF( data, flux=1, x_0=pux0, y_0=puy0, oversampling=self._oversamp )
+        self._pupsf = photutils.psf.ImagePSF( data, flux=1, x_0=x, y_0=y, oversampling=self._oversamp )
 
     @property
     def x( self ):
@@ -395,41 +540,84 @@ class photutilsImagePSF( PSF ):
 
     @property
     def stamp_size( self ):
-        """The size of the PSF image clip at image resolution.  Is always odd."""
+        """The size of the PSF image stamp at image resolution.  Is always odd."""
         sz = int( np.floor( self.oversampled_data.shape[0] / self._oversamp ) )
         sz += 1 if sz % 2 == 0 else 0
         return sz
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
+        """See PSF.get_stamp for documentation.
+
+        Everything below is implementation notes, which can be ignored
+        by people just using the class, but which will be useful for
+        people reading the source code.
+
+        photutils has a somewhat different way of thinking about PSF
+        positioning on stamps than we do in OversampledImagePSF.  When
+        you make an OversampledImagePSF, you give it the x and y on the
+        original image where you evaluated the original PSF, and you
+        give it an image with the PSF centered on the passed data array
+        (or, within 0.5*oversampling_factor pixels of the center of the
+        passed data array if the fractional parts of x and/or y are not
+        0).
+
+        In contrast, when you make a photutils ImagePSF, you pass it the
+        x and y that correspond to the center pixel of the passed array.
+
+        IF x and y have no fraction part, AND the PSF is centered on the
+        passed data array, then you would pass the same values of x and
+        y when constructing an OversampledImagePSF and a
+        photutilsImagePSF.  Hopefully, this is the most common case, so
+        confusion will be kept to a minimim.
+
+        However, when that's not true, we have to make sure we interpret
+        all the variables right when rendering a photUtilsImagePSF.
+
+        According to the PSF.get_stamp documentation, if x0 and y0 are
+        None, then you will always get a stamp with a PSF centered
+        within 0.5 pixels of the center of the stamp; it will be offset
+        from the center of the stamp by the fractional part of x and y.
+        This means we can't just blithely pass the x and y passed to
+        get_stamp on to the photutils.ImagePSF evaluator to get the PSF
+        stamp, but have to do some arithmetic on it to make sure we'll
+        get back what PSF.get_stamp promises.
+
+        If x0 and y0 are passed to get_stamp here, then that is the
+        position on the center of the original array that corresponds to
+        the center of the returned stamp.  The peak of the PSF on the
+        returned stamp needs to be at (x-x0,y-y0).
+
+
+
+        """
         x = float(x) if x is not None else self._x
         y = float(y) if y is not None else self._y
         xc = int( np.floor( x + 0.5 ) )
         yc = int( np.floor( y + 0.5 ) )
-        # We need just the fractional part, because if x0 and y0
-        #   weren't passed, then the PSF should be centered.
-        #   However, photutils ImagePSF will naturally give
-        #   off-centered PSFs.  Arguably its way of doing it
-        #   makes more sense, as it's more direct to interpret than
-        #   our method of using (x0, y0).  However, this gives
-        #   more control, as we can move around the same PSF,
-        #   whereas once you make a photUtils ImagePSF, its nominal
-        #   position is fixed and it will only render relative to that.
-        #   (Meaning we'd have to do some of the same gyrations we
-        #   do here, just different in detail.)
         xfrac = x - xc
         yfrac = y - yc
+        # ...gotta offset this if on a half-pixel because otherwise we're doing the floor twice
+        xfrac -= 1. if xfrac == 0.5 else 0.
+        yfrac -= 1. if yfrac == 0.5 else 0.
 
-        x0 = np.floor( self._x + 0.5 ) if x0 is None else x0
-        y0 = np.floor( self._y + 0.5 ) if y0 is None else y0
-        
+        # x0, y0 is position of the center pixel of the stamp.
+        x0 = int( np.floor( self._x + 0.5 ) ) if x0 is None else x0
+        y0 = int( np.floor( self._y + 0.5 ) ) if y0 is None else y0
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+
+        # We want the peak of the PSF to be at (x-x0,y-y0) on the
+        # returned stamp.  Our photutils.ImagePSF in self._pupsf thinks
+        # that the center of self._data is at (self._x, self._y).  On the oversampled image,
+        # the peak of the PSF is at (self._peakx, self._peaky).
         sz = self.stamp_size
-        # // is scary.  -15 // 2 is 8, but -(15// 2) is 7.  - here is not the same as * -1 !!!!!
-        xvals = np.arange( -(sz // 2), sz // 2 + 1 ) + x0 + xfrac
-        yvals = np.arange( -(sz // 2), sz // 2 + 1 ) + y0 + yfrac
+        # // is scary.  -15 // 2 is 8, but -(15 // 2) is 7.  - here is not the same as * -1 !!!!!
+        xvals = np.arange( -(sz // 2), sz // 2 + 1 ) + x0 - xfrac + ( self._peakx - ( self._data.shape[1] / 2. - 0.5 ) )
+        yvals = np.arange( -(sz // 2), sz // 2 + 1 ) + y0 - yfrac + ( self._peaky - ( self._data.shape[0] / 2. - 0.5 ) )
         xvals, yvals = np.meshgrid( xvals, yvals )
-        
+
         return self._pupsf( xvals, yvals ) * ( self.oversample_factor ** 2 )
-        
+
 
 class OversampledImagePSF( PSF ):
     """A PSF stored internally in an image which is (possibly) oversampled.
@@ -445,13 +633,42 @@ class OversampledImagePSF( PSF ):
     the algorithm here was written for and tested with PSFex PSFs.)
 
     """
-    
+
     def __init__( self, x=None, y=None, oversample_factor=1., data=None, enforce_odd=True, normalize=False,
                   *args, **kwargs ):
         """Make an OversampledImagePSF.
 
         Parameters
         ----------
+          data: 2d numpy array or None
+            The image data of the oversampled PSF.  If None, then this
+            needs, somehow, to be set later.  (Usually that will be
+            handled by something in a subclass of OversampledImagePSF;
+            if you're setting it manually, you're probably doing
+            something wrong.)  data.sum() should be equal to the
+            fraction of the PSF flux captured within the boundaries of
+            the data array.  (However, see "normalize" below.)  The
+            array must be square, and unless enforce_odd is false, the
+            length of one side must be an odd number.  Usually the peak
+            of the PSF (assuming a symmetric PSF-- if not, replace
+            "peak" with "center" or "fiducial point" or however you
+            think about it) will be centered on the center pixel fo the
+            array.  ALWAYS the peak of the PSF must be centered within
+            0.5 *non-oversampled* pixels of the center of the array.
+            (That is, if the oversampling factor is 3, the peak of the
+            PSF will be centered within 1.5 pixels of the center of the
+            passed array.)  See (x,y) below for discussion of
+            positioning the PSF on the passed data array.  WARNING : if
+            you set normalize to True, the passed array will be
+            modified!
+
+          oversample_factor: float, default 1.
+            There are this many pixels along one axis in data for one
+            pixel in the original image.  Doesn't have to be an integer
+            (e.g. if you used PSFex to find the PSF, it usually won't
+            be— though if you used PSFex to find the PSF, really we
+            should be writing a subclass to handle that!).
+
           x, y: float
             Required.  Position on the source image where this PSF is
             evaluated.  Most of the time, but not always, you probably
@@ -479,30 +696,26 @@ class OversampledImagePSF( PSF ):
             factor of 3, you should pass a 33×33 array with the peak of
             the PSF (assuming a symmetric PSF) at (14.5, 16.75).
 
-          oversample_factor: float, default 1.
-            There are this many pixels along one axis in data for one pixel in the original image.
-
-          data: 2d numpy array or None
-            The image data of the oversampled PSF.  If None, then this
-            needs, somehow, to be set later.  (Usually that will be
-            handled by something in a subclass of OversampledImagePSF.)
-            data.sum() should be equal to the fraction of the PSF flux
-            captured within the boundaries of the data array.  (However,
-            see "normalize" below.)  The array must be square, and
-            unless enforce_odd is false, the lenght of one side must be
-            an odd number.  WARNING : if you set normalize to True, the
-            passed array will be modified!
+            Note that for off-centered PSFs (meaning the PSF is not
+            centered on the passed data array), the meaning of (x, y) in
+            this constructor is *different* from the meaning of (x, y)
+            in the photutilsImagePSF constructor.  Use intrinsically
+            off-center PSFs at your own peril.  (Note that you can
+            always *render* stamps with off-centered PSFs in
+            get_stamp(), regardless of whether the PSF itself is
+            intrinsically centered or not.)
 
           enforce_odd: bool, default True
             Enforce the requirement that the data array have an odd length along each axis.
 
           normalize: bool, default False
-            Ignored if data is not None.  If True, amke sure that data
-            sums to 1.  If you think that the data array is big enough
-            that you're effectively capturing 100% of the PSF flux,
-            then you should set normalize to True.  If not, then you
-            should make sure that the data array you pass sums to the
-            fraction of the PSF flux that you're passing, and set
+            Ignored if data is not None.  If True, then this constructor
+            will make sure that data sums to 1 (modifying the passed
+            data array in so doing!).  If you think that the data array
+            is big enough that you're effectively capturing 100% of the
+            PSF flux, then you should set normalize to True.  If not,
+            then you should make sure that the data array you pass sums
+            to the fraction of the PSF flux that you're passing, and set
             normalize to False.  Usually you don't want to change this,
             and you want to trust subclases to do the Right Thing.
 
@@ -554,7 +767,7 @@ class OversampledImagePSF( PSF ):
 
     @property
     def stamp_size( self ):
-        """The size of the PSF image clip at image resolution.  Is always odd."""
+        """The size of the PSF image stamp at image resolution.  Is always odd."""
         sz = int( np.floor( self.oversampled_data.shape[0] / self._oversamp ) )
         sz += 1 if sz % 2 == 0 else 0
         return sz
@@ -565,23 +778,9 @@ class OversampledImagePSF( PSF ):
         x = float(x) if x is not None else self._x
         y = float(y) if y is not None else self._y
 
-        # (x0, y0) is the position on the image that corresponds to the center of the clip
-        #
-        # For the defaults, round() isn't the right thing to use here,
-        #   because it will behave differently when x - round(x) = 0.5
-        #   based on whether floor(x) is even or odd.  What we *want* is
-        #   for the psf to be as close to the center of the clip as
-        #   possible (when x0 and y0 are None).  In the case where the
-        #   fractional part of x is exactly 0.5, it's ambiguous what
-        #   that means-- there are four places you could stick the PSF
-        #   to statisfy that criterion.  By using floor(x+0.5), we will
-        #   consistently have the psf leaning down and to the left when
-        #   the fractional part of x (and y) is exactly 0.5, whereas
-        #   using round would give different results based on the
-        #   integer part of x (and y).
+        # (x0, y0) is the position on the image that corresponds to the center of the stamp
         x0 = int( np.floor(x + 0.5) ) if x0 is None else x0
         y0 = int( np.floor(y + 0.5) ) if y0 is None else y0
-
         if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
             raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
 
@@ -610,13 +809,13 @@ class OversampledImagePSF( PSF ):
         #   it ends up overestimating the central pixel (and
         #   maybe others?)
 
-        
+
         psfwid = self.oversampled_data.shape[0]
-        stampwid = self.clip_size
+        stampwid = self.stamp_size
 
         psfdex1d = np.arange( -( psfwid//2), psfwid//2+1, dtype=int )
 
-        # If the returned clip is to be added to the image, it should
+        # If the returned stamp is to be added to the image, it should
         #   be added to image[ymin:ymax, xmin:xmax].
         xmin = x0 - stampwid // 2
         xmax = x0 + stampwid // 2 + 1
@@ -702,7 +901,7 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
            waving their hands over their heads.)
 
     """
-    
+
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
@@ -734,7 +933,7 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
     find the right PSFs for a given band and sca.
 
     """
-    
+
     def __init__( self, band, sca, x, y, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
@@ -784,7 +983,7 @@ class ou24PSF( OversampledImagePSF ):
 
     """
 
-    def __init__( self, x=2044., y=2044., oversample_factor=5, oversampled_size=201, 
+    def __init__( self, x=2044., y=2044., oversample_factor=5, oversampled_size=201,
                   pointing=None, sca=None, sed=None, config_file=None,
                   include_photonOps=True, n_photons=1000000, seed=None,
                   **kwargs ):
@@ -830,7 +1029,7 @@ class ou24PSF( OversampledImagePSF ):
 
           sca: int
             Required.  The SCA.
-        
+
           sed: galsim.SED
             The SED to render the PSF for.  If not given, will use a flat SED.
 
@@ -920,7 +1119,7 @@ class ou24PSF( OversampledImagePSF ):
             self._data = stamp.array
 
         return self._data
-        
+
 
 class ou24PSF_slow( PSF ):
     """Wrap the roman_imsim PSFs.
@@ -1010,17 +1209,17 @@ class ou24PSF_slow( PSF ):
              ( stampy < -self.stamp_size ) or ( stampy > 2.*self.stamp_size ) ):
             raise ValueError( f"PSF would be rendered at ({stampx},{stampy}), which is too far off of the "
                               f"edge of a {self.stamp_size}-pixel stamp." )
-        
+
         if (x, y, stampx, stampy) not in self._stamps:
             rmutils = roman_utils( self.config_file, self.pointing, self.sca )
             if seed is not None:
                 rmutils.rng = galsim.BaseDeviate( seed )
-            
+
             # It seems that galsim.ChromaticObject.drawImage won't function without stamp having
             # a wcs.  Without a WCS, the stamp was coming out all zeros.
             # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
             wcs = rmutils.getLocalWCS( x+1, y+1 )
-            stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=wcs )    
+            stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=wcs )
 
             point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, rmutils.bpass )
             # TODO : make sure that rmutils.getPSF wants 1-indexed positions (which we assume here).

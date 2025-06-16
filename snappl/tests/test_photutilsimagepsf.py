@@ -51,7 +51,7 @@ def make_psf_for_test_stamp( x=1023, y=511, oversamp=3, sigmax=1.2, sigmay=None 
     # 5× oversampled means a 145×145 data array.  145 // 2 = 72
 
     sigmay = sigmax if sigmay is None else sigmay
-    
+
     assert isinstance( oversamp, int )
     size = int( np.ceil( oversamp * 29 ) )
     size += 1 if size % 2 == 0 else 0
@@ -81,7 +81,7 @@ def test_get_stamp_orientation():
     assert cx == pytest.approx( 14., abs=0.01 )
     import pdb; pdb.set_trace()
     pass
-    
+
 # "centered" here means the original PSF is centered; we're going to
 #   render it offset
 def test_get_stamp_centered_oversampled():
@@ -116,6 +116,8 @@ def test_get_stamp_centered_oversampled():
     #   This is as documented in snappl.psf.PSF.get_stamp
     relpos = [ -2.5, -1.8, -1.4, -1.0,  -0.8, -0.1,  0.,  0.1,  0.8, 1.0, 1.4,   1.8,  2.5 ]
     ctrexp = [ 13.5, 14.2, 13.6,   14., 14.2, 13.9, 14., 14.1, 13.8, 14., 14.4, 13.8, 13.5 ]
+    # relpos = [ -1.8, -1.4, -1.0,  -0.8, -0.1,  0.,  0.1,  0.8, 1.0, 1.4,   1.8 ]
+    # ctrexp = [ 14.2, 13.6,   14., 14.2, 13.9, 14., 14.1, 13.8, 14., 14.4, 13.8 ]
 
     for xrel, xctr in zip( relpos, ctrexp ):
         for yrel, yctr in zip( relpos, ctrexp ):
@@ -186,7 +188,7 @@ def test_get_stamp_centered_oversampled():
 
     import pdb; pdb.set_trace()
     pass
-    
+
     # Test a whole bunch in a four-loop.  When off is None then we
     #   expect the PSF to be centered on the clip at xctr, yctr (pulled
     #   from the ctrpos array), just as in tests above where we didn't
