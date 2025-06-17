@@ -5,17 +5,17 @@ import sys
 sys.path.insert( 0, '.' )
 from base_testimagepsf import BaseTestImagePSF
 
-from snappl.psf import PSF, OversampledImagePSF
+from snappl.psf import PSF, photutilsImagePSF
 
 
-class TestOversampledImagePSF( BaseTestImagePSF ):
-    __psfclass__ = OversampledImagePSF
+class TestPhotutilsImagePSF( BaseTestImagePSF ):
+    __psfclass__ = photutilsImagePSF
 
     @pytest.fixture
     def testpsf( self ):
         loaded = np.load('psf_test_data/testpsfarray.npz')
         arr = loaded['args']
-        mypsf = PSF.get_psf_object( "OversampledImagePSF", data=arr, x=3832., y=255.,
+        mypsf = PSF.get_psf_object( "photutilsImagePSF", data=arr, x=3832., y=255.,
                                     oversample_factor=3., normalize=True )
         assert isinstance( mypsf, self.__psfclass__ )
         return mypsf
@@ -28,8 +28,6 @@ class TestOversampledImagePSF( BaseTestImagePSF ):
         #
         # 3× oversampled means an 87×87 data array.  87 // 2 = 43
         # 5× oversampled means a 145×145 data array.  145 // 2 = 72
-        xc = np.floor( x + 0.5 )
-        yc = np.floor( y + 0.5 )
 
         sigmay = sigmax if sigmay is None else sigmay
 
@@ -38,20 +36,24 @@ class TestOversampledImagePSF( BaseTestImagePSF ):
         size += 1 if size % 2 == 0 else 0
         ctr = size // 2
 
-        xvals = np.arange( -ctr, ctr+1 ) + oversamp * ( np.floor( x + 0.5 ) - x )
-        yvals = np.arange( -ctr, ctr+1 ) + oversamp * ( np.floor( y + 0.5 ) - y )
+        # If there's a fractional part of x or y, for snappl that means that the
+        #   PSF will be offset from center by that much.  To handle such
+        #   intrinsically-offcenter PSFs in snappl, we always center
+        #   the PSF on the oversampled array (unless we pass peakx,
+        #   peaky, which we aren't here).
+        xvals = np.arange( -ctr, ctr+1 )
+        yvals = np.arange( -ctr, ctr+1 )
         ovsigmax = oversamp * sigmax
         ovsigmay = oversamp * sigmay
         data = np.exp( -( xvals[np.newaxis,:]**2 / ( 2. * ovsigmax**2 ) +
                           yvals[:,np.newaxis]**2 / ( 2. * ovsigmay**2 ) ) )
         data /= data.sum()
-        psf = PSF.get_psf_object( "OversampledImagePSF", data=data, x=x, y=y, oversample_factor=oversamp )
+        psf = PSF.get_psf_object( "photutilsImagePSF", data=data, x=x, y=y, oversample_factor=oversamp )
 
-        datacx = size // 2 + ( x - xc ) * oversamp
-        datacy = size // 2 + ( y - yc ) * oversamp
+        datacx = size // 2
+        datacy = size // 2
 
         return psf, datacx, datacy
-
 
     def test_get_stamp_orientation( self ):
         self.run_test_get_stamp_orientation()
@@ -65,3 +67,5 @@ class TestOversampledImagePSF( BaseTestImagePSF ):
 
     def test_get_stamp_offset_oversampled( self ):
         self.run_test_get_stamp_offset_oversampled()
+
+    # TODO more undersampled tests

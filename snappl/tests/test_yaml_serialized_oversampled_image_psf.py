@@ -5,14 +5,16 @@ import pytest
 
 import numpy as np
 
-from snappl.psf import YamlSerialized_OversampledImagePSF
+from snappl.psf import PSF, YamlSerialized_OversampledImagePSF
 
 
 @pytest.fixture
 def testpsf():
     loaded = np.load('psf_test_data/testpsfarray.npz')
     arr = loaded['args']
-    mypsf = YamlSerialized_OversampledImagePSF.create( arr, 3832., 255., oversample_factor=3. )
+    arr /= arr.sum()
+    mypsf = PSF.get_psf_object( "YamlSerialized_OversampledImagePSF", data=arr, x=3832., y=255., oversample_factor=3. )
+    assert isinstance( mypsf, YamlSerialized_OversampledImagePSF )
     return mypsf
 
 
@@ -38,7 +40,7 @@ def test_read( testpsf ):
     try:
         testpsf.write( barf )
 
-        bpsf = YamlSerialized_OversampledImagePSF()
+        bpsf = PSF.get_psf_object( "YamlSerialized_OversampledImagePSF", x=0., y=0. )
         bpsf.read( barf )
         assert bpsf._x == 3832.
         assert bpsf._y == 255.

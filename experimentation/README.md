@@ -1,0 +1,1 @@
+This directory is for test scripts and such that aren't really part of the snappl package, but that might be useful to archive for future reference.
