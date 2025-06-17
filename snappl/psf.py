@@ -26,7 +26,11 @@ class PSF:
 
     """
 
-    # Thought required: how to deal with oversampling.
+    # Thought required: how to deal with oversampling.  Right now, the
+    # OversampledImagePSF and photutilsImagePSF subclasses provide a
+    # property or method to access the single internally stored
+    # oversampled image.  Should there be a general interface for
+    # getting access to oversampled PSFs?
 
     def __init__( self, called_from_get_psf_object=False, *args, **kwargs ):
         """Don't call this or the constructor of a subclass directly, call PSF.get_psf_object().
