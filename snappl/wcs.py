@@ -221,7 +221,7 @@ class ASDFWCS(BaseWCS):
             x = np.array( x )
             y = np.array( y )
 
-        # ADSF WCSes are 0-indexed
+        # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)) like astropy WCS, so no need to convert
         SkyCoord = self._asdfwcs.pixel_to_world(x, y)
         ra, dec = SkyCoord.ra.deg, SkyCoord.dec.deg
         if not ( isinstance( x, collections.abc.Sequence )
@@ -236,8 +236,8 @@ class ASDFWCS(BaseWCS):
             ra = np.array( ra )
             dec = np.array( dec )
 
-        # ADSF WCSes are 0-indexed
-        # FIXME: frame is hard-coded to 'icrs', I don't find where the ASDF WCS specifies frame.
+        # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)) like astropy WCS, so no need to convert
+        # FIXME: frame is hard-coded to 'icrs', I don't find where the ASDF WCS specifies frame. -- Issue #34
         skyCoord = SkyCoord( ra, dec, unit=(u.deg, u.deg), frame = 'icrs')
         x, y = self._asdfwcs.world_to_pixel(skyCoord)
         if not ( isinstance( ra, collections.abc.Sequence )
