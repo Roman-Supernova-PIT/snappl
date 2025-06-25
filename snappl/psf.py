@@ -1130,7 +1130,6 @@ class ou24PSF_slow( PSF ):
                               center=galsim.PositionD(stampx+1, stampy+1), use_true_center=True, image=stamp )
 
             else:
-                SNLogger.debug(f'in snappl: {rmutils.bpass}, {stampx+1}, {stampy+1}')
                 psf = galsim.Convolve(point, rmutils.getPSF(x, y, pupil_bin=8))
                 psf.drawImage(rmutils.bpass, image=stamp, wcs=wcs,
                                 method="no_pixel",
