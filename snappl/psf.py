@@ -1124,9 +1124,19 @@ class ou24PSF_slow( PSF ):
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
-            point.drawImage( rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
-                             n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
-                             center=galsim.PositionD(stampx+1, stampy+1), use_true_center=True, image=stamp )
+            if self.include_photonOps:
+                point.drawImage( rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
+                              n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
+                              center=galsim.PositionD(stampx+1, stampy+1), use_true_center=True, image=stamp )
+
+            else:
+                SNLogger.debug(f'in snappl: {rmutils.bpass}, {stampx+1}, {stampy+1}')
+                psf = galsim.Convolve(point, rmutils.getPSF(x, y, pupil_bin=8))
+                psf.drawImage(rmutils.bpass, image=stamp, wcs=wcs,
+                                method="no_pixel",
+                                center=galsim.PositionD(stampx+1, stampy+1),
+                                use_true_center=True)
+                
             self._stamps[(x, y, stampx, stampy)] = stamp.array
 
 
