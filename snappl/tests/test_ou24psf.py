@@ -122,11 +122,12 @@ def test_slow_get_stamp():
 
 def test_check_phot_off():
     # Check and make sure that photon ops are actually off, when passing 
-    #  include_photonOps=False, they weren't previously. If they are, the 
+    #  include_photonOps=False, they weren't previously. If they are off, the 
     # sum of the image should always equal what it is in the test below.
     psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41.,
                                  include_photonOps=False )
     stamp = psfobj.get_stamp( 2048., 2048., x0=2050, y0=2040)
-    assert stamp.sum() == pytest.approx(2.0617096 , abs=1e-7 ), \
-        "Check that photon ops are off, the sum" +\
-              "of the image should equal 2.0617096"
+    regression_val = 2.0617096
+    assert stamp.sum() == pytest.approx(regression_val , abs=1e-7 ), \
+        "Check that photon_ops is False, the sum" +\
+              "of the image should equal regression_val"
