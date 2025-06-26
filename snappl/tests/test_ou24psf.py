@@ -130,4 +130,4 @@ def test_check_phot_off():
     regression_val = 2.0617096
     assert stamp.sum() == pytest.approx(regression_val , abs=1e-7 ), \
         "Check that photon_ops is False, the sum" +\
-              "of the image should equal regression_val"
+              f"of the image should equal {regression_val}"
