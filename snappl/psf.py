@@ -1135,6 +1135,9 @@ class ou24PSF_slow( PSF ):
 
             else:
                 psf = galsim.Convolve(point, photon_ops[0])
+                SNLogger.debug("switched back in psf.py")
+                SNLogger.debug((x+1,y+1))
+                #psf = galsim.Convolve(point, rmutils.getPSF(x+1, y+1, pupil_bin=8))
                 psf.drawImage(rmutils.bpass, method="no_pixel", center=center,  
                               use_true_center=True, image=stamp, wcs=wcs)
                 
