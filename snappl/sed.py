@@ -72,20 +72,21 @@ def ou24_find_parquet(ID, path, obj_type="SN"):
 
 
 class OU2024_Truth_SED(SED_collection):
-    def __init__(self, snid=None, sn_path=None, isstar=False):
-        if (snid is None) or (sn_path is None):
-            raise ValueError("Must specify all of snid, sn_path")
+    def __init__(self, snid=None, isstar=False):
+        # if (snid is None) or (sn_path is None):
+        #     raise ValueError("Must specify all of snid, sn_path")
 
         self.snid = snid
-        self.sn_path = sn_path
+        cfg = Config.get()
+        self.sn_path = cfg.value("ou24.sn_truth_dir")
         self.isstar = isstar
 
         if isstar:
             self.lam_array, self.flambda_array = \
-                self.ou24_get_star_SED(snid, sn_path)
+                self.ou24_get_star_SED(snid, self.sn_path)
         else:
             self.lam_array, self.flambda_array, self.mjd_array = \
-                self.ou24_get_SN_SED(snid, sn_path)
+                self.ou24_get_SN_SED(snid, self.sn_path)
 
     def get_sed(self, snid=None, mjd=None):
         """Return a galsim SED for the given snid and mjd.
