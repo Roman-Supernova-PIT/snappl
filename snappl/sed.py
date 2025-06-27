@@ -71,7 +71,7 @@ def ou24_find_parquet(ID, path, obj_type="SN"):
             return pqfile
         
 
-class OU2024_Truth_SED( SED_collection ):
+class OU2024_Truth_SED(SED_collection):
     def __init__(self, snid=None, sn_path=None, isstar=False):
         if (snid is None) or (sn_path is None):
             raise ValueError("Must specify all of snid, sn_path")
@@ -81,7 +81,8 @@ class OU2024_Truth_SED( SED_collection ):
         self.isstar = isstar
 
         if isstar:
-            self.lam_array, self.flambda_array = self.ou24_get_star_SED(snid, sn_path)
+            self.lam_array, self.flambda_array = \
+                self.ou24_get_star_SED(snid, sn_path)
         else:
             self.lam_array, self.flambda_array, self.mjd_array = \
                 self.ou24_get_SN_SED(snid, sn_path)
