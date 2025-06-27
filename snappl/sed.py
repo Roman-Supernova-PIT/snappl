@@ -27,12 +27,12 @@ class Flat_SED( SED_collection ):
 
     def get_sed( sed, **kwargs):
         return self.sed
-    
+
 
 class Single_CSV_SED( SED_collection ):
     def __init__( self, csv_file ):
         # READ THE CSV FILE, make a galsim SED in self.sed
-        raise NotImplementedError( "Single_CSV_SED is not implemented yet." )
+        raise NotImplementedError( "Single_CSV_SED is not implemented yet.")
 
     def get_sed( self, **kwargs ):
         return self.sed
@@ -69,7 +69,7 @@ def ou24_find_parquet(ID, path, obj_type="SN"):
         # this?
         if ID in df.id.values or str(ID) in df.id.values:
             return pqfile
-        
+
 
 class OU2024_Truth_SED(SED_collection):
     def __init__(self, snid=None, sn_path=None, isstar=False):
@@ -88,24 +88,33 @@ class OU2024_Truth_SED(SED_collection):
                 self.ou24_get_SN_SED(snid, sn_path)
 
     def get_sed(self, snid=None, mjd=None):
-        assert snid == self.snid, 'ID does not match the SED collection ID.'
+        """Return a galsim SED for the given snid and mjd.
+        Inputs:
+        snid: the ID of the object
+        mjd: the MJD of the observation (only used if this is a SN)
+
+        Returns:
+        lam: the wavelength of the SED in Angstrom (numpy array of floats)
+        flambda: the flux of the SED units in erg/s/cm^2/Angstrom
+                (numpy array of floats)"""
+        assert snid == self.snid, "ID does not match the SED collection ID."
 
         if not self.isstar:
             # If this is a SN, we need to find the closest SED to the given MJD.
             bestindex = np.argmin(np.abs(np.array(self.mjd_array) - mjd))
             max_days_cutoff = 10
             closest_days_away = np.min(np.abs(np.array(self.mjd_array) - mjd))
-            
+
             if closest_days_away > max_days_cutoff:
                 SNLogger.warning(f"WARNING: No SED data within {max_days_cutoff} days of "
                         + f"date. \n The closest SED is {closest_days_away} days away.")
-                
+
             return np.array(self.lam_array), np.array(self.flambda_array[bestindex])
-        
+
         else:
             # If this is a star, we just return the SED
             return np.array(self.lam_array), np.array(self.flambda_array)
-            
+
     def ou24_get_star_SED(self, SNID, sn_path):
         """Return the appropriate SED for the star.
         Inputs:
@@ -159,6 +168,3 @@ class OU2024_Truth_SED(SED_collection):
         mjd = sed_table["mjd"]
 
         return np.array(lam), np.array(flambda), np.array(mjd)
-        
-
-
