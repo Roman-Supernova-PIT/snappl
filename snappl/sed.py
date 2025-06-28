@@ -12,10 +12,10 @@ from snpit_utils.logger import SNLogger
 
 
 class SED_collection:
-    def __init__( self, *args, **kwargs ):
+    def __init__(self, *args, **kwargs):
         pass
 
-    def get_sed( self, filename=None, snid=None, mjd=None ):
+    def get_sed(self, filename=None, snid=None, mjd=None):
         """Return a galsim SED."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_sed" )
 
@@ -25,9 +25,8 @@ class Flat_SED( SED_collection ):
         self.sed = galsim.SED( galsim.LookupTable( [1000, 26000], [1, 1], interpolant='linear' ),
                                wave_type='Angstrom', flux_type='fphotons' )
 
-    def get_sed( sed, **kwargs):
+    def get_sed( self, **kwargs):
         return self.sed
-
 
 class Single_CSV_SED( SED_collection ):
     def __init__( self, csv_file ):
@@ -75,7 +74,7 @@ class OU2024_Truth_SED(SED_collection):
 
             if closest_days_away > max_days_cutoff:
                 SNLogger.warning(f"WARNING: No SED data within {max_days_cutoff} days of "
-                        + f"date. \n The closest SED is {closest_days_away} days away.")
+                                 + f"date. \n The closest SED is {closest_days_away} days away.")
 
             return np.array(self.lam_array), np.array(self.flambda_array[bestindex])
 
