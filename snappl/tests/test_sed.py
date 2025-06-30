@@ -1,4 +1,6 @@
+import os
 import pathlib
+import pytest
 import numpy as np
 
 from astropy.io import fits  # noqa: F401
@@ -6,6 +8,7 @@ from astropy.io import fits  # noqa: F401
 from snappl.sed import OU2024_Truth_SED
 
 
+@pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
 def test_ou24_get_star_sed():
     sed_obj = OU2024_Truth_SED(40120913)
     lam, flux = sed_obj.get_sed(40120913, 62493)
@@ -17,6 +20,7 @@ def test_ou24_get_star_sed():
     np.testing.assert_allclose(flux, sn_flambda_test, atol=1e-7)
 
 
+@pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
 def test_ou24_get_sn_sed():
     sed_obj = OU2024_Truth_SED(40973149150, isstar=True)
     lam, flux = sed_obj.get_sed(40973149150)
