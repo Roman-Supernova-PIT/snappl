@@ -1113,7 +1113,6 @@ class ou24PSF_slow( PSF ):
             # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
             wcs = rmutils.getLocalWCS( x+1, y+1 )
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=wcs )
-
             point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, rmutils.bpass )
             # TODO : make sure that rmutils.getPSF wants 1-indexed positions (which we assume here).
             # (This is not that big a deal, because the PSF is not going to vary significantly
@@ -1124,11 +1123,22 @@ class ou24PSF_slow( PSF ):
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
-            point.drawImage( rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
-                             n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
-                             center=galsim.PositionD(stampx+1, stampy+1), use_true_center=True, image=stamp )
-            self._stamps[(x, y, stampx, stampy)] = stamp.array
+            center = galsim.PositionD(stampx+1, stampy+1)
+            # Note: self.include_photonOps is a bool that states whether we are
+            #  shooting photons or not, photon_ops is the actual map (not sure
+            #  if that's the correct word) that describes where the photons 
+            # should be shot, with some randomness.
+            if self.include_photonOps:
+                point.drawImage( rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
+                              n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
+                              center=center, use_true_center=True, image=stamp )
 
+            else:
+                psf = galsim.Convolve(point, photon_ops[0])
+                psf.drawImage(rmutils.bpass, method="no_pixel", center=center,  
+                              use_true_center=True, image=stamp, wcs=wcs)
+                
+            self._stamps[(x, y, stampx, stampy)] = stamp.array
 
         return self._stamps[(x, y, stampx, stampy)]
 

@@ -118,3 +118,16 @@ def test_slow_get_stamp():
 #     stamp = psfobj.get_stamp()
 #     assert stamp.shape == ( 41, 41 )
 #     # TODO MORE
+
+@pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
+def test_check_phot_off():
+    # Check and make sure that photon ops are actually off, when passing
+    #  include_photonOps=False, they weren't previously. If they are off, the
+    # sum of the image should always equal what it is in the test below.
+    psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41.,
+                                 include_photonOps=False )
+    stamp = psfobj.get_stamp( 2048., 2048., x0=2050, y0=2040)
+    regression_val = 2.0617566108703613
+    assert stamp.sum() == pytest.approx(regression_val , abs=1e-7 ), \
+        "Check that photon_ops is False, the sum" +\
+              f"of the image should equal {regression_val}, was actually {stamp.sum()}"
