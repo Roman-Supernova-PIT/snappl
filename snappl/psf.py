@@ -1194,6 +1194,18 @@ class ou24PSF( ou24PSF_slow ):
         #   (within 1/2 pixel; by default, we want to make x and y
         #   centered on a pixel).
 
+
+        x = x if x is not None else float( self.sca_size // 2 )
+        y = y if y is not None else float( self.sca_size // 2 )
+
+        xc = int( np.floor( x + 0.5 ) )
+        yc = int( np.floor( y + 0.5 ) )
+        x0 = xc if x0 is None else x0
+        y0 = yc if y0 is None else y0
+
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+
         if not hasattr( self, '_psf' ):
             SNLogger.debug( "Initializing ou24PSF galsim PSF object." )
             # If we don't have a psf object, then we need to initialize it, we then re use it for multiple calls to
@@ -1205,15 +1217,6 @@ class ou24PSF( ou24PSF_slow ):
                                   "to initialize the PSF object. If you want to recreate the PSF object, use "
                                   "ou24PSF_slow instead.")
 
-        x = x if x is not None else float( self.sca_size // 2 )
-        y = y if y is not None else float( self.sca_size // 2 )
-
-        xc = int( np.floor( x + 0.5 ) )
-        yc = int( np.floor( y + 0.5 ) )
-        x0 = xc if x0 is None else x0
-        y0 = yc if y0 is None else y0
-        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
-            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
         stampx = self.stamp_size // 2 + ( x - x0 )
         stampy = self.stamp_size // 2 + ( y - y0 )
 
