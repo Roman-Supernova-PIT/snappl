@@ -1103,6 +1103,7 @@ class ou24PSF_slow( PSF ):
             raise ValueError( f"PSF would be rendered at ({stampx},{stampy}), which is too far off of the "
                               f"edge of a {self.stamp_size}-pixel stamp." )
 
+
         if (x, y, stampx, stampy) not in self._stamps:
             rmutils = roman_utils( self.config_file, self.pointing, self.sca )
             if seed is not None:
@@ -1146,19 +1147,36 @@ class ou24PSF_slow( PSF ):
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
 class ou24PSF( ou24PSF_slow ):
 
-    def _init_psf_object( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None):
+    def _init_psf_object( self, x0=None, y0=None, flux=1.):
+        """Create the galsim PSF object, WCS, and galsim.chromatic.SimpleChromaticTransformation
+           that can be reused for multiple calls to get_stamp.
+
+        Parameters are as in PSF.get_stamp, plus:
+
+        Parameters
+        ----------
+          seed : int
+            A random seed to pass to galsim.BaseDeviate for photonOps.
+            NOTE: this is not part of the base PSF interface (at least,
+            as of yet), so don't use it in production pipeline code.
+            However, it will be useful in tests for purposes of testing
+            reproducibility.
+
+
+        """
         self._rmutils = roman_utils(self.config_file, self.pointing, self.sca)
-        self._psf = self._rmutils.getPSF(x+1, y+1, pupil_bin=8)
+        self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
         # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
-        self._wcs = self._rmutils.getLocalWCS( x+1, y+1 )
+        self._wcs = self._rmutils.getLocalWCS( x0+1, y0+1 )
         self._stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
         self._point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, self._rmutils.bpass )
         self._convolved_psf = galsim.Convolve(self._point, self._psf)
+        # This is only used to ensure the user isn't trying to move the PSF around
+        self._stored_x0 = x0
+        self._stored_y0 = y0
 
-
-    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None ):
+    def get_stamp(self, x=None, y=None, x0=None, y0=None, flux=1.0, seed=None):
         """Return a 2d numpy image of the PSF at the image resolution.
-
         Parameters are as in PSF.get_stamp, plus:
 
         Parameters
@@ -1177,8 +1195,15 @@ class ou24PSF( ou24PSF_slow ):
         #   centered on a pixel).
 
         if not hasattr( self, '_psf' ):
-            SNLogger.debug( "Initializing ou24PSF galsim PSF object" )
-            self._init_psf_object( x=x, y=y, x0=x0, y0=y0, flux=flux, seed=seed )
+            SNLogger.debug( "Initializing ou24PSF galsim PSF object." )
+            # If we don't have a psf object, then we need to initialize it, we then re use it for multiple calls to
+            # get_stamp.
+            self._init_psf_object( x0=x0, y0=y0, flux=flux)
+        else:
+            if x0 != self._stored_x0 or y0 != self._stored_y0:
+                raise ValueError("ou24PSF.get_stamp called with x0 or y0 that does not match the x0 or y0 used"
+                                  "to initialize the PSF object. If you want to recreate the PSF object, use "
+                                  "ou24PSF_slow instead.")
 
         x = x if x is not None else float( self.sca_size // 2 )
         y = y if y is not None else float( self.sca_size // 2 )
@@ -1215,12 +1240,12 @@ class ou24PSF( ou24PSF_slow ):
             # should be shot, with some randomness.
             if self.include_photonOps:
                 self._point.drawImage(self._rmutils.bpass, method='phot', rng=self._rmutils.rng, photon_ops=photon_ops,
-                              n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
-                              center=center, use_true_center=True, image=self._stamp )
+                                      n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
+                                      center=center, use_true_center=True, image=self._stamp)
 
             else:
                 self._convolved_psf.drawImage(self._rmutils.bpass, method="no_pixel", center=center,
-                              use_true_center=True, image=self._stamp, wcs=self._wcs)
+                                              use_true_center=True, image=self._stamp, wcs=self._wcs)
 
             self._stamps[(x, y, stampx, stampy)] = self._stamp.array
 
