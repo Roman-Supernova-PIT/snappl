@@ -84,7 +84,7 @@ class OU2024_Truth_SED(SED_collection):
 
         else:
             # If this is a star, we just return the SED
-            galsim.SED(
+            return galsim.SED(
                 galsim.LookupTable(np.array(self.lam_array), (self.flambda_array), interpolant="linear"),
                 wave_type="Angstrom",
                 flux_type="fphotons",

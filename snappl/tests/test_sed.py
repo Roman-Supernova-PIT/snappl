@@ -9,9 +9,11 @@ from snappl.sed import OU2024_Truth_SED
 
 
 @pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
-def test_ou24_get_star_sed():
+def test_ou24_get_sn_sed():
     sed_obj = OU2024_Truth_SED(40120913)
-    lam, flux = sed_obj.get_sed(40120913, 62493)
+    sed = sed_obj.get_sed(40120913, 62493)
+    lam = sed._spec.x
+    flux = sed._spec.f
     sn_lam_test = np.load(pathlib.Path(__file__).parent
                           / "testdata/SED/sn_lam_test.npy")
     sn_flambda_test = np.load(pathlib.Path(__file__).parent
@@ -21,9 +23,11 @@ def test_ou24_get_star_sed():
 
 
 @pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
-def test_ou24_get_sn_sed():
+def test_ou24_get_star_sed():
     sed_obj = OU2024_Truth_SED(40973149150, isstar=True)
-    lam, flux = sed_obj.get_sed(40973149150)
+    sed = sed_obj.get_sed(40973149150)
+    lam = sed._spec.x
+    flux = sed._spec.f
     star_lam_test = np.load(pathlib.Path(__file__).parent
                             / "testdata/SED/star_lam_test.npy")
     star_flambda_test = np.load(pathlib.Path(__file__).parent
