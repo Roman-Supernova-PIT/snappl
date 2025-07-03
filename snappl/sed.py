@@ -61,9 +61,8 @@ class OU2024_Truth_SED(SED_collection):
         mjd: the MJD of the observation (only used if this is a SN)
 
         Returns:
-        lam: the wavelength of the SED in Angstrom (numpy array of floats)
-        flambda: the flux of the SED units in erg/s/cm^2/Angstrom
-                (numpy array of floats)"""
+        galsim.SED: the SED for the given snid and mjd, if a supernova, for the ID if a star.
+        """
         assert snid == self.snid, "ID does not match the SED collection ID."
 
         if not self.isstar:
