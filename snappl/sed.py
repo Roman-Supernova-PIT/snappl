@@ -76,11 +76,19 @@ class OU2024_Truth_SED(SED_collection):
                 SNLogger.warning(f"WARNING: No SED data within {max_days_cutoff} days of "
                                  + f"date. \n The closest SED is {closest_days_away} days away.")
 
-            return np.array(self.lam_array), np.array(self.flambda_array[bestindex])
+            return galsim.SED(
+                galsim.LookupTable(np.array(self.lam_array), (self.flambda_array[bestindex]), interpolant="linear"),
+                wave_type="Angstrom",
+                flux_type="fphotons",
+            )
 
         else:
             # If this is a star, we just return the SED
-            return np.array(self.lam_array), np.array(self.flambda_array)
+            galsim.SED(
+                galsim.LookupTable(np.array(self.lam_array), (self.flambda_array), interpolant="linear"),
+                wave_type="Angstrom",
+                flux_type="fphotons",
+            )
 
     def _ou24_open_parquet(self, parq, obj_type="SN", engine="fastparquet"):
         """Convenience function to open a parquet file given its number."""
