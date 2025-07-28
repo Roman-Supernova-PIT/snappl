@@ -1146,6 +1146,9 @@ class ou24PSF_slow( PSF ):
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
 class ou24PSF( ou24PSF_slow ):
+    def __init__( self, *args, **kwargs ):
+        super().__init__(*args, **kwargs)
+        self._psf = None
 
     def _init_psf_object( self, x0=None, y0=None, flux=1.):
         """Create the galsim PSF object, WCS, and galsim.chromatic.SimpleChromaticTransformation
@@ -1206,7 +1209,7 @@ class ou24PSF( ou24PSF_slow ):
         if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
             raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
 
-        if not hasattr( self, '_psf' ):
+        if self._psf is None:
             SNLogger.debug( "Initializing ou24PSF galsim PSF object." )
             # If we don't have a psf object, then we need to initialize it, we then re use it for multiple calls to
             # get_stamp.

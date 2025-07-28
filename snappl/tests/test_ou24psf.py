@@ -1,6 +1,7 @@
 import os
 import pytest
 
+import numpy as np
 import scipy
 
 from astropy.io import fits  # noqa: F401
@@ -206,6 +207,16 @@ def test_get_stamp():
                 centerstamp[20 + yoff, 20 + xoff], abs=absoff
             )
 
+    with pytest.raises(ValueError, match="ou24PSF.get_stamp called with x0 or y0 that does not match"):
+        _ = psfobj.get_stamp(2048.0, 2048.0)
+
+    with pytest.raises(ValueError, match="ou24PSF.get_stamp called with x0 or y0 that does not match"):
+        _ = psfobj.get_stamp(2048.0, 2048.0, x0=2046, y0=2045)
+
+    newstamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
+    np.testing.assert_array_equal(stamp, newstamp)
+
+
     # Try a PSF centered between two pixels.  Because of how we
     #   define 0.5 behavior in PSF.get_stamp, this should be
     #   centered to the *left* of the center of the image.
@@ -217,10 +228,6 @@ def test_get_stamp():
     assert cx == pytest.approx(19.22, abs=0.02)
     assert cy == pytest.approx(19.92, abs=0.02)
 
-    with pytest.raises( ValueError, match="ou24PSF.get_stamp called with x0 or y0 that does not match" ):
-        psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
-        psfobj.get_stamp(2048.0, 2048.0)
-        psfobj.get_stamp(2048.0, 2048.0, x0=2046, y0=2045)
 
 
     # Try an offcenter PSF that's centered on a corner
