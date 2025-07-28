@@ -1,5 +1,13 @@
-ou24psf:
+ou24:
   config_file: /sn_info_dir/tds.yaml
+  sn_truth_dir: /snana_pq_dir
+  sims_sed_library: /home/rubin_sim_data/sims_sed_library
+  # Comment from Cole & Rob: This is a path to the SEDs that were used to generate the
+  # OU24 simulations. It is not currently stored in any particular place, so this
+  # path will likely change in the future. If you are interested in getting the SEDs yourself,
+  # run the command:
+  # curl https://s3df.slac.stanford.edu/groups/rubin/static/sim-data/sed_library/seds_170124.....gz  | tar -C rubin_sim_data/sims_sed_library -xz
+  # Courtesy of M. Troxel ^^^
 
 photometry:
     snappl:
