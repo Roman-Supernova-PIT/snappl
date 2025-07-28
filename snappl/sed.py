@@ -130,10 +130,8 @@ class OU2024_Truth_SED(SED_collection):
         filenum = self._ou24_find_parquet(obj_type="star")
         pqfile = self._ou24_open_parquet(filenum, obj_type="star")
         file_name = pqfile[pqfile["id"] == str(self.snid)]["sed_filepath"].values[0]
-        fullpath = pathlib.Path(Config.get().value("ou24." +
-                                "sims_sed_library")) / file_name
-        sed_table = pd.read_csv(fullpath,  compression="gzip", sep=r"\s+",
-                                comment="#")
+        fullpath = pathlib.Path(Config.get().value("ou24.sims_sed_library")) / file_name
+        sed_table = pd.read_csv(fullpath,  compression="gzip", sep=r"\s+", comment="#")
         lam = sed_table.iloc[:, 0]
         flambda = sed_table.iloc[:, 1]
         return np.array(lam), np.array(flambda)
