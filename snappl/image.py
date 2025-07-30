@@ -554,3 +554,48 @@ class OpenUniverse2024FITSImage( FITSImage ):
     def _get_zeropoint( self ):
         header = self._get_header()
         return galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+
+
+class ManualFITSImage(FITSImage):
+    def __init__(self, header, data, noise=None, flags=None, path = None, exposure = None, sca = None, *args, **kwargs):
+        #super().__init__(*args, **kwargs)
+
+        self._data = data
+        self._noise = noise
+        self._flags = flags
+        self._header = header
+        self._wcs = None
+        self._is_cutout = False
+        self._image_shape = None
+        SNLogger.debug("Creating ManualFITSImage")
+
+        self.inputs = types.SimpleNamespace()
+        self.inputs.path = None
+        self.inputs.exposure = None
+        self.inputs.sca = None
+
+    def _get_header(self):
+        """Get the header of the image."""
+        if self._header is None:
+            raise RuntimeError("Header is not set for ManualFITSImage.")
+        return self._header
+
+    def get_data(self, which="all", cache=False, always_reload=False):
+        if self._is_cutout:
+            raise RuntimeError(
+                "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported."
+            )
+        if which not in Image.data_array_list:
+            raise ValueError(f"Unknown which {which}, must be all, data, noise, or flags")
+
+        if (which == "all") and (self._data is not None) and (self._noise is not None) and (self._flags is not None):
+            return [self._data, self._noise, self._flags]
+
+        if (which == "data") and (self._data is not None):
+            return [self._data]
+
+        if (which == "noise") and (self._noise is not None):
+            return [self._noise]
+
+        if (which == "flags") and (self._flags is not None):
+            return [self._flags]
