@@ -218,3 +218,39 @@ def test_get_header( ou2024image, ou2024image_module ):
     hdr = ou2024image._get_header()
     assert isinstance( hdr, astropy.io.fits.header.Header )
     assert hdr is ou2024image._header
+
+# ======================================================================
+# ManualFITSImage tests
+
+
+def test_manual_fits_image( manual_fits_image ):
+    assert isinstance( manual_fits_image._data, np.ndarray )
+    assert manual_fits_image._data.shape == ( 25, 25 )
+    assert manual_fits_image._data.dtype == np.float32
+    assert np.all( manual_fits_image._data == 1.0 )
+    assert isinstance( manual_fits_image._noise, np.ndarray )
+    assert manual_fits_image._noise.shape == ( 25, 25 )
+    assert manual_fits_image._noise.dtype == np.float32
+    assert np.all( manual_fits_image._noise == 0.0 )
+    assert isinstance( manual_fits_image._flags, np.ndarray )
+    assert manual_fits_image._flags.shape == ( 25, 25 )
+    assert manual_fits_image._flags.dtype == np.uint32
+    assert np.all( manual_fits_image._flags == 0 )
+
+
+    # Test the data setter
+    manual_fits_image._data = np.ones((25, 25), dtype=np.float32) * 2.0
+    assert np.all( manual_fits_image._data == 2.0 )
+
+    # Test the noise setter
+    manual_fits_image._noise = np.ones((25, 25), dtype=np.float32) * 3.0
+    assert np.all( manual_fits_image._noise == 3.0 )
+
+    # Test the flags setter
+    manual_fits_image._flags = np.zeros((25, 25), dtype=np.uint32) + 1
+    assert np.all( manual_fits_image._flags == 1 )
+
+    # Test the header
+    hdr = manual_fits_image._get_header()
+    assert isinstance(hdr, astropy.io.fits.header.Header)
+    assert hdr is manual_fits_image._header

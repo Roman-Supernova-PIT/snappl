@@ -554,3 +554,137 @@ class OpenUniverse2024FITSImage( FITSImage ):
     def _get_zeropoint( self ):
         header = self._get_header()
         return galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+
+
+class ManualFITSImage(FITSImage):
+    def __init__(self, header, data, noise=None, flags=None, path = None, exposure = None, sca = None, *args, **kwargs):
+        #super().__init__(*args, **kwargs)
+
+        self._data = data
+        self._noise = noise
+        self._flags = flags
+        self._header = header
+        self._wcs = None
+        self._is_cutout = False
+        self._image_shape = None
+        SNLogger.debug("Creating ManualFITSImage")
+
+        self.inputs = types.SimpleNamespace()
+        self.inputs.path = None
+        self.inputs.exposure = None
+        self.inputs.sca = None
+
+    def _get_header(self):
+        """Get the header of the image."""
+        if self._header is None:
+            raise RuntimeError("Header is not set for ManualFITSImage.")
+        return self._header
+
+    # def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None):
+    #     """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
+
+    #     Parameters
+    #     ----------
+    #     ra : float
+    #         RA coordinate of the center of the cutout, in degrees.
+    #     dec : float
+    #         DEC coordinate of the center of the cutout, in degrees.
+    #     xsize : int
+    #         Width of the cutout in pixels.
+    #     ysize : int
+    #         Height of the cutout in pixels. If None, set to xsize.
+
+    #     Returns
+    #     -------
+    #     cutout : snappl.image.Image
+    #         A new snappl image object that is a cutout of the original image.
+    #     """
+
+    #     wcs = self.get_wcs()
+    #     x, y = wcs.world_to_pixel(ra, dec)
+    #     x = int(np.floor(x + 0.5))
+    #     y = int(np.floor(y + 0.5))
+    #     return self.get_cutout(x, y, xsize, ysize)
+
+    def get_data(self, which="all", cache=False, always_reload=False):
+        if self._is_cutout:
+            raise RuntimeError(
+                "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported."
+            )
+        if which not in Image.data_array_list:
+            raise ValueError(f"Unknown which {which}, must be all, data, noise, or flags")
+
+        if (which == "all") and (self._data is not None) and (self._noise is not None) and (self._flags is not None):
+            return [self._data, self._noise, self._flags]
+
+        if (which == "data") and (self._data is not None):
+            return [self._data]
+
+        if (which == "noise") and (self._noise is not None):
+            return [self._noise]
+
+        if (which == "flags") and (self._flags is not None):
+            return [self._flags]
+
+    # def get_cutout(self, x, y, xsize, ysize=None):
+    #     """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
+
+    #     This implementation (in FITSImage) assumes that the image WCS is an AstropyWCS.
+
+    #     Parameters
+    #     ----------
+    #     x : int
+    #         x pixel coordinate of the center of the cutout.
+    #     y : int
+    #         y pixel coordinate of the center of the cutout.
+    #     xsize : int
+    #         Width of the cutout in pixels.
+    #     ysize : int
+    #         Height of the cutout in pixels. If None, set to xsize.
+
+    #     Returns
+    #     -------
+    #     cutout : snappl.image.Image
+    #         A new snappl image object that is a cutout of the original image.
+
+    #     """
+    #     if not all(
+    #         [
+    #             isinstance(x, (int, np.integer)),
+    #             isinstance(y, (int, np.integer)),
+    #             isinstance(xsize, (int, np.integer)),
+    #             (ysize is None or isinstance(ysize, (int, np.integer))),
+    #         ]
+    #     ):
+    #         raise TypeError("All of x, y, xsize, and ysize must be integers.")
+
+    #     if ysize is None:
+    #         ysize = xsize
+    #     if xsize % 2 != 1 or ysize % 2 != 1:
+    #         raise ValueError(
+    #             f"Size must be odd for a well defined central pixel, you tried to pass a size of {xsize, ysize}."
+    #         )
+
+    #     SNLogger.debug(f"Cutting out at {x, y}")
+    #     data, noise, flags = self.get_data("all", always_reload=False)
+
+    #     wcs = self.get_wcs()
+    #     if (wcs is not None) and (not isinstance(wcs, AstropyWCS)):
+    #         raise TypeError("Error, FITSImage.get_cutout only works with AstropyWCS wcses")
+    #     apwcs = None if wcs is None else wcs._wcs
+
+    #     # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
+    #     astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), mode="strict", wcs=apwcs)
+    #     astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), mode="strict", wcs=apwcs)
+    #     astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), mode="strict", wcs=apwcs)
+
+    #     snappl_cutout = self.__class__(
+    #         self._header, astropy_cutout.data, noise=astropy_noise.data, flags=astropy_flags.data
+    #     )
+    #     snappl_cutout._data = astropy_cutout.data
+    #     snappl_cutout._wcs = None if wcs is None else AstropyWCS(astropy_cutout.wcs)
+    #     snappl_cutout._noise = astropy_noise.data
+    #     snappl_cutout._flags = astropy_flags.data
+    #     snappl_cutout._is_cutout = True
+
+    #     return snappl_cutout
