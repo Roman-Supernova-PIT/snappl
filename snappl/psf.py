@@ -1117,23 +1117,20 @@ class ou24PSF_slow( PSF ):
             # It seems that galsim.ChromaticObject.drawImage won't function without stamp having
             # a wcs.  Without a WCS, the stamp was coming out all zeros.
             # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
-            #wcs = rmutils.getLocalWCS( x+1, y+1 )
+            #wcs = rmutils.getLocalWCS( x+1, y+1 )self._
 
             if input_wcs is None:
-                wcs = rmutils.getLocalWCS( x+1, y+1 )
+                self._wcs = rmutils.getLocalWCS( x+1, y+1 )
             elif isinstance(input_wcs, BaseWCS):
                 SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
-                wcs = input_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
+                self._wcs = input_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
             elif isinstance( input_wcs, galsim.BaseWCS ):
                 SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
-                wcs = input_wcs.local( image_pos = galsim.PositionD(x+1, y+1 ))
+                self._wcs = input_wcs.local( image_pos = galsim.PositionD(x+1, y+1 ))
             else:
                 raise TypeError( f"wcs must be a galsim.BaseWCS, not a {type(input_wcs)}" )
-            SNLogger.debug( f"ou24PSF wcs fetched at: {x, y}" )
-            SNLogger.debug( f"ou24PSF wcs: {wcs}" )
 
-
-            stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=wcs )
+            stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
             point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, rmutils.bpass )
             # TODO : make sure that rmutils.getPSF wants 1-indexed positions (which we assume here).
             # (This is not that big a deal, because the PSF is not going to vary significantly
@@ -1149,16 +1146,15 @@ class ou24PSF_slow( PSF ):
             #  shooting photons or not, photon_ops is the actual map (not sure
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
-            SNLogger.debug(f'Drawing at {center}')
             if self.include_photonOps:
-                point.drawImage( rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
-                              n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
-                              center=center, use_true_center=True, image=stamp )
+                point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
+                                n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
+                                center=center, use_true_center=True, image=stamp)
 
             else:
                 psf = galsim.Convolve(point, photon_ops[0])
                 psf.drawImage(rmutils.bpass, method="no_pixel", center=center,
-                              use_true_center=True, image=stamp, wcs=wcs)
+                              use_true_center=True, image=stamp, wcs=self._wcs)
 
             self._stamps[(x, y, stampx, stampy)] = stamp.array
 
@@ -1171,7 +1167,7 @@ class ou24PSF( ou24PSF_slow ):
         super().__init__(*args, **kwargs)
         self._psf = None
 
-    def _init_psf_object( self, x0=None, y0=None, flux=1., wcs = None):
+    def _init_psf_object( self, x0=None, y0=None, flux=1., input_wcs = None):
         """Create the galsim PSF object, WCS, and galsim.chromatic.SimpleChromaticTransformation
            that can be reused for multiple calls to get_stamp.
 
@@ -1194,16 +1190,16 @@ class ou24PSF( ou24PSF_slow ):
         self._rmutils = roman_utils(self.config_file, self.pointing, self.sca)
         self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
         # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
-        if wcs is None:
+        if input_wcs is None:
             self._wcs = self._rmutils.getLocalWCS( x0+1, y0+1 )
-        elif isinstance(wcs, BaseWCS):
+        elif isinstance(input_wcs, BaseWCS):
             SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
-            self._wcs = wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x0+1, y0+1 ))
-        elif isinstance( wcs, galsim.BaseWCS ):
+            self._wcs = input_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x0+1, y0+1))
+        elif isinstance( input_wcs, galsim.BaseWCS):
             SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
-            self._wcs = wcs.local( image_pos = galsim.PositionD(x0+1, y0+1 ))
+            self._wcs = input_wcs.local( image_pos=galsim.PositionD(x0+1, y0+1))
         else:
-            raise TypeError( f"wcs must be a galsim.BaseWCS, not a {type(wcs)}" )
+            raise TypeError( f"wcs must be a galsim.BaseWCS, not a {type(input_wcs)}" )
         SNLogger.debug( f"ou24PSF wcs fetched at: {x0, y0}" )
         SNLogger.debug( f"ou24PSF wcs: {self._wcs}" )
         self._stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
@@ -1213,7 +1209,7 @@ class ou24PSF( ou24PSF_slow ):
         self._stored_x0 = x0
         self._stored_y0 = y0
 
-    def get_stamp(self, x=None, y=None, x0=None, y0=None, flux=1.0, seed=None, wcs = None):
+    def get_stamp(self, x=None, y=None, x0=None, y0=None, flux=1.0, seed=None, input_wcs=None):
         """Return a 2d numpy image of the PSF at the image resolution.
         Parameters are as in PSF.get_stamp, plus:
 
@@ -1236,7 +1232,6 @@ class ou24PSF( ou24PSF_slow ):
         #   (within 1/2 pixel; by default, we want to make x and y
         #   centered on a pixel).
 
-
         x = x if x is not None else float( self.sca_size // 2 )
         y = y if y is not None else float( self.sca_size // 2 )
 
@@ -1252,7 +1247,7 @@ class ou24PSF( ou24PSF_slow ):
             SNLogger.debug( "Initializing ou24PSF galsim PSF object." )
             # If we don't have a psf object, then we need to initialize it, we then re use it for multiple calls to
             # get_stamp.
-            self._init_psf_object( x0=x0, y0=y0, flux=flux, wcs = wcs)
+            self._init_psf_object( x0=x0, y0=y0, flux=flux, input_wcs = input_wcs)
         else:
             if x0 != self._stored_x0 or y0 != self._stored_y0:
                 raise ValueError("ou24PSF.get_stamp called with x0 or y0 that does not match the x0 or y0 used"
