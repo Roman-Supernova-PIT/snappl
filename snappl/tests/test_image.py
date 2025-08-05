@@ -5,7 +5,7 @@ import astropy
 
 from snappl.image import FITSImage
 from snappl.wcs import AstropyWCS, GalsimWCS
-
+from snpit_utils.logger import SNLogger
 
 # ======================================================================
 # FITSImage tests
@@ -117,6 +117,49 @@ def test_set_data( fitsimage_module ):
         image._data = origim
         image._noise = orignoi
         image._flags = origfl
+
+
+def test_fits_get_data(fitsimage_module):
+    image = fitsimage_module
+
+    origim = image.data
+    orignoi = image.noise
+    origfl = image.flags
+
+    np.testing.assert_array_equal(origim, image.get_data(which="data")[0])
+    np.testing.assert_array_equal(orignoi, image.get_data(which="noise")[0])
+    np.testing.assert_array_equal(origfl, image.get_data(which="flags")[0])
+    np.testing.assert_array_equal(origim, image.get_data()[0])
+    np.testing.assert_array_equal(orignoi, image.get_data()[1])
+    np.testing.assert_array_equal(origfl, image.get_data()[2])
+
+    # Now remove data and ensure that it fails
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._data = None
+        image.get_data(which = "data")
+
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._noise = None
+        image.get_data(which = "noise")
+
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._flags = None
+        image.get_data(which = "flags")
+
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._data = None
+        image._noise = None
+        image._flags = None
+        image.get_data(which = "all")
+
+    # Restore the data for other tests
+    image._data = origim
+
+    # Should be able to get data even if that's the only thing loaded
+    np.testing.assert_array_equal(origim, image.get_data(which="data")[0])
+
+    image._noise = orignoi
+    image._flags = origfl
 
 
 # ======================================================================
