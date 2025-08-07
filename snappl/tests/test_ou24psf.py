@@ -240,3 +240,28 @@ def test_get_stamp():
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     assert cx == pytest.approx(18.22, abs=0.02)
     assert cy == pytest.approx(22.42, abs=0.03)
+
+
+@pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
+def test_set_wcs():
+    # For some testing and simulation cases, we want to be able to set the WCS of the PSF manually.
+    # This is a test that this works.
+    psfobj_1 = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    assert isinstance(psfobj_1, snappl.psf.ou24PSF)
+
+    psfobj_2 = PSF.get_psf_object("ou24PSF", pointing=5934, sca=3, size=41.0)
+    assert isinstance(psfobj_2, snappl.psf.ou24PSF)
+
+    psfobj_1.get_stamp( seed=42 )
+    psfobj_2.get_stamp( seed=42 )
+
+    assert psfobj_1._wcs != psfobj_2._wcs, "The initial WCS should be different for different PSF objects with" + \
+    "different pointing/sca."
+
+    psfobj_1 = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    psfobj_2 = PSF.get_psf_object("ou24PSF", pointing=5934, sca=3, size=41.0)
+
+    psfobj_1.get_stamp( seed=42 )
+    psfobj_2.get_stamp( seed=42, input_wcs=psfobj_1._wcs )
+
+    assert psfobj_1._wcs == psfobj_2._wcs, "The WCS should be the same after setting it manually."

@@ -1,4 +1,4 @@
-ou24:
+ou24psf:
   config_file: /sn_info_dir/tds.yaml
   sn_truth_dir: /snana_pq_dir
   sims_sed_library: /home/rubin_sim_data/sims_sed_library
