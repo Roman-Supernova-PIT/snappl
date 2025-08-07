@@ -5,7 +5,7 @@ import astropy
 
 from snappl.image import FITSImage
 from snappl.wcs import AstropyWCS, GalsimWCS
-
+from snpit_utils.logger import SNLogger
 
 # ======================================================================
 # FITSImage tests
@@ -119,6 +119,49 @@ def test_set_data( fitsimage_module ):
         image._flags = origfl
 
 
+def test_fits_get_data(fitsimage_module):
+    image = fitsimage_module
+
+    origim = image.data
+    orignoi = image.noise
+    origfl = image.flags
+
+    np.testing.assert_array_equal(origim, image.get_data(which="data")[0])
+    np.testing.assert_array_equal(orignoi, image.get_data(which="noise")[0])
+    np.testing.assert_array_equal(origfl, image.get_data(which="flags")[0])
+    np.testing.assert_array_equal(origim, image.get_data()[0])
+    np.testing.assert_array_equal(orignoi, image.get_data()[1])
+    np.testing.assert_array_equal(origfl, image.get_data()[2])
+
+    # Now remove data and ensure that it fails
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._data = None
+        image.get_data(which = "data")
+
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._noise = None
+        image.get_data(which = "noise")
+
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._flags = None
+        image.get_data(which = "flags")
+
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._data = None
+        image._noise = None
+        image._flags = None
+        image.get_data(which = "all")
+
+    # Restore the data for other tests
+    image._data = origim
+
+    # Should be able to get data even if that's the only thing loaded
+    np.testing.assert_array_equal(origim, image.get_data(which="data")[0])
+
+    image._noise = orignoi
+    image._flags = origfl
+
+
 # ======================================================================
 # OpenUniverse2024FITSImage tests
 
@@ -218,3 +261,39 @@ def test_get_header( ou2024image, ou2024image_module ):
     hdr = ou2024image._get_header()
     assert isinstance( hdr, astropy.io.fits.header.Header )
     assert hdr is ou2024image._header
+
+# ======================================================================
+# ManualFITSImage tests
+
+
+def test_manual_fits_image( manual_fits_image ):
+    assert isinstance( manual_fits_image._data, np.ndarray )
+    assert manual_fits_image._data.shape == ( 25, 25 )
+    assert manual_fits_image._data.dtype == np.float32
+    assert np.all( manual_fits_image._data == 1.0 )
+    assert isinstance( manual_fits_image._noise, np.ndarray )
+    assert manual_fits_image._noise.shape == ( 25, 25 )
+    assert manual_fits_image._noise.dtype == np.float32
+    assert np.all( manual_fits_image._noise == 0.0 )
+    assert isinstance( manual_fits_image._flags, np.ndarray )
+    assert manual_fits_image._flags.shape == ( 25, 25 )
+    assert manual_fits_image._flags.dtype == np.uint32
+    assert np.all( manual_fits_image._flags == 0 )
+
+
+    # Test the data setter
+    manual_fits_image._data = np.ones((25, 25), dtype=np.float32) * 2.0
+    assert np.all( manual_fits_image._data == 2.0 )
+
+    # Test the noise setter
+    manual_fits_image._noise = np.ones((25, 25), dtype=np.float32) * 3.0
+    assert np.all( manual_fits_image._noise == 3.0 )
+
+    # Test the flags setter
+    manual_fits_image._flags = np.zeros((25, 25), dtype=np.uint32) + 1
+    assert np.all( manual_fits_image._flags == 1 )
+
+    # Test the header
+    hdr = manual_fits_image._get_header()
+    assert isinstance(hdr, astropy.io.fits.header.Header)
+    assert hdr is manual_fits_image._header

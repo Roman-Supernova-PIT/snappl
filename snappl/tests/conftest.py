@@ -3,10 +3,12 @@ import pathlib
 
 import numpy as np
 
+from astropy.io import fits
+
 import tox # noqa: F401
 from tox.pytest import init_fixture # noqa: F401
 
-from snappl.image import FITSImage, OpenUniverse2024FITSImage
+from snappl.image import FITSImage, OpenUniverse2024FITSImage, ManualFITSImage
 
 from snpit_utils.config import Config
 
@@ -26,6 +28,13 @@ def ou2024image( ou2024imagepath ):
     image = OpenUniverse2024FITSImage( ou2024imagepath, None, 11 )
     return image
 
+@pytest.fixture
+def manual_fits_image( ou2024imagepath):
+    header = fits.open( str(pathlib.Path(__file__).parent/'image_test_data/Roman_TDS_simple_model_F184_662_11.fits.gz') )[0].header
+    data = np.ones((25, 25), dtype = np.float32)
+    noise = np.zeros((25, 25), dtype = np.float32)
+    flags = np.zeros((25, 25), dtype = np.uint32)
+    return ManualFITSImage(header, data, noise=noise, flags=flags)
 
 # If you use this next fixture, you aren't supposed
 #   to modify the image!  Make sure any modifications
