@@ -1,1 +1,1 @@
-MAde OU24 PSFs have passable WCSs
+Made OU24 PSFs have passable WCSs
