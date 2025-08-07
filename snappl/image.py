@@ -386,6 +386,42 @@ class FITSImage( Numpy2DImage ):
                 self._wcs = GalsimWCS.from_header( hdr )
         return self._wcs
 
+    def get_data(self, which="all"):
+        if self._is_cutout:
+            raise RuntimeError(
+                "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported."
+            )
+        if which not in Image.data_array_list:
+            raise ValueError(f"Unknown which {which}, must be all, data, noise, or flags")
+
+        if (which == "all"):
+            if (self._data is not None) and (self._noise is not None) and (self._flags is not None):
+                return [self._data, self._noise, self._flags]
+            else:
+                raise RuntimeError(
+                    f"get_data called with which='all', but not all data arrays are set. "
+                    f"Data: {self._data is not None}, Noise: {self._noise is not None},"
+                    f" Flags: {self._flags is not None}"
+                )
+
+        if (which == "data"):
+            if (self._data is not None):
+                return [self._data]
+            else:
+                raise RuntimeError("get_data called with which='data', but data is not set.")
+
+        if (which == "noise"):
+            if (self._noise is not None):
+                return [self._noise]
+            else:
+                raise RuntimeError("get_data called with which='noise', but noise is not set.")
+
+        if (which == "flags"):
+            if (self._flags is not None):
+                return [self._flags]
+            else:
+                raise RuntimeError("get_data called with which='flags', but flags are not set.")
+
     def get_cutout(self, x, y, xsize, ysize=None):
         """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
 
@@ -558,7 +594,6 @@ class OpenUniverse2024FITSImage( FITSImage ):
 
 class ManualFITSImage(FITSImage):
     def __init__(self, header, data, noise=None, flags=None, path = None, exposure = None, sca = None, *args, **kwargs):
-        #super().__init__(*args, **kwargs)
 
         self._data = data
         self._noise = noise
@@ -567,7 +602,6 @@ class ManualFITSImage(FITSImage):
         self._wcs = None
         self._is_cutout = False
         self._image_shape = None
-        SNLogger.debug("Creating ManualFITSImage")
 
         self.inputs = types.SimpleNamespace()
         self.inputs.path = None
@@ -580,22 +614,3 @@ class ManualFITSImage(FITSImage):
             raise RuntimeError("Header is not set for ManualFITSImage.")
         return self._header
 
-    def get_data(self, which="all", cache=False, always_reload=False):
-        if self._is_cutout:
-            raise RuntimeError(
-                "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported."
-            )
-        if which not in Image.data_array_list:
-            raise ValueError(f"Unknown which {which}, must be all, data, noise, or flags")
-
-        if (which == "all") and (self._data is not None) and (self._noise is not None) and (self._flags is not None):
-            return [self._data, self._noise, self._flags]
-
-        if (which == "data") and (self._data is not None):
-            return [self._data]
-
-        if (which == "noise") and (self._noise is not None):
-            return [self._noise]
-
-        if (which == "flags") and (self._flags is not None):
-            return [self._flags]
