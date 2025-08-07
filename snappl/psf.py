@@ -1077,7 +1077,7 @@ class ou24PSF_slow( PSF ):
         ---------- 
           input_wcs : BaseWCS or galsim.BaseWCS
             WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.
-            An alternative WCS to use for the stamp, may not be an OU24 WCS. 
+            An alternative WCS to use for the stamp. 
 
           seed : int
             A random seed to pass to galsim.BaseDeviate for photonOps.
@@ -1171,14 +1171,17 @@ class ou24PSF( ou24PSF_slow ):
         """Create the galsim PSF object, WCS, and galsim.chromatic.SimpleChromaticTransformation
            that can be reused for multiple calls to get_stamp.
 
+        WARNING: Do not use input_wcs. Not part of a standard interface, for testing & simulation purposes only.
+
+
         Parameters are as in PSF.get_stamp, plus:
 
         Parameters
         ----------
-        wcs : BaseWCS or galsim.BaseWCS
-            WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.
-            An alternative WCS to use for the stamp, may not be an OU24 WCS.
-          seed : int
+        input_wcs : BaseWCS or galsim.BaseWCS
+            An alternative WCS to use for the stamp.
+
+        seed : int
             A random seed to pass to galsim.BaseDeviate for photonOps.
             NOTE: this is not part of the base PSF interface (at least,
             as of yet), so don't use it in production pipeline code.
@@ -1217,7 +1220,7 @@ class ou24PSF( ou24PSF_slow ):
         ----------
         wcs : BaseWCS or galsim.BaseWCS
             WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.
-            An alternative WCS to use for the stamp, may not be an OU24 WCS.
+            An alternative WCS to use for the stamp.
 
           seed : int
             A random seed to pass to galsim.BaseDeviate for photonOps.

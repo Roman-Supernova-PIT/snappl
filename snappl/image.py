@@ -458,7 +458,7 @@ class FITSImage( Numpy2DImage ):
                               f"pixel, you tried to pass a size of {xsize, ysize}.")
 
         SNLogger.debug(f'Cutting out at {x , y}')
-        data, noise, flags = self.get_data( 'all', always_reload=False )
+        data, noise, flags = self.get_data( 'all' )
 
         wcs = self.get_wcs()
         if ( wcs is not None ) and ( not isinstance( wcs, AstropyWCS ) ):
