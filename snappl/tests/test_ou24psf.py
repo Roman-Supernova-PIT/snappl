@@ -12,7 +12,7 @@ from snappl.psf import PSF
 # These tests won't work on github until we get the right subset of galsim data
 #   properly imported.
 #
-# They depend on a tds.yaml file existing in /sn_info_dir, and some of
+# They depend on a tds.yaml file existing in /photometry_test_data/ou2024/tds.yaml, and some of
 #   the directories referred therein to have the right stuff in them.
 #   Look in the phrosty archive under phrosty/examples/perlmutter/tds.yaml for
 #   one such file that will work on perlmutter, *if* you also run in a

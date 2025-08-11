@@ -174,23 +174,25 @@ def test_get_data( ou2024image ):
         #   straight.  (...except that the integer flags don't seem to
         #   be big-endian, so I am confused as to what astropy and/or fitsio
         #   and/or numpy really does.)
+
+        # I choose an area around a nice galaxy to sum
         data, = ou2024image.get_data( 'data' )
         assert isinstance( data, np.ndarray )
         assert data.shape == ( 4088, 4088 )
         assert data.dtype == ">f8"
-        assert data[2004:2084, 2004:2084].sum() == pytest.approx( 2500099.0, rel=1e-5 )
+        assert data[2300:2336, 2482:2589].sum() == pytest.approx( 429719.0, rel=1e-5 )
 
         noise, = ou2024image.get_data( 'noise' )
         assert isinstance( noise, np.ndarray )
         assert noise.shape == ( 4088, 4088 )
         assert noise.dtype == ">f4"
-        assert noise[2004:2084, 2004:2084].sum() == pytest.approx( 2443894.0, rel=1e-5 )
+        assert noise[2300:2336, 2482:2589].sum() == pytest.approx( 427641, rel=1e-5 )
 
         flags, = ou2024image.get_data( 'flags' )
         assert isinstance( flags, np.ndarray )
         assert flags.shape == ( 4088, 4088 )
         assert flags.dtype == "uint32"
-        assert flags[2004:2084, 2004:2048].sum() == 0
+        assert flags[2300:2336, 2482:2589].sum() == 0
 
         assert ou2024image._data is None
         assert ou2024image._noise is None

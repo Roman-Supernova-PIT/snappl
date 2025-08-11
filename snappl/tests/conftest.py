@@ -20,7 +20,8 @@ def init_config():
 
 @pytest.fixture( scope='module' )
 def ou2024imagepath():
-    return str('/photometry_test_data/ou2024/images/Roman_TDS_simple_model_Y106_13205_1.fits.gz')
+    return str('/photometry_test_data/ou2024/images/simple_model/Y106/13205/'
+               'Roman_TDS_simple_model_Y106_13205_1.fits.gz')
 
 
 @pytest.fixture
@@ -30,7 +31,8 @@ def ou2024image( ou2024imagepath ):
 
 @pytest.fixture
 def manual_fits_image( ou2024imagepath):
-    header = fits.open('/photometry_test_data/ou2024/images/Roman_TDS_simple_model_Y106_13205_1.fits.gz')[0].header
+    header = fits.open('/photometry_test_data/ou2024/images/simple_model/Y106/13205/'
+                       'Roman_TDS_simple_model_Y106_13205_1.fits.gz')[0].header
     data = np.ones((25, 25), dtype = np.float32)
     noise = np.zeros((25, 25), dtype = np.float32)
     flags = np.zeros((25, 25), dtype = np.uint32)
