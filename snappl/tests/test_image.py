@@ -63,7 +63,8 @@ def test_get_cutout( ou2024image_module ):
 
 def test_get_ra_dec_cutout( ou2024image_module ):
     image = ou2024image_module
-    ra, dec = 7.5942407686430995, -44.180904726970695
+    # Choose the ra, dec around the SN in the test images
+    ra, dec = 7.551093401915147, -44.80718106491529
 
     wcs = image.get_wcs()
     x, y = wcs.world_to_pixel( ra, dec )
@@ -78,12 +79,12 @@ def test_get_ra_dec_cutout( ou2024image_module ):
 
     # Now we intentionally try to get a no overlap error.
     with pytest.raises(astropy.nddata.utils.NoOverlapError):
-        ra, dec = 7.6942407686430995, -44.280904726970695
+        ra, dec = 7.7, -45.0
         cutout = image.get_ra_dec_cutout(ra, dec, 5)
 
     # Now we intentionally try to get a partial overlap error.
     with pytest.raises(astropy.nddata.utils.PartialOverlapError):
-        ra, dec = 7.69380043,-44.13231831
+        ra, dec = 7.6186202,-44.8483766
         cutout = image.get_ra_dec_cutout(ra, dec, 55)
 
 
@@ -251,7 +252,7 @@ def test_get_data( ou2024image ):
 
 
 def test_band( ou2024image_module ):
-    assert ou2024image_module.band == 'F184'
+    assert ou2024image_module.band == 'Y106'
 
 
 def test_get_header( ou2024image, ou2024image_module ):
