@@ -1,5 +1,4 @@
 import pytest
-import pathlib
 
 import numpy as np
 
@@ -29,6 +28,7 @@ def ou2024image( ou2024imagepath ):
     image = OpenUniverse2024FITSImage( ou2024imagepath, None, 11 )
     return image
 
+
 @pytest.fixture
 def manual_fits_image( ou2024imagepath):
     header = fits.open('/photometry_test_data/ou2024/images/simple_model/Y106/13205/'
@@ -37,6 +37,7 @@ def manual_fits_image( ou2024imagepath):
     noise = np.zeros((25, 25), dtype = np.float32)
     flags = np.zeros((25, 25), dtype = np.uint32)
     return ManualFITSImage(header, data, noise=noise, flags=flags)
+
 
 # If you use this next fixture, you aren't supposed
 #   to modify the image!  Make sure any modifications
