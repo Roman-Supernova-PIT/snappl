@@ -1,6 +1,4 @@
-import os
 import pathlib
-import pytest
 import numpy as np
 
 from astropy.io import fits  # noqa: F401
