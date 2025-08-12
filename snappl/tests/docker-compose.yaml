@@ -42,8 +42,6 @@ services:
   runtests:
     image: rknop/roman-snpit-env:cpu-dev
     working_dir: /snappl
-    environment:
-      GITHUB_SKIP: 1
     entrypoint:
       - /bin/sh
       - -c

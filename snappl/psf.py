@@ -1052,7 +1052,7 @@ class ou24PSF_slow( PSF ):
             self.sed = sed
 
         if config_file is None:
-            config_file = Config.get().value( 'ou24psf.config_file' )
+            config_file = Config.get().value( 'ou24.config_file' )
         self.config_file = config_file
         self.pointing = pointing
         self.sca = sca
@@ -1074,10 +1074,10 @@ class ou24PSF_slow( PSF ):
         Parameters are as in PSF.get_stamp, plus:
 
         Parameters
-        ---------- 
+        ----------
           input_wcs : BaseWCS or galsim.BaseWCS
             WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.
-            An alternative WCS to use for the stamp. 
+            An alternative WCS to use for the stamp.
 
           seed : int
             A random seed to pass to galsim.BaseDeviate for photonOps.
@@ -1117,7 +1117,7 @@ class ou24PSF_slow( PSF ):
             # It seems that galsim.ChromaticObject.drawImage won't function without stamp having
             # a wcs.  Without a WCS, the stamp was coming out all zeros.
             # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
-            #wcs = rmutils.getLocalWCS( x+1, y+1 )self._
+            # wcs = rmutils.getLocalWCS( x+1, y+1 )self._
 
             if input_wcs is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )

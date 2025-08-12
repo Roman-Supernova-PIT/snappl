@@ -28,6 +28,7 @@ class Flat_SED( SED_collection ):
     def get_sed( self, **kwargs):
         return self.sed
 
+
 class Single_CSV_SED( SED_collection ):
     def __init__( self, csv_file ):
         # READ THE CSV FILE, make a galsim SED in self.sed

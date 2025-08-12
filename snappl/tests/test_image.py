@@ -5,7 +5,7 @@ import astropy
 
 from snappl.image import FITSImage
 from snappl.wcs import AstropyWCS, GalsimWCS
-from snpit_utils.logger import SNLogger
+
 
 # ======================================================================
 # FITSImage tests
