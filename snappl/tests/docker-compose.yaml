@@ -1,7 +1,7 @@
 # This is a compose file that creates an environment in which you can
 # run tests.  For all the tests to work, you must check out
 #
-#   https://github.com/Roman-Supernova-PIT/phtometry_test_data
+#   https://github.com/Roman-Supernova-PIT/photometry_test_data
 #
 # in the same place you checked out snappl.  That is, there should be a
 # directory on your system with subdirectories snappl and
