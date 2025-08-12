@@ -613,4 +613,3 @@ class ManualFITSImage(FITSImage):
         if self._header is None:
             raise RuntimeError("Header is not set for ManualFITSImage.")
         return self._header
-

@@ -1,5 +1,14 @@
 # This is a compose file that creates an environment in which you can
-# run tests.  Either just do
+# run tests.  For all the tests to work, you must check out
+#
+#   https://github.com/Roman-Supernova-PIT/photometry_test_data
+#
+# in the same place you checked out snappl.  That is, there should be a
+# directory on your system with subdirectories snappl and
+# photometry_test_data, and relative to that directory this file you're
+# reading should be snappl/snappl/tests/docker_compose.yaml
+#
+# Once you've set that up, either just do
 #
 #   docker compose run runtests
 #
@@ -26,12 +35,13 @@ services:
       - type: bind
         source: ../..
         target: /snappl
+      - type: bind
+        source: ../../../photometry_test_data
+        target: /photometry_test_data
 
   runtests:
     image: rknop/roman-snpit-env:cpu-dev
     working_dir: /snappl
-    environment:
-      GITHUB_SKIP: 1
     entrypoint:
       - /bin/sh
       - -c
@@ -43,4 +53,7 @@ services:
       - type: bind
         source: ../..
         target: /snappl
+      - type: bind
+        source: ../../../photometry_test_data
+        target: /photometry_test_data
 

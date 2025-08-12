@@ -5,7 +5,7 @@ import astropy
 
 from snappl.image import FITSImage
 from snappl.wcs import AstropyWCS, GalsimWCS
-from snpit_utils.logger import SNLogger
+
 
 # ======================================================================
 # FITSImage tests
@@ -63,7 +63,8 @@ def test_get_cutout( ou2024image_module ):
 
 def test_get_ra_dec_cutout( ou2024image_module ):
     image = ou2024image_module
-    ra, dec = 7.5942407686430995, -44.180904726970695
+    # Choose the ra, dec around the SN in the test images
+    ra, dec = 7.551093401915147, -44.80718106491529
 
     wcs = image.get_wcs()
     x, y = wcs.world_to_pixel( ra, dec )
@@ -78,12 +79,12 @@ def test_get_ra_dec_cutout( ou2024image_module ):
 
     # Now we intentionally try to get a no overlap error.
     with pytest.raises(astropy.nddata.utils.NoOverlapError):
-        ra, dec = 7.6942407686430995, -44.280904726970695
+        ra, dec = 7.7, -45.0
         cutout = image.get_ra_dec_cutout(ra, dec, 5)
 
     # Now we intentionally try to get a partial overlap error.
     with pytest.raises(astropy.nddata.utils.PartialOverlapError):
-        ra, dec = 7.69380043,-44.13231831
+        ra, dec = 7.6186202,-44.8483766
         cutout = image.get_ra_dec_cutout(ra, dec, 55)
 
 
@@ -173,23 +174,25 @@ def test_get_data( ou2024image ):
         #   straight.  (...except that the integer flags don't seem to
         #   be big-endian, so I am confused as to what astropy and/or fitsio
         #   and/or numpy really does.)
+
+        # I choose an area around a nice galaxy to sum
         data, = ou2024image.get_data( 'data' )
         assert isinstance( data, np.ndarray )
         assert data.shape == ( 4088, 4088 )
         assert data.dtype == ">f8"
-        assert data[2004:2084, 2004:2084].sum() == pytest.approx( 2500099.0, rel=1e-5 )
+        assert data[2300:2336, 2482:2589].sum() == pytest.approx( 429719.0, rel=1e-5 )
 
         noise, = ou2024image.get_data( 'noise' )
         assert isinstance( noise, np.ndarray )
         assert noise.shape == ( 4088, 4088 )
         assert noise.dtype == ">f4"
-        assert noise[2004:2084, 2004:2084].sum() == pytest.approx( 2443894.0, rel=1e-5 )
+        assert noise[2300:2336, 2482:2589].sum() == pytest.approx( 427641, rel=1e-5 )
 
         flags, = ou2024image.get_data( 'flags' )
         assert isinstance( flags, np.ndarray )
         assert flags.shape == ( 4088, 4088 )
         assert flags.dtype == "uint32"
-        assert flags[2004:2084, 2004:2048].sum() == 0
+        assert flags[2300:2336, 2482:2589].sum() == 0
 
         assert ou2024image._data is None
         assert ou2024image._noise is None
@@ -251,7 +254,7 @@ def test_get_data( ou2024image ):
 
 
 def test_band( ou2024image_module ):
-    assert ou2024image_module.band == 'F184'
+    assert ou2024image_module.band == 'Y106'
 
 
 def test_get_header( ou2024image, ou2024image_module ):

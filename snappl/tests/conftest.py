@@ -1,5 +1,4 @@
 import pytest
-import pathlib
 
 import numpy as np
 
@@ -20,7 +19,8 @@ def init_config():
 
 @pytest.fixture( scope='module' )
 def ou2024imagepath():
-    return str(pathlib.Path(__file__).parent/'image_test_data/Roman_TDS_simple_model_F184_662_11.fits.gz')
+    return str('/photometry_test_data/ou2024/images/simple_model/Y106/13205/'
+               'Roman_TDS_simple_model_Y106_13205_1.fits.gz')
 
 
 @pytest.fixture
@@ -28,13 +28,16 @@ def ou2024image( ou2024imagepath ):
     image = OpenUniverse2024FITSImage( ou2024imagepath, None, 11 )
     return image
 
+
 @pytest.fixture
 def manual_fits_image( ou2024imagepath):
-    header = fits.open( str(pathlib.Path(__file__).parent/'image_test_data/Roman_TDS_simple_model_F184_662_11.fits.gz') )[0].header
+    header = fits.open('/photometry_test_data/ou2024/images/simple_model/Y106/13205/'
+                       'Roman_TDS_simple_model_Y106_13205_1.fits.gz')[0].header
     data = np.ones((25, 25), dtype = np.float32)
     noise = np.zeros((25, 25), dtype = np.float32)
     flags = np.zeros((25, 25), dtype = np.uint32)
     return ManualFITSImage(header, data, noise=noise, flags=flags)
+
 
 # If you use this next fixture, you aren't supposed
 #   to modify the image!  Make sure any modifications
@@ -73,16 +76,16 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
 
 
 # This next fixture will only work on the WCS extracted from ou2024image
-# The hardcoded values are empirical.  We should probably compare them to
-# (say) DS9, or to something else, to make sure they're really good.
+# The hardcoded values are empirical.  I've used DS9 on the test
+# image to verify that they're good to at least ~5 decimal places.
 @pytest.fixture( scope='module' )
 def check_wcs():
     def wcs_checker( wcs ):
-        testdata = [ { 'x': 0, 'y': 0, 'ra': 7.49441896, 'dec': -44.22945209 },
-                     { 'x': 4087, 'y': 4087, 'ra': 7.69394648, 'dec': -44.13224703 },
-                     { 'x': 0, 'y': 4087, 'ra': 7.52381115, 'dec': -44.11151047 },
-                     { 'x': 4087, 'y': 0, 'ra': 7.66488541, 'dec': -44.25023227 },
-                     { 'x': 2043.5, 'y': 2043.5, 'ra': 7.59426518, 'dec': -44.18089283 } ]
+        testdata = [ { 'x': 0, 'y': 0, 'ra': 7.49435552, 'dec': -44.95508301 },
+                     { 'x': 4087, 'y': 4087, 'ra': 7.58168925, 'dec': -44.79212825 },
+                     { 'x': 0, 'y': 4087, 'ra': 7.42167102, 'dec': -44.84398918   },
+                     { 'x': 4087, 'y': 0, 'ra': 7.65461745, 'dec': -44.90311993 },
+                     { 'x': 2043.5, 'y': 2043.5, 'ra': 7.53808422, 'dec': -44.87361374 } ]
 
         for data in testdata:
             ra, dec = wcs.pixel_to_world( data['x'], data['y'] )

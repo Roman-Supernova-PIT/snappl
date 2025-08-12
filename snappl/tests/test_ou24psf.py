@@ -1,4 +1,3 @@
-import os
 import pytest
 
 import numpy as np
@@ -9,18 +8,7 @@ from astropy.io import fits  # noqa: F401
 import snappl.psf
 from snappl.psf import PSF
 
-# These tests won't work on github until we get the right subset of galsim data
-#   properly imported.
-#
-# They depend on a tds.yaml file existing in /sn_info_dir, and some of
-#   the directories referred therein to have the right stuff in them.
-#   Look in the phrosty archive under phrosty/examples/perlmutter/tds.yaml for
-#   one such file that will work on perlmutter, *if* you also run in a
-#   podman instance using the interactive_perlmutter.sh script in that
-#   same directory.
 
-
-@pytest.mark.skipif( os.getenv('GITHUB_SKIP'), reason="Skipping test until we have galsim data" )
 def test_slow_normalization():
     # This isn't really testing snappl code, it's checking out galsim.
     # Empirically, the PSF normalization in the smaller clip varies by
@@ -45,7 +33,6 @@ def test_slow_normalization():
     assert smallstamp.sum() == pytest.approx( bigstamp[x0:x1,x0:x1].sum(), rel=1e-5 )
 
 
-@pytest.mark.skipif( os.getenv('GITHUB_SKIP'), reason="Skipping test until we have galsim data" )
 def test_slow_get_stamp():
     psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41. )
     assert isinstance( psfobj, snappl.psf.ou24PSF_slow )
@@ -109,7 +96,6 @@ def test_slow_get_stamp():
 
 
 # Continue this when ou24psf is more than a wrapper around ou24PSF_slow
-# @pytest.mark.skipif( os.getenv('GITHUB_SKIP'), reason="Skipping test until we have galsim data" )
 # def test_get_stamp():
 #     # Use the defaults, which will be an internal image of size 201 and a stamp size of 41
 #     psfobj = PSF.get_psf_object( "ou24PSF", pointing=6, sca=17, oversample_factor=11,  oversampled_size=451 )
@@ -120,7 +106,7 @@ def test_slow_get_stamp():
 #     assert stamp.shape == ( 41, 41 )
 #     # TODO MORE
 
-@pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
+
 def test_check_phot_off():
     # Check and make sure that photon ops are actually off, when passing
     #  include_photonOps=False, they weren't previously. If they are off, the
@@ -134,7 +120,6 @@ def test_check_phot_off():
               f"of the image should equal {regression_val}, was actually {stamp.sum()}"
 
 
-@pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
 def test_normalization():
     # This isn't really testing snappl code, it's checking out galsim.
     # Empirically, the PSF normalization in the smaller clip varies by
@@ -159,7 +144,6 @@ def test_normalization():
     assert smallstamp.sum() == pytest.approx(bigstamp[x0:x1, x0:x1].sum(), rel=1e-5)
 
 
-@pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
 def test_get_stamp():
     # Note that in this test I have to re-call get_psf_object each time I want to make a stamp,
     # because the fast version of ou24PSF is not designed to allow x0 or y0 to change.
@@ -242,7 +226,6 @@ def test_get_stamp():
     assert cy == pytest.approx(22.42, abs=0.03)
 
 
-@pytest.mark.skipif(os.getenv("GITHUB_SKIP"), reason="Skipping test until we have galsim data")
 def test_set_wcs():
     # For some testing and simulation cases, we want to be able to set the WCS of the PSF manually.
     # This is a test that this works.
