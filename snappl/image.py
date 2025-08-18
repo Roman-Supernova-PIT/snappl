@@ -10,7 +10,7 @@ import galsim.roman
 import roman_datamodels as rdm
 
 from snpit_utils.logger import SNLogger
-from snappl.wcs import AstropyWCS, GalsimWCS
+from snappl.wcs import AstropyWCS, GalsimWCS, ASDFWCS
 
 
 class Exposure:
@@ -592,12 +592,13 @@ class OpenUniverse2024FITSImage( FITSImage ):
         header = self._get_header()
         return galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
 
+
 # ======================================================================
 # ManualFITSImage
 #
 # A FITS image that doesn't know where it got its data from, you just
 # feed it the data.
-    
+
 class ManualFITSImage(FITSImage):
     def __init__(self, header, data, noise=None, flags=None, path = None, exposure = None, sca = None, *args, **kwargs):
 
@@ -620,11 +621,12 @@ class ManualFITSImage(FITSImage):
             raise RuntimeError("Header is not set for ManualFITSImage.")
         return self._header
 
+
 # ======================================================================
 # RomanDatamodelImage
 #
 # An image read from a roman datamodel ASDF file
-    
+
 class RomanDatamodelImage( Image ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
@@ -644,7 +646,7 @@ class RomanDatamodelImage( Image ):
         return self._dm
 
     def get_wcs( self, wcsclass=None ):
-        wcsclass = "ASDFWCS" if wcsclsas is None else wcsclass
+        wcsclass = "ASDFWCS" if wcsclass is None else wcsclass
         if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
             if wcsclass == "ASDFWCS":
                 self._wcs = ASDFWCS( asdfwcs=self.dm.meta.wcs )
