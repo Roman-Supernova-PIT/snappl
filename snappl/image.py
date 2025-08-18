@@ -11,6 +11,7 @@ import galsim.roman
 import roman_datamodels as rdm
 
 from snpit_utils.logger import SNLogger
+from snpit_utils.config import Config
 from snappl.wcs import AstropyWCS, GalsimWCS, GWCS
 
 
@@ -525,6 +526,38 @@ class FITSImage( Numpy2DImage ):
 class OpenUniverse2024FITSImage( FITSImage ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
+
+    @classmethod
+    def ou2024_image_filepath( cls, pointing, band, sca, rootdir=None ):
+        """Return the absolute path to the desired OU2024 FITS image.
+
+        Parameters
+        ----------
+          pointing : str (int?)
+            The pointing number
+
+          band : str
+            The band
+
+          sca : str (int?)
+            The SCA
+
+          rootdir : str or Path, default None
+            Defaults to the ou24.tds_base config parameter
+
+        Returns
+        -------
+          pathlib.Path
+
+
+        """
+        rootdir = pathlib.Path( Config.get().value( 'ou24.tds_base' ) if rootdir is None else rootdir )
+
+        path = ( rootdir / 'images/simple_model' / band / str(pointing) /
+                 f'Roman_TDS_simple_model_{band}_{str(pointing)}_{str(sca)}.fits.gz' )
+        return path
+
+
 
     def get_data( self, which='all', always_reload=False, cache=False ):
         if self._is_cutout:
