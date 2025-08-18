@@ -387,6 +387,42 @@ class FITSImage( Numpy2DImage ):
                 self._wcs = GalsimWCS.from_header( hdr )
         return self._wcs
 
+    def get_data(self, which="all"):
+        if self._is_cutout:
+            raise RuntimeError(
+                "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported."
+            )
+        if which not in Image.data_array_list:
+            raise ValueError(f"Unknown which {which}, must be all, data, noise, or flags")
+
+        if (which == "all"):
+            if (self._data is not None) and (self._noise is not None) and (self._flags is not None):
+                return [self._data, self._noise, self._flags]
+            else:
+                raise RuntimeError(
+                    f"get_data called with which='all', but not all data arrays are set. "
+                    f"Data: {self._data is not None}, Noise: {self._noise is not None},"
+                    f" Flags: {self._flags is not None}"
+                )
+
+        if (which == "data"):
+            if (self._data is not None):
+                return [self._data]
+            else:
+                raise RuntimeError("get_data called with which='data', but data is not set.")
+
+        if (which == "noise"):
+            if (self._noise is not None):
+                return [self._noise]
+            else:
+                raise RuntimeError("get_data called with which='noise', but noise is not set.")
+
+        if (which == "flags"):
+            if (self._flags is not None):
+                return [self._flags]
+            else:
+                raise RuntimeError("get_data called with which='flags', but flags are not set.")
+
     def get_cutout(self, x, y, xsize, ysize=None):
         """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
 
@@ -423,7 +459,7 @@ class FITSImage( Numpy2DImage ):
                               f"pixel, you tried to pass a size of {xsize, ysize}.")
 
         SNLogger.debug(f'Cutting out at {x , y}')
-        data, noise, flags = self.get_data( 'all', always_reload=False )
+        data, noise, flags = self.get_data( 'all' )
 
         wcs = self.get_wcs()
         if ( wcs is not None ) and ( not isinstance( wcs, AstropyWCS ) ):
@@ -557,7 +593,38 @@ class OpenUniverse2024FITSImage( FITSImage ):
         return galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
 
 # ======================================================================
+# ManualFITSImage
+#
+# A FITS image that doesn't know where it got its data from, you just
+# feed it the data.
+    
+class ManualFITSImage(FITSImage):
+    def __init__(self, header, data, noise=None, flags=None, path = None, exposure = None, sca = None, *args, **kwargs):
 
+        self._data = data
+        self._noise = noise
+        self._flags = flags
+        self._header = header
+        self._wcs = None
+        self._is_cutout = False
+        self._image_shape = None
+
+        self.inputs = types.SimpleNamespace()
+        self.inputs.path = None
+        self.inputs.exposure = None
+        self.inputs.sca = None
+
+    def _get_header(self):
+        """Get the header of the image."""
+        if self._header is None:
+            raise RuntimeError("Header is not set for ManualFITSImage.")
+        return self._header
+
+# ======================================================================
+# RomanDatamodelImage
+#
+# An image read from a roman datamodel ASDF file
+    
 class RomanDatamodelImage( Image ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )

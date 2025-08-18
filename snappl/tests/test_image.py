@@ -63,7 +63,8 @@ def test_get_cutout( ou2024image_module ):
 
 def test_get_ra_dec_cutout( ou2024image_module ):
     image = ou2024image_module
-    ra, dec = 7.5942407686430995, -44.180904726970695
+    # Choose the ra, dec around the SN in the test images
+    ra, dec = 7.551093401915147, -44.80718106491529
 
     wcs = image.get_wcs()
     x, y = wcs.world_to_pixel( ra, dec )
@@ -78,12 +79,12 @@ def test_get_ra_dec_cutout( ou2024image_module ):
 
     # Now we intentionally try to get a no overlap error.
     with pytest.raises(astropy.nddata.utils.NoOverlapError):
-        ra, dec = 7.6942407686430995, -44.280904726970695
+        ra, dec = 7.7, -45.0
         cutout = image.get_ra_dec_cutout(ra, dec, 5)
 
     # Now we intentionally try to get a partial overlap error.
     with pytest.raises(astropy.nddata.utils.PartialOverlapError):
-        ra, dec = 7.69380043,-44.13231831
+        ra, dec = 7.6186202,-44.8483766
         cutout = image.get_ra_dec_cutout(ra, dec, 55)
 
 
@@ -119,6 +120,49 @@ def test_set_data( fitsimage_module ):
         image._flags = origfl
 
 
+def test_fits_get_data(fitsimage_module):
+    image = fitsimage_module
+
+    origim = image.data
+    orignoi = image.noise
+    origfl = image.flags
+
+    np.testing.assert_array_equal(origim, image.get_data(which="data")[0])
+    np.testing.assert_array_equal(orignoi, image.get_data(which="noise")[0])
+    np.testing.assert_array_equal(origfl, image.get_data(which="flags")[0])
+    np.testing.assert_array_equal(origim, image.get_data()[0])
+    np.testing.assert_array_equal(orignoi, image.get_data()[1])
+    np.testing.assert_array_equal(origfl, image.get_data()[2])
+
+    # Now remove data and ensure that it fails
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._data = None
+        image.get_data(which = "data")
+
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._noise = None
+        image.get_data(which = "noise")
+
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._flags = None
+        image.get_data(which = "flags")
+
+    with pytest.raises(RuntimeError, match="get_data called with"):
+        image._data = None
+        image._noise = None
+        image._flags = None
+        image.get_data(which = "all")
+
+    # Restore the data for other tests
+    image._data = origim
+
+    # Should be able to get data even if that's the only thing loaded
+    np.testing.assert_array_equal(origim, image.get_data(which="data")[0])
+
+    image._noise = orignoi
+    image._flags = origfl
+
+
 # ======================================================================
 # OpenUniverse2024FITSImage tests
 
@@ -130,23 +174,25 @@ def test_get_data( ou2024image ):
         #   straight.  (...except that the integer flags don't seem to
         #   be big-endian, so I am confused as to what astropy and/or fitsio
         #   and/or numpy really does.)
+
+        # I choose an area around a nice galaxy to sum
         data, = ou2024image.get_data( 'data' )
         assert isinstance( data, np.ndarray )
         assert data.shape == ( 4088, 4088 )
         assert data.dtype == ">f8"
-        assert data[2004:2084, 2004:2084].sum() == pytest.approx( 2500099.0, rel=1e-5 )
+        assert data[2300:2336, 2482:2589].sum() == pytest.approx( 429719.0, rel=1e-5 )
 
         noise, = ou2024image.get_data( 'noise' )
         assert isinstance( noise, np.ndarray )
         assert noise.shape == ( 4088, 4088 )
         assert noise.dtype == ">f4"
-        assert noise[2004:2084, 2004:2084].sum() == pytest.approx( 2443894.0, rel=1e-5 )
+        assert noise[2300:2336, 2482:2589].sum() == pytest.approx( 427641, rel=1e-5 )
 
         flags, = ou2024image.get_data( 'flags' )
         assert isinstance( flags, np.ndarray )
         assert flags.shape == ( 4088, 4088 )
         assert flags.dtype == "uint32"
-        assert flags[2004:2084, 2004:2048].sum() == 0
+        assert flags[2300:2336, 2482:2589].sum() == 0
 
         assert ou2024image._data is None
         assert ou2024image._noise is None
@@ -208,7 +254,7 @@ def test_get_data( ou2024image ):
 
 
 def test_band( ou2024image_module ):
-    assert ou2024image_module.band == 'F184'
+    assert ou2024image_module.band == 'Y106'
 
 
 def test_get_header( ou2024image, ou2024image_module ):
@@ -218,3 +264,39 @@ def test_get_header( ou2024image, ou2024image_module ):
     hdr = ou2024image._get_header()
     assert isinstance( hdr, astropy.io.fits.header.Header )
     assert hdr is ou2024image._header
+
+# ======================================================================
+# ManualFITSImage tests
+
+
+def test_manual_fits_image( manual_fits_image ):
+    assert isinstance( manual_fits_image._data, np.ndarray )
+    assert manual_fits_image._data.shape == ( 25, 25 )
+    assert manual_fits_image._data.dtype == np.float32
+    assert np.all( manual_fits_image._data == 1.0 )
+    assert isinstance( manual_fits_image._noise, np.ndarray )
+    assert manual_fits_image._noise.shape == ( 25, 25 )
+    assert manual_fits_image._noise.dtype == np.float32
+    assert np.all( manual_fits_image._noise == 0.0 )
+    assert isinstance( manual_fits_image._flags, np.ndarray )
+    assert manual_fits_image._flags.shape == ( 25, 25 )
+    assert manual_fits_image._flags.dtype == np.uint32
+    assert np.all( manual_fits_image._flags == 0 )
+
+
+    # Test the data setter
+    manual_fits_image._data = np.ones((25, 25), dtype=np.float32) * 2.0
+    assert np.all( manual_fits_image._data == 2.0 )
+
+    # Test the noise setter
+    manual_fits_image._noise = np.ones((25, 25), dtype=np.float32) * 3.0
+    assert np.all( manual_fits_image._noise == 3.0 )
+
+    # Test the flags setter
+    manual_fits_image._flags = np.zeros((25, 25), dtype=np.uint32) + 1
+    assert np.all( manual_fits_image._flags == 1 )
+
+    # Test the header
+    hdr = manual_fits_image._get_header()
+    assert isinstance(hdr, astropy.io.fits.header.Header)
+    assert hdr is manual_fits_image._header

@@ -13,6 +13,7 @@ import galsim
 from roman_imsim.utils import roman_utils
 
 # roman snpit library imports
+from snappl.wcs import BaseWCS
 from snpit_utils.config import Config
 from snpit_utils.logger import SNLogger
 
@@ -1051,7 +1052,7 @@ class ou24PSF_slow( PSF ):
             self.sed = sed
 
         if config_file is None:
-            config_file = Config.get().value( 'ou24psf.config_file' )
+            config_file = Config.get().value( 'ou24.config_file' )
         self.config_file = config_file
         self.pointing = pointing
         self.sca = sca
@@ -1067,13 +1068,17 @@ class ou24PSF_slow( PSF ):
         return self.size
 
 
-    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None ):
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, input_wcs=None):
         """Return a 2d numpy image of the PSF at the image resolution.
 
         Parameters are as in PSF.get_stamp, plus:
 
         Parameters
         ----------
+          input_wcs : BaseWCS or galsim.BaseWCS
+            WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.
+            An alternative WCS to use for the stamp.
+
           seed : int
             A random seed to pass to galsim.BaseDeviate for photonOps.
             NOTE: this is not part of the base PSF interface (at least,
@@ -1103,6 +1108,7 @@ class ou24PSF_slow( PSF ):
             raise ValueError( f"PSF would be rendered at ({stampx},{stampy}), which is too far off of the "
                               f"edge of a {self.stamp_size}-pixel stamp." )
 
+
         if (x, y, stampx, stampy) not in self._stamps:
             rmutils = roman_utils( self.config_file, self.pointing, self.sca )
             if seed is not None:
@@ -1111,9 +1117,20 @@ class ou24PSF_slow( PSF ):
             # It seems that galsim.ChromaticObject.drawImage won't function without stamp having
             # a wcs.  Without a WCS, the stamp was coming out all zeros.
             # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
-            wcs = rmutils.getLocalWCS( x+1, y+1 )
-            stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=wcs )
+            # wcs = rmutils.getLocalWCS( x+1, y+1 )self._
 
+            if input_wcs is None:
+                self._wcs = rmutils.getLocalWCS( x+1, y+1 )
+            elif isinstance(input_wcs, BaseWCS):
+                SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
+                self._wcs = input_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
+            elif isinstance( input_wcs, galsim.BaseWCS ):
+                SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
+                self._wcs = input_wcs.local( image_pos = galsim.PositionD(x+1, y+1 ))
+            else:
+                raise TypeError( f"wcs must be a galsim.BaseWCS, not a {type(input_wcs)}" )
+
+            stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
             point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, rmutils.bpass )
             # TODO : make sure that rmutils.getPSF wants 1-indexed positions (which we assume here).
             # (This is not that big a deal, because the PSF is not going to vary significantly
@@ -1124,18 +1141,158 @@ class ou24PSF_slow( PSF ):
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
-            point.drawImage( rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
-                             n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
-                             center=galsim.PositionD(stampx+1, stampy+1), use_true_center=True, image=stamp )
-            self._stamps[(x, y, stampx, stampy)] = stamp.array
+            center = galsim.PositionD(stampx+1, stampy+1)
+            # Note: self.include_photonOps is a bool that states whether we are
+            #  shooting photons or not, photon_ops is the actual map (not sure
+            #  if that's the correct word) that describes where the photons
+            # should be shot, with some randomness.
+            if self.include_photonOps:
+                point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
+                                n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
+                                center=center, use_true_center=True, image=stamp)
 
+            else:
+                psf = galsim.Convolve(point, photon_ops[0])
+                psf.drawImage(rmutils.bpass, method="no_pixel", center=center,
+                              use_true_center=True, image=stamp, wcs=self._wcs)
+
+            self._stamps[(x, y, stampx, stampy)] = stamp.array
 
         return self._stamps[(x, y, stampx, stampy)]
 
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
 class ou24PSF( ou24PSF_slow ):
-    pass
+    def __init__( self, *args, **kwargs ):
+        super().__init__(*args, **kwargs)
+        self._psf = None
+
+    def _init_psf_object( self, x0=None, y0=None, flux=1., input_wcs = None):
+        """Create the galsim PSF object, WCS, and galsim.chromatic.SimpleChromaticTransformation
+           that can be reused for multiple calls to get_stamp.
+
+        WARNING: Do not use input_wcs. Not part of a standard interface, for testing & simulation purposes only.
+
+
+        Parameters are as in PSF.get_stamp, plus:
+
+        Parameters
+        ----------
+        input_wcs : BaseWCS or galsim.BaseWCS
+            An alternative WCS to use for the stamp.
+
+        seed : int
+            A random seed to pass to galsim.BaseDeviate for photonOps.
+            NOTE: this is not part of the base PSF interface (at least,
+            as of yet), so don't use it in production pipeline code.
+            However, it will be useful in tests for purposes of testing
+            reproducibility.
+
+
+        """
+        self._rmutils = roman_utils(self.config_file, self.pointing, self.sca)
+        self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
+        # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
+        if input_wcs is None:
+            self._wcs = self._rmutils.getLocalWCS( x0+1, y0+1 )
+        elif isinstance(input_wcs, BaseWCS):
+            SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
+            self._wcs = input_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x0+1, y0+1))
+        elif isinstance( input_wcs, galsim.BaseWCS):
+            SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
+            self._wcs = input_wcs.local( image_pos=galsim.PositionD(x0+1, y0+1))
+        else:
+            raise TypeError( f"wcs must be a galsim.BaseWCS, not a {type(input_wcs)}" )
+        SNLogger.debug( f"ou24PSF wcs fetched at: {x0, y0}" )
+        SNLogger.debug( f"ou24PSF wcs: {self._wcs}" )
+        self._stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
+        self._point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, self._rmutils.bpass )
+        self._convolved_psf = galsim.Convolve(self._point, self._psf)
+        # This is only used to ensure the user isn't trying to move the PSF around
+        self._stored_x0 = x0
+        self._stored_y0 = y0
+
+    def get_stamp(self, x=None, y=None, x0=None, y0=None, flux=1.0, seed=None, input_wcs=None):
+        """Return a 2d numpy image of the PSF at the image resolution.
+        Parameters are as in PSF.get_stamp, plus:
+
+        Parameters
+        ----------
+        wcs : BaseWCS or galsim.BaseWCS
+            WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.
+            An alternative WCS to use for the stamp.
+
+          seed : int
+            A random seed to pass to galsim.BaseDeviate for photonOps.
+            NOTE: this is not part of the base PSF interface (at least,
+            as of yet), so don't use it in production pipeline code.
+            However, it will be useful in tests for purposes of testing
+            reproducibility.
+
+        """
+
+        # If a position is not given, assume the middle of the SCA
+        #   (within 1/2 pixel; by default, we want to make x and y
+        #   centered on a pixel).
+
+        x = x if x is not None else float( self.sca_size // 2 )
+        y = y if y is not None else float( self.sca_size // 2 )
+
+        xc = int( np.floor( x + 0.5 ) )
+        yc = int( np.floor( y + 0.5 ) )
+        x0 = xc if x0 is None else x0
+        y0 = yc if y0 is None else y0
+
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+
+        if self._psf is None:
+            SNLogger.debug( "Initializing ou24PSF galsim PSF object." )
+            # If we don't have a psf object, then we need to initialize it, we then re use it for multiple calls to
+            # get_stamp.
+            self._init_psf_object( x0=x0, y0=y0, flux=flux, input_wcs = input_wcs)
+        else:
+            if x0 != self._stored_x0 or y0 != self._stored_y0:
+                raise ValueError("ou24PSF.get_stamp called with x0 or y0 that does not match the x0 or y0 used"
+                                  "to initialize the PSF object. If you want to recreate the PSF object, use "
+                                  "ou24PSF_slow instead.")
+
+        stampx = self.stamp_size // 2 + ( x - x0 )
+        stampy = self.stamp_size // 2 + ( y - y0 )
+
+        if ( ( stampx < -self.stamp_size ) or ( stampx > 2.*self.stamp_size ) or
+             ( stampy < -self.stamp_size ) or ( stampy > 2.*self.stamp_size ) ):
+            raise ValueError( f"PSF would be rendered at ({stampx},{stampy}), which is too far off of the "
+                              f"edge of a {self.stamp_size}-pixel stamp." )
+
+        if (x, y, stampx, stampy) not in self._stamps:
+
+            if seed is not None:
+                self._rmutils.rng = galsim.BaseDeviate( seed )
+
+            photon_ops = [ self._psf ]
+            if self.include_photonOps:
+                photon_ops += self._rmutils.photon_ops
+
+            # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
+            # whereas snappl uses 0-indexed pixel positions
+            center = galsim.PositionD(stampx+1, stampy+1)
+            # Note: self.include_photonOps is a bool that states whether we are
+            #  shooting photons or not, photon_ops is the actual map (not sure
+            #  if that's the correct word) that describes where the photons
+            # should be shot, with some randomness.
+            if self.include_photonOps:
+                self._point.drawImage(self._rmutils.bpass, method='phot', rng=self._rmutils.rng, photon_ops=photon_ops,
+                                      n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
+                                      center=center, use_true_center=True, image=self._stamp)
+
+            else:
+                self._convolved_psf.drawImage(self._rmutils.bpass, method="no_pixel", center=center,
+                                              use_true_center=True, image=self._stamp, wcs=self._wcs)
+
+            self._stamps[(x, y, stampx, stampy)] = self._stamp.array
+
+        return self._stamps[(x, y, stampx, stampy)]
 
 # class ou24PSF( OversampledImagePSF ):
 #     """An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.
