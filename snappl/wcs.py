@@ -1,21 +1,45 @@
 import collections.abc
 
 import numpy as np
+import astropy.coordinates
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import astropy.wcs
 
 import galsim
+import roman_datamodels as rdm
 
+# ASTROPY NOTE:
+#
+# We have played with astropy, and using pixel_to_world DOES include
+# both SIP and TPV transformations (we are pretty sure).  In any event,
+# if you make a WCS that's the linear approximation, you get different
+# answers, meaning that the full WCS isn't just using the linear
+# approximation.
+#
+# Note that to write out a header that includes SIP coefficients, you
+# have to do wcs.to_header( relax=True ) where wcs is an astropy.wcs.WCS
+# object.
+
+
+# ======================================================================
 
 class BaseWCS:
+    """The base class that defines the WCS interface that should be used elsewhere.
+
+    Code outside this module should only call methods that are defined
+    in this class.  This class doesn'ta ctually do antyhing, however; to
+    actually get a working WCS, you need to instantiate a subclass.
+
+    """
+
     def __init__( self ):
         self._wcs = None
         self._wcs_is_astropy = False
         pass
 
     def pixel_to_world( self, x, y ):
-        """Go from (x, y) coordinates to (ra, dec )
+        """Go from (x, y) coordinates to ICRS (ra, dec)
 
         Parmaeters
         ----------
@@ -85,12 +109,37 @@ class BaseWCS:
         """Return a glasim.AstropyWCS object, if possible."""
         raise NotImplementedError( f"{self.__class__.__name__} can't return a galsim.AstropyWCS" )
 
+    def get_astropy_wcs( self, readonly=True, degree=None ):
+        """Return an astropy.wcs.WCS object, if possible.
+
+        Parameters
+        ----------
+          readonly: bool, default True
+            If True, you are promising not to modify the WCS you get back!  If you're going to
+            modify it, set readonly to False.  (For some subclasses, this doesn't actually change
+            behavior.)
+
+          degree: int
+            The degree of the astropy WCS used to approximate the WCS in the object.  The default
+            is subclass-dependent.  Ignored by some subclasses.
+
+        For some subclasses, this astropy.wcs.WCS may only be an
+        approximation of the true WCS represented by the object.
+
+        """
+        raise NotImplementedError( f"{self.__class__.__name__} can't return an astropy.wcs.WCS" )
+
     def to_fits_header( self ):
         """Return an astropy.io.fits.Header object, if possible, with the WCS in it."""
         raise NotImplementedError( f"{self.__class__.__name__} can't save itself to a FITS header." )
 
 
+# ======================================================================
+
+
 class AstropyWCS(BaseWCS):
+    """A WCS that is defined by an astropy.wcs.WCS."""
+
     def __init__( self, apwcs=None ):
         super().__init__()
         self._wcs = apwcs
@@ -107,6 +156,12 @@ class AstropyWCS(BaseWCS):
 
     def get_galsim_wcs( self ):
         return galsim.AstropyWCS( wcs=self._wcs )
+
+    def get_astropy_wcs( self, readonly=True ):
+        if readonly:
+            return self._wcs
+        else:
+            return self._wcs.deepcopy()
 
     def pixel_to_world( self, x, y ):
         ra, dec = self._wcs.pixel_to_world_values( x, y )
@@ -130,7 +185,11 @@ class AstropyWCS(BaseWCS):
         return x, y
 
 
+# ======================================================================
+
 class GalsimWCS(BaseWCS):
+    """A WCS speicifc to Galsim."""
+
     def __init__( self, gsimwcs=None ):
         super().__init__()
         self._gsimwcs = gsimwcs
@@ -176,5 +235,63 @@ class GalsimWCS(BaseWCS):
         return x, y
 
 
-class TotalDisasterASDFWCS(BaseWCS):
-    pass
+# ======================================================================
+
+class GWCS(BaseWCS):
+    """A "G" (Generalized?) WCS : https://gwcs.readthedocs.io/en/latest/
+
+    In the current code, these are only read from ASDF files
+
+    """
+
+    def __init__( self, gwcs=None ):
+        super().__init__()
+        self._gwcs = gwcs
+
+    @classmethod
+    def from_adsf( cls, asdf_file ):
+        """Load the WCS from the specified ASDF image file.  (Also see RomanDatamodelImage.get_wcs.)"""
+        # read the ASDF file and get the WCS
+        dm = rdm.open(asdf_file)
+        wcs = GWCS()
+        wcs._gwcs = dm.meta.wcs
+        return wcs
+
+    def pixel_to_world( self, x, y ):
+        if not isinstance( self._gwcs.output_frame.reference_frame, astropy.coordinates.ICRS ):
+            raise TypeError( "Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, "
+                             "but we need it to be ICRS." )
+        if isinstance( x, collections.abc.Sequence ) and not isinstance( x, np.ndarray ):
+            x = np.array( x )
+            y = np.array( y )
+
+        # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)) like astropy WCS, so no need to convert
+        SkyCoord = self._gwcs.pixel_to_world(x, y)
+        ra, dec = SkyCoord.ra.deg, SkyCoord.dec.deg
+        if not ( isinstance( x, collections.abc.Sequence )
+                 or ( isinstance( x, np.ndarray ) and ra.size > 1 )
+                ):
+            ra = float( ra )
+            dec = float( dec )
+        return ra, dec
+
+    def world_to_pixel( self, ra, dec ):
+        if isinstance( ra, collections.abc.Sequence ) and not isinstance( ra, np.ndarray ):
+            ra = np.array( ra )
+            dec = np.array( dec )
+
+        # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)) like astropy WCS, so no need to convert
+        skyCoord = SkyCoord( ra, dec, unit=(u.deg, u.deg), frame=self._gwcs.output_frame.reference_frame )
+        x, y = self._gwcs.world_to_pixel(skyCoord)
+        if not ( isinstance( ra, collections.abc.Sequence )
+                 or ( isinstance( ra, np.ndarray ) and y.size > 1 )
+                ):
+            x = float( x )
+            y = float( y )
+        return x, y
+
+    def get_astropy_wcs( self , readonly=True, degree=5 ):
+        # ... I think there's a more direct way to do this other than writing a header?
+        #  Ask Russel.  (He probably told me once and I forgot --Rob.)
+        hdr = self._gwcs.to_fits(degree=degree)[0]
+        return astropy.wcs.WCS( hdr )

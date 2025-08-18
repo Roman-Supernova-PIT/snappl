@@ -1,7 +1,11 @@
+
+import numpy as np
+
 import astropy
 import galsim
-import numpy as np
-from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS
+import gwcs
+
+from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, GWCS
 
 
 def test_astropywcs( ou2024image, check_wcs ):
@@ -60,7 +64,7 @@ def test_get_astropywcs_get_galsimwcs( ou2024image, check_wcs ):
     check_wcs( gswcs )
 
 
-def test_if_wcs_invertible(ou2024image):
+def test_if_ou2024image_wcs_invertible(ou2024image):
     # OpenUniverse Images are in fk5 coordinates, i.e. they use
     # EQUINOX = 2000.0, but astropy SkyCoord defaults to ICRS.
     # Therefore, we enforce the frame to match the radesys of the WCS.
@@ -78,3 +82,24 @@ def test_if_wcs_invertible(ou2024image):
     x_y_pixel = wcs.world_to_pixel(ra_dec[0], ra_dec[1])
     assert np.abs(x_y_pixel[0]) < 1e-9, 'x coordinate did not invert properly'
     assert np.abs(x_y_pixel[1]) < 1e-9, 'y coordinate did not invert properly'
+
+
+def test_gwcs( romandatamodel_image, check_wcs ):
+    wcs = romandatamodel_image.get_wcs()
+    assert isinstance( wcs, BaseWCS )
+    assert isinstance( wcs, GWCS )
+    assert isinstance( wcs._gwcs, gwcs.wcs.WCS )
+
+    # This is just a regression test, since I've only used this code to find the values
+    testdata = [ { 'x': 0, 'y': 0, 'ra': 79.99384677, 'dec': 29.97428036, },
+                 { 'x': 4087, 'y': 4087, 'ra': 79.84864636, 'dec': 30.09743131 },
+                 { 'x': 0, 'y': 4087, 'ra': 79.99377225, 'dec': 30.09721375 },
+                 { 'x': 4087, 'y': 0, 'ra': 79.84966829, 'dec': 29.97460354 },
+                 { 'x': 2043.5, 'y': 2043.5, 'ra': 79.92142552, 'dec': 30.03557704 } ]
+
+    # These WCSes have more precise inverse than the ones we get from FITS files
+    check_wcs( wcs, testdata, invabs=0.01, arcsecprecision=0.002 )
+
+    # Test the astropy WCS approximation
+    awcs = AstropyWCS( apwcs=wcs.get_astropy_wcs(degree=5) )
+    check_wcs( awcs, testdata, arcsecprecision=0.002 )

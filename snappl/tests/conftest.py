@@ -7,7 +7,7 @@ from astropy.io import fits
 import tox # noqa: F401
 from tox.pytest import init_fixture # noqa: F401
 
-from snappl.image import FITSImage, OpenUniverse2024FITSImage, ManualFITSImage
+from snappl.image import FITSImage, OpenUniverse2024FITSImage, ManualFITSImage, RomanDatamodelImage
 
 from snpit_utils.config import Config
 
@@ -37,6 +37,17 @@ def manual_fits_image( ou2024imagepath):
     noise = np.zeros((25, 25), dtype = np.float32)
     flags = np.zeros((25, 25), dtype = np.uint32)
     return ManualFITSImage(header, data, noise=noise, flags=flags)
+
+
+@pytest.fixture
+def romandatamodel_image_path():
+    return '/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
+
+
+@pytest.fixture
+def romandatamodel_image( romandatamodel_image_path ):
+    image = RomanDatamodelImage( romandatamodel_image_path )
+    return image
 
 
 # If you use this next fixture, you aren't supposed
@@ -75,33 +86,34 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
     return fitsim
 
 
-# This next fixture will only work on the WCS extracted from ou2024image
-# The hardcoded values are empirical.  I've used DS9 on the test
-# image to verify that they're good to at least ~5 decimal places.
 @pytest.fixture( scope='module' )
 def check_wcs():
-    def wcs_checker( wcs ):
-        testdata = [ { 'x': 0, 'y': 0, 'ra': 7.49435552, 'dec': -44.95508301 },
-                     { 'x': 4087, 'y': 4087, 'ra': 7.58168925, 'dec': -44.79212825 },
-                     { 'x': 0, 'y': 4087, 'ra': 7.42167102, 'dec': -44.84398918   },
-                     { 'x': 4087, 'y': 0, 'ra': 7.65461745, 'dec': -44.90311993 },
-                     { 'x': 2043.5, 'y': 2043.5, 'ra': 7.53808422, 'dec': -44.87361374 } ]
+    def wcs_checker( wcs, testdata=None, arcsecprecision=0.01, invabs=0.1 ):
+        if testdata is None:
+            # This default test data is for ou2024image
+            # The hardcoded values are empirical.  I've used DS9 on the test
+            # image to verify that they're good to at least ~5 decimal places.
+            testdata = [ { 'x': 0, 'y': 0, 'ra': 7.49435552, 'dec': -44.95508301 },
+                         { 'x': 4087, 'y': 4087, 'ra': 7.58168925, 'dec': -44.79212825 },
+                         { 'x': 0, 'y': 4087, 'ra': 7.42167102, 'dec': -44.84398918   },
+                         { 'x': 4087, 'y': 0, 'ra': 7.65461745, 'dec': -44.90311993 },
+                         { 'x': 2043.5, 'y': 2043.5, 'ra': 7.53808422, 'dec': -44.87361374 } ]
 
         for data in testdata:
             ra, dec = wcs.pixel_to_world( data['x'], data['y'] )
             assert isinstance( ra, float )
             assert isinstance( dec, float )
-            assert ra == pytest.approx( data['ra'], abs=0.01/3600./np.cos(data['dec'] * np.pi/180.))
-            assert dec == pytest.approx( data['dec'], abs=0.01/3600. )
+            assert ra == pytest.approx( data['ra'], abs=arcsecprecision/3600./np.cos(data['dec'] * np.pi/180.))
+            assert dec == pytest.approx( data['dec'], abs=arcsecprecision/3600. )
 
-            # ...I would have expected better than this, but empirically the
-            # WCS as compared to the inverse WCS are only good to several
-            # hundreths of a pixel.
+            # ...I would have expected better than the default of 0.1
+            # pixels, but empirically the WCS as compared to the inverse
+            # WCS are only good to several hundreths of a pixel.
             x, y = wcs.world_to_pixel( data['ra'], data['dec'] )
             assert isinstance( x, float )
             assert isinstance( y, float )
-            assert x == pytest.approx( data['x'], abs=0.1 )
-            assert y == pytest.approx( data['y'], abs=0.1 )
+            assert x == pytest.approx( data['x'], abs=invabs )
+            assert y == pytest.approx( data['y'], abs=invabs )
 
         xvals = np.array( [ t['x'] for t in testdata ] )
         yvals = np.array( [ t['y'] for t in testdata ] )
@@ -111,8 +123,8 @@ def check_wcs():
         ras, decs = wcs.pixel_to_world( xvals, yvals )
         assert isinstance( ras, np.ndarray )
         assert isinstance( decs, np.ndarray )
-        assert np.all( ras == pytest.approx(ravals, abs=0.01/3600./np.cos(decs[0] * np.pi/180.) ) )
-        assert np.all( decs == pytest.approx(decvals, abs=0.01/3600. ) )
+        assert np.all( ras == pytest.approx(ravals, abs=arcsecprecision/3600./np.cos(decs[0] * np.pi/180.) ) )
+        assert np.all( decs == pytest.approx(decvals, abs=arcsecprecision/3600. ) )
 
         xs, ys = wcs.world_to_pixel( ravals, decvals )
         assert isinstance( xs, np.ndarray )
