@@ -300,3 +300,53 @@ def test_manual_fits_image( manual_fits_image ):
     hdr = manual_fits_image._get_header()
     assert isinstance(hdr, astropy.io.fits.header.Header)
     assert hdr is manual_fits_image._header
+
+
+# ======================================================================
+# RomanDatamodelImage tests
+
+def test_romandatamodel_image( romandatamodel_image ):
+    im = romandatamodel_image
+    # These tests will fail right now.  We're hoping that
+    #  duck typing will be good enough.  If not, uncomment
+    #  these tests, and edit RomanDatamodelImage to do something else
+    # assert isinstance( im.data, np.ndarray )
+    # assert isinstance( im.noise, np.ndarray )
+    # assert isinstance( im.flags, np.ndarray )
+
+    assert im.band == 'F106'
+    assert im.mjd == pytest.approx( 60627.50030, abs=1e-5 )
+
+    assert im.data.shape == ( 4088, 4088 )
+    # Looks like they're coming in little-endian.  (Really maybe native
+    # type?  If tests are failing for you on a big-endian machine, then
+    # probably replace all the < below with =.)
+    assert im.data.dtype == "<f4"
+
+    assert im.noise.shape == im.data.shape
+    assert im.noise.dtype == "<f4"
+
+    assert im.flags.shape == im.data.shape
+    assert im.flags.dtype == "<u4"
+
+    assert im.data[1896:1932, 3800:3835].sum() == pytest.approx( 1053.467, rel=1e-5 )
+    assert im.noise[1896:1932, 3800:3835].sum() == pytest.approx( 210.87682, rel=1e-5 )
+
+    data, noise, flags = im.get_data()
+    assert data is not im.data
+    assert noise is not im.noise
+    assert flags is not im.flags
+    assert isinstance( data, np.ndarray )
+    np.testing.assert_allclose( data, im.data, rtol=1e-5 )
+    np.testing.assert_allclose( noise, im.noise, rtol=1e-5 )
+    assert np.all( flags == im.flags )
+
+    props = [ 'data', 'noise', 'flags' ]
+    for prop in props:
+        res = im.get_data( prop )[0]
+        assert res is not getattr( im, prop )
+        assert isinstance( res, np.ndarray )
+        if prop == 'flags':
+            assert np.all( res == im.flags )
+        else:
+            np.testing.assert_allclose( res, getattr(im, prop), rtol=1e-5 )

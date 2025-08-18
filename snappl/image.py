@@ -1,3 +1,4 @@
+import re
 import types
 import pathlib
 
@@ -10,7 +11,7 @@ import galsim.roman
 import roman_datamodels as rdm
 
 from snpit_utils.logger import SNLogger
-from snappl.wcs import AstropyWCS, GalsimWCS, ASDFWCS
+from snappl.wcs import AstropyWCS, GalsimWCS, GWCS
 
 
 class Exposure:
@@ -94,7 +95,12 @@ class Image:
 
     @property
     def flags( self ):
-        """An integer 2d numpy array of pixel masks / flags TBD"""
+        """An integer 2d numpy array of pixel masks / flags TBD
+
+        TODO : think about what we mean by this.  Right now it's subclass-dependent.  But, for
+        usage, we need a way of making this more general. Issue #45.
+
+        """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement flags" )
 
     @flags.setter
@@ -253,6 +259,8 @@ class Image:
 #   flags as 2d numpy arrays.  Common code for those classes is here.
 
 class Numpy2DImage( Image ):
+    """Abstract class for classes that store their array internall as a numpy 2d array."""
+
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
@@ -583,7 +591,11 @@ class OpenUniverse2024FITSImage( FITSImage ):
 
     @property
     def mjd(self):
-        """The mjd of the image."""
+        """The mjd of the image.
+
+        TODO : is this start-time, mid-time, or end-time?
+
+        """
         header = self._get_header()
         return float( header['MJD-OBS'] )
 
@@ -626,14 +638,108 @@ class ManualFITSImage(FITSImage):
 # RomanDatamodelImage
 #
 # An image read from a roman datamodel ASDF file
+#
+# Empirically:
+#   self._dm.err**2 == self._dm.var_poisson + self._dm.var_rnoise + self.dm.var_flat
 
 class RomanDatamodelImage( Image ):
-    def __init__( self, *args, **kwargs ):
-        super().__init__( *args, **kwargs )
-        self._dm = None
+    """An image read from a roman datamodel ASDF file.
+
+    See Issue #46 for concerns about performance/memory and imlementation of this object.
+
+    """
+
+    _detectormatch = re.compile( "^WFI([0-9]{2})$" )
+
+    def __init__( self, path ):
+        super().__init__( path, None, None )
+        # We really want to open the image readonly, because otherwise normal use of
+        #   this class will modify the image on disk.  We really don't want to modify
+        #   our input data, and want to be explicit about saving like we are used
+        #   to with FITS files.
+        self._dm = rdm.open( path, mode='r' )
+        match = self._detectormatch.search( self._dm.meta.instrument.detector )
+        if match is None:
+            raise ValueError( f'Failed to parse self._dm.meat.instrument.detector= '
+                              f'"{self._dm.meta.instrument.detector} for "WFInn"' )
+        self.inputs.sca = int( match.group(1) )
+
+
+    @property
+    def band( self ):
+        return self.dm.meta.instrument.optical_element
+
+    @property
+    def mjd( self ):
+        return self.dm.meta.exposure.mid_time.mjd
+
+    @property
+    def data( self ):
+        # WORRY.  This actually returns a asdf.tags.core.ndarray.NDArrayType.
+        # I'm hoping it will be duck-typing equivalent to a numpy array.
+        # TODO : investigate memory use when you do numpy array things
+        # with one of these.
+        return self.dm.data
+
+    @property
+    def noise( self ):
+        # See comment in data
+        return self.dm.err
+
+    @property
+    def flags( self ):
+        # See comment in data
+        # TODO : https://roman-pipeline.readthedocs.io/en/latest/roman/dq_init/reference_files.html#reference-files
+        # We probably need to do some translation.  We have to think about what we are defining
+        #   as a "bad" pixel.
+        return self.dm.dq
+
+    def get_data( self, which='all', always_reload=False, cache=False ):
+        """Read the data from disk and return one or more 2d numpy arrays of data.
+
+        See Image.get_data for definition of parameters.
+
+        Subclass-specific wrinkle:
+
+        get_data will return actual 2d numpy arrays, which means that
+        the memory will always be copied from what is stored from the
+        open roman_datamodels file.  We may revisit this later as we
+        think about memory implications.  (Issue #46.)
+
+        Once you get the data, it will always be cached, even if you
+        pass cache=False.  (This is because we keep the roman_datamodels
+        file open, and currently there's no way to free the data without
+        closing and reopening the file.)  So, cache=False does not save
+        any memory, alas.  (Again, Issue #46.)
+
+        As such, always_reload and cache are ignored for this class.
+        This is not great, because always_reload ought to get a fresh
+        copy of the data even if it's been modified.  To really behave
+        that way, though, we'd have to reimplement the class to not hold
+        open the roman_datamodels image.
+
+        """
+        if self._is_cutout:
+            raise RuntimeError( f"{self.__class__.__name__} images don't know how to deal with being cutouts." )
+
+        if which == 'all':
+            return [ np.array(self.data), np.array(self.noise), np.array(self.flags) ]
+
+        if which == 'data':
+            return [ np.array(self.data) ]
+
+        if which == 'noise':
+            return [ np.array(self.noise) ]
+
+        if which == 'flags':
+            return [ np.array(self.flags) ]
+
+        raise ValueError( f"Unknown value of which: {which}" )
+
 
     @property
     def dm( self ):
+
         """This property should usually not be used outside of this class."""
         # THOUGHT REQUIRED : worry a little about accessing members of
         #   the dm object and memory getting eaten.  Perhaps implement
@@ -646,10 +752,10 @@ class RomanDatamodelImage( Image ):
         return self._dm
 
     def get_wcs( self, wcsclass=None ):
-        wcsclass = "ASDFWCS" if wcsclass is None else wcsclass
+        wcsclass = "GWCS" if wcsclass is None else wcsclass
         if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
-            if wcsclass == "ASDFWCS":
-                self._wcs = ASDFWCS( asdfwcs=self.dm.meta.wcs )
+            if wcsclass == "GWCS":
+                self._wcs = GWCS( gwcs=self.dm.meta.wcs )
             else:
                 raise NotImplementedError( "RomanDataModelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs

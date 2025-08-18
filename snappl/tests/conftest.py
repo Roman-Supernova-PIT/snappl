@@ -7,7 +7,7 @@ from astropy.io import fits
 import tox # noqa: F401
 from tox.pytest import init_fixture # noqa: F401
 
-from snappl.image import FITSImage, OpenUniverse2024FITSImage, ManualFITSImage
+from snappl.image import FITSImage, OpenUniverse2024FITSImage, ManualFITSImage, RomanDatamodelImage
 
 from snpit_utils.config import Config
 
@@ -37,6 +37,17 @@ def manual_fits_image( ou2024imagepath):
     noise = np.zeros((25, 25), dtype = np.float32)
     flags = np.zeros((25, 25), dtype = np.uint32)
     return ManualFITSImage(header, data, noise=noise, flags=flags)
+
+
+@pytest.fixture
+def romandatamodel_image_path():
+    return '/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
+
+
+@pytest.fixture
+def romandatamodel_image( romandatamodel_image_path ):
+    image = RomanDatamodelImage( romandatamodel_image_path )
+    return image
 
 
 # If you use this next fixture, you aren't supposed

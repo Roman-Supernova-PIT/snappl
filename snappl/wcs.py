@@ -1,6 +1,7 @@
 import collections.abc
 
 import numpy as np
+import astropy.coordinates
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import astropy.wcs
@@ -9,14 +10,24 @@ import galsim
 import roman_datamodels as rdm
 
 
+# ======================================================================
+
 class BaseWCS:
+    """The base class that defines the WCS interface that should be used elsewhere.
+
+    Code outside this module should only call methods that are defined
+    in this class.  This class doesn'ta ctually do antyhing, however; to
+    actually get a working WCS, you need to instantiate a subclass.
+
+    """
+
     def __init__( self ):
         self._wcs = None
         self._wcs_is_astropy = False
         pass
 
     def pixel_to_world( self, x, y ):
-        """Go from (x, y) coordinates to (ra, dec )
+        """Go from (x, y) coordinates to ICRS (ra, dec)
 
         Parmaeters
         ----------
@@ -111,7 +122,12 @@ class BaseWCS:
         raise NotImplementedError( f"{self.__class__.__name__} can't save itself to a FITS header." )
 
 
+# ======================================================================
+
+
 class AstropyWCS(BaseWCS):
+    """A WCS that is defined by an astropy.wcs.WCS."""
+
     def __init__( self, apwcs=None ):
         super().__init__()
         self._wcs = apwcs
@@ -157,7 +173,11 @@ class AstropyWCS(BaseWCS):
         return x, y
 
 
+# ======================================================================
+
 class GalsimWCS(BaseWCS):
+    """A WCS speicifc to Galsim."""
+
     def __init__( self, gsimwcs=None ):
         super().__init__()
         self._gsimwcs = gsimwcs
@@ -203,27 +223,38 @@ class GalsimWCS(BaseWCS):
         return x, y
 
 
-class ASDFWCS(BaseWCS):
-    def __init__( self, asdfwcs=None ):
+# ======================================================================
+
+class GWCS(BaseWCS):
+    """A "G" (Generalized?) WCS : https://gwcs.readthedocs.io/en/latest/
+
+    In the current code, these are only read from ASDF files
+
+    """
+
+    def __init__( self, gwcs=None ):
         super().__init__()
-        self._asdfwcs = asdfwcs
+        self._gwcs = gwcs
 
     @classmethod
     def from_adsf( cls, asdf_file ):
         """Load the WCS from the specified ASDF image file.  (Also see RomanDatamodelImage.get_wcs.)"""
         # read the ASDF file and get the WCS
         dm = rdm.open(asdf_file)
-        wcs = ASDFWCS()
-        wcs._asdfwcs = dm.meta.wcs
+        wcs = GWCS()
+        wcs._gwcs = dm.meta.wcs
         return wcs
 
     def pixel_to_world( self, x, y ):
+        if not isinstance( self._gwcs.output_frame.reference_frame, astropy.coordinates.ICRS ):
+            raise TypeError( "Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, "
+                             "but we need it to be ICRS." )
         if isinstance( x, collections.abc.Sequence ) and not isinstance( x, np.ndarray ):
             x = np.array( x )
             y = np.array( y )
 
         # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)) like astropy WCS, so no need to convert
-        SkyCoord = self._asdfwcs.pixel_to_world(x, y)
+        SkyCoord = self._gwcs.pixel_to_world(x, y)
         ra, dec = SkyCoord.ra.deg, SkyCoord.dec.deg
         if not ( isinstance( x, collections.abc.Sequence )
                  or ( isinstance( x, np.ndarray ) and ra.size > 1 )
@@ -238,9 +269,8 @@ class ASDFWCS(BaseWCS):
             dec = np.array( dec )
 
         # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)) like astropy WCS, so no need to convert
-        # FIXME: frame is hard-coded to 'icrs', I don't find where the ASDF WCS specifies frame. -- Issue #34
-        skyCoord = SkyCoord( ra, dec, unit=(u.deg, u.deg), frame = 'icrs')
-        x, y = self._asdfwcs.world_to_pixel(skyCoord)
+        skyCoord = SkyCoord( ra, dec, unit=(u.deg, u.deg), frame=self._gwcs.output_frame.reference_frame )
+        x, y = self._gwcs.world_to_pixel(skyCoord)
         if not ( isinstance( ra, collections.abc.Sequence )
                  or ( isinstance( ra, np.ndarray ) and y.size > 1 )
                 ):
@@ -251,5 +281,5 @@ class ASDFWCS(BaseWCS):
     def get_astropy_wcs( self , readonly=True, degree=5 ):
         # ... I think there's a more direct way to do this other than writing a header?
         #  Ask Russel.  (He probably told me once and I forgot --Rob.)
-        hdr = self._asdfwcs.to_fits(degree=degree)[0]
+        hdr = self._gwcs.to_fits(degree=degree)[0]
         return astropy.wcs.WCS( hdr )
