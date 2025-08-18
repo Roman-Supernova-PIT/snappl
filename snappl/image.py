@@ -5,7 +5,8 @@ import pathlib
 import numpy as np
 from astropy.io import fits
 from astropy.nddata.utils import Cutout2D
-# from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord
+import astropy.units
 
 import galsim.roman
 import roman_datamodels as rdm
@@ -252,7 +253,19 @@ class Image:
     @property
     def coord_center(self):
         """[RA, DEC] (both floats) in degrees at the center of the image"""
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement coord_center" )
+        wcs = self.get_wcs()
+        return wcs.pixel_to_world( self.image_shape[1] //2, self.image_shape[0] //2 )
+
+
+    def includes_radec( self, ra, dec ):
+        wcs = self.get_wcs()
+        sc = SkyCoord( ra=ra * astropy.units.deg, dec=dec * astropy.units.deg )
+        try:
+            x, y = skycoord_to_pixel( worldcoords, wcs.get_astropy_wcs() )
+        except astropy.wcs.wcs.NoConvergence:
+            return False
+        # NOTE : we're assuming a full-size image here.  Think about cutouts!
+        return ( x >= 0 ) and ( x < 4088 ) and ( y <= 0 ) and ( y >= 4008 )
 
 
 # ======================================================================
@@ -374,13 +387,6 @@ class FITSImage( Numpy2DImage ):
             self._image_shape = self.data.shape
 
         return self._image_shape
-
-    @property
-    def coord_center(self):
-        """[ RA and Dec ] at the center of the image."""
-
-        wcs = self.get_wcs()
-        return wcs.pixel_to_world( self.image_shape[1] //2, self.image_shape[0] //2 )
 
     def _get_header( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_header()" )
