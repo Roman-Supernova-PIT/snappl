@@ -41,9 +41,8 @@ jobs:
           git lfs pull
 
       - name: looky looky
-        with:
-          path: photometry_test_data
         run: ls -R
+        working-directory: photometry_test_data
           
       - name: log into github container registry
         uses: docker/login-action@v3
