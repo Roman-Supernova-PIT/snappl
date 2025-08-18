@@ -35,8 +35,7 @@ jobs:
           path: photometry_test_data
 
       - name: lfs photometry test data
-        with:
-          path: photometry_test_data
+        working-directory: photometry_test_data
         run: |
           git lfs install --local
           AUTH=$(git config --local http.${{ github.server_url }}/.extraheader)
