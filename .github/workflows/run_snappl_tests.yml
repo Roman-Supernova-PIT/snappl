@@ -33,6 +33,21 @@ jobs:
         with:
           repository: Roman-Supernova-PIT/photometry_test_data
           path: photometry_test_data
+
+      - name: lfs photometry test data
+        with:
+          path: photometry_test_data
+        run: |
+          git lfs install --local
+          AUTH=$(git config --local http.${{ github.server_url }}/.extraheader)
+          git config --local --unset http.${{ github.server_url }}/.extraheader
+          git config --local http.${{ github.server_url }}/${{ github.repository }}.git/info/lfs/objects/batch.extraheader "$AUTH"
+          git lfs pull
+
+      - name: looky looky
+        with:
+          path: photometry_test_data
+        run: ls -R
           
       - name: log into github container registry
         uses: docker/login-action@v3
