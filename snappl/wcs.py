@@ -9,6 +9,18 @@ import astropy.wcs
 import galsim
 import roman_datamodels as rdm
 
+# ASTROPY NOTE:
+#
+# We have played with astropy, and using pixel_to_world DOES include
+# both SIP and TPV transformations (we are pretty sure).  In any event,
+# if you make a WCS that's the linear approximation, you get different
+# answers, meaning that the full WCS isn't just using the linear
+# approximation.
+#
+# Note that to write out a header that includes SIP coefficients, you
+# have to do wcs.to_header( relax=True ) where wcs is an astropy.wcs.WCS
+# object.
+
 
 # ======================================================================
 
