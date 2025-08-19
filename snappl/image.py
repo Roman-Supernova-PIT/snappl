@@ -6,6 +6,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.nddata.utils import Cutout2D
 from astropy.coordinates import SkyCoord
+from astropy.wcs.utils import skycoord_to_pixel
 import astropy.units
 
 import galsim.roman
@@ -261,7 +262,7 @@ class Image:
         wcs = self.get_wcs()
         sc = SkyCoord( ra=ra * astropy.units.deg, dec=dec * astropy.units.deg )
         try:
-            x, y = skycoord_to_pixel( worldcoords, wcs.get_astropy_wcs() )
+            x, y = skycoord_to_pixel( sc, wcs.get_astropy_wcs() )
         except astropy.wcs.wcs.NoConvergence:
             return False
         # NOTE : we're assuming a full-size image here.  Think about cutouts!
