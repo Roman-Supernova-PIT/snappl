@@ -1,3 +1,7 @@
+__all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
+            'YamlSerialized_OversampledImagePSF', 'A25ePSF',
+            'ou24PSF_slow', 'ou24PSF' ]
+
 # python standard library imports
 import base64
 import numbers
@@ -206,7 +210,7 @@ class PSF:
 
             For example: if you call psfobj.get_stamp(111., 113.), and
             if the PSF object as a stamp_size of 5, then you will get
-            back an image that looks something like:
+            back an image that looks something like::
 
                    -----------
                    | | | | | |
@@ -220,18 +224,18 @@ class PSF:
                    | | | | | |
                    -----------
 
-             the PSF is centered on the center pixel of the stamp
-             (i.e. 2,2), and that pixel should get placed on pixel
-             (x,y)=(111,113) of the image for which you're rendering a
-             PSF.  (Suppose you wanted to add this as an injected source
-             to the image; in that case, you'd add the returned PSF stamp
-             to image[111:116,109:114] (remembering that numpy arrays of
-             astronomical images using all the defaults that we use in
-             this software are indexed [y,x]).)
+            the PSF is centered on the center pixel of the stamp
+            (i.e. 2,2), and that pixel should get placed on pixel
+            (x,y)=(111,113) of the image for which you're rendering a
+            PSF.  (Suppose you wanted to add this as an injected source
+            to the image; in that case, you'd add the returned PSF stamp
+            to image[111:116,109:114] (remembering that numpy arrays of
+            astronomical images using all the defaults that we use in
+            this software are indexed [y,x]).)
 
-             If you want an offset PSF, then you would use a different
-             x0, y0.  So, if you call psfobj.get_stamp(111., 113.,
-             x0=112, y0=114), you'd get back:
+            If you want an offset PSF, then you would use a different
+            x0, y0.  So, if you call psfobj.get_stamp(111., 113.,
+            x0=112, y0=114), you'd get back::
 
                    -----------
                    | | | | | |
@@ -245,18 +249,18 @@ class PSF:
                    |.|o|.| | |
                    -----------
 
-             In this case, center pixel of the returned stamp
-             corresponds to pixel (x,y)=(112,114) on the image, but the
-             PSF is supposed to be centered at (x,y)=(111,113).  So, the
-             PSF is one pixel down and to the left of the center of the
-             returned stamp.  The peak of the PSF is at pixel
-             (x-x0,y-y0)=(-1,-1) relative to the center of the stamp.
-             If you wanted to add this as an injected source on to the
-             image, you'd add the PSF stamp to image[112:117,110:116]
-             (again, remembering that numpy arrays are indexed [y,x]).
+            In this case, center pixel of the returned stamp
+            corresponds to pixel (x,y)=(112,114) on the image, but the
+            PSF is supposed to be centered at (x,y)=(111,113).  So, the
+            PSF is one pixel down and to the left of the center of the
+            returned stamp.  The peak of the PSF is at pixel
+            (x-x0,y-y0)=(-1,-1) relative to the center of the stamp.
+            If you wanted to add this as an injected source on to the
+            image, you'd add the PSF stamp to image[112:117,110:116]
+            (again, remembering that numpy arrays are indexed [y,x]).
 
-             If you call psfobj.get_stamp(111.5,113.5), then you'd get
-             back something like:
+            If you call psfobj.get_stamp(111.5,113.5), then you'd get
+            back something like::
 
                    -----------
                    | | | | | |
@@ -276,7 +280,7 @@ class PSF:
             on the image, or (x,y)=(112,114).
 
             If you call psfobj.get_stamp(111.5, 113.5, x0=111, y0=113)
-            then you'd get back a stamp:
+            then you'd get back a stamp::
 
                    -----------
                    | | |.|.| |
@@ -290,13 +294,13 @@ class PSF:
                    | | | | | |
                    -----------
 
-           Finally, to belabor the point, a couple of more examples.  If
-           you call psfobj.get_stamp(111.25, 113.0), you'd get back a
-           stamp with the peak of the psf at (x,y)=(2.25,2.0) on the
-           stamp image, with the center pixel corresponding to
-           (x,y)=(floor(111.25+0.5), floor(113.+0.5)), or (111,113).
-           You would add it to image[111:116,109:114], and the stamp
-           would look like:
+            Finally, to belabor the point, a couple of more examples.  If
+            you call psfobj.get_stamp(111.25, 113.0), you'd get back a
+            stamp with the peak of the psf at (x,y)=(2.25,2.0) on the
+            stamp image, with the center pixel corresponding to
+            (x,y)=(floor(111.25+0.5), floor(113.+0.5)), or (111,113).
+            You would add it to image[111:116,109:114], and the stamp
+            would look like::
 
                    -----------
                    | | | | | |
@@ -313,7 +317,7 @@ class PSF:
             If you call psfobj.get_stamp(111.25, 113.0, x0=110, y0=114),
             then you'd get a PSF back with the peak of the PSF on the
             stamp at (x,y)=(3.5,1.0), the center pixel corresponding to
-            (x,y)=(110,114) on the image, and a stamp that looks like:
+            (x,y)=(110,114) on the image, and a stamp that looks like::
 
                    -----------
                    | | | | | |
@@ -331,12 +335,12 @@ class PSF:
             to the center of the returned stamp.
 
           flux: float, default 1.
-             Ideally, the full flux of the PSF.  If your stamp is big
-             enough, and the PSF is centered, then this will be the sum
-             of the returned stamp image.  However, if some of the wings
-             of the PSF are not captured by the boundaries of the PSF,
-             then the sum of the returned stamp image will be less than
-             this value.
+            Ideally, the full flux of the PSF.  If your stamp is big
+            enough, and the PSF is centered, then this will be the sum
+            of the returned stamp image.  However, if some of the wings
+            of the PSF are not captured by the boundaries of the PSF,
+            then the sum of the returned stamp image will be less than
+            this value.
 
         Returns
         -------
