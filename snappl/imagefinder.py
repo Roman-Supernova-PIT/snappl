@@ -22,6 +22,9 @@ class ImageFinder:
             Subset of collection to search.  Many collections (including
             ou2024) will ignore this.
 
+          path : pathlib.Path or str, default None
+            Relative path of the image to search for.
+
           mjd_min : float, default None
             Only return images at this mjd or later
 
@@ -67,6 +70,7 @@ class ImageFinderOU2024:
     @classmethod
     def _find_images( cls,
                       subset=None,
+                      path=None,
                       mjd_min=None,
                       mjd_max=None,
                       ra=None,

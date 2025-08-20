@@ -3,8 +3,8 @@ __all__ = [ 'Exposure', 'OpenUniverse2024Exposure',
             'RomanDatamodelImage' ]
 
 import re
-import types
 import pathlib
+import random
 
 import numpy as np
 from astropy.io import fits
@@ -74,10 +74,9 @@ class Image:
             Roman.
 
         """
-        self.inputs = types.SimpleNamespace()
-        self.inputs.path = pathlib.Path( path )
-        self.inputs.exposure = exposure
-        self.inputs.sca = sca
+        self.path = pathlib.Path( path )
+        self.exposure = exposure
+        self.sca = sca
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
         self._zeropoint = None
@@ -121,15 +120,15 @@ class Image:
 
     @property
     def sca( self ):
-        return self.inputs.sca
+        return self.sca
 
     @property
     def path( self ):
-        return self.inputs.path
+        return self.path
 
     @property
     def name( self ):
-        return self.inputs.path.name
+        return self.path.name
 
     @property
     def sky_level( self ):
@@ -352,10 +351,7 @@ class Numpy2DImage( Image ):
 
     def _load_data( self ):
         """Loads (or reloads) the data from disk."""
-        imgs = self.get_data()
-        self._data = imgs[0]
-        self._noise = imgs[1]
-        self._flags = imgs[2]
+        self.get_data( which="all", cache=True, always_reload=False )
 
     def free( self ):
         self._data = None
@@ -386,7 +382,7 @@ class FITSImage( Numpy2DImage ):
         """tuple: (ny, nx) shape of image"""
 
         if not self._is_cutout:
-            hdr = self._get_header()
+            hdr = self.get_fits_header()
             self._image_shape = ( hdr['NAXIS1'], hdr['NAXIS2'] )
             return self._image_shape
 
@@ -395,17 +391,17 @@ class FITSImage( Numpy2DImage ):
 
         return self._image_shape
 
-    def _get_header( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_header()" )
+    def get_fits_header( self ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_fits_header()" )
 
     def get_wcs( self, wcsclass=None ):
         wcsclass = "AstropyWCS" if wcsclass is None else wcsclass
         if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
             if wcsclass == "AstropyWCS":
-                hdr = self._get_header()
+                hdr = self.get_fits_header()
                 self._wcs = AstropyWCS.from_header( hdr )
             elif wcsclass == "GalsimWCS":
-                hdr = self._get_header()
+                hdr = self.get_fits_header()
                 self._wcs = GalsimWCS.from_header( hdr )
         return self._wcs
 
@@ -493,7 +489,7 @@ class FITSImage( Numpy2DImage ):
         astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), mode='strict', wcs=apwcs)
         astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), mode='strict', wcs=apwcs)
 
-        snappl_cutout = self.__class__(self.inputs.path, self.inputs.exposure, self.inputs.sca)
+        snappl_cutout = self.__class__(self.path, self.exposure, self.sca)
         snappl_cutout._data = astropy_cutout.data
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
         snappl_cutout._noise = astropy_noise.data
@@ -530,109 +526,181 @@ class FITSImage( Numpy2DImage ):
 
 
 # ======================================================================
+# A class that's a FITS Image with a corresponding file or
+#  set of files on disk.
+#
+# If noisepath and flagspath are None, that means that all of it is
+#   packed into different HDUs of the smage image, in path.
+
+class FITSFile( FITSImage ):
+    """An Image which is represnted by a FITS file on disk.
+
+    Either there are three FITS files, one for image, one for noise, one
+    for flags, or there is one FITS file.  If there is one FITS file,
+    then imagehdu, noisehdu, and flagshdu must all be different.
+
+    """
+
+    def __init__( self, *args, noisepath=None, flagspath=None,
+                  imhdu=0, noisehdu=0, flagshdu=0, **kwargs ):
+        super().__init__( *args, **kwargs )
+
+        self.noisepath = pathlib.Path( noisepath ) if noisepath is not None else None
+        self.flagspath = pathlib.Path( flagspath ) if flagspath is not None else None
+        self.imhdu = imhdu
+        self.noisehdu = noisehdu
+        self.flagshdu = flagshdu
+
+    def uncompressed_version( self, include=[ 'data', 'noise', 'flags' ], base_dir=None ):
+        """Make sure to get a FITSFile that's not compressed.
+
+        If none of the files for the current FITSFile object are
+        compressed, just return this object.
+
+        Otherwise, will write out up to three single-HDU FITS files in
+        base_dir (which defaults to photometry.snappl.temp_dir from the
+        config).
+
+        Parameters
+        ----------
+          include : sequence of str
+            Can include any of 'data', 'noise', 'flags'; which things to
+            write.  Ignored if the current image isn't compressed.
+
+          base_dir : Path
+            The path to write the files
+
+        Returns
+        -------
+          FITSFile
+            The path, noisepath, and flagspath properties will be set
+            with the random filenames to which the FITS files were written.
+
+        """
+        if all( [ ( ( self.path is None ) or ( self.path.name[-5:] == '.fits' ) ),
+                  ( ( self.noisepath is None ) or ( self.noisepath.name[-5:] == '.fits' ) ),
+                  ( ( self.flagspath is None ) or ( self.flagspath.name[-5:] == '.fits' ) ) ] ):
+            return self
+
+        base_dir = pathlib.Path( base_dir if base_dir is not None
+                                 else Config.get().value( 'photometry.snappl.temp_dir' ) )
+        barf = "".join( random.choices( '0123456789abcdef', k=10 ) )
+        impath = None
+        noisepath = None
+        flagspath = None
+        header = self.get_fits_header()
+
+        if 'data' in include:
+            hdul = fits.HDUList( [ fits.PrimaryHDU( data=self.data, header=header ) ] )
+            impath = base_dir / f"{barf}_image.fits"
+            hdul.writeto( impath  )
+
+        if 'noise' in include:
+            hdul = fits.HDUList( [ fits.PrimaryHDU( data=self.noise, header=fits.header.Header() ) ] )
+            noisepath = base_dir / f"{barf}_noise.fits"
+            hdul.writeto( noisepath )
+
+        if 'flags' in include:
+            hdul = fits.HDUList( [ fits.PrimaryHDU( data=self.flags, header=fits.header.Header() ) ] )
+            flagspath = base_dir / f"{barf}_flags.fits"
+            hdul.writeto( flagspath )
+
+        return FITSFile( path=impath, noisepath=noisepath, flagspath=flagspath )
+
+
+    def set_header( self, hdr ):
+        if not isinstance( hdr, fits.header.Header ):
+            raise TypeError( f"hdr must be a fits.header.Header, not a {type(hdr)}" )
+        self._header = hdr
+
+    def get_fits_header( self ):
+        if self._header is None:
+            with fits.open( self.path ) as hdul:
+                self._header = hdul[ self.imhdu ].header
+        return self._header
+
+    def get_data( self, which="all", always_reload=False, cache=False ):
+        if self._is_cutout:
+            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
+                                "Currently not supported.")
+
+        if which not in ( "all", "data", "noise", "flags" ):
+            raise ValueError( f"Unknown which {which}" )
+        toload = [ 'data', 'noise', 'flags' ] if which == "all" else [ which ]
+
+        if not always_reload:
+            if ( 'data' in toload ) and ( self._data is not None ):
+                toload.remove( 'data' )
+                data = self._data
+            if ( 'noise' in toload ) and ( self._noise is not None ):
+                toload.remove( 'noise' )
+                noise = self._noise
+            if ( 'flags' in toload ) and ( self._flags is not None ):
+                toload.remove( 'flags' )
+                flags = self._flags
+
+        if len( toload ) > 0:
+            # If we get here, we know we have to load data.
+
+            # Open the data, and do everything else inside that with just in case
+            #   noise and flags are part of the same FITS image.
+            with fits.open( self.path ) as imhdul:
+                if "data" in toload:
+                    header = imhdul[ self.imhdu ].header
+                    data = imhdul[ self.imhdu ].data
+                    if cache:
+                        self._data = data
+                        self._header = header
+
+                if "noise" in toload:
+                    if self.noisepath is not None:
+                        with fits.open( self.noisepath ) as noihdul:
+                            noise = noihdul[ self.noisehdu ].data
+                    else:
+                        noise = imhdul[ self.noisehdu ].data
+                    if cache:
+                        self._noise = noise
+
+                if "flags" in toload:
+                    if self.flagspath is not None:
+                        with fits.open( self.flagspath ) as flghdul:
+                            flags = flghdul[ self.flagshdul ].data
+                    else:
+                        flags = imhdul[ self.flagshdu ].data
+                    if cache:
+                        self._flags = flags
+
+        return ( [ data ] if which == "data"
+                 else [ noise ] if which == "noise"
+                 else [ flags ] if which == "flags"
+                 else [ data, noise, flags ] )
+
+
+    def save_data( self, which="all", overwrite=False,
+                   path=None, imhdu=0,
+                   noisepath=None, noisehdu=None,
+                   flagspath=None, flagshdu=None ):
+        """Write the data to the file."""
+        raise NotImplementedError( "OMG needs to be done" )
+
+
+
+
+# ======================================================================
 # OpenUniverse 2024 Images are gzipped FITS files
 #  HDU 0 : (something, no data)
 #  HDU 1 : SCI (32-bit float)
 #  HDU 2 : ERR (32-bit float)
 #  HDU 3 : DQ (32-bit integer)
 
-class OpenUniverse2024FITSImage( FITSImage ):
-    def __init__( self, *args, **kwargs ):
+class OpenUniverse2024FITSImage( FITSFile ):
+    def __init__( self, *args, noisepath=None, flagspath=None, imhdu=1, noisehdu=2, flagshdu=3, **kwargs ):
         super().__init__( *args, **kwargs )
-
-    @classmethod
-    def ou2024_image_filepath( cls, pointing, band, sca, rootdir=None ):
-        """Return the absolute path to the desired OU2024 FITS image.
-
-        Parameters
-        ----------
-          pointing : str (int?)
-            The pointing number
-
-          band : str
-            The band
-
-          sca : str (int?)
-            The SCA
-
-          rootdir : str or Path, default None
-            Defaults to the ou24.tds_base config parameter
-
-        Returns
-        -------
-          pathlib.Path
-
-
-        """
-        rootdir = pathlib.Path( Config.get().value( 'ou24.tds_base' ) if rootdir is None else rootdir )
-
-        path = ( rootdir / 'images/simple_model' / band / str(pointing) /
-                 f'Roman_TDS_simple_model_{band}_{str(pointing)}_{str(sca)}.fits.gz' )
-        return path
-
-
-
-    def get_data( self, which='all', always_reload=False, cache=False ):
-        if self._is_cutout:
-            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
-                                "Currently not supported.")
-        if which not in Image.data_array_list:
-            raise ValueError( f"Unknown which {which}, must be all, data, noise, or flags" )
-
-        if not always_reload:
-            if ( ( which == 'all' )
-                 and ( self._data is not None )
-                 and ( self._noise is not None )
-                 and ( self._flags is not None )
-                ):
-                return [ self._data, self._noise, self._flags ]
-
-            if ( which == 'data' ) and ( self._data is not None ):
-                return [ self._data ]
-
-            if ( which == 'noise' ) and ( self._noise is not None ):
-                return [ self._noise ]
-
-            if ( which == 'flags' ) and ( self._flags is not None ):
-                return [ self._flags ]
-
-        SNLogger.info( f"Reading FITS file {self.inputs.path}" )
-        with fits.open( self.inputs.path ) as hdul:
-            if cache:
-                self._header = hdul[1].header
-            if which == 'all':
-                imgs = [ hdul[1].data, hdul[2].data, hdul[3].data ]
-                if cache:
-                    self._data = imgs[0]
-                    self._noise = imgs[1]
-                    self._flags = imgs[2]
-                return imgs
-            elif which == 'data':
-                if cache:
-                    self._data = hdul[1].data
-                return [ hdul[1].data ]
-            elif which == 'noise':
-                if cache:
-                    self._noise = hdul[2].data
-                return [ hdul[2].data ]
-            elif which == 'flags':
-                if cache:
-                    self._flags = hdul[3].data
-                return [ hdul[3].data ]
-            else:
-                raise RuntimeError( f"{self.__class__.__name__} doesn't understand data plane {which}" )
-
-    def _get_header(self):
-        """Get the header of the image."""
-        if self._header is None:
-            with fits.open(self.inputs.path) as hdul:
-                self._header = hdul[1].header
-        return self._header
 
     @property
     def band(self):
         """The band the image is taken in (str)."""
-        header = self._get_header()
+        header = self.get_fits_header()
         return header['FILTER'].strip()
 
     @property
@@ -642,12 +710,12 @@ class OpenUniverse2024FITSImage( FITSImage ):
         TODO : is this start-time, mid-time, or end-time?
 
         """
-        header = self._get_header()
+        header = self.get_fits_header()
         return float( header['MJD-OBS'] )
 
     @property
     def _get_zeropoint( self ):
-        header = self._get_header()
+        header = self.get_fits_header()
         return galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
 
 
@@ -668,12 +736,11 @@ class ManualFITSImage(FITSImage):
         self._is_cutout = False
         self._image_shape = None
 
-        self.inputs = types.SimpleNamespace()
-        self.inputs.path = None
-        self.inputs.exposure = None
-        self.inputs.sca = None
+        self.path = None
+        self.exposure = None
+        self.sca = None
 
-    def _get_header(self):
+    def get_fits_header(self):
         """Get the header of the image."""
         if self._header is None:
             raise RuntimeError("Header is not set for ManualFITSImage.")
@@ -708,7 +775,7 @@ class RomanDatamodelImage( Image ):
         if match is None:
             raise ValueError( f'Failed to parse self._dm.meat.instrument.detector= '
                               f'"{self._dm.meta.instrument.detector} for "WFInn"' )
-        self.inputs.sca = int( match.group(1) )
+        self.sca = int( match.group(1) )
 
 
     @property

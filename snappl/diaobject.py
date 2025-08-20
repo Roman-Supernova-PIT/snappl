@@ -1,4 +1,4 @@
-__all__ = [ 'DiaObject', 'DiaObjectOU2024' ]
+__all__ = [ 'DiaObject', 'DiaObjectOU2024', 'DiaObjectManual' ]
 
 from snpit_utils.http import retry_post
 
@@ -32,7 +32,9 @@ class DiaObject:
 
     """
 
-    def __init__( self, ra=None, dec=None, tdiscovery=None, tmax=None ):
+    def __init__( self, id=None, ra=None, dec=None, tdiscovery=None, tmax=None, tstart=None, tend=None ):
+        """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
+        self.id = id
         self.ra = ra
         self.dec = dec
         self.tdiscovery = None
@@ -48,7 +50,7 @@ class DiaObject:
         ----------
           collection : str
             Which collection of object to search.  Currently only
-            "ou2024" is implemented, but others will be later.
+            "ou2024" and "manuasl" are implemented, but others will be later.
 
           subset : str
             Subset of collection to search.  Many collections (including
@@ -95,6 +97,8 @@ class DiaObject:
 
         if collection == 'ou2024':
             return DiaObjectOU2024._find_objects( subset=subset, **kwargs )
+        elif collection == 'manual':
+            return DiaObjectManual._find_objects( subset=subset, **kwargs )
         else:
             raise ValueError( f"Unknown collection {collection}" )
 
@@ -109,6 +113,7 @@ class DiaObjectOU2024:
     """A transient from the OpenUniverse 2024 sims."""
 
     def __init__( self, *args, **kwargs ):
+        """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
         super().__init__( *args, **kwargs )
 
         # Non-standard fields
@@ -138,6 +143,7 @@ class DiaObjectOU2024:
 
     @classmethod
     def _find_objects( cls, subset=None,
+                       id=None,
                        ra=None,
                        dec=None,
                        radius=1.0,
@@ -165,6 +171,9 @@ class DiaObjectOU2024:
             params['dec'] = float( dec )
             params['radius'] = float( radius )
 
+        if id is not None:
+            params['id'] = int( id )
+
         if tstart_min is not None:
             params['tstart_min'] = float( tstart_min )
 
@@ -183,7 +192,10 @@ class DiaObjectOU2024:
 
         diaobjects = []
         for i in range( len( res['id'] ) ):
-            diaobj = DiaObjectOU2024( ra=objinfo['ra'][i], dec=objinfo['dec'][i], tmax=objinfo['peak_mjd'][i] )
+            diaobj = DiaObjectOU2024( id=objinfo['id'][i],
+                                      ra=objinfo['ra'][i],
+                                      dec=objinfo['dec'][i],
+                                      tmax=objinfo['peak_mjd'][i] )
             diaobj.tstart = objinfo['start_mjd'][i]
             diaobj.tend = objinfo['end_mjd'][i]
             for prop in ( [ 'healpix', 'host_id', 'gentype', 'model_name', 'z_cmb', 'mw_ebv', 'mw_extinction_applied',
@@ -194,3 +206,21 @@ class DiaObjectOU2024:
             diaobjects.append( diaobj )
 
         return diaobjects
+
+
+# ======================================================================
+
+class DiaObjectManual:
+    """A manually-specified object that's not saved anywhere."""
+
+    def __init__( self, *args, **kwargs ):
+        """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
+        super().__init__( *args, **kwargs )
+
+
+    @classmethod
+    def find_objects( cls, collection=None, subset=None, **kwargs ):
+        if any( ( i not in kwargs ) or ( kwargs[i] is None ) for i in ('id', 'ra', 'dec') ):
+            raise ValueError( "finding a manual DiaObject requires all of id, ra, and dec" )
+
+        return DiaObjectManual( **kwargs )
