@@ -1,3 +1,4 @@
+__all__ = [ 'ImageFinder', 'ImageFinderOU2024' ]
 
 from snappl.image import OpenUniverse2024FITSImage
 from snpit_utils.http import retry_post
