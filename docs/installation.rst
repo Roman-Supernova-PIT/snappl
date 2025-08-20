@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git@github.com:Roman-Supernova-PIT/roman_snpit_snappl.git
+    $ git clone git@github.com:Roman-Supernova-PIT/snappl.git
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/Roman-Supernova-PIT/roman_snpit_snappl/tarball/master
+    $ curl -OJL https://github.com/Roman-Supernova-PIT/snappl/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -54,5 +54,5 @@ If you would like to do an editable install:
     $ pip install -e .[docs]  # install document build packages during install
 
 
-.. _Github repo: https://github.com/Roman-Supernova-PIT/roman_snpit_snappl
-.. _tarball: https://github.com/Roman-Supernova-PIT/roman_snpit_snappl/tarball/master
+.. _Github repo: https://github.com/Roman-Supernova-PIT/snappl
+.. _tarball: https://github.com/Roman-Supernova-PIT/snappl/tarball/master

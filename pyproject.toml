@@ -3,7 +3,7 @@ name = "roman_snpit_snappl"
 description = "Photometry utilities for the Roman SNPIT"
 requires-python = ">=3.11"
 dynamic = ["version"]
-authors = [{ name = "Roman Supernove Project Infrastructure Team"}]
+authors = [{ name = "Roman Supernova Project Infrastructure Team"}]
 
 maintainers = [
  {name = "Roman SN PIT", email = "raknop@lbl.gov"}
