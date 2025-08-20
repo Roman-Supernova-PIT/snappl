@@ -21,13 +21,18 @@ from sphinx.ext.autodoc import AttributeDocumenter
 # to populate metadata from the pyproject.toml file so that changes are picked 
 # up for things in the project section of the toml
 with open("../pyproject.toml", "rb") as metadata_file:
-    metadata = tomli.load(metadata_file)['project']
-    project = metadata['name']
+    pyptoml = tomli.load( metadata_file )
+    project = pyptoml['project']['name']
+    # In the Roman SNPIT pyproject.tom, the module to include
+    #   is in tool.setuptools.packages.find.include, which is
+    #   a list; the first element of the list is the module
+    #   name, but it ends in a *.  Strip that.
+    module_name = pyptoml['tool']['setuptools']['packages']['find']['include'][0][:-1]
     author = 'Roman Supernova PIT'
 
 copyright = f'{datetime.datetime.today().year}, {author}'
 
-package = importlib.import_module(project)
+package = importlib.import_module(module_name)
 try:
     version = package.__version__.split('-', 1)[0]
     # The full version, including alpha/beta/rc tags.
