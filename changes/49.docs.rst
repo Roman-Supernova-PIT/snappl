@@ -1,0 +1,1 @@
+Update code and docs so that API is included in docs

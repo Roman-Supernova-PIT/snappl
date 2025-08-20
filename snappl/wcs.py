@@ -1,3 +1,5 @@
+__all__ = [ 'BaseWCS', 'AstropyWCS', 'GalsimWCS', 'GWCS' ]
+
 import collections.abc
 
 import numpy as np
