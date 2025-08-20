@@ -22,7 +22,7 @@ the github package repository at https://github.com/Roman-Supernova-PIT/roman_sn
    installation.rst
    usage.rst
    changes.rst
-
+   api.rst
 
 
 Indices and tables

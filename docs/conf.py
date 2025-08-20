@@ -16,18 +16,47 @@ import sphinx
 
 from sphinx.ext.autodoc import AttributeDocumenter
 
+# -- Getting docs to build outside the SNPIT docker image --------------------
+
+# See section "Previewing your Documentation" in the package template
+# docs.  The addition to sys.path is needed to find your module's code
+# if you aren't able to `pip install -e .` your module in a venv.  The
+# autodock_mock_imports and/or things_to_mock variable tells Sphinx not
+# to try to import those specific modules.
+
+# sys.path.insert( 0, str( pathlib.Path( '..' ).resolve() ) )
+# autodoc_mock_imports = [ 'roman_imsim' ]
+
+# ...unfortunately, while autodoc_mock_imports works the autmodule
+#    directive, it does not work with the automodapi directive.  See
+#    https://github.com/astropy/sphinx-automodapi/issues/148
+#
+# So, instead, we do it manually.  You will need to add mock to
+#   the docs list in [project.optional-dependencies] in pyproject.toml.
+import mock
+things_to_mock = [ 'galsim', 'galsim.roman', 'roman_imsim', 'roman_imsim.utils' ]
+for mod in things_to_mock:
+    sys.modules[ mod ] = mock.MagicMock()
+
+
+
 # -- Project information -----------------------------------------------------
 
 # to populate metadata from the pyproject.toml file so that changes are picked 
 # up for things in the project section of the toml
 with open("../pyproject.toml", "rb") as metadata_file:
-    metadata = tomli.load(metadata_file)['project']
-    project = metadata['name']
+    pyptoml = tomli.load( metadata_file )
+    project = pyptoml['project']['name']
+    # In the Roman SNPIT pyproject.tom, the module to include
+    #   is in tool.setuptools.packages.find.include, which is
+    #   a list; the first element of the list is the module
+    #   name, but it ends in a *.  Strip that.
+    module_name = pyptoml['tool']['setuptools']['packages']['find']['include'][0][:-1]
     author = 'Roman Supernova PIT'
 
 copyright = f'{datetime.datetime.today().year}, {author}'
 
-package = importlib.import_module(project)
+package = importlib.import_module(module_name)
 try:
     version = package.__version__.split('-', 1)[0]
     # The full version, including alpha/beta/rc tags.
@@ -109,6 +138,8 @@ html_theme_options = {
     'logo_text_align': "left",
     'description': "Software developed by the Roman SNPIT",
     'sidebar_width':'250px',
+    'page_width':'75%',
+    'body_max_width':'120ex',
     'show_relbars':True,
 }
 

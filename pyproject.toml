@@ -3,7 +3,7 @@ name = "roman_snpit_snappl"
 description = "Photometry utilities for the Roman SNPIT"
 requires-python = ">=3.11"
 dynamic = ["version"]
-authors = [{ name = "Roman Supernove Project Infrastructure Team"}]
+authors = [{ name = "Roman Supernova Project Infrastructure Team"}]
 
 maintainers = [
  {name = "Roman SN PIT", email = "raknop@lbl.gov"}
@@ -17,6 +17,14 @@ classifiers = [
   "Programming Language :: Python"
 ]
 dependencies = [
+  "numpy",
+  "scipy",
+  "astropy",
+  "photutils",
+  "pandas",
+  "h5py",
+  "roman-datamodels",
+  "snpit_utils",
   "towncrier",
   "setuptools_scm",
   "cruft",
@@ -48,6 +56,7 @@ docs = [
     "sphinx-automodapi",
     "matplotlib",
     "sphinx",
+    "mock",
     "tomli",
     "graphviz"
 ]

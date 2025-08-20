@@ -1,3 +1,7 @@
+__all__ = [ 'Exposure', 'OpenUniverse2024Exposure',
+            'Image', 'Numpy2DImage', 'FITSImage', 'OpenUniverse2024FITSImage', 'ManualFITSImage',
+            'RomanDatamodelImage' ]
+
 import re
 import types
 import pathlib
@@ -367,6 +371,8 @@ class Numpy2DImage( Image ):
 #   shared code between all FITS implementations, so that's here.
 
 class FITSImage( Numpy2DImage ):
+    """Base class for classes that read FITS images and use an AstropyWCS wcs."""
+
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
