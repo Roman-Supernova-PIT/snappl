@@ -1,0 +1,31 @@
+PSF
+===
+
+.. currentmodule:: snappl.psf
+
+.. autoclass:: PSF
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~PSF.clip_size
+      ~PSF.stamp_size
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~PSF.get_psf_object
+      ~PSF.get_stamp
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: clip_size
+   .. autoattribute:: stamp_size
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_psf_object
+   .. automethod:: get_stamp

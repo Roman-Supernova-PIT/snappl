@@ -1,0 +1,17 @@
+OU2024_Truth_SED
+================
+
+.. currentmodule:: snappl.sed
+
+.. autoclass:: OU2024_Truth_SED
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~OU2024_Truth_SED.get_sed
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_sed

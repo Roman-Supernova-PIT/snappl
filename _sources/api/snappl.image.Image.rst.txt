@@ -1,0 +1,63 @@
+Image
+=====
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: Image
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~Image.band
+      ~Image.coord_center
+      ~Image.data
+      ~Image.data_array_list
+      ~Image.exptime
+      ~Image.flags
+      ~Image.image_shape
+      ~Image.mjd
+      ~Image.name
+      ~Image.noise
+      ~Image.path
+      ~Image.position_angle
+      ~Image.sca
+      ~Image.sky_level
+      ~Image.zeropoint
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~Image.fraction_masked
+      ~Image.free
+      ~Image.get_cutout
+      ~Image.get_data
+      ~Image.get_wcs
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: band
+   .. autoattribute:: coord_center
+   .. autoattribute:: data
+   .. autoattribute:: data_array_list
+   .. autoattribute:: exptime
+   .. autoattribute:: flags
+   .. autoattribute:: image_shape
+   .. autoattribute:: mjd
+   .. autoattribute:: name
+   .. autoattribute:: noise
+   .. autoattribute:: path
+   .. autoattribute:: position_angle
+   .. autoattribute:: sca
+   .. autoattribute:: sky_level
+   .. autoattribute:: zeropoint
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: fraction_masked
+   .. automethod:: free
+   .. automethod:: get_cutout
+   .. automethod:: get_data
+   .. automethod:: get_wcs

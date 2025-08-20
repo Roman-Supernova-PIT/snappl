@@ -1,0 +1,19 @@
+YamlSerialized_OversampledImagePSF
+==================================
+
+.. currentmodule:: snappl.psf
+
+.. autoclass:: YamlSerialized_OversampledImagePSF
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~YamlSerialized_OversampledImagePSF.read
+      ~YamlSerialized_OversampledImagePSF.write
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: read
+   .. automethod:: write

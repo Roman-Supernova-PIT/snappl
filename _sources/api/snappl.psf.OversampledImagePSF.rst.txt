@@ -1,0 +1,35 @@
+OversampledImagePSF
+===================
+
+.. currentmodule:: snappl.psf
+
+.. autoclass:: OversampledImagePSF
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~OversampledImagePSF.oversample_factor
+      ~OversampledImagePSF.oversampled_data
+      ~OversampledImagePSF.stamp_size
+      ~OversampledImagePSF.x
+      ~OversampledImagePSF.y
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~OversampledImagePSF.get_stamp
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: oversample_factor
+   .. autoattribute:: oversampled_data
+   .. autoattribute:: stamp_size
+   .. autoattribute:: x
+   .. autoattribute:: y
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_stamp

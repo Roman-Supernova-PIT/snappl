@@ -1,0 +1,17 @@
+SED_collection
+==============
+
+.. currentmodule:: snappl.sed
+
+.. autoclass:: SED_collection
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~SED_collection.get_sed
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_sed

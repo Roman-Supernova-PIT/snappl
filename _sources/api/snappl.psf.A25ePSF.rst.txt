@@ -1,0 +1,7 @@
+A25ePSF
+=======
+
+.. currentmodule:: snappl.psf
+
+.. autoclass:: A25ePSF
+   :show-inheritance:

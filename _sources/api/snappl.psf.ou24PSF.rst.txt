@@ -1,0 +1,17 @@
+ou24PSF
+=======
+
+.. currentmodule:: snappl.psf
+
+.. autoclass:: ou24PSF
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ou24PSF.get_stamp
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_stamp

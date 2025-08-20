@@ -1,0 +1,29 @@
+OpenUniverse2024FITSImage
+=========================
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: OpenUniverse2024FITSImage
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~OpenUniverse2024FITSImage.band
+      ~OpenUniverse2024FITSImage.mjd
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~OpenUniverse2024FITSImage.get_data
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: band
+   .. autoattribute:: mjd
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_data

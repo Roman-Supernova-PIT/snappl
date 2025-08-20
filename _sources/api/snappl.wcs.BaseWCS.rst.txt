@@ -1,0 +1,27 @@
+BaseWCS
+=======
+
+.. currentmodule:: snappl.wcs
+
+.. autoclass:: BaseWCS
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~BaseWCS.from_header
+      ~BaseWCS.get_astropy_wcs
+      ~BaseWCS.get_galsim_wcs
+      ~BaseWCS.pixel_to_world
+      ~BaseWCS.to_fits_header
+      ~BaseWCS.world_to_pixel
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: from_header
+   .. automethod:: get_astropy_wcs
+   .. automethod:: get_galsim_wcs
+   .. automethod:: pixel_to_world
+   .. automethod:: to_fits_header
+   .. automethod:: world_to_pixel

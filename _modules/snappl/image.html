@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for snappl.image</h1><div class="highlight"><pre>
+<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;Exposure&#39;</span><span class="p">,</span> <span class="s1">&#39;OpenUniverse2024Exposure&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Image&#39;</span><span class="p">,</span> <span class="s1">&#39;Numpy2DImage&#39;</span><span class="p">,</span> <span class="s1">&#39;FITSImage&#39;</span><span class="p">,</span> <span class="s1">&#39;OpenUniverse2024FITSImage&#39;</span><span class="p">,</span> <span class="s1">&#39;ManualFITSImage&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;RomanDatamodelImage&#39;</span> <span class="p">]</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">astropy.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">fits</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">astropy.nddata.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cutout2D</span>
+<span class="c1"># from astropy.coordinates import SkyCoord</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">galsim.roman</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">roman_datamodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rdm</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">snpit_utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNLogger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.wcs</span><span class="w"> </span><span class="kn">import</span> <span class="n">AstropyWCS</span><span class="p">,</span> <span class="n">GalsimWCS</span><span class="p">,</span> <span class="n">GWCS</span>
+
+
+<div class="viewcode-block" id="Exposure">
+<a class="viewcode-back" href="../../api/snappl.image.Exposure.html#snappl.image.Exposure">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Exposure</span><span class="p">:</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="OpenUniverse2024Exposure">
+<a class="viewcode-back" href="../../api/snappl.image.OpenUniverse2024Exposure.html#snappl.image.OpenUniverse2024Exposure">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OpenUniverse2024Exposure</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">pointing</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pointing</span> <span class="o">=</span> <span class="n">pointing</span></div>
+
+
+
+<span class="c1"># ======================================================================</span>
+<span class="c1"># The base class for all images.  This is not useful by itself, you need</span>
+<span class="c1">#   to instantiate a subclass.  However, everything that you call on an</span>
+<span class="c1">#   object you instantiate should have its interface defined in this</span>
+<span class="c1">#   class.</span>
+
+<div class="viewcode-block" id="Image">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Image</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Encapsulates a single 2d image.&quot;&quot;&quot;</span>
+
+    <span class="n">data_array_list</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;noise&#39;</span><span class="p">,</span> <span class="s1">&#39;flags&#39;</span> <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">exposure</span><span class="p">,</span> <span class="n">sca</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate an image.  You probably don&#39;t want to do that.</span>
+
+<span class="sd">        This is an abstract base class that has limited functionality.</span>
+<span class="sd">        You probably want to instantiate a subclass.</span>
+
+<span class="sd">        For all implementations, the properties data, noise, and flags</span>
+<span class="sd">        are lazy-loaded.  That is, they start empty, but when you access</span>
+<span class="sd">        them, an internal buffer gets loaded with that data.  This means</span>
+<span class="sd">        it can be very easy for lots of memory to get used without your</span>
+<span class="sd">        realizing it.  There are a couple of solutions.  The first, is</span>
+<span class="sd">        to call Image.free() when you&#39;re sure you don&#39;t need the data</span>
+<span class="sd">        any more, or if you know you want to get rid of it for a while</span>
+<span class="sd">        and re-read it from disk later.  The second is just not to</span>
+<span class="sd">        access the data, noise, and flags properties, instead use</span>
+<span class="sd">        Image.get_data(), and manage the data object lifetime yourself.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          path : str</span>
+<span class="sd">            Path to image file, or otherwise some kind of indentifier</span>
+<span class="sd">            that allows the class to find the image.</span>
+
+<span class="sd">          exposure : Exposure (or instance of Exposure subclass)</span>
+<span class="sd">            The exposure this image is associated with, or None if it&#39;s</span>
+<span class="sd">            not associated with an Exposure (or youdon&#39;t care)</span>
+
+<span class="sd">          sca : int</span>
+<span class="sd">            The Sensor Chip Assembly that would be called the</span>
+<span class="sd">            chip number for any other telescope but is called SCA for</span>
+<span class="sd">            Roman.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">SimpleNamespace</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">path</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="n">exposure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">sca</span> <span class="o">=</span> <span class="n">sca</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="kc">None</span>      <span class="c1"># a BaseWCS object (in wcs.py)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_cutout</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_zeropoint</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The image data, a 2d numpy array.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement data&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@data</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span> <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement data setter&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">noise</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The 1σ pixel noise, a 2d numpy array.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement noise&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@noise</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">noise</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span> <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement noise setter&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flags</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;An integer 2d numpy array of pixel masks / flags TBD</span>
+
+<span class="sd">        TODO : think about what we mean by this.  Right now it&#39;s subclass-dependent.  But, for</span>
+<span class="sd">        usage, we need a way of making this more general. Issue #45.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement flags&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@flags</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flags</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span> <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement flags setter&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">image_shape</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tuple: (ny, nx) pixel size of image.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement image_shape&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sca</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">sca</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">path</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">path</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sky_level</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate of the sky level in ADU.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;Do.&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exptime</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Exposure time in seconds.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement exptime&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">band</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Band (str)&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement band&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">zeropoint</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Image zeropoint for AB magnitudes.</span>
+
+<span class="sd">        The zeropoint zp is defined so that an object with total counts</span>
+<span class="sd">        c has magnitude m:</span>
+
+<span class="sd">           m = -2.5 * log(10) + zp</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_zeropoint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_zeropoint</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_zeropoint</span>
+
+    <span class="nd">@zeropoint</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">zeropoint</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_zeropoint</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mjd</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;MJD of the start of the image (defined how? TAI?)&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement mjd&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">position_angle</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Position angle in degrees east of north (or what)?&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement position_angle&quot;</span> <span class="p">)</span>
+
+<div class="viewcode-block" id="Image.fraction_masked">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.fraction_masked">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fraction_masked</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fraction of pixels that are masked.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;Do.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Image.get_data">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.get_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">always_reload</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the data from disk and return one or more 2d numpy arrays of data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          which : str</span>
+<span class="sd">            What to read:</span>
+<span class="sd">              &#39;data&#39; : just the image data</span>
+<span class="sd">              &#39;noise&#39; : just the noise data</span>
+<span class="sd">              &#39;flags&#39; : just the flags data</span>
+<span class="sd">              &#39;all&#39; : data, noise, and flags</span>
+
+<span class="sd">          always_reload: bool, default False</span>
+<span class="sd">            Whether this is supported depends on the subclass.  If this</span>
+<span class="sd">            is false, then get_data() has the option of returning the</span>
+<span class="sd">            values of self.data, self.noise, and/or self.flags instead</span>
+<span class="sd">            of always loading the data.  If this is True, then</span>
+<span class="sd">            get_data() will ignore the self._data et al. properties.</span>
+
+<span class="sd">          cache: bool, default False</span>
+<span class="sd">            Normally, get_data() just reads the data and does not do any</span>
+<span class="sd">            internal caching.  If this is True, and the subclass</span>
+<span class="sd">            supports it, then the object will cache the loaded data so</span>
+<span class="sd">            that future calls with always_reload will not need to reread</span>
+<span class="sd">            the data, nor will accessing the data, noise, and flags</span>
+<span class="sd">            properties.</span>
+
+<span class="sd">        The data read not stored in the class, so when the caller goes</span>
+<span class="sd">        out of scope, the data will be freed (unless the caller saved it</span>
+<span class="sd">        somewhere.  This does mean it&#39;s read from disk every time.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          list (length 1 or 3 ) of 2d numpy arrays</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement get_data&quot;</span> <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Image.free">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.free">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">free</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Try to free memory.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement free&quot;</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Image.get_wcs">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.get_wcs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_wcs</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">wcsclass</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get image WCS.  Will be an object of type BaseWCS (from wcs.py) (really likely a subclass).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          wcsclass : str or None</span>
+<span class="sd">            By default, the subclass of BaseWCS you get back will be</span>
+<span class="sd">            defined by the Image subclass of the object you call this</span>
+<span class="sd">            on.  If you want a specific subclass of BaseWCS, you can put</span>
+<span class="sd">            the name of that class here.  It may not always work; not</span>
+<span class="sd">            all types of images are able to return all types of wcses.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          object of a subclass of snappl.wcs.BaseWCS</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement get_wcs&quot;</span> <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_zeropoint</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set self._zeropoint; see &quot;zeropoint&quot; property above.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement _get_zeropoint&quot;</span> <span class="p">)</span>
+
+<div class="viewcode-block" id="Image.get_cutout">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.get_cutout">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cutout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a cutout of the image at the given RA and DEC.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          snappl.image.Image</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement get_cutout&quot;</span> <span class="p">)</span></div>
+
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">coord_center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;[RA, DEC] (both floats) in degrees at the center of the image&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement coord_center&quot;</span> <span class="p">)</span></div>
+
+
+
+<span class="c1"># ======================================================================</span>
+<span class="c1"># Lots of classes will probably internally store all of data, noise, and</span>
+<span class="c1">#   flags as 2d numpy arrays.  Common code for those classes is here.</span>
+
+<div class="viewcode-block" id="Numpy2DImage">
+<a class="viewcode-back" href="../../api/snappl.image.Numpy2DImage.html#snappl.image.Numpy2DImage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Numpy2DImage</span><span class="p">(</span> <span class="n">Image</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract class for classes that store their array internall as a numpy 2d array.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_load_data</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+
+    <span class="nd">@data</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+             <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">new_value</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)</span>
+             <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_value</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span><span class="mi">2</span>
+            <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Data must be a 2d numpy array of floats.&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">noise</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_load_data</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span>
+
+    <span class="nd">@noise</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">noise</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">new_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="p">)</span>
+             <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span> <span class="n">new_value</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span> <span class="p">)</span>
+             <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span> <span class="n">new_value</span><span class="o">.</span><span class="n">shape</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+            <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Noise must be a 2d numpy array of floats.&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flags</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_load_data</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span>
+
+    <span class="nd">@flags</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flags</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">new_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="p">)</span>
+             <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span> <span class="n">new_value</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span> <span class="p">)</span>
+             <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span> <span class="n">new_value</span><span class="o">.</span><span class="n">shape</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+            <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Flags must be a 2d numpy array of integers.&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">image_shape</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Subclasses probably want to override this!</span>
+
+<span class="sd">        This implementation accesses the .data property, which will load the data</span>
+<span class="sd">        from disk if it hasn&#39;t been already.  Actual images are likely to have</span>
+<span class="sd">        that information availble in a manner that doesn&#39;t require loading all</span>
+<span class="sd">        the image data (e.g. in a header), so subclasses should do that.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_data</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads (or reloads) the data from disk.&quot;&quot;&quot;</span>
+        <span class="n">imgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">imgs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">imgs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">imgs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Numpy2DImage.free">
+<a class="viewcode-back" href="../../api/snappl.image.Numpy2DImage.html#snappl.image.Numpy2DImage.free">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">free</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="kc">None</span></div>
+</div>
+
+
+
+<span class="c1"># ======================================================================</span>
+<span class="c1"># A base class for FITSImages which use an AstropyWCS wcs.  Not useful</span>
+<span class="c1">#   by itself, because which image you load will have different</span>
+<span class="c1">#   assumptions about which HDU holds image, weight, flags, plus header</span>
+<span class="c1">#   information will be different etc.  However, there will be some</span>
+<span class="c1">#   shared code between all FITS implementations, so that&#39;s here.</span>
+
+<div class="viewcode-block" id="FITSImage">
+<a class="viewcode-back" href="../../api/snappl.image.FITSImage.html#snappl.image.FITSImage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FITSImage</span><span class="p">(</span> <span class="n">Numpy2DImage</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for classes that read FITS images and use an AstropyWCS wcs.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">image_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;tuple: (ny, nx) shape of image&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_cutout</span><span class="p">:</span>
+            <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_header</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span> <span class="o">=</span> <span class="p">(</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;NAXIS1&#39;</span><span class="p">],</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;NAXIS2&#39;</span><span class="p">]</span> <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">coord_center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;[ RA and Dec ] at the center of the image.&quot;&quot;&quot;</span>
+
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span><span class="mi">2</span> <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_header</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement _get_header()&quot;</span> <span class="p">)</span>
+
+<div class="viewcode-block" id="FITSImage.get_wcs">
+<a class="viewcode-back" href="../../api/snappl.image.FITSImage.html#snappl.image.FITSImage.get_wcs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_wcs</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">wcsclass</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+        <span class="n">wcsclass</span> <span class="o">=</span> <span class="s2">&quot;AstropyWCS&quot;</span> <span class="k">if</span> <span class="n">wcsclass</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">wcsclass</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">!=</span> <span class="n">wcsclass</span> <span class="p">):</span>
+            <span class="k">if</span> <span class="n">wcsclass</span> <span class="o">==</span> <span class="s2">&quot;AstropyWCS&quot;</span><span class="p">:</span>
+                <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_header</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">AstropyWCS</span><span class="o">.</span><span class="n">from_header</span><span class="p">(</span> <span class="n">hdr</span> <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">wcsclass</span> <span class="o">==</span> <span class="s2">&quot;GalsimWCS&quot;</span><span class="p">:</span>
+                <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_header</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">GalsimWCS</span><span class="o">.</span><span class="n">from_header</span><span class="p">(</span> <span class="n">hdr</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span></div>
+
+
+<div class="viewcode-block" id="FITSImage.get_data">
+<a class="viewcode-back" href="../../api/snappl.image.FITSImage.html#snappl.image.FITSImage.get_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_cutout</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">which</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Image</span><span class="o">.</span><span class="n">data_array_list</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown which </span><span class="si">{</span><span class="n">which</span><span class="si">}</span><span class="s2">, must be all, data, noise, or flags&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">which</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;get_data called with which=&#39;all&#39;, but not all data arrays are set. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Data: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="si">}</span><span class="s2">, Noise: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_noise</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="si">}</span><span class="s2">,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; Flags: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">which</span> <span class="o">==</span> <span class="s2">&quot;data&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;get_data called with which=&#39;data&#39;, but data is not set.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">which</span> <span class="o">==</span> <span class="s2">&quot;noise&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_noise</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;get_data called with which=&#39;noise&#39;, but noise is not set.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">which</span> <span class="o">==</span> <span class="s2">&quot;flags&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;get_data called with which=&#39;flags&#39;, but flags are not set.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FITSImage.get_cutout">
+<a class="viewcode-back" href="../../api/snappl.image.FITSImage.html#snappl.image.FITSImage.get_cutout">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cutout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">xsize</span><span class="p">,</span> <span class="n">ysize</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.</span>
+
+<span class="sd">        This implementation (in FITSImage) assumes that the image WCS is an AstropyWCS.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : int</span>
+<span class="sd">            x pixel coordinate of the center of the cutout.</span>
+<span class="sd">        y : int</span>
+<span class="sd">            y pixel coordinate of the center of the cutout.</span>
+<span class="sd">        xsize : int</span>
+<span class="sd">            Width of the cutout in pixels.</span>
+<span class="sd">        ysize : int</span>
+<span class="sd">            Height of the cutout in pixels. If None, set to xsize.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        cutout : snappl.image.Image</span>
+<span class="sd">            A new snappl image object that is a cutout of the original image.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span> <span class="p">[</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span> <span class="p">),</span>
+                      <span class="nb">isinstance</span><span class="p">(</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span> <span class="p">),</span>
+                      <span class="nb">isinstance</span><span class="p">(</span> <span class="n">xsize</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span> <span class="p">),</span>
+                      <span class="p">(</span> <span class="n">ysize</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">ysize</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+                     <span class="p">]</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;All of x, y, xsize, and ysize must be integers.&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ysize</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ysize</span> <span class="o">=</span> <span class="n">xsize</span>
+        <span class="k">if</span> <span class="n">xsize</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">ysize</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Size must be odd for a well defined central &quot;</span>
+                              <span class="sa">f</span><span class="s2">&quot;pixel, you tried to pass a size of </span><span class="si">{</span><span class="n">xsize</span><span class="p">,</span><span class="w"> </span><span class="n">ysize</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+        <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cutting out at </span><span class="si">{</span><span class="n">x</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span> <span class="s1">&#39;all&#39;</span> <span class="p">)</span>
+
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="n">wcs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">wcs</span><span class="p">,</span> <span class="n">AstropyWCS</span> <span class="p">)</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Error, FITSImage.get_cutout only works with AstropyWCS wcses&quot;</span> <span class="p">)</span>
+        <span class="n">apwcs</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">wcs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">wcs</span><span class="o">.</span><span class="n">_wcs</span>
+
+        <span class="c1"># Remember that numpy arrays are indexed [y, x] (at least if they&#39;re read with astropy.io.fits)</span>
+        <span class="n">astropy_cutout</span> <span class="o">=</span> <span class="n">Cutout2D</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">ysize</span><span class="p">,</span> <span class="n">xsize</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">apwcs</span><span class="p">)</span>
+        <span class="n">astropy_noise</span> <span class="o">=</span> <span class="n">Cutout2D</span><span class="p">(</span><span class="n">noise</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">ysize</span><span class="p">,</span> <span class="n">xsize</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">apwcs</span><span class="p">)</span>
+        <span class="n">astropy_flags</span> <span class="o">=</span> <span class="n">Cutout2D</span><span class="p">(</span><span class="n">flags</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">ysize</span><span class="p">,</span> <span class="n">xsize</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">apwcs</span><span class="p">)</span>
+
+        <span class="n">snappl_cutout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">sca</span><span class="p">)</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">astropy_cutout</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">wcs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">AstropyWCS</span><span class="p">(</span> <span class="n">astropy_cutout</span><span class="o">.</span><span class="n">wcs</span> <span class="p">)</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">astropy_noise</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">astropy_flags</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_is_cutout</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="n">snappl_cutout</span></div>
+
+
+<div class="viewcode-block" id="FITSImage.get_ra_dec_cutout">
+<a class="viewcode-back" href="../../api/snappl.image.FITSImage.html#snappl.image.FITSImage.get_ra_dec_cutout">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ra_dec_cutout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">xsize</span><span class="p">,</span> <span class="n">ysize</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ra : float</span>
+<span class="sd">            RA coordinate of the center of the cutout, in degrees.</span>
+<span class="sd">        dec : float</span>
+<span class="sd">            DEC coordinate of the center of the cutout, in degrees.</span>
+<span class="sd">        xsize : int</span>
+<span class="sd">            Width of the cutout in pixels.</span>
+<span class="sd">        ysize : int</span>
+<span class="sd">            Height of the cutout in pixels. If None, set to xsize.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        cutout : snappl.image.Image</span>
+<span class="sd">            A new snappl image object that is a cutout of the original image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">world_to_pixel</span><span class="p">(</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span> <span class="n">x</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span> <span class="n">y</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cutout</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">xsize</span><span class="p">,</span> <span class="n">ysize</span> <span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># ======================================================================</span>
+<span class="c1"># OpenUniverse 2024 Images are gzipped FITS files</span>
+<span class="c1">#  HDU 0 : (something, no data)</span>
+<span class="c1">#  HDU 1 : SCI (32-bit float)</span>
+<span class="c1">#  HDU 2 : ERR (32-bit float)</span>
+<span class="c1">#  HDU 3 : DQ (32-bit integer)</span>
+
+<div class="viewcode-block" id="OpenUniverse2024FITSImage">
+<a class="viewcode-back" href="../../api/snappl.image.OpenUniverse2024FITSImage.html#snappl.image.OpenUniverse2024FITSImage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OpenUniverse2024FITSImage</span><span class="p">(</span> <span class="n">FITSImage</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+<div class="viewcode-block" id="OpenUniverse2024FITSImage.get_data">
+<a class="viewcode-back" href="../../api/snappl.image.OpenUniverse2024FITSImage.html#snappl.image.OpenUniverse2024FITSImage.get_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">always_reload</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_cutout</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;get_data called on a cutout image, this will return the ORIGINAL UNCUT image. &quot;</span>
+                                <span class="s2">&quot;Currently not supported.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">which</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Image</span><span class="o">.</span><span class="n">data_array_list</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Unknown which </span><span class="si">{</span><span class="n">which</span><span class="si">}</span><span class="s2">, must be all, data, noise, or flags&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">always_reload</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="p">(</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span> <span class="p">)</span>
+                 <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span>
+                 <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span>
+                 <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span>
+                <span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="p">]</span>
+
+            <span class="k">if</span> <span class="p">(</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="p">]</span>
+
+            <span class="k">if</span> <span class="p">(</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;noise&#39;</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="p">]</span>
+
+            <span class="k">if</span> <span class="p">(</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;flags&#39;</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+                <span class="k">return</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="p">]</span>
+
+        <span class="n">SNLogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Reading FITS file </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">path</span> <span class="p">)</span> <span class="k">as</span> <span class="n">hdul</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+            <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+                <span class="n">imgs</span> <span class="o">=</span> <span class="p">[</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="p">]</span>
+                <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">imgs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">imgs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">imgs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="k">return</span> <span class="n">imgs</span>
+            <span class="k">elif</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="k">return</span> <span class="p">[</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="p">]</span>
+            <span class="k">elif</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;noise&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="k">return</span> <span class="p">[</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="p">]</span>
+            <span class="k">elif</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;flags&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="k">return</span> <span class="p">[</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> doesn&#39;t understand data plane </span><span class="si">{</span><span class="n">which</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the header of the image.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdul</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">band</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The band the image is taken in (str).&quot;&quot;&quot;</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_header</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;FILTER&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mjd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The mjd of the image.</span>
+
+<span class="sd">        TODO : is this start-time, mid-time, or end-time?</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_header</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;MJD-OBS&#39;</span><span class="p">]</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_zeropoint</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_header</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">galsim</span><span class="o">.</span><span class="n">roman</span><span class="o">.</span><span class="n">getBandpasses</span><span class="p">()[</span><span class="bp">self</span><span class="o">.</span><span class="n">band</span><span class="p">]</span><span class="o">.</span><span class="n">zeropoint</span> <span class="o">+</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;ZPTMAG&#39;</span><span class="p">]</span></div>
+
+
+
+<span class="c1"># ======================================================================</span>
+<span class="c1"># ManualFITSImage</span>
+<span class="c1">#</span>
+<span class="c1"># A FITS image that doesn&#39;t know where it got its data from, you just</span>
+<span class="c1"># feed it the data.</span>
+
+<div class="viewcode-block" id="ManualFITSImage">
+<a class="viewcode-back" href="../../api/snappl.image.ManualFITSImage.html#snappl.image.ManualFITSImage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ManualFITSImage</span><span class="p">(</span><span class="n">FITSImage</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exposure</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sca</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">noise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">flags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="n">header</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_cutout</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_image_shape</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">SimpleNamespace</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">sca</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the header of the image.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Header is not set for ManualFITSImage.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header</span></div>
+
+
+
+<span class="c1"># ======================================================================</span>
+<span class="c1"># RomanDatamodelImage</span>
+<span class="c1">#</span>
+<span class="c1"># An image read from a roman datamodel ASDF file</span>
+<span class="c1">#</span>
+<span class="c1"># Empirically:</span>
+<span class="c1">#   self._dm.err**2 == self._dm.var_poisson + self._dm.var_rnoise + self.dm.var_flat</span>
+
+<div class="viewcode-block" id="RomanDatamodelImage">
+<a class="viewcode-back" href="../../api/snappl.image.RomanDatamodelImage.html#snappl.image.RomanDatamodelImage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RomanDatamodelImage</span><span class="p">(</span> <span class="n">Image</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An image read from a roman datamodel ASDF file.</span>
+
+<span class="sd">    See Issue #46 for concerns about performance/memory and imlementation of this object.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_detectormatch</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span> <span class="s2">&quot;^WFI([0-9]</span><span class="si">{2}</span><span class="s2">)$&quot;</span> <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">path</span> <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="n">path</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span> <span class="p">)</span>
+        <span class="c1"># We really want to open the image readonly, because otherwise normal use of</span>
+        <span class="c1">#   this class will modify the image on disk.  We really don&#39;t want to modify</span>
+        <span class="c1">#   our input data, and want to be explicit about saving like we are used</span>
+        <span class="c1">#   to with FITS files.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span> <span class="o">=</span> <span class="n">rdm</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span> <span class="p">)</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detectormatch</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">detector</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;Failed to parse self._dm.meat.instrument.detector= &#39;</span>
+                              <span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">detector</span><span class="si">}</span><span class="s1"> for &quot;WFInn&quot;&#39;</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">sca</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">band</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">optical_element</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mjd</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">mid_time</span><span class="o">.</span><span class="n">mjd</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="c1"># WORRY.  This actually returns a asdf.tags.core.ndarray.NDArrayType.</span>
+        <span class="c1"># I&#39;m hoping it will be duck-typing equivalent to a numpy array.</span>
+        <span class="c1"># TODO : investigate memory use when you do numpy array things</span>
+        <span class="c1"># with one of these.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">noise</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="c1"># See comment in data</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">err</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flags</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="c1"># See comment in data</span>
+        <span class="c1"># TODO : https://roman-pipeline.readthedocs.io/en/latest/roman/dq_init/reference_files.html#reference-files</span>
+        <span class="c1"># We probably need to do some translation.  We have to think about what we are defining</span>
+        <span class="c1">#   as a &quot;bad&quot; pixel.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">dq</span>
+
+<div class="viewcode-block" id="RomanDatamodelImage.get_data">
+<a class="viewcode-back" href="../../api/snappl.image.RomanDatamodelImage.html#snappl.image.RomanDatamodelImage.get_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">always_reload</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the data from disk and return one or more 2d numpy arrays of data.</span>
+
+<span class="sd">        See Image.get_data for definition of parameters.</span>
+
+<span class="sd">        Subclass-specific wrinkle:</span>
+
+<span class="sd">        get_data will return actual 2d numpy arrays, which means that</span>
+<span class="sd">        the memory will always be copied from what is stored from the</span>
+<span class="sd">        open roman_datamodels file.  We may revisit this later as we</span>
+<span class="sd">        think about memory implications.  (Issue #46.)</span>
+
+<span class="sd">        Once you get the data, it will always be cached, even if you</span>
+<span class="sd">        pass cache=False.  (This is because we keep the roman_datamodels</span>
+<span class="sd">        file open, and currently there&#39;s no way to free the data without</span>
+<span class="sd">        closing and reopening the file.)  So, cache=False does not save</span>
+<span class="sd">        any memory, alas.  (Again, Issue #46.)</span>
+
+<span class="sd">        As such, always_reload and cache are ignored for this class.</span>
+<span class="sd">        This is not great, because always_reload ought to get a fresh</span>
+<span class="sd">        copy of the data even if it&#39;s been modified.  To really behave</span>
+<span class="sd">        that way, though, we&#39;d have to reimplement the class to not hold</span>
+<span class="sd">        open the roman_datamodels image.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_cutout</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> images don&#39;t know how to deal with being cutouts.&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">noise</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">)</span> <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;noise&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">noise</span><span class="p">)</span> <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;flags&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">)</span> <span class="p">]</span>
+
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Unknown value of which: </span><span class="si">{</span><span class="n">which</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span></div>
+
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dm</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This property should usually not be used outside of this class.&quot;&quot;&quot;</span>
+        <span class="c1"># THOUGHT REQUIRED : worry a little about accessing members of</span>
+        <span class="c1">#   the dm object and memory getting eaten.  Perhaps implement</span>
+        <span class="c1">#   a &quot;free&quot; method for Image and subclasses.  Alas, for this</span>
+        <span class="c1">#   class, based on feedback from ST people, the only way to free</span>
+        <span class="c1">#   things is to delete and reopen the self._dm object.  Make sure</span>
+        <span class="c1">#   to do that carefully if we do that.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span> <span class="o">=</span> <span class="n">rdm</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">path</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span>
+
+<div class="viewcode-block" id="RomanDatamodelImage.get_wcs">
+<a class="viewcode-back" href="../../api/snappl.image.RomanDatamodelImage.html#snappl.image.RomanDatamodelImage.get_wcs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_wcs</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">wcsclass</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+        <span class="n">wcsclass</span> <span class="o">=</span> <span class="s2">&quot;GWCS&quot;</span> <span class="k">if</span> <span class="n">wcsclass</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">wcsclass</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">!=</span> <span class="n">wcsclass</span> <span class="p">):</span>
+            <span class="k">if</span> <span class="n">wcsclass</span> <span class="o">==</span> <span class="s2">&quot;GWCS&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">GWCS</span><span class="p">(</span> <span class="n">gwcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">wcs</span> <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;RomanDataModelImage can&#39;t (yet?) get a WCS of type </span><span class="si">{wcsclass}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

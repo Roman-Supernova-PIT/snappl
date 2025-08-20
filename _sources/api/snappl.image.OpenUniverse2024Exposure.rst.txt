@@ -1,0 +1,7 @@
+OpenUniverse2024Exposure
+========================
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: OpenUniverse2024Exposure
+   :show-inheritance:

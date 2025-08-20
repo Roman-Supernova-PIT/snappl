@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>PSF &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <script src="../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="photutilsImagePSF" href="snappl.psf.photutilsImagePSF.html" />
+    <link rel="prev" title="GWCS" href="snappl.wcs.GWCS.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changes.html">Change Log</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">snappl API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">snappl API</a><ul>
+      <li>Previous: <a href="snappl.wcs.GWCS.html" title="previous chapter">GWCS</a></li>
+      <li>Next: <a href="snappl.psf.photutilsImagePSF.html" title="next chapter">photutilsImagePSF</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.wcs.GWCS.html" title="Previous document">GWCS</a>
+        </li>
+        <li>
+          <a href="snappl.psf.photutilsImagePSF.html" title="Next document">photutilsImagePSF</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="psf">
+<h1>PSF<a class="headerlink" href="#psf" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="snappl.psf.PSF">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">PSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">called_from_get_psf_object</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#PSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.PSF" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Wraps a PSF.  All roman snpit photometry code will ideally only use PSF methods defined in this base class.</p>
+<p>This is an abstract base class; it can do almost nothing itself.  In
+practice, you need to instantiate a subclass.  Do that by calling
+the class method PSF.get_psf_object.</p>
+<p>Don’t call this or the constructor of a subclass directly, call PSF.get_psf_object().</p>
+<p>See documentation on the various subclass constructors for the
+arguments to apss to get_psf_object and what they all mean.
+Different types of PSF need different arguments, and sometimes
+the same argument names will mean different things for different
+subclasses!</p>
+<p class="rubric">Attributes Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.PSF.clip_size" title="snappl.psf.PSF.clip_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clip_size</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.PSF.stamp_size" title="snappl.psf.PSF.stamp_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stamp_size</span></code></a></p></td>
+<td><p>The size of the one side of a PSF image stamp at image resolution.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.PSF.get_psf_object" title="snappl.psf.PSF.get_psf_object"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_psf_object</span></code></a>(psfclass, **kwargs)</p></td>
+<td><p>Return a PSF object whose type is specified by psfclass.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.PSF.get_stamp" title="snappl.psf.PSF.get_stamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stamp</span></code></a>([x, y, x0, y0, flux])</p></td>
+<td><p>Return a 2d numpy image of the PSF at the image resolution.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.psf.PSF.clip_size">
+<span class="sig-name descname"><span class="pre">clip_size</span></span><a class="headerlink" href="#snappl.psf.PSF.clip_size" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.psf.PSF.stamp_size">
+<span class="sig-name descname"><span class="pre">stamp_size</span></span><a class="headerlink" href="#snappl.psf.PSF.stamp_size" title="Link to this definition">¶</a></dt>
+<dd><p>The size of the one side of a PSF image stamp at image resolution.  Is always odd.</p>
+</dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.psf.PSF.get_psf_object">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_psf_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psfclass</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#PSF.get_psf_object"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.PSF.get_psf_object" title="Link to this definition">¶</a></dt>
+<dd><p>Return a PSF object whose type is specified by psfclass.</p>
+<p>SADNESS ALERT : currently the arguments you need to pass are
+different for different types of PSFs.  There may be no way
+around this, because they just all need different data.  To
+figure out what kwargs you need to pass to this function, look
+at the __init__ docstring for the class corresponding to the
+psfclass you’re passing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psfclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the class of the PSF to instantiate.</p></li>
+<li><p><strong>**kwargs</strong> (<em>further keyword arguments passed to object constructor</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.psf.PSF.get_stamp">
+<span class="sig-name descname"><span class="pre">get_stamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#PSF.get_stamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.PSF.get_stamp" title="Link to this definition">¶</a></dt>
+<dd><p>Return a 2d numpy image of the PSF at the image resolution.</p>
+<p>There are a distressing number of subtleties here, warranting an
+extended discussion.</p>
+<section id="indexing-images">
+<h2>INDEXING IMAGES<a class="headerlink" href="#indexing-images" title="Link to this heading">¶</a></h2>
+<p>For discussion of pixel positions below, remember the
+conventions for astronomical arrays.  Consider four things:</p>
+<p>First thing to consider: in python, numpy arrays are 0-indexed.
+That is, if you have a 3-element numpy array named arr, the
+first element of the array is arr[0], the second arr[1], and the
+last arr[2].  Some other languages (e.g. FORTRAN) assume
+1-indexed arrays.  That is, the first element of FORTRAN array A
+is A[1], not A[0].  This matters for us because we are using
+some astronomical formats that have been around since everybody
+spoke Latin and everybody programmed in FORTRAN, so there are
+some legacy conventions left over.  Some libraries (e.g. galsim)
+at least sometimes require you to specify array indexes (such as
+pixel positions) assuming 1-indexed arrays.  Be very careful and
+read lots of documentation!  If we’ve done it right, everything
+in snpit_utils and snappl uses standard python numpy 0-based
+array indexes, so you will hopefully not become confused.
+What’s more more, the astropy.wcs.WCS class also uses the
+convention of 0-based arrays.  (However, be careful, because
+astropy.wcs has an alternate interface that uses the other
+convention.)</p>
+<p>Another place you will find 1-indexed arrays are in the WCSes
+defined in FITS headers, and in at least some FITS image display
+programs.  If you use ds9 (the standard FITS image display
+program), and hover your pointer over the center of the
+lower-left pixel, you will notice that it tells you it’s at
+(1.0,1.0).  This means that if you’re reading positions off of
+ds9, you always have to be careful to mentally convert when
+comparing to positions in your code!  Likewise, if you try to
+manually apply the WCS transformation from a FITS header (doing
+the matrix multiplication yourself, rather than relying on a
+snappl or astropy library), you have to make sure you’re using
+1-offset pixel coordinates.  Generally, you will not have to
+worry about this; the WCS classes in snappl (just as in astropy)
+will internally take care of all these off-by-1 errors.  As
+stated above, all snappl classes assume 0-based array indexing.</p>
+<p><strong>If you find yourself manually correcting for 1-offset pixel
+positions in your code, there’s a good chance you’re doing it
+wrong.  snappl is supposed to take care of all of that.</strong></p>
+<p>Second thing to consider: following how numpy arrays are
+indexed, the lower-left pixel of an astronomical image is at
+x=0, y=0.  Furthermore, by convention, the <em>center</em> of the
+lower-left pixel is at x=0.0, y=0.0.  That means that for a
+512×512 image, the whole array spans (-0.5,-0.5) to
+(511.5,511.5); the lower-left corner of the array, which is the
+lower-left corner of the lower-left pixel, is at (-0.5,-0.5).</p>
+<p>Third thing to consider: because numpy arrays are (by default)
+stored in “row major” format, their indexing is <em>backwards</em> from
+what we might expect.  That is, to get to pixel (x,y) on a numpy
+array image, you’d do image[y,x].</p>
+<p>Fourth thing to consider: it follows that a pixel position whose
+fractional part is <em>exactly</em> 0.5 is right on the edge between
+two pixels.  For example, the position x=0.5, y=0.5 is the
+corner between the four lower-left-most pixels on the image.  If
+you want to ask for “the closest pixel center” in this case,
+there is an ambiguity, so we have to pick a convention; that
+convention is described below.</p>
+</section>
+<section id="psf-centering-for-get-stamp">
+<h2>PSF CENTERING FOR get_stamp<a class="headerlink" href="#psf-centering-for-get-stamp" title="Link to this heading">¶</a></h2>
+<p>If (x0, y0) are not given, the PSF will be centered as best
+possible on the stamp*†.  So, if x ends in 0.8, it will be left
+of center, and if x ends in 0.2, it will be right of center.  If
+the fractional part of x or y is exactly 0.5, there’s an
+ambituity as to where on the image you should place the stamp of
+the PSF.  The position of the PSF on the returned stamp will
+always round <em>down</em> in this case.  (The pixel on the image that
+corresponds to the center pixel on the stamp is at
+floor(x+0.5),floor(y+0.5), <em>not</em> round(x+0.5),round(y+0.5).
+Those two things are different, and round is not consistent.
+round(i.5) will round up if i is odd, but down if i is even.
+This makes it very difficult to understand where your PSF is; by
+using floor(x+0.5), we get consistent results regardless of
+whether the integer part of x is even or odd.)</p>
+<p>For further discusison of centering, see the discusison of the
+(x0, y0) parameters below.</p>
+<ul class="simple">
+<li><p>“The PSF will be centered as best possible on the stamp”: this
+is only true if the PSF itself is intrinsically centered.
+It’s possible that some subclasses will have
+non-intrinsically-centered PSFs.  See the documentation on the
+__init__ and get_stamp methods of those subclasses
+(e.g. OversampledImagePSF and photutilsImagePSF) to make sure
+you understand how each subclass handles those cases.  In all
+cases, get_stamp should return stamps that are consistent with
+the description in this docstring.  If a subclass does
+something different, that subclass is broken.</p></li>
+</ul>
+<dl class="simple">
+<dt>† “Centered” is obvious when a PSF is perfectly radially</dt><dd><p>symmetric: the center of the PSF is its peak, or mode.  If the
+PSF is not radially symmetric, then this becomes potentially
+ambiguous.  The “center” of the PSF really becomes a “fiducial
+point”, and cannot be assumed to be the centroid or mode of
+the PSF (and the centroid and mode may well be different in
+this case).  Hopefully it’s somewhere close.  If you use
+consistent PSFs, then <em>relative</em> positions should be
+realiable.  That is, if you do a PSF fit to an image to find
+positions of stars, and use the PSF positions of those stars
+with a WCS to find ra and dec, this will only work if you used
+the <em>same</em> PSFs to find the standard stars you used to solve
+for the WCS!  For most of this discussion, for simplicitly,
+we’ll be assuming a radially symmetric PSF so that “peak” and
+“center” and “fiducial point” all mean the same thing.</p>
+</dd>
+</dl>
+<dl class="field-list">
+<dt class="field-odd">param x<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Position on the image of the center of the psf.  If not
+given, defaults to something sensible that was defined when
+the object was constructed.  If you want to do sub-pixel
+shifts, then the fractional part of x will (usually) not be
+0.</p>
+</dd>
+<dt class="field-even">type x<span class="colon">:</span></dt>
+<dd class="field-even"><p>floats</p>
+</dd>
+<dt class="field-odd">param y<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Position on the image of the center of the psf.  If not
+given, defaults to something sensible that was defined when
+the object was constructed.  If you want to do sub-pixel
+shifts, then the fractional part of x will (usually) not be
+0.</p>
+</dd>
+<dt class="field-even">type y<span class="colon">:</span></dt>
+<dd class="field-even"><p>floats</p>
+</dd>
+<dt class="field-odd">param x0<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The pixel position on the image corresponding to the center
+pixel of the returned PSF.  If either is None, they default
+to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above for why
+we don’t use round().)  The peak* of the PSF on the returned
+stamp will be at (x-x0,y-y0) relative to the center pixel of
+the returned stamp.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>“peak” assumes the PSF is radially symmetric.  If it’s
+not, by “peak” read “center” or “fiducial point”.</p></li>
+</ul>
+</div></blockquote>
+<p>For example: if you call psfobj.get_stamp(111., 113.), and
+if the PSF object as a stamp_size of 5, then you will get
+back an image that looks something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|</span><span class="n">O</span><span class="o">|</span><span class="n">o</span><span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>the PSF is centered on the center pixel of the stamp
+(i.e. 2,2), and that pixel should get placed on pixel
+(x,y)=(111,113) of the image for which you’re rendering a
+PSF.  (Suppose you wanted to add this as an injected source
+to the image; in that case, you’d add the returned PSF stamp
+to image[111:116,109:114] (remembering that numpy arrays of
+astronomical images using all the defaults that we use in
+this software are indexed [y,x]).)</p>
+<p>If you want an offset PSF, then you would use a different
+x0, y0.  So, if you call psfobj.get_stamp(111., 113.,
+x0=112, y0=114), you’d get back:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|.|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span><span class="n">o</span><span class="o">|</span><span class="n">O</span><span class="o">|</span><span class="n">o</span><span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|.|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>In this case, center pixel of the returned stamp
+corresponds to pixel (x,y)=(112,114) on the image, but the
+PSF is supposed to be centered at (x,y)=(111,113).  So, the
+PSF is one pixel down and to the left of the center of the
+returned stamp.  The peak of the PSF is at pixel
+(x-x0,y-y0)=(-1,-1) relative to the center of the stamp.
+If you wanted to add this as an injected source on to the
+image, you’d add the PSF stamp to image[112:117,110:116]
+(again, remembering that numpy arrays are indexed [y,x]).</p>
+<p>If you call psfobj.get_stamp(111.5,113.5), then you’d get
+back something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|.|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|.|</span><span class="n">o</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|.|</span><span class="n">o</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|.|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>Because your pixel position ended in (0.5, 0.5), the PSF is
+centered on the corner of the pixel.  The center of the stamp
+(x,y)=(2,2) corresponds to (floor(111.5+0.5), floor(113.5+0.5))
+on the image, or (x,y)=(112,114).</p>
+<p>If you call psfobj.get_stamp(111.5, 113.5, x0=111, y0=113)
+then you’d get back a stamp:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|.|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">o</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">o</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|.|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>Finally, to belabor the point, a couple of more examples.  If
+you call psfobj.get_stamp(111.25, 113.0), you’d get back a
+stamp with the peak of the psf at (x,y)=(2.25,2.0) on the
+stamp image, with the center pixel corresponding to
+(x,y)=(floor(111.25+0.5), floor(113.+0.5)), or (111,113).
+You would add it to image[111:116,109:114], and the stamp
+would look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">O</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>If you call psfobj.get_stamp(111.25, 113.0, x0=110, y0=114),
+then you’d get a PSF back with the peak of the PSF on the
+stamp at (x,y)=(3.5,1.0), the center pixel corresponding to
+(x,y)=(110,114) on the image, and a stamp that looks like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|.|</span><span class="n">O</span><span class="o">|</span><span class="n">o</span><span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>The peak of the PSF is at (x-x0,y-y0)=(1.25,-1.0) relative
+to the center of the returned stamp.</p>
+</dd>
+<dt class="field-even">type x0<span class="colon">:</span></dt>
+<dd class="field-even"><p>int, default None</p>
+</dd>
+<dt class="field-odd">param y0<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The pixel position on the image corresponding to the center
+pixel of the returned PSF.  If either is None, they default
+to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above for why
+we don’t use round().)  The peak* of the PSF on the returned
+stamp will be at (x-x0,y-y0) relative to the center pixel of
+the returned stamp.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>“peak” assumes the PSF is radially symmetric.  If it’s
+not, by “peak” read “center” or “fiducial point”.</p></li>
+</ul>
+</div></blockquote>
+<p>For example: if you call psfobj.get_stamp(111., 113.), and
+if the PSF object as a stamp_size of 5, then you will get
+back an image that looks something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|</span><span class="n">O</span><span class="o">|</span><span class="n">o</span><span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>the PSF is centered on the center pixel of the stamp
+(i.e. 2,2), and that pixel should get placed on pixel
+(x,y)=(111,113) of the image for which you’re rendering a
+PSF.  (Suppose you wanted to add this as an injected source
+to the image; in that case, you’d add the returned PSF stamp
+to image[111:116,109:114] (remembering that numpy arrays of
+astronomical images using all the defaults that we use in
+this software are indexed [y,x]).)</p>
+<p>If you want an offset PSF, then you would use a different
+x0, y0.  So, if you call psfobj.get_stamp(111., 113.,
+x0=112, y0=114), you’d get back:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|.|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span><span class="n">o</span><span class="o">|</span><span class="n">O</span><span class="o">|</span><span class="n">o</span><span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|.|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>In this case, center pixel of the returned stamp
+corresponds to pixel (x,y)=(112,114) on the image, but the
+PSF is supposed to be centered at (x,y)=(111,113).  So, the
+PSF is one pixel down and to the left of the center of the
+returned stamp.  The peak of the PSF is at pixel
+(x-x0,y-y0)=(-1,-1) relative to the center of the stamp.
+If you wanted to add this as an injected source on to the
+image, you’d add the PSF stamp to image[112:117,110:116]
+(again, remembering that numpy arrays are indexed [y,x]).</p>
+<p>If you call psfobj.get_stamp(111.5,113.5), then you’d get
+back something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|.|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|.|</span><span class="n">o</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|.|</span><span class="n">o</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|.|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>Because your pixel position ended in (0.5, 0.5), the PSF is
+centered on the corner of the pixel.  The center of the stamp
+(x,y)=(2,2) corresponds to (floor(111.5+0.5), floor(113.5+0.5))
+on the image, or (x,y)=(112,114).</p>
+<p>If you call psfobj.get_stamp(111.5, 113.5, x0=111, y0=113)
+then you’d get back a stamp:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|.|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">o</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">o</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|.|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>Finally, to belabor the point, a couple of more examples.  If
+you call psfobj.get_stamp(111.25, 113.0), you’d get back a
+stamp with the peak of the psf at (x,y)=(2.25,2.0) on the
+stamp image, with the center pixel corresponding to
+(x,y)=(floor(111.25+0.5), floor(113.+0.5)), or (111,113).
+You would add it to image[111:116,109:114], and the stamp
+would look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|.|</span><span class="n">O</span><span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|.|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>If you call psfobj.get_stamp(111.25, 113.0, x0=110, y0=114),
+then you’d get a PSF back with the peak of the PSF on the
+stamp at (x,y)=(3.5,1.0), the center pixel corresponding to
+(x,y)=(110,114) on the image, and a stamp that looks like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|.|</span><span class="n">O</span><span class="o">|</span><span class="n">o</span><span class="o">|</span>
+<span class="o">-----------</span>
+<span class="o">|</span> <span class="o">|</span> <span class="o">|</span> <span class="o">|</span><span class="n">o</span><span class="o">|.|</span>
+<span class="o">-----------</span>
+</pre></div>
+</div>
+<p>The peak of the PSF is at (x-x0,y-y0)=(1.25,-1.0) relative
+to the center of the returned stamp.</p>
+</dd>
+<dt class="field-even">type y0<span class="colon">:</span></dt>
+<dd class="field-even"><p>int, default None</p>
+</dd>
+<dt class="field-odd">param flux<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Ideally, the full flux of the PSF.  If your stamp is big
+enough, and the PSF is centered, then this will be the sum
+of the returned stamp image.  However, if some of the wings
+of the PSF are not captured by the boundaries of the PSF,
+then the sum of the returned stamp image will be less than
+this value.</p>
+</dd>
+<dt class="field-even">type flux<span class="colon">:</span></dt>
+<dd class="field-even"><p>float, default 1.</p>
+</dd>
+<dt class="field-odd">rtype<span class="colon">:</span></dt>
+<dd class="field-odd"><p>2d numpy array</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.wcs.GWCS.html" title="Previous document">GWCS</a>
+        </li>
+        <li>
+          <a href="snappl.psf.photutilsImagePSF.html" title="Next document">photutilsImagePSF</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/snappl.psf.PSF.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

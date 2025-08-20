@@ -1,0 +1,23 @@
+GWCS
+====
+
+.. currentmodule:: snappl.wcs
+
+.. autoclass:: GWCS
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~GWCS.from_adsf
+      ~GWCS.get_astropy_wcs
+      ~GWCS.pixel_to_world
+      ~GWCS.world_to_pixel
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: from_adsf
+   .. automethod:: get_astropy_wcs
+   .. automethod:: pixel_to_world
+   .. automethod:: world_to_pixel

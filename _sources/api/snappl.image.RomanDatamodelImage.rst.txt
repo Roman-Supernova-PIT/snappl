@@ -1,0 +1,39 @@
+RomanDatamodelImage
+===================
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: RomanDatamodelImage
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~RomanDatamodelImage.band
+      ~RomanDatamodelImage.data
+      ~RomanDatamodelImage.dm
+      ~RomanDatamodelImage.flags
+      ~RomanDatamodelImage.mjd
+      ~RomanDatamodelImage.noise
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~RomanDatamodelImage.get_data
+      ~RomanDatamodelImage.get_wcs
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: band
+   .. autoattribute:: data
+   .. autoattribute:: dm
+   .. autoattribute:: flags
+   .. autoattribute:: mjd
+   .. autoattribute:: noise
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_data
+   .. automethod:: get_wcs

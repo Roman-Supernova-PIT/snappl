@@ -1,0 +1,17 @@
+Single_CSV_SED
+==============
+
+.. currentmodule:: snappl.sed
+
+.. autoclass:: Single_CSV_SED
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~Single_CSV_SED.get_sed
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_sed

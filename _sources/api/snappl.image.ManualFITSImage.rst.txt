@@ -1,0 +1,7 @@
+ManualFITSImage
+===============
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: ManualFITSImage
+   :show-inheritance:

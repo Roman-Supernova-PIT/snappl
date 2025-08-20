@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>photutilsImagePSF &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <script src="../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="OversampledImagePSF" href="snappl.psf.OversampledImagePSF.html" />
+    <link rel="prev" title="PSF" href="snappl.psf.PSF.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changes.html">Change Log</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">snappl API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">snappl API</a><ul>
+      <li>Previous: <a href="snappl.psf.PSF.html" title="previous chapter">PSF</a></li>
+      <li>Next: <a href="snappl.psf.OversampledImagePSF.html" title="next chapter">OversampledImagePSF</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.psf.PSF.html" title="Previous document">PSF</a>
+        </li>
+        <li>
+          <a href="snappl.psf.OversampledImagePSF.html" title="Next document">OversampledImagePSF</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="photutilsimagepsf">
+<h1>photutilsImagePSF<a class="headerlink" href="#photutilsimagepsf" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="snappl.psf.photutilsImagePSF">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">photutilsImagePSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peakx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peaky</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enforce_odd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#photutilsImagePSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.photutilsImagePSF" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="snappl.psf.PSF.html#snappl.psf.PSF" title="snappl.psf.PSF"><code class="xref py py-class docutils literal notranslate"><span class="pre">PSF</span></code></a></p>
+<p>Create a photutilsImagePSF.  WARNING: x and y have a different meaning from OversampledImagePSF constructor!</p>
+<section id="parmaeters">
+<h2>Parmaeters<a class="headerlink" href="#parmaeters" title="Link to this heading">¶</a></h2>
+<blockquote>
+<div><dl>
+<dt>data<span class="classifier">2d numpy array</span></dt><dd><p>The oversampled PSF.  data.sum() should be equal to the
+fraction of the PSF flux captured within the boundarys of
+the data array.  (However, see “normalize” below.)  The data
+array must be square, and (unless enforced_odd is false)
+must have an odd side length.</p>
+<p>The peak* of the PSF in the passed data array must be at
+position (peakx,peaky) in pixel coordinates of the passed
+data array.  If you leave those at default (None), then the
+PSF must be perfectly centered on the passed data array.
+(For an odd side-length, which is normal, that means the
+center of the PSF is at the center of the center pixel.)</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>For “peak” vs. “center” vs. “fiducial point”, see the
+caveats in the PSF.get_stamp docstring.</p></li>
+</ul>
+</div></blockquote>
+</dd>
+<dt>oversample_factor: integer</dt><dd><p>Must be an integer for photutilsImagePSF.  There are this
+many pixels along one axis in the past data array in one
+pixel on the original image that the PSF is for.</p>
+</dd>
+<dt>peakx, peaky: float, float</dt><dd><p>The position <em>in oversampled pixel coordinates</em> on the data
+array where the peak is found.  If these values are not,
+then we assume the peak is at (data.shape[1]//2,
+data.shape[0]//2) (i.e. the center of the center pixel).
+(If you pass an even-length data array, and there is no
+“center pixel”, then expect everything to go wrong and the
+world to end.)  See (x, y) below for some examples of
+passing peakx and peaky.</p>
+<p>The safest thing to do is to leave peakx and peaky at their
+defaults of None and make sure that the PSF is centered on
+the passed data array.</p>
+</dd>
+<dt>x, y<span class="classifier">float, float</span></dt><dd><p>Position on the original source image (i.e. the astronomical
+image for which this object is the PSF) that corresponds to
+the center of the data array.  WARNING: this is not the same
+as the x and y parameters given to the OversampledImagePSF
+constructor!  <em>If</em> the PSF is centered, and x and y have a
+zero fractional part, then the numbers will be the same for
+both classes.  But, for an off-center PSF, the numbers will
+be different in the two cases!  Use intrinsically off-center
+PSFs at your own peril.  (Note that you can always <em>render</em>
+stamps with off-centered PSFs in get_stamp(), regardless of
+whether the PSF itself is intrinsically centered or not.)</p>
+<p>Usually you want x and y to have no fractional part, you
+want peakx and peaky to be None, and you want the
+oversampled PSF to be centered on the passed data array.</p>
+<p>data must be consistent with these numbers.  Supposed you
+have an 11×11 PSF oversampled by a factor of 3 that is
+centered on the original image at 1023, 511.  In this case,
+the data array should be 33×33 in size (11 times 3).  If the
+PSF is centered on the data array (i.e. on the center of
+pixel (16,16)), then you would pass x=1023, y=511.</p>
+<p>If your PSF is centered on the original image at 1023.5,
+511.5, but you pass x=1023, y=511, that means that the PSF
+needs to be shifted half a pixel to the right and up on the
+(non-oversampled) stamp, or 1.5 pixels right and up on the
+oversampled data array.  The peak of the PSF on the passed
+data array should be at (17.5,17.5), and you must pass
+peakx=17.5 and peaky=17.5</p>
+<p>If your PSF is centered on the original image at 1023.,
+511., but for some reason you pass x=1020, y=512, that means
+that the center of the data array is three (non-oversampled)
+pixels to the left and one (non-oversampled) pixel above the
+peak of the PSF, or 9 oversampled left and 3 oversampled
+above.  In this case, the passed data array should have its
+peak (assuming a symmetric PSF) at the center of pixel
+(13,17), and you must pass peakx=13 and peaky=17.</p>
+<p>CHECK THESE NUMBERS IN THESE EXAMPLES TO VERIFY I DID IT RIGHT.</p>
+</dd>
+<dt>enforce_odd: bool, default True</dt><dd><p>Scream and yell if data doesn’t have odd side-lengths.  You
+probably do not want to set this to False.</p>
+</dd>
+<dt>normalize: bool, default False</dt><dd><p>If this is True, then the constructor will divide data by
+data.sum() (WARNING: which modifies the passed array!).  Do
+this if you are very confident that, for your purposes,
+close enough to 100% of the PSF flux falls within the
+boundaries of the passed data array.  Better, ensure that
+the sum of the passed data array equals the fraction of the
+PSF flux that falls within its boundaries, and leave
+normalize to False.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p class="rubric">Attributes Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.oversample_factor" title="snappl.psf.photutilsImagePSF.oversample_factor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">oversample_factor</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.oversampled_data" title="snappl.psf.photutilsImagePSF.oversampled_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">oversampled_data</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.stamp_size" title="snappl.psf.photutilsImagePSF.stamp_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stamp_size</span></code></a></p></td>
+<td><p>The size of the PSF image stamp at image resolution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.x" title="snappl.psf.photutilsImagePSF.x"><code class="xref py py-obj docutils literal notranslate"><span class="pre">x</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.y" title="snappl.psf.photutilsImagePSF.y"><code class="xref py py-obj docutils literal notranslate"><span class="pre">y</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.get_stamp" title="snappl.psf.photutilsImagePSF.get_stamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stamp</span></code></a>([x, y, x0, y0, flux])</p></td>
+<td><p>See PSF.get_stamp for documentation.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.psf.photutilsImagePSF.oversample_factor">
+<span class="sig-name descname"><span class="pre">oversample_factor</span></span><a class="headerlink" href="#snappl.psf.photutilsImagePSF.oversample_factor" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.psf.photutilsImagePSF.oversampled_data">
+<span class="sig-name descname"><span class="pre">oversampled_data</span></span><a class="headerlink" href="#snappl.psf.photutilsImagePSF.oversampled_data" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.psf.photutilsImagePSF.stamp_size">
+<span class="sig-name descname"><span class="pre">stamp_size</span></span><a class="headerlink" href="#snappl.psf.photutilsImagePSF.stamp_size" title="Link to this definition">¶</a></dt>
+<dd><p>The size of the PSF image stamp at image resolution.  Is always odd.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.psf.photutilsImagePSF.x">
+<span class="sig-name descname"><span class="pre">x</span></span><a class="headerlink" href="#snappl.psf.photutilsImagePSF.x" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.psf.photutilsImagePSF.y">
+<span class="sig-name descname"><span class="pre">y</span></span><a class="headerlink" href="#snappl.psf.photutilsImagePSF.y" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.psf.photutilsImagePSF.get_stamp">
+<span class="sig-name descname"><span class="pre">get_stamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#photutilsImagePSF.get_stamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.photutilsImagePSF.get_stamp" title="Link to this definition">¶</a></dt>
+<dd><p>See PSF.get_stamp for documentation.</p>
+<p>–&gt; CURRENTLY BROKEN FOR UNDERSAMPLED PSFs.  See Issue #30.</p>
+<p>Everything below is implementation notes, which can be ignored
+by people just using the class, but which will be useful for
+people reading the source code.</p>
+<p>photutils has a somewhat different way of thinking about PSF
+positioning on stamps than we do in OversampledImagePSF.  When
+you make an OversampledImagePSF, you give it the x and y on the
+original image where you evaluated the original PSF, and you
+give it an image with the PSF centered on the passed data array
+(or, within 0.5*oversampling_factor pixels of the center of the
+passed data array if the fractional parts of x and/or y are not
+0).</p>
+<p>In contrast, when you make a photutils ImagePSF, you pass it the
+x and y that correspond to the center pixel of the passed array.</p>
+<p>IF x and y have no fraction part, AND the PSF is centered on the
+passed data array, then you would pass the same values of x and
+y when constructing an OversampledImagePSF and a
+photutilsImagePSF.  Hopefully, this is the most common case, so
+confusion will be kept to a minimim.</p>
+<p>However, when that’s not true, we have to make sure we interpret
+all the variables right when rendering a photUtilsImagePSF.</p>
+<p>According to the PSF.get_stamp documentation, if x0 and y0 are
+None, then you will always get a stamp with a PSF centered
+within 0.5 pixels of the center of the stamp; it will be offset
+from the center of the stamp by the fractional part of x and y.
+This means we can’t just blithely pass the x and y passed to
+get_stamp on to the photutils.ImagePSF evaluator to get the PSF
+stamp, but have to do some arithmetic on it to make sure we’ll
+get back what PSF.get_stamp promises.</p>
+<p>If x0 and y0 are passed to get_stamp here, then that is the
+position on the center of the original array that corresponds to
+the center of the returned stamp.  The peak of the PSF on the
+returned stamp needs to be at (x-x0,y-y0).</p>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.psf.PSF.html" title="Previous document">PSF</a>
+        </li>
+        <li>
+          <a href="snappl.psf.OversampledImagePSF.html" title="Next document">OversampledImagePSF</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/snappl.psf.photutilsImagePSF.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

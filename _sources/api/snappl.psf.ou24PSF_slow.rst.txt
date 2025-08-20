@@ -1,0 +1,27 @@
+ou24PSF_slow
+============
+
+.. currentmodule:: snappl.psf
+
+.. autoclass:: ou24PSF_slow
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~ou24PSF_slow.stamp_size
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ou24PSF_slow.get_stamp
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: stamp_size
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_stamp

@@ -1,0 +1,25 @@
+GalsimWCS
+=========
+
+.. currentmodule:: snappl.wcs
+
+.. autoclass:: GalsimWCS
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~GalsimWCS.from_header
+      ~GalsimWCS.get_galsim_wcs
+      ~GalsimWCS.pixel_to_world
+      ~GalsimWCS.to_fits_header
+      ~GalsimWCS.world_to_pixel
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: from_header
+   .. automethod:: get_galsim_wcs
+   .. automethod:: pixel_to_world
+   .. automethod:: to_fits_header
+   .. automethod:: world_to_pixel

@@ -1,0 +1,17 @@
+Flat_SED
+========
+
+.. currentmodule:: snappl.sed
+
+.. autoclass:: Flat_SED
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~Flat_SED.get_sed
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_sed

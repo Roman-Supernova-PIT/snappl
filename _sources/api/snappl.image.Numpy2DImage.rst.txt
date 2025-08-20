@@ -1,0 +1,33 @@
+Numpy2DImage
+============
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: Numpy2DImage
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~Numpy2DImage.data
+      ~Numpy2DImage.flags
+      ~Numpy2DImage.image_shape
+      ~Numpy2DImage.noise
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~Numpy2DImage.free
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: data
+   .. autoattribute:: flags
+   .. autoattribute:: image_shape
+   .. autoattribute:: noise
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: free
