@@ -5,6 +5,7 @@ import astropy
 
 from snappl.image import FITSImage
 from snappl.wcs import AstropyWCS, GalsimWCS
+from snappl.psf import PSF
 
 
 # ======================================================================
@@ -15,7 +16,7 @@ from snappl.wcs import AstropyWCS, GalsimWCS
 #   tests in this section tests the functions which themselves
 #   are defined in FITSImage.
 
-def test_get_wcs( ou2024image, fitsimage_module, check_wcs ):
+def test_fits_get_wcs( ou2024image, fitsimage_module, check_wcs ):
     assert isinstance( fitsimage_module._wcs, AstropyWCS )
     assert fitsimage_module.get_wcs() is fitsimage_module._wcs
     assert ou2024image._wcs is None
@@ -39,7 +40,7 @@ def test_get_wcs( ou2024image, fitsimage_module, check_wcs ):
     assert newgswcs is ou2024image._wcs
 
 
-def test_get_cutout( ou2024image_module ):
+def test_fits_get_cutout( ou2024image_module ):
     image = ou2024image_module
     assert image.image_shape == ( 4088, 4088 )
     cutout = image.get_cutout( 200, 400, 11 )
@@ -61,7 +62,7 @@ def test_get_cutout( ou2024image_module ):
         _ = image.get_cutout( 2048, 4200, 21 )
 
 
-def test_get_ra_dec_cutout( ou2024image_module ):
+def test_fits_get_ra_dec_cutout( ou2024image_module ):
     image = ou2024image_module
     # Choose the ra, dec around the SN in the test images
     ra, dec = 7.551093401915147, -44.80718106491529
@@ -88,7 +89,7 @@ def test_get_ra_dec_cutout( ou2024image_module ):
         cutout = image.get_ra_dec_cutout(ra, dec, 55)
 
 
-def test_set_data( fitsimage_module ):
+def test_fits_set_data( fitsimage_module ):
     image = fitsimage_module
 
     origim = image.data
@@ -164,9 +165,59 @@ def test_fits_get_data(fitsimage_module):
 
 
 # ======================================================================
+# ManualFITSImage tests
+
+
+def test_manual_fits_image( manual_fits_image ):
+    assert isinstance( manual_fits_image._data, np.ndarray )
+    assert manual_fits_image._data.shape == ( 25, 25 )
+    assert manual_fits_image._data.dtype == np.float32
+    assert np.all( manual_fits_image._data == 1.0 )
+    assert isinstance( manual_fits_image._noise, np.ndarray )
+    assert manual_fits_image._noise.shape == ( 25, 25 )
+    assert manual_fits_image._noise.dtype == np.float32
+    assert np.all( manual_fits_image._noise == 0.0 )
+    assert isinstance( manual_fits_image._flags, np.ndarray )
+    assert manual_fits_image._flags.shape == ( 25, 25 )
+    assert manual_fits_image._flags.dtype == np.uint32
+    assert np.all( manual_fits_image._flags == 0 )
+
+
+    # Test the data setter
+    manual_fits_image._data = np.ones((25, 25), dtype=np.float32) * 2.0
+    assert np.all( manual_fits_image._data == 2.0 )
+
+    # Test the noise setter
+    manual_fits_image._noise = np.ones((25, 25), dtype=np.float32) * 3.0
+    assert np.all( manual_fits_image._noise == 3.0 )
+
+    # Test the flags setter
+    manual_fits_image._flags = np.zeros((25, 25), dtype=np.uint32) + 1
+    assert np.all( manual_fits_image._flags == 1 )
+
+    # Test the header
+    hdr = manual_fits_image.get_fits_header()
+    assert isinstance(hdr, astropy.io.fits.header.Header)
+    assert hdr is manual_fits_image._header
+
+
+@pytest.mark.xfail( reason="Issue #50" )
+def test_ou2024_compare_zeropoints( ou2024image ):
+    zp1 = ou2024image._get_zeropoint()
+    psf = PSF.get_psf_object( 'A25ePSF', band=ou2024image.band, sca=ou2024image.sca, x=1277.5, y=1277.5 )
+    zp2 = ou2024image._get_zeropoint_the_hard_way( psf, ap_r=9 )
+    assert zp1 == pytest.approx( zp2, abs=0.01 )
+
+
+# ======================================================================
+# FITSImageOnDisk tests
+#
+# TODO
+
+# ======================================================================
 # OpenUniverse2024FITSImage tests
 
-def test_get_data( ou2024image ):
+def test_ou2024_get_data( ou2024image ):
     try:
         # Notice the types are explicitly called out as big-endian below, even
         #   if the architecture of the system  is little-endian.  This is because
@@ -217,7 +268,10 @@ def test_get_data( ou2024image ):
             assert isinstance( res[0], np.ndarray )
             assert res[0].shape == ( 4088, 4088 )
             assert res[0] is getattr( ou2024image, f"_{prop}" )
-            assert isinstance( ou2024image._header, astropy.io.fits.header.Header )
+            if prop == 'data':
+                assert isinstance( ou2024image._header, astropy.io.fits.header.Header )
+            else:
+                assert ou2024image._header is None
             for otherprop in props:
                 if otherprop == prop:
                     continue
@@ -253,53 +307,17 @@ def test_get_data( ou2024image ):
         pass
 
 
-def test_band( ou2024image_module ):
+def test_ou2024_band( ou2024image_module ):
     assert ou2024image_module.band == 'Y106'
 
 
-def test_get_header( ou2024image, ou2024image_module ):
+def test_ou2024_get_fits_header( ou2024image, ou2024image_module ):
     assert isinstance( ou2024image_module._header, astropy.io.fits.header.Header )
-    assert ou2024image_module._header == ou2024image_module._get_header()
+    assert ou2024image_module._header == ou2024image_module.get_fits_header()
     assert ou2024image._header is None
-    hdr = ou2024image._get_header()
+    hdr = ou2024image.get_fits_header()
     assert isinstance( hdr, astropy.io.fits.header.Header )
     assert hdr is ou2024image._header
-
-# ======================================================================
-# ManualFITSImage tests
-
-
-def test_manual_fits_image( manual_fits_image ):
-    assert isinstance( manual_fits_image._data, np.ndarray )
-    assert manual_fits_image._data.shape == ( 25, 25 )
-    assert manual_fits_image._data.dtype == np.float32
-    assert np.all( manual_fits_image._data == 1.0 )
-    assert isinstance( manual_fits_image._noise, np.ndarray )
-    assert manual_fits_image._noise.shape == ( 25, 25 )
-    assert manual_fits_image._noise.dtype == np.float32
-    assert np.all( manual_fits_image._noise == 0.0 )
-    assert isinstance( manual_fits_image._flags, np.ndarray )
-    assert manual_fits_image._flags.shape == ( 25, 25 )
-    assert manual_fits_image._flags.dtype == np.uint32
-    assert np.all( manual_fits_image._flags == 0 )
-
-
-    # Test the data setter
-    manual_fits_image._data = np.ones((25, 25), dtype=np.float32) * 2.0
-    assert np.all( manual_fits_image._data == 2.0 )
-
-    # Test the noise setter
-    manual_fits_image._noise = np.ones((25, 25), dtype=np.float32) * 3.0
-    assert np.all( manual_fits_image._noise == 3.0 )
-
-    # Test the flags setter
-    manual_fits_image._flags = np.zeros((25, 25), dtype=np.uint32) + 1
-    assert np.all( manual_fits_image._flags == 1 )
-
-    # Test the header
-    hdr = manual_fits_image._get_header()
-    assert isinstance(hdr, astropy.io.fits.header.Header)
-    assert hdr is manual_fits_image._header
 
 
 # ======================================================================
