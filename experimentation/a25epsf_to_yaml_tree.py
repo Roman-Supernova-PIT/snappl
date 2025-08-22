@@ -1,5 +1,7 @@
+import argparse
 import pathlib
 from a25epsf_to_yaml import a25epsf_to_yaml
+
 
 def dodir( indir, outdir, clobber=False ):
     indir = pathlib.Path( indir )
@@ -28,7 +30,7 @@ def main():
 
     dodir( args.indir, args.outdir, clobber=args.clobber )
 
+
 # ======================================================================
 if __name__ == "__main__":
     main()
-
