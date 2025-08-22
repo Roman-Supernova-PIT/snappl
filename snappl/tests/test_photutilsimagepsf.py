@@ -69,3 +69,6 @@ class TestPhotutilsImagePSF( BaseTestImagePSF ):
         self.run_test_get_stamp_offset_oversampled()
 
     # TODO more undersampled tests
+
+    def test_get_imagepsf( self, testpsf ):
+        self.run_test_get_imagepsf( testpsf, oversamp=3. )

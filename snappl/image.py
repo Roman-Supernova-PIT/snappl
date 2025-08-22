@@ -15,7 +15,7 @@ from astropy.table import Table
 from astropy.modeling.fitting import NonFiniteValueError
 import astropy.units
 from photutils.aperture import CircularAperture, aperture_photometry, ApertureStats
-from photutils.psf import PSFPhotometry, FittableImageModel
+from photutils.psf import PSFPhotometry
 from photutils.background import LocalBackground, MMMBackground, Background2D
 
 
@@ -311,8 +311,11 @@ class Image:
         return ( x >= 0 ) and ( x < 4088 ) and ( y >= 0 ) and ( y < 4008 )
 
 
-    def ap_phot( self, coords, ap_r=9, method='subpixel', subpixels=5, **kwargs ):
+    def ap_phot( self, coords, ap_r=9, method='subpixel', subpixels=5, bgsize=511, **kwargs ):
         """Do aperture photometry on the image at the specified coordinates.
+
+        Does background subtraction using
+        photutils.background.Background2D with box size bgsize.
 
         Parameters
         ----------
@@ -329,8 +332,9 @@ class Image:
           subpixels: int, default 5
             Number of subpixels to use for the 'subpixel' method.
 
-          merge_tables: bool, default True
-            See Returns
+          bgsize: int, default 511
+            Box size for photutils Background2D background subtraction.
+            Set to <=0 to not do background subtraction.
 
           **kwargs : further arguments are passed directly to photutils.photometry.aperture_photometry
 
@@ -346,12 +350,11 @@ class Image:
         photcoords = np.transpose(np.vstack([x, y]))
         apertures = CircularAperture(photcoords, r=ap_r)
 
-        # This is slow; thing about caching background if we're ever going to use ap_phot for real
-        # TODO makethe box_size not hardcoded!!!!!!  This should be fine for Roman images that are 4088
-        #   on a side, though.
-        bger = Background2D( self.data, box_size=511 )
+        # This is potentially slow; thing about caching background if we're ever going to use ap_phot for real,
+        #   especially if it's going to be called repeatedly on the same image.
+        bg = 0. if bgsize <= 0 else Background2D( self.data, box_size=bgsize ).background
 
-        ap_results = aperture_photometry( self.data - bger.background,
+        ap_results = aperture_photometry( self.data - bg,
                                           apertures,
                                           method=method,
                                           subpixels=subpixels,
@@ -359,15 +362,14 @@ class Image:
         apstats = ApertureStats(self.data, apertures)
         ap_results['max'] = apstats.max
 
-        # ??? why is this necesary???
-        # for col in ap_results.colnames:
-        #     ap_results[col] = ap_results[col].value
-
         return ap_results
+
 
     def psf_phot( self, init_params, psf, forced_phot=True, fit_shape=(5, 5),
                   bginner=15, bgouter=25 ):
         """Do psf photometry.
+
+        Does local background subtraction.
 
         Parameters
         ----------
@@ -400,8 +402,7 @@ class Image:
         if 'flux_init' not in init_params.colnames:
             raise Exception('Astropy table passed to kwarg init_params must contain column \"flux_init\".')
 
-        psfmod = FittableImageModel( psf.get_stamp() )
-
+        psfmod = psf.getImagePSF()
         if forced_phot:
             SNLogger.debug( 'psf_phot: x, y are fixed!' )
             psfmod.x_0.fixed = True

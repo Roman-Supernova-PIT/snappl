@@ -93,7 +93,7 @@ class BaseWCS:
 
         May not be implemented for all subclasses.
 
-        Parmaeters
+        Parameters
         ----------
           header : astropi.io.fits.Header or dict
              Something that an astropy WCS is able to create itself from.
