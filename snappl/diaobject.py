@@ -109,7 +109,7 @@ class DiaObject:
 
 # ======================================================================
 
-class DiaObjectOU2024:
+class DiaObjectOU2024( DiaObject ):
     """A transient from the OpenUniverse 2024 sims."""
 
     def __init__( self, *args, **kwargs ):
@@ -191,7 +191,7 @@ class DiaObjectOU2024:
         objinfo = res.json()
 
         diaobjects = []
-        for i in range( len( res['id'] ) ):
+        for i in range( len( objinfo['id'] ) ):
             diaobj = DiaObjectOU2024( id=objinfo['id'][i],
                                       ra=objinfo['ra'][i],
                                       dec=objinfo['dec'][i],
@@ -199,10 +199,10 @@ class DiaObjectOU2024:
             diaobj.tstart = objinfo['start_mjd'][i]
             diaobj.tend = objinfo['end_mjd'][i]
             for prop in ( [ 'healpix', 'host_id', 'gentype', 'model_name', 'z_cmb', 'mw_ebv', 'mw_extinction_applied',
-                            'av', 'rv', 'v_paec', 'host_ra', 'host_dec', 'host_mag_g', 'host_mag_i', 'host_mag_f',
+                            'av', 'rv', 'v_pec', 'host_ra', 'host_dec', 'host_mag_g', 'host_mag_i', 'host_mag_f',
                             'host_sn_sep', 'peak_mag_g', 'peak_mag_i', 'peak_mag_f', 'lens_dmu',
                             'lens_dmu_applied', 'model_params' ] ):
-                setattr( diaobj, res[prop][i] )
+                setattr( diaobj, prop, objinfo[prop][i] )
             diaobjects.append( diaobj )
 
         return diaobjects
@@ -210,7 +210,7 @@ class DiaObjectOU2024:
 
 # ======================================================================
 
-class DiaObjectManual:
+class DiaObjectManual( DiaObject ):
     """A manually-specified object that's not saved anywhere."""
 
     def __init__( self, *args, **kwargs ):
