@@ -209,6 +209,13 @@ def test_ou2024_compare_zeropoints( ou2024image ):
     assert zp1 == pytest.approx( zp2, abs=0.01 )
 
 
+def test_ou2024_compare_zeropoints_with_not_enough_precision( ou2024image ):
+    zp1 = ou2024image._get_zeropoint()
+    psf = PSF.get_psf_object( 'A25ePSF', band=ou2024image.band, sca=ou2024image.sca, x=1277.5, y=1277.5 )
+    zp2 = ou2024image._get_zeropoint_the_hard_way( psf, ap_r=9 )
+    assert zp1 == pytest.approx( zp2, abs=0.1 )
+
+
 # ======================================================================
 # FITSImageOnDisk tests
 #

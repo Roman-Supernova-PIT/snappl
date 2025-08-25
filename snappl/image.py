@@ -997,8 +997,6 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
         zpt = np.nanmedian(star_truth_mags[zpt_mask] - star_fit_mags[zpt_mask])
         _ap_zpt = np.nanmedian(star_truth_mags[zpt_mask] - star_ap_mags[zpt_mask])
 
-        import pdb; pdb.set_trace()
-
         return zpt
 
 

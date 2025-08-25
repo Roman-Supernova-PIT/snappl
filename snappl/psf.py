@@ -771,6 +771,15 @@ class OversampledImagePSF( PSF ):
     image to get an source-image-scale sampled PSF using an
     interpolation algorithm that's close to what PSFex uses.
 
+    The internally stored data array is a copy of what is passed.  So,
+    if you have an OversampledImagePSF oipsf and do::
+
+      oipsf.oversampled_data = data
+
+    it does not work the way you'd usually expect for arrays.  (That is,
+    if you change elements of data thereafter, it will *not* be
+    reflected in the data array stored inside OversampledImagePSF.)
+
     BIG PROBLEM : the interpolation used does a very bad job when the
     PSF is intrnsically undersampled, that is, on the original image the
     FWHM is not at least a couple of pixels.  (TODO: explore how the
@@ -839,9 +848,12 @@ class OversampledImagePSF( PSF ):
             (That is, if the oversampling factor is 3, the peak of the
             PSF will be centered within 1.5 pixels of the center of the
             passed array.)  See (x,y) below for discussion of
-            positioning the PSF on the passed data array.  WARNING : if
-            you set normalize to True, the passed array will be
-            modified!
+            positioning the PSF on the passed data array.
+
+            A *copy* of the passed data is stored, not the actual passed
+            data, so if you change elements of the array you passed
+            after making the OversampledImagePSF, it won't be reflected
+            inside the OversampledImagePSF.
 
           oversample_factor: float, default 1.
             There are this many pixels along one axis in data for one
@@ -877,30 +889,13 @@ class OversampledImagePSF( PSF ):
         self._consumed_args.update( [ 'oversample_factor', 'data', 'enforce_odd', 'normalize' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
-        if not isinstance( data, np.ndarray ) or ( len(data.shape) != 2 ):
-            raise TypeError( "data must be a 2d numpy array" )
-        if data.shape[0] != data.shape[1]:
-            raise ValueError( "data must be square" )
-        if enforce_odd and ( data.shape[0] % 2 != 1 ):
-            raise ValueError( "enforce_odd is true, but data has even sides" )
-        if ( int(oversample_factor) == oversample_factor ) and ( data.shape[0] % oversample_factor != 0 ):
-            SNLogger.warning( f"oversample factor={oversample_factor} does not evenly divide "
-                              f"into data size {data.shape[0]}.  This may not be a problem." )
-
-        self._data = None
-        if data is not None:
-            if not isinstance( data, np.ndarray ) or ( len(data.shape) != 2 ) or ( data.shape[0] != data.shape[1] ):
-                raise TypeError( "data must be a square 2d numpy array" )
-            if enforce_odd and ( data.shape[0] % 2 != 1 ):
-                raise ValueError( "The length of each axis of data must be odd" )
-            if normalize:
-                data /= data.sum()
-            self._data = data
-
         if ( self._x is None ) or ( self._y is None ):
             raise ValueError( "Must supply both x and y" )
 
         self._oversamp = oversample_factor
+        self._enforce_odd = enforce_odd
+        self._normalize = normalize
+        self.oversampled_data = data
 
 
     @property
@@ -910,6 +905,21 @@ class OversampledImagePSF( PSF ):
     @property
     def oversampled_data( self ):
         return self._data
+
+    @oversampled_data.setter
+    def oversampled_data( self, data ):
+        if data is not None:
+            data = np.copy( data )
+            if not isinstance( data, np.ndarray ) or ( len(data.shape) != 2 ) or ( data.shape[0] != data.shape[1] ):
+                raise TypeError( "data must be a square 2d numpy array" )
+            if self._enforce_odd and ( data.shape[0] % 2 != 1 ):
+                raise ValueError( "The length of each axis of data must be odd" )
+            if ( int(self._oversamp) == self._oversamp ) and ( data.shape[0] % self._oversamp != 0 ):
+                SNLogger.warning( f"oversample factor={self._oversamp} does not evenly divide "
+                                  f"into data size {data.shape[0]}.  This may not be a problem." )
+            if self._normalize:
+                data /= data.sum()
+            self._data = data
 
     @property
     def stamp_size( self ):
@@ -1083,8 +1093,9 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
         self._x = y['x0']
         self._y = y['y0']
         self._oversamp = y['oversamp']
-        self._data = np.frombuffer( base64.b64decode( y['data'] ), dtype=y['dtype'] )
-        self._data = self._data.reshape( ( y['shape0'], y['shape1'] ) )
+        data = np.frombuffer( base64.b64decode( y['data'] ), dtype=y['dtype'] )
+        data = data.reshape( ( y['shape0'], y['shape1'] ) )
+        self.oversampled_data = data
 
     def write( self, filepath ):
         out = { 'x0': float( self._x ),
@@ -1107,24 +1118,25 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
 
     """
 
-    def __init__( self, _parent_class=False, oversample_factor=None, data=None, enforce_odd=None, **kwargs ):
+    def __init__( self, _parent_class=False, **kwargs ):
         """Make an A25ePSF, reading the data from the standard location on disk."""
 
-        if any( i is not None for i in [ oversample_factor, data, enforce_odd ] ):
+        if any( i in kwargs for i in [ 'oversample_factor', 'data', 'enforce_odd' ] ):
+            # We depend on enforce_odd=True in the OversampledImage PSF.  We will set
+            #   oversample_factor and data when reading the standard A25ePSF file.
             raise ValueError( "Cannot pass oversample_factor, data, or enforce_odd to A25ePSF constructor." )
 
         super().__init__( _parent_class=True, **kwargs )
-        self._consumed_args.update( [ 'oversample_factor', 'data', 'enforce_odd' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         cfg = Config.get()
         basepath = pathlib.Path( cfg.value( 'photometry.snappl.A25ePSF_path' ) )
 
         """
-        The array size is the size of one image (nx, ny).
-        The grid size is the number of times we divide that image
-        into smaller parts for the purposes of assigning the
-        correct ePSF (8 x 8 = 64 ePSFs).
+        The array size is the size of one image (nx, ny). The grid size
+        is the number of times we divide that image into smaller parts
+        for the purposes of assigning the correct ePSF (8 x 8 = 64
+        ePSFs).
 
         4088 px/8 = 511 px. So, int(arr_size/gridsize) is just a type
         conversion. In the future, we may have a class where these things
