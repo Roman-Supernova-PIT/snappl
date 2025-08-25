@@ -32,15 +32,18 @@ class DiaObject:
 
     """
 
-    def __init__( self, id=None, ra=None, dec=None, tdiscovery=None, tmax=None, tstart=None, tend=None ):
+    def __init__( self, id=None, ra=None, dec=None, tdiscovery=None, tmax=None, tstart=None, tend=None,
+                  _called_from_find_objects=False ):
         """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
+        if not _called_from_find_objects:
+            raise RuntimeError( "Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects." )
         self.id = id
         self.ra = ra
         self.dec = dec
-        self.tdiscovery = None
-        self.tmax = None
-        self.tstart = None
-        self.tend = None
+        self.tdiscovery = tdiscovery
+        self.tmax = tmax
+        self.tstart = tstart
+        self.tend = tend
 
     @classmethod
     def find_objects( cls, collection=None, subset=None, **kwargs ):
@@ -58,7 +61,7 @@ class DiaObject:
 
           id : <something>
             The ID of the object.  Should work as a str.  This is an
-            opaque thing that will be differnet for different
+            opaque thing that will be different for different
             collections.
 
           ra: float
@@ -195,9 +198,11 @@ class DiaObjectOU2024( DiaObject ):
             diaobj = DiaObjectOU2024( id=objinfo['id'][i],
                                       ra=objinfo['ra'][i],
                                       dec=objinfo['dec'][i],
-                                      tmax=objinfo['peak_mjd'][i] )
-            diaobj.tstart = objinfo['start_mjd'][i]
-            diaobj.tend = objinfo['end_mjd'][i]
+                                      tmax=objinfo['peak_mjd'][i],
+                                      tstart=objinfo['start_mjd'][i],
+                                      tend=objinfo['end_mjd'][i],
+                                      _called_from_find_objects=True
+                                     )
             for prop in ( [ 'healpix', 'host_id', 'gentype', 'model_name', 'z_cmb', 'mw_ebv', 'mw_extinction_applied',
                             'av', 'rv', 'v_pec', 'host_ra', 'host_dec', 'host_mag_g', 'host_mag_i', 'host_mag_f',
                             'host_sn_sep', 'peak_mag_g', 'peak_mag_i', 'peak_mag_f', 'lens_dmu',
@@ -219,8 +224,8 @@ class DiaObjectManual( DiaObject ):
 
 
     @classmethod
-    def find_objects( cls, collection=None, subset=None, **kwargs ):
+    def _find_objects( cls, collection=None, subset=None, **kwargs ):
         if any( ( i not in kwargs ) or ( kwargs[i] is None ) for i in ('id', 'ra', 'dec') ):
             raise ValueError( "finding a manual DiaObject requires all of id, ra, and dec" )
 
-        return DiaObjectManual( **kwargs )
+        return [ DiaObjectManual( _called_from_find_objects=True, **kwargs ) ]
