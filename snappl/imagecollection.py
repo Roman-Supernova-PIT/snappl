@@ -58,14 +58,14 @@ class ImageCollection:
             The path to the relative to base_path.  For some subclasses,
             this must be consistent wiht pointing, band, and sca if passed.
 
-          pointing: str (int?), default None
+          pointing: str, default None
             Pointing.  If not given, just use the Path to find the image.
 
           band: str, default None
             Filter.
 
-          sca: str (int?), defanot None
-            SCA
+          sca: str, default None
+            SCA.
 
           base_path: str or pathlib.Path, default None
             The base path for the image collection.  If not given, use
@@ -90,13 +90,13 @@ class ImageCollection:
 
         Parameters
         ----------
-          pointing : str (int?)
+          pointing: str
             The pointing number
 
           band : str
             The band
 
-          sca : str (int?)
+          sca: int
             The SCA
 
           base_path : str or Path, default None

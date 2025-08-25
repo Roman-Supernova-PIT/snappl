@@ -11,16 +11,16 @@ class DiaObject:
     ra : ra in degrees (ICRS)
     dec : dec in degrees (ICRS)
 
-    tdiscovery : when the object was first discovered; may be None if unknown (float MJD)
-    tmax : peak of the object's lightcurve; may be None if unknown (float MJD)
+    mjd_discovery : when the object was first discovered; may be None if unknown (float MJD)
+    mjd_max : peak of the object's lightcurve; may be None if unknown (float MJD)
 
-    tstart : MJD when the lightcurve first exists.  Definition of this
-             is class-dependent; it may be when it was actively
-             simulated, but it may be when the lightcurve is above some
-             cutoff.  May be None if unknown.
+    mjd_start : MJD when the lightcurve first exists.  Definition of this
+                is class-dependent; it may be when it was actively
+                simulated, but it may be when the lightcurve is above some
+                cutoff.  May be None if unknown.
 
-    tend : MJD when the lightcurve stops existing.  Definition like
-           tstart.  May be None if unknown.
+    mjd_end : MJD when the lightcurve stops existing.  Definition like
+              mjd_start.  May be None if unknown.
 
     Some subclasses may support additional properties, but use those
     with care, as you are making your code less generral when you use
@@ -32,18 +32,18 @@ class DiaObject:
 
     """
 
-    def __init__( self, id=None, ra=None, dec=None, tdiscovery=None, tmax=None, tstart=None, tend=None,
-                  _called_from_find_objects=False ):
+    def __init__( self, id=None, ra=None, dec=None, mjd_discovery=None, mjd_max=None,
+                  mjd_start=None, mjd_end=None, _called_from_find_objects=False ):
         """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
         if not _called_from_find_objects:
             raise RuntimeError( "Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects." )
         self.id = id
         self.ra = ra
         self.dec = dec
-        self.tdiscovery = tdiscovery
-        self.tmax = tmax
-        self.tstart = tstart
-        self.tend = tend
+        self.mjd_discovery = mjd_discovery
+        self.mjd_max = mjd_max
+        self.mjd_start = mjd_start
+        self.mjd_end = mjd_end
 
     @classmethod
     def find_objects( cls, collection=None, subset=None, **kwargs ):
@@ -73,19 +73,19 @@ class DiaObject:
           radius: float, default 1.0
             Radius in arcseconds to search.  Ignored unless ra and dec are given.
 
-          tmax_min, tmax_max: float
-            Only return objects whose tmax is between these limits.
+          mjd_max_min, mjd_max_max: float
+            Only return objects whose mjd_max is between these limits.
             Specify as MJD.  Will not return any objects with unknown
-            tmax.
+            mjd_max.
 
-          tdiscovery_min, tdiscovery_max: float
-            Only return objects whose tdiscovery is between these
+          mjd_discovery_min, mjd_discovery_max: float
+            Only return objects whose mjd_discovery is between these
             limits.  Specify as MJD.  Wil not return any objects with
-            unknown tdiscovery.
+            unknown mjd_discovery.
 
-          tstart_min, tstart_max: float
+          mjd_start_min, mjd_start_max: float
 
-          tend_min, tend_max: float
+          mjd_end_min, mjd_end_max: float
 
 
         Returns
@@ -150,17 +150,17 @@ class DiaObjectOU2024( DiaObject ):
                        ra=None,
                        dec=None,
                        radius=1.0,
-                       tmax_min=None,
-                       tmax_max=None,
-                       tdiscovery_min=None,
-                       tdiscovery_max=None,
-                       tstart_min=None,
-                       tstart_max=None,
-                       tend_min=None,
-                       tend_max=None,
+                       mjd_max_min=None,
+                       mjd_max_max=None,
+                       mjd_discovery_min=None,
+                       mjd_discovery_max=None,
+                       mjd_start_min=None,
+                       mjd_start_max=None,
+                       mjd_end_min=None,
+                       mjd_end_max=None,
                       ):
-        if any( i is not None for i in [ tmax_min, tmax_max, tdiscovery_min, tdiscovery_max ] ):
-            raise NotImplementedError( "DiaObjectOU2024 doesn't support searching on tmax or tdiscovery" )
+        if any( i is not None for i in [ mjd_max_min, mjd_max_max, mjd_discovery_min, mjd_discovery_max ] ):
+            raise NotImplementedError( "DiaObjectOU2024 doesn't support searching on mjd_max or mjd_discovery" )
 
         params = {}
 
@@ -177,17 +177,17 @@ class DiaObjectOU2024( DiaObject ):
         if id is not None:
             params['id'] = int( id )
 
-        if tstart_min is not None:
-            params['tstart_min'] = float( tstart_min )
+        if mjd_start_min is not None:
+            params['mjd_start_min'] = float( mjd_start_min )
 
-        if tstart_max is not None:
-            params['tstart_max'] = float( tstart_max )
+        if mjd_start_max is not None:
+            params['mjd_start_max'] = float( mjd_start_max )
 
-        if tend_min is not None:
-            params['tend_min'] = float( tend_min )
+        if mjd_end_min is not None:
+            params['mjd_end_min'] = float( mjd_end_min )
 
-        if tend_min is not None:
-            params['tend_max'] = float( tend_max )
+        if mjd_end_min is not None:
+            params['mjd_end_max'] = float( mjd_end_max )
 
 
         res = retry_post( 'https://roman-desc-simdex.lbl.gov/findtransients', json=params )
@@ -198,9 +198,9 @@ class DiaObjectOU2024( DiaObject ):
             diaobj = DiaObjectOU2024( id=objinfo['id'][i],
                                       ra=objinfo['ra'][i],
                                       dec=objinfo['dec'][i],
-                                      tmax=objinfo['peak_mjd'][i],
-                                      tstart=objinfo['start_mjd'][i],
-                                      tend=objinfo['end_mjd'][i],
+                                      mjd_max=objinfo['peak_mjd'][i],
+                                      mjd_start=objinfo['start_mjd'][i],
+                                      mjd_end=objinfo['end_mjd'][i],
                                       _called_from_find_objects=True
                                      )
             for prop in ( [ 'healpix', 'host_id', 'gentype', 'model_name', 'z_cmb', 'mw_ebv', 'mw_extinction_applied',
