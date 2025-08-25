@@ -65,3 +65,6 @@ class TestOversampledImagePSF( BaseTestImagePSF ):
 
     def test_get_stamp_offset_oversampled( self ):
         self.run_test_get_stamp_offset_oversampled()
+
+    def test_get_imagepsf( self, testpsf ):
+        self.run_test_get_imagepsf( testpsf, oversamp=3. )

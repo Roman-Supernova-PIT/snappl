@@ -7,7 +7,8 @@ from astropy.io import fits
 import tox # noqa: F401
 from tox.pytest import init_fixture # noqa: F401
 
-from snappl.image import FITSImage, OpenUniverse2024FITSImage, ManualFITSImage, RomanDatamodelImage
+from snappl.imagecollection import ImageCollection
+from snappl.image import FITSImage, ManualFITSImage, RomanDatamodelImage
 
 from snpit_utils.config import Config
 
@@ -17,22 +18,40 @@ def init_config():
     Config.init( '/snappl/snappl/tests/snappl_test_config.yaml', setdefault = True )
 
 
+@pytest.fixture( scope="session" )
+def ou2024collection():
+    return ImageCollection.get_collection( 'ou2024' )
+
+
+@pytest.fixture( scope='session' )
+def ou2024imagerelpath():
+    return 'Y106/13205/Roman_TDS_simple_model_Y106_13205_1.fits.gz'
+
+
 @pytest.fixture( scope='module' )
-def ou2024imagepath():
-    return str('/photometry_test_data/ou2024/images/simple_model/Y106/13205/'
-               'Roman_TDS_simple_model_Y106_13205_1.fits.gz')
+def ou2024imagepath( ou2024imagerelpath, ou2024collection ):
+    return str( ou2024collection.base_path / ou2024imagerelpath )
 
 
 @pytest.fixture
-def ou2024image( ou2024imagepath ):
-    image = OpenUniverse2024FITSImage( ou2024imagepath, None, 11 )
+def ou2024image( ou2024collection, ou2024imagerelpath ):
+    return ou2024collection.get_image( path=ou2024imagerelpath )
+
+
+# If you use this next fixture, you aren't supposed
+#   to modify the image!  Make sure any modifications
+#   you make are undone at the end of your test.
+@pytest.fixture( scope='module' )
+def ou2024image_module(  ou2024collection, ou2024imagerelpath ):
+    image = ou2024collection.get_image( path=ou2024imagerelpath )
+    image.get_data( which='all', cache=True )
+    image.get_wcs()
     return image
 
 
 @pytest.fixture
 def manual_fits_image( ou2024imagepath):
-    header = fits.open('/photometry_test_data/ou2024/images/simple_model/Y106/13205/'
-                       'Roman_TDS_simple_model_Y106_13205_1.fits.gz')[0].header
+    header = fits.open(ou2024imagepath)[0].header
     data = np.ones((25, 25), dtype = np.float32)
     noise = np.zeros((25, 25), dtype = np.float32)
     flags = np.zeros((25, 25), dtype = np.uint32)
@@ -50,17 +69,6 @@ def romandatamodel_image( romandatamodel_image_path ):
     return image
 
 
-# If you use this next fixture, you aren't supposed
-#   to modify the image!  Make sure any modifications
-#   you make are undone at the end of your test.
-@pytest.fixture( scope='module' )
-def ou2024image_module( ou2024imagepath ):
-    """A module-scope test image with data loaded."""
-    image = OpenUniverse2024FITSImage( ou2024imagepath, None, 11 )
-    image.get_data( which='all', cache=True )
-    image.get_wcs()
-    return image
-
 
 # If you use this next fixture, you aren't supposed
 #   to modify the image!  Make sure any modifications
@@ -69,14 +77,14 @@ def ou2024image_module( ou2024imagepath ):
 def fitsimage_module( ou2024imagepath, ou2024image_module ):
     # Hack our way into having an object of the FITSImage type.
     #   Normally you don't instantiate a FITS image, but for our tests
-    #   builde one up.  Never do something like this (i.e. accessing the
+    #   build one up.  Never do something like this (i.e. accessing the
     #   underscored members of an object) in code outside this test
     #   fixture.
-    fitsim = FITSImage( ou2024imagepath, None, 11 )
+    fitsim = FITSImage( ou2024imagepath )
     orighdr = ou2024image_module._header
-    fitsim._header = ou2024image_module._get_header()
+    fitsim._header = ou2024image_module.get_fits_header()
     fitsim._wcs = ou2024image_module._wcs
-    # Undo the internal change that _get_header made to ou2024image
+    # Undo the internal change that get_fits_header made to ou2024image
     ou2024image._header = orighdr
     img, noi, flg = ou2024image_module.get_data( always_reload=False )
     fitsim._data = img

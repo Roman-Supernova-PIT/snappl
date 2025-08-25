@@ -93,7 +93,7 @@ class BaseWCS:
 
         May not be implemented for all subclasses.
 
-        Parmaeters
+        Parameters
         ----------
           header : astropi.io.fits.Header or dict
              Something that an astropy WCS is able to create itself from.
@@ -148,9 +148,41 @@ class AstropyWCS(BaseWCS):
         self._wcs_is_astropy = True
 
     @classmethod
+    def _fix_wcs_tan_with_pv1_0( cls, header ):
+        if header['CTYPE1'] == 'RA---TAN' and 'PV1_0' in header:
+            _hdr = header.copy()
+            _hdr['CTYPE1'] = 'RA---TPV'
+            _hdr['CTYPE2'] = 'DEC--TPV'
+            return _hdr
+        else:
+            return header
+
+    @classmethod
     def from_header( cls, header ):
+        """Create an AstropyWCS from a FITS header.
+
+        NOTE: if the header claims that the transformation type is "TAN"
+        (i.e. CTYPE1 is "RA---TAN"), but the header also has a "PV1_0"
+        keyword, this function will assume that the transformation is
+        actually TPV.
+
+        See:
+        https://github.com/thomasvrussell/sfft/blob/45efa77452f020b8832a14c8682b87c5ffee4a93/sfft/utils/ReadWCS.py
+
+        Parameters
+        ----------
+          header: duckish astropy.io.fits.header.Header
+            Something that behaves like a FITS header, in that it can be
+            accessed as a dictionary, has the copy() method, and canbe
+            fead to astropy.wcs.WCS().
+
+        Returns
+        -------
+          AstropyWCS
+
+        """
         wcs = AstropyWCS()
-        wcs._wcs = astropy.wcs.WCS( header )
+        wcs._wcs = astropy.wcs.WCS( cls._fix_wcs_tan_with_pv1_0( header ) )
         return wcs
 
     def to_fits_header( self ):
@@ -198,8 +230,22 @@ class GalsimWCS(BaseWCS):
 
     @classmethod
     def from_header( cls, header ):
+        """Create a GalsimWCS from a FITS header.
+
+        Does TAN-TPV conversion the same as AstropyWCS.from_header.
+
+        Parameters
+        ----------
+          header: astropy.io.fits.header.Header
+            See AstropyWCS.from_header
+
+        Returns
+        -------
+          GalsimWCS
+
+        """
         wcs = GalsimWCS()
-        wcs._gsimwcs = galsim.AstropyWCS( header=header )
+        wcs._gsimwcs = galsim.AstropyWCS( header=AstropyWCS._fix_wcs_tan_with_pv1_0( header ) )
         return wcs
 
     def to_fits_header( self ):

@@ -31,28 +31,137 @@ class PSF:
 
     """
 
+    @classmethod
+    def get_psf_object( cls, psfclass, x=None, y=None, band=None, pointing=None, sca=None, **kwargs ):
+        """Return a PSF object whose type is specified by psfclass.
+
+        Parameters
+        ----------
+          psfclass: str
+            The name of the class of PSF you want.  Current options are:
+            * photutilsImagePSF -- a wrapper (sort of) around photutils.psf.ImagePSF
+            * OversampledImagePSF -- a PSF defined by an image which may be oversampled relative to the host image
+            * YamlSerialized_OversampledImagePSF -- OversampledImagePSF with a defined save formatr
+            * A25ePSF -- YamlSearialized_OversampledImagePSF from Aldoroty et al. 2025
+            * ou24PSF_slow -- a PSF from galsim for OpenUniverse 2024
+            * ou24PSF -- a PSF from galsim for OpenUniverse 2024
+
+          x, y: float
+            The position on the host image that this is the PSF for.
+            Usually you want these to have no fractional part (so
+            x==floor(x) and y==floor(y)), meaning that you've evaluated
+            the PSDF at the center of a pixel.  (If you have PFSs that
+            vary significantly on *less than a pixel scale*, you have
+            such big problems that you probably shouldn't even be trying
+            to do astronomy.)  Sometimes, but rarely. there is a use
+            case for these values to have a on-zero fractional part.
+
+            Will default to something sane.
+
+            The exact definition of how this is used currently (sadly)
+            depends a bit on the subclass.  See the subclass constructor
+            documentation for more details.
+
+          band: str
+            The Roman band this is a PSF for.  (I.e. the band of the
+            host image.)  Ignored by some subclasses.
+
+          pointing: int, default None
+            Roman pointing.  Ignored by many subclasses.
+
+          sca: int, default None
+            Probably only relevant for the ou24PSF classes.
+
+          **kwargs: ...
+            Specific subclasses may require or accept additional
+            arguments.  They will be documented in the subclasses's
+            constructor.
+
+        Parameters
+        ----------
+          psfclass : str
+             The name of the class of the PSF to instantiate.
+
+          **kwargs : further keyword arguments passed to object constructor
+
+        """
+        # Make a copy of kwargs so we can add to it with out affecting the caller
+        kwargs = kwargs.copy()
+        kwargs.update( { 'x': x,
+                         'y': y,
+                         'band': band,
+                         'pointing': pointing,
+                         'sca': sca } )
+
+        if psfclass == "photutilsImagePSF":
+            return photutilsImagePSF( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "OversampledImagePSF":
+            return OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "YamlSerialized_OversampledImagePSF":
+            return YamlSerialized_OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "A25ePSF":
+            return A25ePSF( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "ou24PSF_slow":
+            return ou24PSF_slow( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "ou24PSF":
+            return ou24PSF( _called_from_get_psf_object=True, **kwargs )
+
+        raise ValueError( f"Unknown PSF class {psfclass}" )
+
+
     # Thought required: how to deal with oversampling.  Right now, the
     # OversampledImagePSF and photutilsImagePSF subclasses provide a
     # property or method to access the single internally stored
     # oversampled image.  Should there be a general interface for
     # getting access to oversampled PSFs?
 
-    def __init__( self, called_from_get_psf_object=False, *args, **kwargs ):
+    def __init__( self, x=None, y=None, band=None, pointing=None, sca=None,
+                  _called_from_get_psf_object=False, **kwargs ):
         """Don't call this or the constructor of a subclass directly, call PSF.get_psf_object().
 
-        See documentation on the various subclass constructors for the
-        arguments to apss to get_psf_object and what they all mean.
-        Different types of PSF need different arguments, and sometimes
-        the same argument names will mean different things for different
-        subclasses!
+        See get_psf_object for parameter documentation.
+
+        _called_from_get_psf_object is used internally and should not be
+        used outside this module, unless you know what you're doing and
+        intentionally mean to subvert the system.
 
         """
         self._consumed_args = set()
-        if not called_from_get_psf_object:
+        if not _called_from_get_psf_object:
             raise RuntimeError( f"Don't instantiate a {self.__class__.__name__} directly, call PSF.get_psf_object" )
-        self._consumed_args.add( 'called_from_get_psf_object' )
+        self._consumed_args.update( [ 'x', 'y', 'band', 'pointing', 'sca', '_called_from_get_psf_object' ] )
 
-    def _warn_unknown_kwargs( self, kwargs ):
+        self._x = float( x ) if x is not None else None
+        self._y = float( y ) if y is not None else None
+        self._band = band
+        self._pointing = pointing
+        self._sca = sca
+
+
+    @property
+    def x( self ):
+        return self._x
+
+    @x.setter
+    def x( self, val ):
+        self._x = val
+
+    @property
+    def y( self ):
+        return self._y
+
+    @y.setter
+    def y( self, val ):
+        self._y = val
+
+    def _warn_unknown_kwargs( self, kwargs, _parent_class=False ):
+        if _parent_class:
+            return
         if any( k not in self._consumed_args for k in kwargs ):
             SNLogger.warning( f"Unused arguments to {self.__class__.__name__}.__init__: "
                               f"{[k for k in kwargs if k not in self._consumed_args]}" )
@@ -349,55 +458,52 @@ class PSF:
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_stamp" )
 
-    @classmethod
-    def get_psf_object( cls, psfclass, **kwargs ):
-        """Return a PSF object whose type is specified by psfclass.
 
-        SADNESS ALERT : currently the arguments you need to pass are
-        different for different types of PSFs.  There may be no way
-        around this, because they just all need different data.  To
-        figure out what kwargs you need to pass to this function, look
-        at the __init__ docstring for the class corresponding to the
-        psfclass you're passing.
+    def getImagePSF( self, imagesampled=True ):
+        """Return a photutils.psf.ImagePSF model.
+
+        This is useful if you want to do, e.g., PSF photometry with
+        photutils.
+
+        WARNING: at least with the photutilsImagePSF class, if you
+        constructed it with peakx and peaky not at their defaults, then
+        what you get back may not work as you expect.  (It's most usual
+        to just leave peakx and peaky at their defaults; if you're not
+        doing that, then be very careful calling getImagePSF.)
 
         Parameters
         ----------
-          psfclass : str
-             The name of the class of the PSF to instantiate.
+          imagesampled: bool, default
+            By default, this getImagePSF a PSF model at image
+            resolution.  Set imagesampled to False, and it might return
+            an oversampled PSF model; this will be class- and
+            object-dependent.
 
-          **kwargs : further keyword arguments passed to object constructor
+        Returns
+        -------
+          photutils.psf.ImagePSF
 
         """
-        if psfclass == "photutilsImagePSF":
-            return photutilsImagePSF( called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "OversampledImagePSF":
-            return OversampledImagePSF( called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "YamlSerialized_OversampledImagePSF":
-            return YamlSerialized_OversampledImagePSF( called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "A25ePSF":
-            return A25ePSF( called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "ou24PSF_slow":
-            return ou24PSF_slow( called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "ou24PSF":
-            return ou24PSF( called_from_get_psf_object=True, **kwargs )
-
-        raise ValueError( f"Unknown PSF class {psfclass}" )
+        # Subclasses that can return an oversampled PSF will want to override this method.
+        return photutils.psf.ImagePSF( self.get_stamp(), x_0=self._x, y_0=self._y )
 
 
 class photutilsImagePSF( PSF ):
-    def __init__( self, x=None, y=None, peakx=None, peaky=None,
-                  oversample_factor=1, data=None, enforce_odd=True, normalize=False,
-                  *args, **kwargs ):
-        """Create a photutilsImagePSF.  WARNING: x and y have a different meaning from OversampledImagePSF constructor!
+    """Wraps a photutils.psf.ImagePSF.  Sort of."""
+
+
+    def __init__( self, peakx=None, peaky=None, oversample_factor=1, data=None, enforce_odd=True, normalize=False,
+                  _parent_class=False, **kwargs ):
+        """Create a photutilsImagePSF.
+
+        WARNING: x and y have a different meaning from
+        OversampledImagePSF constructor in the case where they have
+        non-zero fractional parts!  TODO: fix this.... but then also fix
+        any code that depends on that behavior.
 
         Parmaeters
         ----------
-          data : 2d numpy array
+          data : 2d numpy array; required
             The oversampled PSF.  data.sum() should be equal to the
             fraction of the PSF flux captured within the boundarys of
             the data array.  (However, see "normalize" below.)  The data
@@ -436,15 +542,18 @@ class photutilsImagePSF( PSF ):
           x, y : float, float
             Position on the original source image (i.e. the astronomical
             image for which this object is the PSF) that corresponds to
-            the center of the data array.  WARNING: this is not the same
-            as the x and y parameters given to the OversampledImagePSF
-            constructor!  *If* the PSF is centered, and x and y have a
-            zero fractional part, then the numbers will be the same for
-            both classes.  But, for an off-center PSF, the numbers will
-            be different in the two cases!  Use intrinsically off-center
-            PSFs at your own peril.  (Note that you can always *render*
-            stamps with off-centered PSFs in get_stamp(), regardless of
-            whether the PSF itself is intrinsically centered or not.)
+            the center of the data array.
+
+            WARNING: this is not the same as the x and y parameters
+            given to the OversampledImagePSF constructor!  *If* the PSF
+            is centered, and x and y have a zero fractional part, then
+            the numbers will be the same for both classes.  But, for an
+            off-center PSF, the numbers will be different in the two
+            cases!  Use intrinsically off-center PSFs at your own peril.
+            (Note that you can always *render* stamps with off-centered
+            PSFs in get_stamp(), regardless of whether the PSF itself is
+            intrinsically centered or not.)  (TODO: figure out why this
+            is different and fix that.)
 
             Usually you want x and y to have no fractional part, you
             want peakx and peaky to be None, and you want the
@@ -490,14 +599,13 @@ class photutilsImagePSF( PSF ):
             PSF flux that falls within its boundaries, and leave
             normalize to False.
 
-        """
-        super().__init__( *args, **kwargs )
-        self._consumed_args.update( [ 'x', 'y', 'peakx', 'peaky', 'oversample_factor', 'data',
-                                      'enforce_odd', 'normalize' ] )
-        self._warn_unknown_kwargs( kwargs )
+          _parent_class: bool, default False
+            Used internally, do not use.
 
-        self._x = x
-        self._y = y
+        """
+        super().__init__( _parent_class=True, **kwargs )
+        self._consumed_args.update( [ 'peakx', 'peaky', 'oversample_factor', 'data', 'enforce_odd', 'normalize' ] )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         # # If self._x or self._y aren't integers, then photutils is going
         # # to say that that is the coordinate that maps to the center of
@@ -536,15 +644,8 @@ class photutilsImagePSF( PSF ):
             data /= data.sum()
 
         self._data = data
-        self._pupsf = photutils.psf.ImagePSF( data, flux=1, x_0=x, y_0=y, oversampling=self._oversamp )
+        self._pupsf = photutils.psf.ImagePSF( data, flux=1, x_0=self._x, y_0=self._y, oversampling=self._oversamp )
 
-    @property
-    def x( self ):
-        return self._x
-
-    @property
-    def y( self ):
-        return self._y
 
     @property
     def oversample_factor( self ):
@@ -605,8 +706,6 @@ class photutilsImagePSF( PSF ):
         the center of the returned stamp.  The peak of the PSF on the
         returned stamp needs to be at (x-x0,y-y0).
 
-
-
         """
         x = float(x) if x is not None else self._x
         y = float(y) if y is not None else self._y
@@ -656,6 +755,14 @@ class photutilsImagePSF( PSF ):
 
         return self._pupsf( xvals, yvals ) * ( self.oversample_factor ** 2 )
 
+    def getImagePSF( self, imagesampled=True ):
+        """Return a photutils.psf.ImagePSF model.  See PSF.getImagePSF."""
+
+        if imagesampled:
+            return photutils.psf.ImagePSF( self.get_stamp(), x_0=self._x, y_0=self._y )
+        else:
+            return self._pupsf
+
 
 class OversampledImagePSF( PSF ):
     """A PSF stored internally in an image which is (possibly) oversampled.
@@ -663,6 +770,15 @@ class OversampledImagePSF( PSF ):
     get_stamp will then interpolate the internally stored oversampled
     image to get an source-image-scale sampled PSF using an
     interpolation algorithm that's close to what PSFex uses.
+
+    The internally stored data array is a copy of what is passed.  So,
+    if you have an OversampledImagePSF oipsf and do::
+
+      oipsf.oversampled_data = data
+
+    it does not work the way you'd usually expect for arrays.  (That is,
+    if you change elements of data thereafter, it will *not* be
+    reflected in the data array stored inside OversampledImagePSF.)
 
     BIG PROBLEM : the interpolation used does a very bad job when the
     PSF is intrnsically undersampled, that is, on the original image the
@@ -672,41 +788,12 @@ class OversampledImagePSF( PSF ):
 
     """
 
-    def __init__( self, x=None, y=None, oversample_factor=1., data=None, enforce_odd=True, normalize=False,
-                  *args, **kwargs ):
+    def __init__( self, oversample_factor=1., data=None, enforce_odd=True, normalize=False,
+                  _parent_class=False, **kwargs ):
         """Make an OversampledImagePSF.
 
         Parameters
         ----------
-          data: 2d numpy array or None
-            The image data of the oversampled PSF.  If None, then this
-            needs, somehow, to be set later.  (Usually that will be
-            handled by something in a subclass of OversampledImagePSF;
-            if you're setting it manually, you're probably doing
-            something wrong.)  data.sum() should be equal to the
-            fraction of the PSF flux captured within the boundaries of
-            the data array.  (However, see "normalize" below.)  The
-            array must be square, and unless enforce_odd is false, the
-            length of one side must be an odd number.  Usually the peak
-            of the PSF (assuming a symmetric PSF-- if not, replace
-            "peak" with "center" or "fiducial point" or however you
-            think about it) will be centered on the center pixel fo the
-            array.  ALWAYS the peak of the PSF must be centered within
-            0.5 *non-oversampled* pixels of the center of the array.
-            (That is, if the oversampling factor is 3, the peak of the
-            PSF will be centered within 1.5 pixels of the center of the
-            passed array.)  See (x,y) below for discussion of
-            positioning the PSF on the passed data array.  WARNING : if
-            you set normalize to True, the passed array will be
-            modified!
-
-          oversample_factor: float, default 1.
-            There are this many pixels along one axis in data for one
-            pixel in the original image.  Doesn't have to be an integer
-            (e.g. if you used PSFex to find the PSF, it usually won't
-            be— though if you used PSFex to find the PSF, really we
-            should be writing a subclass to handle that!).
-
           x, y: float
             Required.  Position on the source image where this PSF is
             evaluated.  Most of the time, but not always, you probably
@@ -743,6 +830,38 @@ class OversampledImagePSF( PSF ):
             get_stamp(), regardless of whether the PSF itself is
             intrinsically centered or not.)
 
+          data: 2d numpy array or None
+            The image data of the oversampled PSF.  If None, then this
+            needs, somehow, to be set later.  (Usually that will be
+            handled by something in a subclass of OversampledImagePSF;
+            if you're setting it manually, you're probably doing
+            something wrong.)  data.sum() should be equal to the
+            fraction of the PSF flux captured within the boundaries of
+            the data array.  (However, see "normalize" below.)  The
+            array must be square, and unless enforce_odd is false, the
+            length of one side must be an odd number.  Usually the peak
+            of the PSF (assuming a symmetric PSF-- if not, replace
+            "peak" with "center" or "fiducial point" or however you
+            think about it) will be centered on the center pixel fo the
+            array.  ALWAYS the peak of the PSF must be centered within
+            0.5 *non-oversampled* pixels of the center of the array.
+            (That is, if the oversampling factor is 3, the peak of the
+            PSF will be centered within 1.5 pixels of the center of the
+            passed array.)  See (x,y) below for discussion of
+            positioning the PSF on the passed data array.
+
+            A *copy* of the passed data is stored, not the actual passed
+            data, so if you change elements of the array you passed
+            after making the OversampledImagePSF, it won't be reflected
+            inside the OversampledImagePSF.
+
+          oversample_factor: float, default 1.
+            There are this many pixels along one axis in data for one
+            pixel in the original image.  Doesn't have to be an integer
+            (e.g. if you used PSFex to find the PSF, it usually won't
+            be— though if you used PSFex to find the PSF, really we
+            should be writing a subclass to handle that!).
+
           enforce_odd: bool, default True
             Enforce the requirement that the data array have an odd length along each axis.
 
@@ -757,44 +876,27 @@ class OversampledImagePSF( PSF ):
             normalize to False.  Usually you don't want to change this,
             and you want to trust subclases to do the Right Thing.
 
+          _parent_class: bool, default False
+            Used internally, do not use.
+
         Returns
         -------
           object of type cls
 
         """
 
-        super().__init__( *args, **kwargs )
-        self._consumed_args.update( [ 'x', 'y', 'oversample_factor', 'data', 'enforce_odd', 'normalize' ] )
-        self._warn_unknown_kwargs( kwargs )
+        super().__init__( _parent_class=True, **kwargs )
+        self._consumed_args.update( [ 'oversample_factor', 'data', 'enforce_odd', 'normalize' ] )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
-        # TODO : implement enforce_odd
-        # TODO : enforce square
-
-        self._data = None
-        if data is not None:
-            if not isinstance( data, np.ndarray ) or ( len(data.shape) != 2 ) or ( data.shape[0] != data.shape[1] ):
-                raise TypeError( "data must be a square 2d numpy array" )
-            if enforce_odd and ( data.shape[0] % 2 != 1 ):
-                raise ValueError( "The length of each axis of data must be odd" )
-            if normalize:
-                data /= data.sum()
-            self._data = data
-
-        if ( x is None ) or ( y is None ):
+        if ( self._x is None ) or ( self._y is None ):
             raise ValueError( "Must supply both x and y" )
-        self._x = float( x )
-        self._y = float( y )
 
         self._oversamp = oversample_factor
+        self._enforce_odd = enforce_odd
+        self._normalize = normalize
+        self.oversampled_data = data
 
-
-    @property
-    def x( self ):
-        return self._x
-
-    @property
-    def y( self ):
-        return self._y
 
     @property
     def oversample_factor( self ):
@@ -803,6 +905,21 @@ class OversampledImagePSF( PSF ):
     @property
     def oversampled_data( self ):
         return self._data
+
+    @oversampled_data.setter
+    def oversampled_data( self, data ):
+        if data is not None:
+            data = np.copy( data )
+            if not isinstance( data, np.ndarray ) or ( len(data.shape) != 2 ) or ( data.shape[0] != data.shape[1] ):
+                raise TypeError( "data must be a square 2d numpy array" )
+            if self._enforce_odd and ( data.shape[0] % 2 != 1 ):
+                raise ValueError( "The length of each axis of data must be odd" )
+            if ( int(self._oversamp) == self._oversamp ) and ( data.shape[0] % self._oversamp != 0 ):
+                SNLogger.warning( f"oversample factor={self._oversamp} does not evenly divide "
+                                  f"into data size {data.shape[0]}.  This may not be a problem." )
+            if self._normalize:
+                data /= data.sum()
+            self._data = data
 
     @property
     def stamp_size( self ):
@@ -908,6 +1025,30 @@ class OversampledImagePSF( PSF ):
 
         return clip
 
+    def getImagePSF( self, imagesampled=True ):
+        """Return a photutils.psf.ImagePSF model.  See PSF.getImagePSF."""
+
+        # If self._x and self._y aren't integers, we have to do things
+        #   with the origin parameter of ImagePSF.  TODO, figure that out.
+        #   Once we've figured that out, we can remove the checks below
+        #   that self._x and self._y have no fractional part.
+        # However, we will always need to have integral oversampling,
+        #   as ImagePSF assumes that.
+        if ( not imagesampled ) and ( self._oversamp != 1. ):
+            if ( ( self._oversamp == np.floor( self._oversamp ) ) and
+                 ( self._x == np.floor( self._x ) ) and
+                 ( self._y == np.floor( self._y ) ) ):
+                # TODO, make sure we're normalizing this the way photutils expects
+                return photutils.psf.ImagePSF( self._data * self._oversamp**2,
+                                               x_0=self._x, y_0=self._y,
+                                               oversampling=int(self._oversamp) )
+            else:
+                SNLogger.warning( "You asked for an oversampled version of a photutils ImagePSF "
+                                  "from an OversampledImagePSF, but the parameters don't work "
+                                  "for that.  Giving you an image-smapled PSDF." )
+
+        return photutils.psf.ImagePSF( self.get_stamp(), x_0=self._x, y_0=self._y )
+
 
 class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
     """An OversampledImagePSF with a definfed serialization format.
@@ -942,17 +1083,19 @@ class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
 
     """
 
-    def __init__( self, *args, **kwargs ):
-        super().__init__( *args, **kwargs )
-        self._warn_unknown_kwargs( kwargs )
+    def __init__( self, _parent_class=False, **kwargs ):
+        """See OversampledImagePSF constructor docs."""
+        super().__init__( _parent_class=True, **kwargs )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class,  )
 
     def read( self, filepath ):
         y = yaml.safe_load( open( filepath ) )
         self._x = y['x0']
         self._y = y['y0']
         self._oversamp = y['oversamp']
-        self._data = np.frombuffer( base64.b64decode( y['data'] ), dtype=y['dtype'] )
-        self._data = self._data.reshape( ( y['shape0'], y['shape1'] ) )
+        data = np.frombuffer( base64.b64decode( y['data'] ), dtype=y['dtype'] )
+        data = data.reshape( ( y['shape0'], y['shape1'] ) )
+        self.oversampled_data = data
 
     def write( self, filepath ):
         out = { 'x0': float( self._x ),
@@ -975,19 +1118,25 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
 
     """
 
-    def __init__( self, band, sca, x, y, *args, **kwargs ):
-        super().__init__( x=x, y=y, *args, **kwargs )
-        self._consumed_args.update( [ 'band', 'sca', 'x',' y' ] )
-        self._warn_unknown_kwargs( kwargs )
+    def __init__( self, _parent_class=False, **kwargs ):
+        """Make an A25ePSF, reading the data from the standard location on disk."""
+
+        if any( i in kwargs for i in [ 'oversample_factor', 'data', 'enforce_odd' ] ):
+            # We depend on enforce_odd=True in the OversampledImage PSF.  We will set
+            #   oversample_factor and data when reading the standard A25ePSF file.
+            raise ValueError( "Cannot pass oversample_factor, data, or enforce_odd to A25ePSF constructor." )
+
+        super().__init__( _parent_class=True, **kwargs )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         cfg = Config.get()
         basepath = pathlib.Path( cfg.value( 'photometry.snappl.A25ePSF_path' ) )
 
         """
-        The array size is the size of one image (nx, ny).
-        The grid size is the number of times we divide that image
-        into smaller parts for the purposes of assigning the
-        correct ePSF (8 x 8 = 64 ePSFs).
+        The array size is the size of one image (nx, ny). The grid size
+        is the number of times we divide that image into smaller parts
+        for the purposes of assigning the correct ePSF (8 x 8 = 64
+        ePSFs).
 
         4088 px/8 = 511 px. So, int(arr_size/gridsize) is just a type
         conversion. In the future, we may have a class where these things
@@ -1000,8 +1149,8 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
         cutoutsize = int(arr_size/gridsize)
         grid_centers = np.linspace(0.5 * cutoutsize, arr_size - 0.5 * cutoutsize, gridsize)
 
-        dist_x = np.abs(grid_centers - x)
-        dist_y = np.abs(grid_centers - y)
+        dist_x = np.abs(grid_centers - self._x)
+        dist_y = np.abs(grid_centers - self._y)
 
         x_idx = np.argmin(dist_x)
         y_idx = np.argmin(dist_y)
@@ -1011,8 +1160,9 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
 
         min_mag = 19.0
         max_mag = 21.5
-        psfpath = ( basepath / band / str(sca) /
-                    f'{cutoutsize}_{x_cen:.1f}_{y_cen:.1f}_-_{min_mag}_{max_mag}_-_{band}_{sca}.psf' )
+        psfpath = ( basepath / self._band / str(self._sca) /
+                    f'{cutoutsize}_{x_cen:.1f}_{y_cen:.1f}'
+                    f'_-_{min_mag}_{max_mag}_-_{self._band}_{self._sca}.psf' )
 
         self.read(psfpath)
 
@@ -1032,15 +1182,14 @@ class ou24PSF_slow( PSF ):
 
     """
 
-    def __init__( self, pointing=None, sca=None, sed=None, config_file=None,
-                  size=201, include_photonOps=True, n_photons=1000000, **kwargs
+    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True, n_photons=1000000,
+                  _parent_class=False, **kwargs
                  ):
-        super().__init__( **kwargs )
-        self._consumed_args.update( [ 'pointing', 'sca', 'sed', 'config_file',
-                                      'size', 'include_photonOps', 'n_photons' ] )
-        self._warn_unknown_kwargs( kwargs )
+        super().__init__( _parent_class=True, **kwargs )
+        self._consumed_args.update( [ 'sed', 'config_file', 'size', 'include_photonOps', 'n_photons' ] )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
-        if ( pointing is None ) or ( sca is None ):
+        if ( self._pointing is None ) or ( self._sca is None ):
             raise ValueError( "Need a pointing and an sca to make an ou24PSF_slow" )
         if ( size % 2 == 0 ) or ( int(size) != size ):
             raise ValueError( "Size must be an odd integer." )
@@ -1058,10 +1207,10 @@ class ou24PSF_slow( PSF ):
         if config_file is None:
             config_file = Config.get().value( 'ou24.config_file' )
         self.config_file = config_file
-        self.pointing = pointing
-        self.sca = sca
         self.size = size
         self.sca_size = 4088
+        self._x = self.sca_size // 2 if self._x is None else self._x
+        self._y = self.sca_size // 2 if self._y is None else self._y
         self.include_photonOps = include_photonOps
         self.n_photons = n_photons
         self._stamps = {}
@@ -1095,8 +1244,8 @@ class ou24PSF_slow( PSF ):
         # If a position is not given, assume the middle of the SCA
         #   (within 1/2 pixel; by default, we want to make x and y
         #   centered on a pixel).
-        x = x if x is not None else float( self.sca_size // 2 )
-        y = y if y is not None else float( self.sca_size // 2 )
+        x = x if x is not None else float( self._x )
+        y = y if y is not None else float( self._y )
 
         xc = int( np.floor( x + 0.5 ) )
         yc = int( np.floor( y + 0.5 ) )
@@ -1114,7 +1263,7 @@ class ou24PSF_slow( PSF ):
 
 
         if (x, y, stampx, stampy) not in self._stamps:
-            rmutils = roman_utils( self.config_file, self.pointing, self.sca )
+            rmutils = roman_utils( self.config_file, self._pointing, self._sca )
             if seed is not None:
                 rmutils.rng = galsim.BaseDeviate( seed )
 
@@ -1126,10 +1275,10 @@ class ou24PSF_slow( PSF ):
             if input_wcs is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )
             elif isinstance(input_wcs, BaseWCS):
-                SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
+                SNLogger.warning( "Using user-supplied wcs for ou24PSF." )
                 self._wcs = input_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
             elif isinstance( input_wcs, galsim.BaseWCS ):
-                SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
+                SNLogger.warning( "Using user-supplied wcs for ou24PSF." )
                 self._wcs = input_wcs.local( image_pos = galsim.PositionD(x+1, y+1 ))
             else:
                 raise TypeError( f"wcs must be a galsim.BaseWCS, not a {type(input_wcs)}" )
@@ -1167,8 +1316,15 @@ class ou24PSF_slow( PSF ):
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
 class ou24PSF( ou24PSF_slow ):
-    def __init__( self, *args, **kwargs ):
-        super().__init__(*args, **kwargs)
+    """Wrap the roman_imsim PSFs, only more efficiently (we hoipe) than ou24PSF_slow.
+
+    TODO: document what is different, what is cached.
+
+    """
+
+    def __init__( self, _parent_class=False, **kwargs ):
+        super().__init__(_parent_class=True, **kwargs)
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
         self._psf = None
 
     def _init_psf_object( self, x0=None, y0=None, flux=1., input_wcs = None):
@@ -1194,7 +1350,7 @@ class ou24PSF( ou24PSF_slow ):
 
 
         """
-        self._rmutils = roman_utils(self.config_file, self.pointing, self.sca)
+        self._rmutils = roman_utils(self.config_file, self._pointing, self._sca)
         self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
         # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
         if input_wcs is None:
@@ -1222,7 +1378,7 @@ class ou24PSF( ou24PSF_slow ):
 
         Parameters
         ----------
-        wcs : BaseWCS or galsim.BaseWCS
+          wcs : BaseWCS or galsim.BaseWCS
             WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.
             An alternative WCS to use for the stamp.
 
@@ -1239,8 +1395,8 @@ class ou24PSF( ou24PSF_slow ):
         #   (within 1/2 pixel; by default, we want to make x and y
         #   centered on a pixel).
 
-        x = x if x is not None else float( self.sca_size // 2 )
-        y = y if y is not None else float( self.sca_size // 2 )
+        x = x if x is not None else float( self._x )
+        y = y if y is not None else float( self._y )
 
         xc = int( np.floor( x + 0.5 ) )
         yc = int( np.floor( y + 0.5 ) )
