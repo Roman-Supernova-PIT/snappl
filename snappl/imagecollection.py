@@ -136,10 +136,10 @@ class ImageCollection:
             Only include images from this filter
 
           exptime_min: float, default None
-            Only include images with at least this exptime.
+            Only include images with at least this exptime in seconds.
 
           exptime_max: float, default None
-            Only include images with at most this exptime.
+            Only include images with at most this exptime in seconds.
 
           sca: int
             Only include images from this sca.
