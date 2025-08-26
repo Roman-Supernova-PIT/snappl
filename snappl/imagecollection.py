@@ -64,7 +64,7 @@ class ImageCollection:
           band: str, default None
             Filter.
 
-          sca: str, default None
+          sca: int, default None
             SCA.
 
           base_path: str or pathlib.Path, default None

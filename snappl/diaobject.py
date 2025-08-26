@@ -12,7 +12,7 @@ class DiaObject:
     dec : dec in degrees (ICRS)
 
     mjd_discovery : when the object was first discovered; may be None if unknown (float MJD)
-    mjd_max : peak of the object's lightcurve; may be None if unknown (float MJD)
+    mjd_peak : peak of the object's lightcurve; may be None if unknown (float MJD)
 
     mjd_start : MJD when the lightcurve first exists.  Definition of this
                 is class-dependent; it may be when it was actively
@@ -32,7 +32,7 @@ class DiaObject:
 
     """
 
-    def __init__( self, id=None, ra=None, dec=None, mjd_discovery=None, mjd_max=None,
+    def __init__( self, id=None, ra=None, dec=None, mjd_discovery=None, mjd_peak=None,
                   mjd_start=None, mjd_end=None, _called_from_find_objects=False ):
         """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
         if not _called_from_find_objects:
@@ -41,7 +41,7 @@ class DiaObject:
         self.ra = ra
         self.dec = dec
         self.mjd_discovery = mjd_discovery
-        self.mjd_max = mjd_max
+        self.mjd_peak = mjd_peak
         self.mjd_start = mjd_start
         self.mjd_end = mjd_end
 
@@ -73,10 +73,10 @@ class DiaObject:
           radius: float, default 1.0
             Radius in arcseconds to search.  Ignored unless ra and dec are given.
 
-          mjd_max_min, mjd_max_max: float
-            Only return objects whose mjd_max is between these limits.
+          mjd_peak_min, mjd_peak_max: float
+            Only return objects whose mjd_peak is between these limits.
             Specify as MJD.  Will not return any objects with unknown
-            mjd_max.
+            mjd_peak.
 
           mjd_discovery_min, mjd_discovery_max: float
             Only return objects whose mjd_discovery is between these
@@ -150,8 +150,8 @@ class DiaObjectOU2024( DiaObject ):
                        ra=None,
                        dec=None,
                        radius=1.0,
-                       mjd_max_min=None,
-                       mjd_max_max=None,
+                       mjd_peak_min=None,
+                       mjd_peak_max=None,
                        mjd_discovery_min=None,
                        mjd_discovery_max=None,
                        mjd_start_min=None,
@@ -159,8 +159,8 @@ class DiaObjectOU2024( DiaObject ):
                        mjd_end_min=None,
                        mjd_end_max=None,
                       ):
-        if any( i is not None for i in [ mjd_max_min, mjd_max_max, mjd_discovery_min, mjd_discovery_max ] ):
-            raise NotImplementedError( "DiaObjectOU2024 doesn't support searching on mjd_max or mjd_discovery" )
+        if any( i is not None for i in [ mjd_peak_min, mjd_peak_max, mjd_discovery_min, mjd_discovery_max ] ):
+            raise NotImplementedError( "DiaObjectOU2024 doesn't support searching on mjd_peak or mjd_discovery" )
 
         params = {}
 
@@ -198,7 +198,7 @@ class DiaObjectOU2024( DiaObject ):
             diaobj = DiaObjectOU2024( id=objinfo['id'][i],
                                       ra=objinfo['ra'][i],
                                       dec=objinfo['dec'][i],
-                                      mjd_max=objinfo['peak_mjd'][i],
+                                      mjd_peak=objinfo['peak_mjd'][i],
                                       mjd_start=objinfo['start_mjd'][i],
                                       mjd_end=objinfo['end_mjd'][i],
                                       _called_from_find_objects=True

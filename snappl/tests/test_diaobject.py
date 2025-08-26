@@ -17,7 +17,7 @@ def test_find_ou2024_diaobject():
     assert obj.id == 20172782
     assert obj.ra == pytest.approx( 7.5510934, abs=1e-5 )
     assert obj.dec == pytest.approx( -44.8071811, abs=1e-5 )
-    assert obj.mjd_max == pytest.approx( 62476.508, abs=1e-3 )
+    assert obj.mjd_peak == pytest.approx( 62476.508, abs=1e-3 )
     assert obj.mjd_start == pytest.approx( 62450.0, abs=0.1 )
     assert obj.mjd_end == pytest.approx( 62881.0, abs=0.1 )
     assert obj.mjd_discovery is None
