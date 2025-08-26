@@ -4,6 +4,7 @@ import numpy as np
 import scipy
 
 from astropy.io import fits  # noqa: F401
+from photutils.psf import ImagePSF
 
 import snappl.psf
 from snappl.psf import PSF
@@ -93,6 +94,20 @@ def test_slow_get_stamp():
     cy, cx = scipy.ndimage.center_of_mass( stamp )
     assert cx == pytest.approx( 18.22, abs=0.02 )
     assert cy == pytest.approx( 22.42, abs=0.03 )
+
+
+def test_slow_get_imagepsf():
+    psfobj = PSF.get_psf_object( "ou24PSF", pointing=6, sca=17, size=41. )
+
+    imagepsf = psfobj.getImagePSF( imagesampled=False )
+    assert isinstance( imagepsf, ImagePSF )
+    # TODO: update this test if ou2024psf ever supports
+    #   getting the oversampled image
+    assert ( imagepsf.oversampling == np.array( [1, 1] ) ).all()
+
+    imagepsf = psfobj.getImagePSF()
+    assert isinstance( imagepsf, ImagePSF )
+    assert ( imagepsf.oversampling == np.array( [1, 1] ) ).all()
 
 
 # Continue this when ou24psf is more than a wrapper around ou24PSF_slow
@@ -224,6 +239,20 @@ def test_get_stamp():
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     assert cx == pytest.approx(18.22, abs=0.02)
     assert cy == pytest.approx(22.42, abs=0.03)
+
+
+def test_get_imagepsf():
+    psfobj = PSF.get_psf_object( "ou24PSF", pointing=6, sca=17, size=41. )
+
+    imagepsf = psfobj.getImagePSF( imagesampled=False )
+    assert isinstance( imagepsf, ImagePSF )
+    # TODO: update this test if ou2024psf ever supports
+    #   getting the oversampled image
+    assert ( imagepsf.oversampling == np.array( [1, 1] ) ).all()
+
+    imagepsf = psfobj.getImagePSF()
+    assert isinstance( imagepsf, ImagePSF )
+    assert ( imagepsf.oversampling == np.array( [1, 1] ) ).all()
 
 
 def test_set_wcs():
