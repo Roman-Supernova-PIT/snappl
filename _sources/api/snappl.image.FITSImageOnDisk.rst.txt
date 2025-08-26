@@ -1,0 +1,25 @@
+FITSImageOnDisk
+===============
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: FITSImageOnDisk
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~FITSImageOnDisk.get_data
+      ~FITSImageOnDisk.get_fits_header
+      ~FITSImageOnDisk.save_data
+      ~FITSImageOnDisk.set_header
+      ~FITSImageOnDisk.uncompressed_version
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_data
+   .. automethod:: get_fits_header
+   .. automethod:: save_data
+   .. automethod:: set_header
+   .. automethod:: uncompressed_version

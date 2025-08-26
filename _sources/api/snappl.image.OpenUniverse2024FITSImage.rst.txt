@@ -11,19 +11,17 @@ OpenUniverse2024FITSImage
    .. autosummary::
 
       ~OpenUniverse2024FITSImage.band
+      ~OpenUniverse2024FITSImage.exptime
       ~OpenUniverse2024FITSImage.mjd
-
-   .. rubric:: Methods Summary
-
-   .. autosummary::
-
-      ~OpenUniverse2024FITSImage.get_data
+      ~OpenUniverse2024FITSImage.pointing
+      ~OpenUniverse2024FITSImage.sca
+      ~OpenUniverse2024FITSImage.truthpath
 
    .. rubric:: Attributes Documentation
 
    .. autoattribute:: band
+   .. autoattribute:: exptime
    .. autoattribute:: mjd
-
-   .. rubric:: Methods Documentation
-
-   .. automethod:: get_data
+   .. autoattribute:: pointing
+   .. autoattribute:: sca
+   .. autoattribute:: truthpath

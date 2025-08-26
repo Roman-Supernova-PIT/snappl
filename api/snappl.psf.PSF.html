@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>PSF &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <title>PSF &#8212; roman_snpit_snappl 0.1.dev1+gf264c1a86 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../_static/documentation_options.js?v=936e9e91"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -102,18 +102,17 @@
 <h1>PSF<a class="headerlink" href="#psf" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.psf.PSF">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">PSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">called_from_get_psf_object</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#PSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.PSF" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">PSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_called_from_get_psf_object</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#PSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.PSF" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Wraps a PSF.  All roman snpit photometry code will ideally only use PSF methods defined in this base class.</p>
 <p>This is an abstract base class; it can do almost nothing itself.  In
 practice, you need to instantiate a subclass.  Do that by calling
 the class method PSF.get_psf_object.</p>
 <p>Don’t call this or the constructor of a subclass directly, call PSF.get_psf_object().</p>
-<p>See documentation on the various subclass constructors for the
-arguments to apss to get_psf_object and what they all mean.
-Different types of PSF need different arguments, and sometimes
-the same argument names will mean different things for different
-subclasses!</p>
+<p>See get_psf_object for parameter documentation.</p>
+<p>_called_from_get_psf_object is used internally and should not be
+used outside this module, unless you know what you’re doing and
+intentionally mean to subvert the system.</p>
 <p class="rubric">Attributes Summary</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
@@ -123,15 +122,24 @@ subclasses!</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.PSF.stamp_size" title="snappl.psf.PSF.stamp_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stamp_size</span></code></a></p></td>
 <td><p>The size of the one side of a PSF image stamp at image resolution.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.PSF.x" title="snappl.psf.PSF.x"><code class="xref py py-obj docutils literal notranslate"><span class="pre">x</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.PSF.y" title="snappl.psf.PSF.y"><code class="xref py py-obj docutils literal notranslate"><span class="pre">y</span></code></a></p></td>
+<td><p></p></td>
+</tr>
 </tbody>
 </table>
 <p class="rubric">Methods Summary</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.PSF.get_psf_object" title="snappl.psf.PSF.get_psf_object"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_psf_object</span></code></a>(psfclass, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.PSF.getImagePSF" title="snappl.psf.PSF.getImagePSF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getImagePSF</span></code></a>([imagesampled])</p></td>
+<td><p>Return a photutils.psf.ImagePSF model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.PSF.get_psf_object" title="snappl.psf.PSF.get_psf_object"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_psf_object</span></code></a>(psfclass[, x, y, band, ...])</p></td>
 <td><p>Return a PSF object whose type is specified by psfclass.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.PSF.get_stamp" title="snappl.psf.PSF.get_stamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stamp</span></code></a>([x, y, x0, y0, flux])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.PSF.get_stamp" title="snappl.psf.PSF.get_stamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stamp</span></code></a>([x, y, x0, y0, flux])</p></td>
 <td><p>Return a 2d numpy image of the PSF at the image resolution.</p></td>
 </tr>
 </tbody>
@@ -148,22 +156,90 @@ subclasses!</p>
 <dd><p>The size of the one side of a PSF image stamp at image resolution.  Is always odd.</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.psf.PSF.x">
+<span class="sig-name descname"><span class="pre">x</span></span><a class="headerlink" href="#snappl.psf.PSF.x" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.psf.PSF.y">
+<span class="sig-name descname"><span class="pre">y</span></span><a class="headerlink" href="#snappl.psf.PSF.y" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <p class="rubric">Methods Documentation</p>
 <dl class="py method">
+<dt class="sig sig-object py" id="snappl.psf.PSF.getImagePSF">
+<span class="sig-name descname"><span class="pre">getImagePSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imagesampled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#PSF.getImagePSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.PSF.getImagePSF" title="Link to this definition">¶</a></dt>
+<dd><p>Return a photutils.psf.ImagePSF model.</p>
+<p>This is useful if you want to do, e.g., PSF photometry with
+photutils.</p>
+<p>WARNING: at least with the photutilsImagePSF class, if you
+constructed it with peakx and peaky not at their defaults, then
+what you get back may not work as you expect.  (It’s most usual
+to just leave peakx and peaky at their defaults; if you’re not
+doing that, then be very careful calling getImagePSF.)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>imagesampled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default</em>) – By default, this getImagePSF a PSF model at image
+resolution.  Set imagesampled to False, and it might return
+an oversampled PSF model; this will be class- and
+object-dependent.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>photutils.psf.ImagePSF</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="snappl.psf.PSF.get_psf_object">
-<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_psf_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psfclass</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#PSF.get_psf_object"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.PSF.get_psf_object" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_psf_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psfclass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#PSF.get_psf_object"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.PSF.get_psf_object" title="Link to this definition">¶</a></dt>
 <dd><p>Return a PSF object whose type is specified by psfclass.</p>
-<p>SADNESS ALERT : currently the arguments you need to pass are
-different for different types of PSFs.  There may be no way
-around this, because they just all need different data.  To
-figure out what kwargs you need to pass to this function, look
-at the __init__ docstring for the class corresponding to the
-psfclass you’re passing.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>psfclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the class of the PSF to instantiate.</p></li>
-<li><p><strong>**kwargs</strong> (<em>further keyword arguments passed to object constructor</em>)</p></li>
+<li><p><strong>psfclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the class of PSF you want.  Current options are:
+* photutilsImagePSF – a wrapper (sort of) around photutils.psf.ImagePSF
+* OversampledImagePSF – a PSF defined by an image which may be oversampled relative to the host image
+* YamlSerialized_OversampledImagePSF – OversampledImagePSF with a defined save formatr
+* A25ePSF – YamlSearialized_OversampledImagePSF from Aldoroty et al. 2025
+* ou24PSF_slow – a PSF from galsim for OpenUniverse 2024
+* ou24PSF – a PSF from galsim for OpenUniverse 2024</p></li>
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – <p>The position on the host image that this is the PSF for.
+Usually you want these to have no fractional part (so
+x==floor(x) and y==floor(y)), meaning that you’ve evaluated
+the PSDF at the center of a pixel.  (If you have PFSs that
+vary significantly on <em>less than a pixel scale</em>, you have
+such big problems that you probably shouldn’t even be trying
+to do astronomy.)  Sometimes, but rarely. there is a use
+case for these values to have a on-zero fractional part.</p>
+<p>Will default to something sane.</p>
+<p>The exact definition of how this is used currently (sadly)
+depends a bit on the subclass.  See the subclass constructor
+documentation for more details.</p>
+</p></li>
+<li><p><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – <p>The position on the host image that this is the PSF for.
+Usually you want these to have no fractional part (so
+x==floor(x) and y==floor(y)), meaning that you’ve evaluated
+the PSDF at the center of a pixel.  (If you have PFSs that
+vary significantly on <em>less than a pixel scale</em>, you have
+such big problems that you probably shouldn’t even be trying
+to do astronomy.)  Sometimes, but rarely. there is a use
+case for these values to have a on-zero fractional part.</p>
+<p>Will default to something sane.</p>
+<p>The exact definition of how this is used currently (sadly)
+depends a bit on the subclass.  See the subclass constructor
+documentation for more details.</p>
+</p></li>
+<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The Roman band this is a PSF for.  (I.e. the band of the
+host image.)  Ignored by some subclasses.</p></li>
+<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>default None</em>) – Roman pointing.  Ignored by many subclasses.</p></li>
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>default None</em>) – Probably only relevant for the ou24PSF classes.</p></li>
+<li><p><strong>**kwargs</strong> (<em>further keyword arguments passed to object constructor</em>) – Specific subclasses may require or accept additional
+arguments.  They will be documented in the subclasses’s
+constructor.</p></li>
+<li><p><strong>psfclass</strong> – The name of the class of the PSF to instantiate.</p></li>
+<li><p><strong>**kwargs</strong></p></li>
 </ul>
 </dd>
 </dl>

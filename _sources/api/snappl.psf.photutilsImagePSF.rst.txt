@@ -13,13 +13,12 @@ photutilsImagePSF
       ~photutilsImagePSF.oversample_factor
       ~photutilsImagePSF.oversampled_data
       ~photutilsImagePSF.stamp_size
-      ~photutilsImagePSF.x
-      ~photutilsImagePSF.y
 
    .. rubric:: Methods Summary
 
    .. autosummary::
 
+      ~photutilsImagePSF.getImagePSF
       ~photutilsImagePSF.get_stamp
 
    .. rubric:: Attributes Documentation
@@ -27,9 +26,8 @@ photutilsImagePSF
    .. autoattribute:: oversample_factor
    .. autoattribute:: oversampled_data
    .. autoattribute:: stamp_size
-   .. autoattribute:: x
-   .. autoattribute:: y
 
    .. rubric:: Methods Documentation
 
+   .. automethod:: getImagePSF
    .. automethod:: get_stamp

@@ -1,7 +1,0 @@
-Exposure
-========
-
-.. currentmodule:: snappl.image
-
-.. autoclass:: Exposure
-   :show-inheritance:

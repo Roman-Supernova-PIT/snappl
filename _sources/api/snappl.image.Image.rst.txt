@@ -20,7 +20,7 @@ Image
       ~Image.mjd
       ~Image.name
       ~Image.noise
-      ~Image.path
+      ~Image.pointing
       ~Image.position_angle
       ~Image.sca
       ~Image.sky_level
@@ -30,11 +30,14 @@ Image
 
    .. autosummary::
 
+      ~Image.ap_phot
       ~Image.fraction_masked
       ~Image.free
       ~Image.get_cutout
       ~Image.get_data
       ~Image.get_wcs
+      ~Image.includes_radec
+      ~Image.psf_phot
 
    .. rubric:: Attributes Documentation
 
@@ -48,7 +51,7 @@ Image
    .. autoattribute:: mjd
    .. autoattribute:: name
    .. autoattribute:: noise
-   .. autoattribute:: path
+   .. autoattribute:: pointing
    .. autoattribute:: position_angle
    .. autoattribute:: sca
    .. autoattribute:: sky_level
@@ -56,8 +59,11 @@ Image
 
    .. rubric:: Methods Documentation
 
+   .. automethod:: ap_phot
    .. automethod:: fraction_masked
    .. automethod:: free
    .. automethod:: get_cutout
    .. automethod:: get_data
    .. automethod:: get_wcs
+   .. automethod:: includes_radec
+   .. automethod:: psf_phot

@@ -5,3 +5,13 @@ ManualFITSImage
 
 .. autoclass:: ManualFITSImage
    :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ManualFITSImage.get_fits_header
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_fits_header

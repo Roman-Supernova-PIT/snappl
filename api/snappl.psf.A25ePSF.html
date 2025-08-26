@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>A25ePSF &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <title>A25ePSF &#8212; roman_snpit_snappl 0.1.dev1+gf264c1a86 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../_static/documentation_options.js?v=936e9e91"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -102,120 +102,12 @@
 <h1>A25ePSF<a class="headerlink" href="#a25epsf" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.psf.A25ePSF">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">A25ePSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">band</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sca</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#A25ePSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.A25ePSF" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">A25ePSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_parent_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#A25ePSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.A25ePSF" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="snappl.psf.YamlSerialized_OversampledImagePSF.html#snappl.psf.YamlSerialized_OversampledImagePSF" title="snappl.psf.YamlSerialized_OversampledImagePSF"><code class="xref py py-class docutils literal notranslate"><span class="pre">YamlSerialized_OversampledImagePSF</span></code></a></p>
 <p>A YamlSerialaled_OversampledImagePSF using the Aldoroty 2025 paper PSF.</p>
 <p>This is just a wrapper aorund YamlSerializd_OversarmpledPSF that knows how to
 find the right PSFs for a given band and sca.</p>
-<p>Make an OversampledImagePSF.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>2d numpy array</em><em> or </em><em>None</em>) – The image data of the oversampled PSF.  If None, then this
-needs, somehow, to be set later.  (Usually that will be
-handled by something in a subclass of OversampledImagePSF;
-if you’re setting it manually, you’re probably doing
-something wrong.)  data.sum() should be equal to the
-fraction of the PSF flux captured within the boundaries of
-the data array.  (However, see “normalize” below.)  The
-array must be square, and unless enforce_odd is false, the
-length of one side must be an odd number.  Usually the peak
-of the PSF (assuming a symmetric PSF– if not, replace
-“peak” with “center” or “fiducial point” or however you
-think about it) will be centered on the center pixel fo the
-array.  ALWAYS the peak of the PSF must be centered within
-0.5 <em>non-oversampled</em> pixels of the center of the array.
-(That is, if the oversampling factor is 3, the peak of the
-PSF will be centered within 1.5 pixels of the center of the
-passed array.)  See (x,y) below for discussion of
-positioning the PSF on the passed data array.  WARNING : if
-you set normalize to True, the passed array will be
-modified!</p></li>
-<li><p><strong>oversample_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>default 1.</em>) – There are this many pixels along one axis in data for one
-pixel in the original image.  Doesn’t have to be an integer
-(e.g. if you used PSFex to find the PSF, it usually won’t
-be— though if you used PSFex to find the PSF, really we
-should be writing a subclass to handle that!).</p></li>
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – <p>Required.  Position on the source image where this PSF is
-evaluated.  Most of the time, but not always, you probably
-want x and y to be integer values.  (As in, not integer
-typed, but floats that satisfy x-floor(x)=0.)  These are
-also the defaults that get_stamp will use if x and y are not
-passed to get_stamp.</p>
-<p>If x and/or y have nonzero fractional parts, then the data
-array must be consistent.  First consider non-oversampled
-data.  Suppose you pass a 11×11 array with x=1022.5 and
-y=1023.25.  In this case, the peak of a perfectly symmetric
-PSF image on data would be at (4.5, 5.25).  (Not (5.5,
-5.25)!  If something’s at <em>exactly</em> .5, always round down
-here regardless of wheter the integer part is even or odd.)
-The center pixel and the one to the right of it should have
-the same brightness, and the pixel just below center should
-be dimmer than the pixel just above center.</p>
-<p>For oversampled psfs, the data array must be properly
-shifted to account for non-integral x and y.  The shift will
-be as in non-oversampled data, only multiplied by the
-oversampling factor.  So, in the same example, if you
-specify a peak of (4.5, 5.25), and you have an oversampling
-factor of 3, you should pass a 33×33 array with the peak of
-the PSF (assuming a symmetric PSF) at (14.5, 16.75).</p>
-<p>Note that for off-centered PSFs (meaning the PSF is not
-centered on the passed data array), the meaning of (x, y) in
-this constructor is <em>different</em> from the meaning of (x, y)
-in the photutilsImagePSF constructor.  Use intrinsically
-off-center PSFs at your own peril.  (Note that you can
-always <em>render</em> stamps with off-centered PSFs in
-get_stamp(), regardless of whether the PSF itself is
-intrinsically centered or not.)</p>
-</p></li>
-<li><p><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – <p>Required.  Position on the source image where this PSF is
-evaluated.  Most of the time, but not always, you probably
-want x and y to be integer values.  (As in, not integer
-typed, but floats that satisfy x-floor(x)=0.)  These are
-also the defaults that get_stamp will use if x and y are not
-passed to get_stamp.</p>
-<p>If x and/or y have nonzero fractional parts, then the data
-array must be consistent.  First consider non-oversampled
-data.  Suppose you pass a 11×11 array with x=1022.5 and
-y=1023.25.  In this case, the peak of a perfectly symmetric
-PSF image on data would be at (4.5, 5.25).  (Not (5.5,
-5.25)!  If something’s at <em>exactly</em> .5, always round down
-here regardless of wheter the integer part is even or odd.)
-The center pixel and the one to the right of it should have
-the same brightness, and the pixel just below center should
-be dimmer than the pixel just above center.</p>
-<p>For oversampled psfs, the data array must be properly
-shifted to account for non-integral x and y.  The shift will
-be as in non-oversampled data, only multiplied by the
-oversampling factor.  So, in the same example, if you
-specify a peak of (4.5, 5.25), and you have an oversampling
-factor of 3, you should pass a 33×33 array with the peak of
-the PSF (assuming a symmetric PSF) at (14.5, 16.75).</p>
-<p>Note that for off-centered PSFs (meaning the PSF is not
-centered on the passed data array), the meaning of (x, y) in
-this constructor is <em>different</em> from the meaning of (x, y)
-in the photutilsImagePSF constructor.  Use intrinsically
-off-center PSFs at your own peril.  (Note that you can
-always <em>render</em> stamps with off-centered PSFs in
-get_stamp(), regardless of whether the PSF itself is
-intrinsically centered or not.)</p>
-</p></li>
-<li><p><strong>enforce_odd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default True</em>) – Enforce the requirement that the data array have an odd length along each axis.</p></li>
-<li><p><strong>normalize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default False</em>) – Ignored if data is not None.  If True, then this constructor
-will make sure that data sums to 1 (modifying the passed
-data array in so doing!).  If you think that the data array
-is big enough that you’re effectively capturing 100% of the
-PSF flux, then you should set normalize to True.  If not,
-then you should make sure that the data array you pass sums
-to the fraction of the PSF flux that you’re passing, and set
-normalize to False.  Usually you don’t want to change this,
-and you want to trust subclases to do the Right Thing.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)">object</a> of type cls</p>
-</dd>
-</dl>
+<p>Make an A25ePSF, reading the data from the standard location on disk.</p>
 </dd></dl>
 
 </section>

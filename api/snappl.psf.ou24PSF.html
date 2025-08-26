@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>ou24PSF &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <title>ou24PSF &#8212; roman_snpit_snappl 0.1.dev1+gf264c1a86 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../_static/documentation_options.js?v=936e9e91"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -102,14 +102,15 @@
 <h1>ou24PSF<a class="headerlink" href="#ou24psf" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.psf.ou24PSF">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">ou24PSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#ou24PSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.ou24PSF" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">ou24PSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_parent_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#ou24PSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.ou24PSF" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="snappl.psf.ou24PSF_slow.html#snappl.psf.ou24PSF_slow" title="snappl.psf.ou24PSF_slow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ou24PSF_slow</span></code></a></p>
+<p>Wrap the roman_imsim PSFs, only more efficiently (we hoipe) than ou24PSF_slow.</p>
+<p>TODO: document what is different, what is cached.</p>
 <p>Don’t call this or the constructor of a subclass directly, call PSF.get_psf_object().</p>
-<p>See documentation on the various subclass constructors for the
-arguments to apss to get_psf_object and what they all mean.
-Different types of PSF need different arguments, and sometimes
-the same argument names will mean different things for different
-subclasses!</p>
+<p>See get_psf_object for parameter documentation.</p>
+<p>_called_from_get_psf_object is used internally and should not be
+used outside this module, unless you know what you’re doing and
+intentionally mean to subvert the system.</p>
 <p class="rubric">Methods Summary</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
@@ -126,17 +127,15 @@ subclasses!</p>
 Parameters are as in PSF.get_stamp, plus:</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>wcs</strong> (<a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS"><em>BaseWCS</em></a><em> or </em><em>galsim.BaseWCS</em>) – <dl class="simple">
-<dt>WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.</dt><dd><p>An alternative WCS to use for the stamp.</p>
-</dd>
-<dt>seed<span class="classifier">int</span></dt><dd><p>A random seed to pass to galsim.BaseDeviate for photonOps.
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wcs</strong> (<a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS"><em>BaseWCS</em></a><em> or </em><em>galsim.BaseWCS</em>) – WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.
+An alternative WCS to use for the stamp.</p></li>
+<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – A random seed to pass to galsim.BaseDeviate for photonOps.
 NOTE: this is not part of the base PSF interface (at least,
 as of yet), so don’t use it in production pipeline code.
 However, it will be useful in tests for purposes of testing
-reproducibility.</p>
-</dd>
-</dl>
-</p>
+reproducibility.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>

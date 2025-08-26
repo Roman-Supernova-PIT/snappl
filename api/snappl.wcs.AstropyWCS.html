@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>AstropyWCS &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <title>AstropyWCS &#8212; roman_snpit_snappl 0.1.dev1+gf264c1a86 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../_static/documentation_options.js?v=936e9e91"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -109,7 +109,7 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.wcs.AstropyWCS.from_header" title="snappl.wcs.AstropyWCS.from_header"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_header</span></code></a>(header)</p></td>
-<td><p>Create an object from a FITS header.</p></td>
+<td><p>Create an AstropyWCS from a FITS header.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.wcs.AstropyWCS.get_astropy_wcs" title="snappl.wcs.AstropyWCS.get_astropy_wcs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_astropy_wcs</span></code></a>([readonly])</p></td>
 <td><p>Return an astropy.wcs.WCS object, if possible.</p></td>
@@ -132,22 +132,23 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.wcs.AstropyWCS.from_header">
 <em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_header</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">header</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/wcs.html#AstropyWCS.from_header"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.wcs.AstropyWCS.from_header" title="Link to this definition">¶</a></dt>
-<dd><p>Create an object from a FITS header.</p>
-<p>May not be implemented for all subclasses.</p>
-<section id="parmaeters">
-<h2>Parmaeters<a class="headerlink" href="#parmaeters" title="Link to this heading">¶</a></h2>
-<blockquote>
-<div><dl class="simple">
-<dt>header<span class="classifier">astropi.io.fits.Header or dict</span></dt><dd><p>Something that an astropy WCS is able to create itself from.</p>
-</dd>
-</dl>
-</div></blockquote>
+<dd><p>Create an AstropyWCS from a FITS header.</p>
+<p>NOTE: if the header claims that the transformation type is “TAN”
+(i.e. CTYPE1 is “RA—TAN”), but the header also has a “PV1_0”
+keyword, this function will assume that the transformation is
+actually TPV.</p>
+<p>See:
+<a class="reference external" href="https://github.com/thomasvrussell/sfft/blob/45efa77452f020b8832a14c8682b87c5ffee4a93/sfft/utils/ReadWCS.py">https://github.com/thomasvrussell/sfft/blob/45efa77452f020b8832a14c8682b87c5ffee4a93/sfft/utils/ReadWCS.py</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">rtype<span class="colon">:</span></dt>
-<dd class="field-odd"><p>An object of the class this class method was called on.</p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>header</strong> (<em>duckish astropy.io.fits.header.Header</em>) – Something that behaves like a FITS header, in that it can be
+accessed as a dictionary, has the copy() method, and canbe
+fead to astropy.wcs.WCS().</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#snappl.wcs.AstropyWCS" title="snappl.wcs.AstropyWCS">AstropyWCS</a></p>
 </dd>
 </dl>
-</section>
 </dd></dl>
 
 <dl class="py method">
@@ -179,8 +180,8 @@ approximation of the true WCS represented by the object.</p>
 <dt class="sig sig-object py" id="snappl.wcs.AstropyWCS.pixel_to_world">
 <span class="sig-name descname"><span class="pre">pixel_to_world</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/wcs.html#AstropyWCS.pixel_to_world"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.wcs.AstropyWCS.pixel_to_world" title="Link to this definition">¶</a></dt>
 <dd><p>Go from (x, y) coordinates to ICRS (ra, dec)</p>
-<section id="id1">
-<h2>Parmaeters<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<section id="parmaeters">
+<h2>Parmaeters<a class="headerlink" href="#parmaeters" title="Link to this heading">¶</a></h2>
 <blockquote>
 <div><dl class="simple">
 <dt>x: float or sequence of float</dt><dd><p>The x position on the image.  The center of the lower-left

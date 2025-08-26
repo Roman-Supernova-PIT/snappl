@@ -12,11 +12,14 @@ PSF
 
       ~PSF.clip_size
       ~PSF.stamp_size
+      ~PSF.x
+      ~PSF.y
 
    .. rubric:: Methods Summary
 
    .. autosummary::
 
+      ~PSF.getImagePSF
       ~PSF.get_psf_object
       ~PSF.get_stamp
 
@@ -24,8 +27,11 @@ PSF
 
    .. autoattribute:: clip_size
    .. autoattribute:: stamp_size
+   .. autoattribute:: x
+   .. autoattribute:: y
 
    .. rubric:: Methods Documentation
 
+   .. automethod:: getImagePSF
    .. automethod:: get_psf_object
    .. automethod:: get_stamp

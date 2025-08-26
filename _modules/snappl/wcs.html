@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.wcs &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <title>snappl.wcs &#8212; roman_snpit_snappl 0.1.dev1+gf264c1a86 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../../_static/documentation_options.js?v=936e9e91"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -191,7 +191,7 @@
 
 <span class="sd">        May not be implemented for all subclasses.</span>
 
-<span class="sd">        Parmaeters</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">          header : astropi.io.fits.Header or dict</span>
 <span class="sd">             Something that an astropy WCS is able to create itself from.</span>
@@ -258,12 +258,44 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">apwcs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_wcs_is_astropy</span> <span class="o">=</span> <span class="kc">True</span>
 
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fix_wcs_tan_with_pv1_0</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">header</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;CTYPE1&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;RA---TAN&#39;</span> <span class="ow">and</span> <span class="s1">&#39;PV1_0&#39;</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span>
+            <span class="n">_hdr</span> <span class="o">=</span> <span class="n">header</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">_hdr</span><span class="p">[</span><span class="s1">&#39;CTYPE1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;RA---TPV&#39;</span>
+            <span class="n">_hdr</span><span class="p">[</span><span class="s1">&#39;CTYPE2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;DEC--TPV&#39;</span>
+            <span class="k">return</span> <span class="n">_hdr</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">header</span>
+
 <div class="viewcode-block" id="AstropyWCS.from_header">
 <a class="viewcode-back" href="../../api/snappl.wcs.AstropyWCS.html#snappl.wcs.AstropyWCS.from_header">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_header</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">header</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an AstropyWCS from a FITS header.</span>
+
+<span class="sd">        NOTE: if the header claims that the transformation type is &quot;TAN&quot;</span>
+<span class="sd">        (i.e. CTYPE1 is &quot;RA---TAN&quot;), but the header also has a &quot;PV1_0&quot;</span>
+<span class="sd">        keyword, this function will assume that the transformation is</span>
+<span class="sd">        actually TPV.</span>
+
+<span class="sd">        See:</span>
+<span class="sd">        https://github.com/thomasvrussell/sfft/blob/45efa77452f020b8832a14c8682b87c5ffee4a93/sfft/utils/ReadWCS.py</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          header: duckish astropy.io.fits.header.Header</span>
+<span class="sd">            Something that behaves like a FITS header, in that it can be</span>
+<span class="sd">            accessed as a dictionary, has the copy() method, and canbe</span>
+<span class="sd">            fead to astropy.wcs.WCS().</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          AstropyWCS</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">wcs</span> <span class="o">=</span> <span class="n">AstropyWCS</span><span class="p">()</span>
-        <span class="n">wcs</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">WCS</span><span class="p">(</span> <span class="n">header</span> <span class="p">)</span>
+        <span class="n">wcs</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">WCS</span><span class="p">(</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_fix_wcs_tan_with_pv1_0</span><span class="p">(</span> <span class="n">header</span> <span class="p">)</span> <span class="p">)</span>
         <span class="k">return</span> <span class="n">wcs</span></div>
 
 
@@ -332,8 +364,22 @@
 <a class="viewcode-back" href="../../api/snappl.wcs.GalsimWCS.html#snappl.wcs.GalsimWCS.from_header">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_header</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">header</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a GalsimWCS from a FITS header.</span>
+
+<span class="sd">        Does TAN-TPV conversion the same as AstropyWCS.from_header.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          header: astropy.io.fits.header.Header</span>
+<span class="sd">            See AstropyWCS.from_header</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          GalsimWCS</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">wcs</span> <span class="o">=</span> <span class="n">GalsimWCS</span><span class="p">()</span>
-        <span class="n">wcs</span><span class="o">.</span><span class="n">_gsimwcs</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">AstropyWCS</span><span class="p">(</span> <span class="n">header</span><span class="o">=</span><span class="n">header</span> <span class="p">)</span>
+        <span class="n">wcs</span><span class="o">.</span><span class="n">_gsimwcs</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">AstropyWCS</span><span class="p">(</span> <span class="n">header</span><span class="o">=</span><span class="n">AstropyWCS</span><span class="o">.</span><span class="n">_fix_wcs_tan_with_pv1_0</span><span class="p">(</span> <span class="n">header</span> <span class="p">)</span> <span class="p">)</span>
         <span class="k">return</span> <span class="n">wcs</span></div>
 
 

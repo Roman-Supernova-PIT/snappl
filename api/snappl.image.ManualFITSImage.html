@@ -5,18 +5,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>ManualFITSImage &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <title>ManualFITSImage &#8212; roman_snpit_snappl 0.1.dev1+gf264c1a86 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../_static/documentation_options.js?v=936e9e91"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="RomanDatamodelImage" href="snappl.image.RomanDatamodelImage.html" />
-    <link rel="prev" title="OpenUniverse2024FITSImage" href="snappl.image.OpenUniverse2024FITSImage.html" />
+    <link rel="next" title="FITSImageOnDisk" href="snappl.image.FITSImageOnDisk.html" />
+    <link rel="prev" title="FITSImage" href="snappl.image.FITSImage.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -59,8 +59,8 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="../api.html">snappl API</a><ul>
-      <li>Previous: <a href="snappl.image.OpenUniverse2024FITSImage.html" title="previous chapter">OpenUniverse2024FITSImage</a></li>
-      <li>Next: <a href="snappl.image.RomanDatamodelImage.html" title="next chapter">RomanDatamodelImage</a></li>
+      <li>Previous: <a href="snappl.image.FITSImage.html" title="previous chapter">FITSImage</a></li>
+      <li>Next: <a href="snappl.image.FITSImageOnDisk.html" title="next chapter">FITSImageOnDisk</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -85,10 +85,10 @@
     <ul>
         <li>
           &larr;
-          <a href="snappl.image.OpenUniverse2024FITSImage.html" title="Previous document">OpenUniverse2024FITSImage</a>
+          <a href="snappl.image.FITSImage.html" title="Previous document">FITSImage</a>
         </li>
         <li>
-          <a href="snappl.image.RomanDatamodelImage.html" title="Next document">RomanDatamodelImage</a>
+          <a href="snappl.image.FITSImageOnDisk.html" title="Next document">FITSImageOnDisk</a>
           &rarr;
         </li>
     </ul>
@@ -120,16 +120,40 @@ Image.get_data(), and manage the data object lifetime yourself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Path to image file, or otherwise some kind of indentifier
-that allows the class to find the image.</p></li>
-<li><p><strong>exposure</strong> (<a class="reference internal" href="snappl.image.Exposure.html#snappl.image.Exposure" title="snappl.image.Exposure"><em>Exposure</em></a><em> (or </em><em>instance</em><em> of </em><em>Exposure subclass</em><em>)</em>) – The exposure this image is associated with, or None if it’s
-not associated with an Exposure (or youdon’t care)</p></li>
-<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – The Sensor Chip Assembly that would be called the
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – <p>Path to image file, or otherwise some kind of indentifier
+that allows the object to find the image.  Exactly what
+this needs to be is subclass-dependent, but it is usually
+a full absolute path on disk.</p>
+<p>If you don’t know the path, but only know (say) the
+pointing, band, and sca of an image, then either use the
+get_image() method of an appropriate ImageCollection instead
+of instantiating an Image directly, or use the
+get_image_path() method of an appropriate ImageCollection.</p>
+</p></li>
+<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em>) – The exposure this image is associated with.  If None, then
+the image will try to figure out the pointing from the path,
+if the specific Image subclass is able to do that.</p></li>
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>default None</em>) – The Sensor Chip Assembly that would be called the
 chip number for any other telescope but is called SCA for
 Roman.</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.ManualFITSImage.get_fits_header" title="snappl.image.ManualFITSImage.get_fits_header"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_fits_header</span></code></a>()</p></td>
+<td><p>Get the header of the image.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.image.ManualFITSImage.get_fits_header">
+<span class="sig-name descname"><span class="pre">get_fits_header</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#ManualFITSImage.get_fits_header"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.ManualFITSImage.get_fits_header" title="Link to this definition">¶</a></dt>
+<dd><p>Get the header of the image.</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -142,10 +166,10 @@ Roman.</p></li>
     <ul>
         <li>
           &larr;
-          <a href="snappl.image.OpenUniverse2024FITSImage.html" title="Previous document">OpenUniverse2024FITSImage</a>
+          <a href="snappl.image.FITSImage.html" title="Previous document">FITSImage</a>
         </li>
         <li>
-          <a href="snappl.image.RomanDatamodelImage.html" title="Next document">RomanDatamodelImage</a>
+          <a href="snappl.image.FITSImageOnDisk.html" title="Next document">FITSImageOnDisk</a>
           &rarr;
         </li>
     </ul>

@@ -5,17 +5,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>FITSImage &#8212; roman_snpit_snappl 0.1.dev1+g983936208 documentation</title>
+    <title>FITSImage &#8212; roman_snpit_snappl 0.1.dev1+gf264c1a86 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=6a448647"></script>
+    <script src="../_static/documentation_options.js?v=936e9e91"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="OpenUniverse2024FITSImage" href="snappl.image.OpenUniverse2024FITSImage.html" />
+    <link rel="next" title="ManualFITSImage" href="snappl.image.ManualFITSImage.html" />
     <link rel="prev" title="Numpy2DImage" href="snappl.image.Numpy2DImage.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -60,7 +60,7 @@
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="../api.html">snappl API</a><ul>
       <li>Previous: <a href="snappl.image.Numpy2DImage.html" title="previous chapter">Numpy2DImage</a></li>
-      <li>Next: <a href="snappl.image.OpenUniverse2024FITSImage.html" title="next chapter">OpenUniverse2024FITSImage</a></li>
+      <li>Next: <a href="snappl.image.ManualFITSImage.html" title="next chapter">ManualFITSImage</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -88,7 +88,7 @@
           <a href="snappl.image.Numpy2DImage.html" title="Previous document">Numpy2DImage</a>
         </li>
         <li>
-          <a href="snappl.image.OpenUniverse2024FITSImage.html" title="Next document">OpenUniverse2024FITSImage</a>
+          <a href="snappl.image.ManualFITSImage.html" title="Next document">ManualFITSImage</a>
           &rarr;
         </li>
     </ul>
@@ -121,11 +121,20 @@ Image.get_data(), and manage the data object lifetime yourself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Path to image file, or otherwise some kind of indentifier
-that allows the class to find the image.</p></li>
-<li><p><strong>exposure</strong> (<a class="reference internal" href="snappl.image.Exposure.html#snappl.image.Exposure" title="snappl.image.Exposure"><em>Exposure</em></a><em> (or </em><em>instance</em><em> of </em><em>Exposure subclass</em><em>)</em>) – The exposure this image is associated with, or None if it’s
-not associated with an Exposure (or youdon’t care)</p></li>
-<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – The Sensor Chip Assembly that would be called the
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – <p>Path to image file, or otherwise some kind of indentifier
+that allows the object to find the image.  Exactly what
+this needs to be is subclass-dependent, but it is usually
+a full absolute path on disk.</p>
+<p>If you don’t know the path, but only know (say) the
+pointing, band, and sca of an image, then either use the
+get_image() method of an appropriate ImageCollection instead
+of instantiating an Image directly, or use the
+get_image_path() method of an appropriate ImageCollection.</p>
+</p></li>
+<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em>) – The exposure this image is associated with.  If None, then
+the image will try to figure out the pointing from the path,
+if the specific Image subclass is able to do that.</p></li>
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>default None</em>) – The Sensor Chip Assembly that would be called the
 chip number for any other telescope but is called SCA for
 Roman.</p></li>
 </ul>
@@ -134,10 +143,7 @@ Roman.</p></li>
 <p class="rubric">Attributes Summary</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImage.coord_center" title="snappl.image.FITSImage.coord_center"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coord_center</span></code></a></p></td>
-<td><p>[ RA and Dec ] at the center of the image.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImage.image_shape" title="snappl.image.FITSImage.image_shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">image_shape</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImage.image_shape" title="snappl.image.FITSImage.image_shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">image_shape</span></code></a></p></td>
 <td><p>(ny, nx) shape of image</p></td>
 </tr>
 </tbody>
@@ -151,21 +157,18 @@ Roman.</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_data" title="snappl.image.FITSImage.get_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_data</span></code></a>([which])</p></td>
 <td><p>Read the data from disk and return one or more 2d numpy arrays of data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_ra_dec_cutout" title="snappl.image.FITSImage.get_ra_dec_cutout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ra_dec_cutout</span></code></a>(ra, dec, xsize[, ysize])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_fits_header" title="snappl.image.FITSImage.get_fits_header"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_fits_header</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_ra_dec_cutout" title="snappl.image.FITSImage.get_ra_dec_cutout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ra_dec_cutout</span></code></a>(ra, dec, xsize[, ysize])</p></td>
 <td><p>Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_wcs" title="snappl.image.FITSImage.get_wcs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_wcs</span></code></a>([wcsclass])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_wcs" title="snappl.image.FITSImage.get_wcs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_wcs</span></code></a>([wcsclass])</p></td>
 <td><p>Get image WCS.</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Attributes Documentation</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="snappl.image.FITSImage.coord_center">
-<span class="sig-name descname"><span class="pre">coord_center</span></span><a class="headerlink" href="#snappl.image.FITSImage.coord_center" title="Link to this definition">¶</a></dt>
-<dd><p>[ RA and Dec ] at the center of the image.</p>
-</dd></dl>
-
 <dl class="py attribute">
 <dt class="sig sig-object py" id="snappl.image.FITSImage.image_shape">
 <span class="sig-name descname"><span class="pre">image_shape</span></span><a class="headerlink" href="#snappl.image.FITSImage.image_shape" title="Link to this definition">¶</a></dt>
@@ -241,6 +244,11 @@ somewhere.  This does mean it’s read from disk every time.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="snappl.image.FITSImage.get_fits_header">
+<span class="sig-name descname"><span class="pre">get_fits_header</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImage.get_fits_header"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImage.get_fits_header" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="snappl.image.FITSImage.get_ra_dec_cutout">
 <span class="sig-name descname"><span class="pre">get_ra_dec_cutout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ra</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xsize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ysize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImage.get_ra_dec_cutout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImage.get_ra_dec_cutout" title="Link to this definition">¶</a></dt>
 <dd><p>Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.</p>
@@ -295,7 +303,7 @@ all types of images are able to return all types of wcses.</p>
           <a href="snappl.image.Numpy2DImage.html" title="Previous document">Numpy2DImage</a>
         </li>
         <li>
-          <a href="snappl.image.OpenUniverse2024FITSImage.html" title="Next document">OpenUniverse2024FITSImage</a>
+          <a href="snappl.image.ManualFITSImage.html" title="Next document">ManualFITSImage</a>
           &rarr;
         </li>
     </ul>
