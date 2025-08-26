@@ -685,7 +685,7 @@ class FITSImage( Numpy2DImage ):
 # feed it the data.
 
 class ManualFITSImage(FITSImage):
-    def __init__(self, header, data, noise=None, flags=None, path = None, exposure = None, sca = None, *args, **kwargs):
+    def __init__(self, header, data=None, noise=None, flags=None, path = None, exposure = None, sca = None, *args, **kwargs):
 
         self._data = data
         self._noise = noise
