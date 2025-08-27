@@ -1,0 +1,1 @@
+Small fix to manual fits images to make ra dec cutout work
