@@ -207,6 +207,12 @@ class Image:
         """MJD of the start of the image (defined how? TAI?)"""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement mjd" )
 
+    @mjd.setter
+    def mjd( self, val ):
+        # We need an MJD setter so that ImageCollection can set the MJD when fetching the images, much faster than
+        # reading the header each time!
+        self._mjd = val
+
     @property
     def position_angle( self ):
         """Position angle in degrees east of north (or what)?"""
@@ -686,7 +692,7 @@ class FITSImage( Numpy2DImage ):
 
 class ManualFITSImage(FITSImage):
     def __init__(self, header, data=None, noise=None, flags=None,
-                 path = None, exposure = None, sca = None, *args, **kwargs):
+                 path=None, exposure=None, sca=None, *args, **kwargs):
 
         self._data = data
         self._noise = noise
@@ -919,8 +925,19 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
         TODO : is this start-time, mid-time, or end-time?
 
         """
-        header = self.get_fits_header()
-        return float( header['MJD-OBS'] )
+        if self._mjd is None:
+            header = self.get_fits_header()
+            return float( header['MJD-OBS'] )
+        else:
+            return self._mjd
+
+    @mjd.setter
+    def mjd( self, val ):
+        # We need an MJD setter so that ImageCollection can set the MJD when fetching the images, much faster than
+        # reading the header each time!
+        self._mjd = val
+
+
 
     @property
     def exptime( self ):

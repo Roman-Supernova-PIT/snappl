@@ -240,12 +240,15 @@ class ImageCollectionOU2024:
         if exptime_max is not None:
             params['exptime_max'] = float(exptime_max)
 
-        res = retry_post( "https://roman-desc-simdex.lbl.gov/findromanimages", json=params )
+        res = retry_post( "https://roman-desc-simdex.lbl.gov/findromanimages", json=params ).json()
 
         images = []
         for i in range( len(res['pointing']) ):
             path = self.get_image_path( res['pointing'][i], res['filter'][i], res['sca'][i] )
-            images.append( OpenUniverse2024FITSImage( path, None, res['sca'][i] ) )
+            image = OpenUniverse2024FITSImage(path, None, res["sca"][i])
+            image.mjd = res['mjd'][i]
+            images.append( image )
+
 
         return images
 
