@@ -638,6 +638,9 @@ class FITSImage( Numpy2DImage ):
         apwcs = None if wcs is None else wcs._wcs
 
         # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
+        if "mode" not in kwargs:
+            kwargs['mode'] = 'strict'
+
         astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, **kwargs)
         astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), wcs=apwcs, **kwargs)
         # Because flags are integer, we can't use the same fill_value as the default.
