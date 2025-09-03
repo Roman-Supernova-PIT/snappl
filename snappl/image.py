@@ -594,7 +594,7 @@ class FITSImage( Numpy2DImage ):
             else:
                 raise RuntimeError("get_data called with which='flags', but flags are not set.")
 
-    def get_cutout(self, x, y, xsize, ysize=None):
+    def get_cutout(self, x, y, xsize, ysize=None, **kwargs):
         """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
 
         This implementation (in FITSImage) assumes that the image WCS is an AstropyWCS.
@@ -638,9 +638,12 @@ class FITSImage( Numpy2DImage ):
         apwcs = None if wcs is None else wcs._wcs
 
         # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
-        astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), mode='strict', wcs=apwcs)
-        astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), mode='strict', wcs=apwcs)
-        astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), mode='strict', wcs=apwcs)
+        astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, **kwargs)
+        astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), wcs=apwcs, **kwargs)
+        # Because flags are integer, we can't use the same fill_value as the default.
+        # Per the slack channel, it seemed 1 will be used for bad pixels.
+        flag_cutout_mode = 'strict' if 'mode' not in kwargs else kwargs['mode']
+        astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=flag_cutout_mode, fill_value=1)
 
         snappl_cutout = self.__class__(self.path)
         snappl_cutout._data = astropy_cutout.data
@@ -651,7 +654,7 @@ class FITSImage( Numpy2DImage ):
 
         return snappl_cutout
 
-    def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None):
+    def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, **kwargs):
         """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
 
         Parameters
@@ -675,7 +678,7 @@ class FITSImage( Numpy2DImage ):
         x, y = wcs.world_to_pixel( ra, dec )
         x = int( np.floor( x + 0.5 ) )
         y = int( np.floor( y + 0.5 ) )
-        return self.get_cutout( x, y, xsize, ysize )
+        return self.get_cutout( x, y, xsize, ysize, **kwargs )
 
 
 # ======================================================================
