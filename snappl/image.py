@@ -927,9 +927,8 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
         """
         if self._mjd is None:
             header = self.get_fits_header()
-            return float( header['MJD-OBS'] )
-        else:
-            return self._mjd
+            self.mjd =  float( header['MJD-OBS'] )
+        return self._mjd
 
     @mjd.setter
     def mjd( self, val ):
