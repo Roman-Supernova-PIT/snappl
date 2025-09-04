@@ -282,13 +282,60 @@ class Image:
         """Set self._zeropoint; see "zeropoint" property above."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_zeropoint" )
 
-    def get_cutout(self, ra, dec, size):
+    def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode="strict", fill_value=np.nan):
+        """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
 
-        """Make a cutout of the image at the given RA and DEC.
+        Parameters
+        ----------
+        ra : float
+            RA coordinate of the center of the cutout, in degrees.
+        dec : float
+            DEC coordinate of the center of the cutout, in degrees.
+        xsize : int
+            Width of the cutout in pixels.
+        ysize : int
+            Height of the cutout in pixels. If None, set to xsize.
+        mode : str, default 'strict'
+            Passed to astropy.nddata.Cutout2D.  See its documentation for details. Essentially,
+            "strict" does not allow for partial overlap, "partial" will fill in non-overlapping pixels with fill_value.
+        fill_value : float, default np.nan
+            Passed to astropy.nddata.Cutout2D.  Fill value for pixels that are outside the original
+            image when mode='partial'.
 
         Returns
         -------
-          snappl.image.Image
+        cutout : snappl.image.Image
+            A new snappl image object that is a cutout of the original image.
+        """
+    raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_ra_dec_cutout" )
+
+    def get_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
+
+        """Make a cutout of the image at the given RA and DEC.
+        This implementation assumes that the image WCS is an AstropyWCS.
+
+        Parameters
+        ----------
+        x : int
+            x pixel coordinate of the center of the cutout.
+        y : int
+            y pixel coordinate of the center of the cutout.
+        xsize : int
+            Width of the cutout in pixels.
+        ysize : int
+            Height of the cutout in pixels. If None, set to xsize.
+        mode : str, default 'strict'
+            Passed to astropy.nddata.Cutout2D.  See its documentation for details. Essentially,
+            "strict" does not allow for partial overlap, "partial" will fill in non-overlapping pixels with fill_value.
+        fill_value : float, default np.nan
+            Passed to astropy.nddata.Cutout2D.  Fill value for pixels that are outside the original
+            image when mode='partial'.
+
+        Returns
+        -------
+        cutout : snappl.image.Image
+            A new snappl image object that is a cutout of the original image.
+
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_cutout" )
 
@@ -594,7 +641,7 @@ class FITSImage( Numpy2DImage ):
             else:
                 raise RuntimeError("get_data called with which='flags', but flags are not set.")
 
-    def get_cutout(self, x, y, xsize, ysize=None, **kwargs):
+    def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan):
         """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
 
         This implementation (in FITSImage) assumes that the image WCS is an AstropyWCS.
@@ -609,6 +656,12 @@ class FITSImage( Numpy2DImage ):
             Width of the cutout in pixels.
         ysize : int
             Height of the cutout in pixels. If None, set to xsize.
+        mode: str, default 'strict'
+            Passed to astropy.nddata.Cutout2D.  See its documentation for details. Essentially,
+            "strict" does not allow for partial overlap, "partial" will fill in non-overlapping pixels with fill_value.
+        fill_value: float, default np.nan
+            Passed to astropy.nddata.Cutout2D.  Fill value for pixels that are outside the original 
+            image when mode='partial'.
 
         Returns
         -------
@@ -638,15 +691,13 @@ class FITSImage( Numpy2DImage ):
         apwcs = None if wcs is None else wcs._wcs
 
         # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
-        if "mode" not in kwargs:
-            kwargs['mode'] = 'strict'
 
-        astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, **kwargs)
-        astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), wcs=apwcs, **kwargs)
+        astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
+        astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
         # Because flags are integer, we can't use the same fill_value as the default.
         # Per the slack channel, it seemed 1 will be used for bad pixels.
-        flag_cutout_mode = 'strict' if 'mode' not in kwargs else kwargs['mode']
-        astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=flag_cutout_mode, fill_value=1)
+        # https://github.com/spacetelescope/roman_datamodels/blob/main/src/roman_datamodels/dqflags.py
+        astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=1)
 
         snappl_cutout = self.__class__(self.path)
         snappl_cutout._data = astropy_cutout.data
@@ -657,7 +708,7 @@ class FITSImage( Numpy2DImage ):
 
         return snappl_cutout
 
-    def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, **kwargs):
+    def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
         """Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.
 
         Parameters
@@ -670,6 +721,12 @@ class FITSImage( Numpy2DImage ):
             Width of the cutout in pixels.
         ysize : int
             Height of the cutout in pixels. If None, set to xsize.
+        mode : str, default 'strict'
+            Passed to astropy.nddata.Cutout2D.  See its documentation for details. Essentially,
+            "strict" does not allow for partial overlap, "partial" will fill in non-overlapping pixels with fill_value.
+        fill_value : float, default np.nan
+            Passed to astropy.nddata.Cutout2D.  Fill value for pixels that are outside the original
+            image when mode='partial'.
 
         Returns
         -------
@@ -681,7 +738,7 @@ class FITSImage( Numpy2DImage ):
         x, y = wcs.world_to_pixel( ra, dec )
         x = int( np.floor( x + 0.5 ) )
         y = int( np.floor( y + 0.5 ) )
-        return self.get_cutout( x, y, xsize, ysize, **kwargs )
+        return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
 
 
 # ======================================================================
