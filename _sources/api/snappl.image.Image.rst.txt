@@ -35,6 +35,7 @@ Image
       ~Image.free
       ~Image.get_cutout
       ~Image.get_data
+      ~Image.get_ra_dec_cutout
       ~Image.get_wcs
       ~Image.includes_radec
       ~Image.psf_phot
@@ -64,6 +65,7 @@ Image
    .. automethod:: free
    .. automethod:: get_cutout
    .. automethod:: get_data
+   .. automethod:: get_ra_dec_cutout
    .. automethod:: get_wcs
    .. automethod:: includes_radec
    .. automethod:: psf_phot
