@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+g4b7a8be4a documentation</title>
+    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+gb17d1c2bc documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=5111fa00"></script>
+    <script src="../../_static/documentation_options.js?v=c0a444e1"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -194,6 +194,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">path</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="o">=</span> <span class="n">pointing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="o">=</span> <span class="n">sca</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mjd</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="kc">None</span>      <span class="c1"># a BaseWCS object (in wcs.py)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_is_cutout</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_zeropoint</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1119,7 +1120,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mjd</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fits_header</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span> <span class="o">=</span>  <span class="nb">float</span><span class="p">(</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;MJD-OBS&#39;</span><span class="p">]</span> <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_mjd</span> <span class="o">=</span>  <span class="nb">float</span><span class="p">(</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;MJD-OBS&#39;</span><span class="p">]</span> <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mjd</span>
 
     <span class="nd">@mjd</span><span class="o">.</span><span class="n">setter</span>
@@ -1127,8 +1128,6 @@
         <span class="c1"># We need an MJD setter so that ImageCollection can set the MJD when fetching the images, much faster than</span>
         <span class="c1"># reading the header each time!</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mjd</span> <span class="o">=</span> <span class="n">val</span>
-
-
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">exptime</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
