@@ -61,6 +61,16 @@ def test_fits_get_cutout( ou2024image_module ):
     with pytest.raises( astropy.nddata.utils.NoOverlapError ):
         _ = image.get_cutout( 2048, 4200, 21 )
 
+    # Repeat the above but now with mode='partial'
+    cutout = image.get_cutout( 5, 2048, 21, mode='partial', fill_value=np.nan )
+    np.testing.assert_equal( cutout._data[:, 0:5], np.nan )
+
+
+    cutout2 = image.get_cutout( 2048, 4085, 21, mode='partial', fill_value=np.nan)
+    np.testing.assert_equal( cutout2._data[-8:, :], np.nan )
+    with pytest.raises( astropy.nddata.utils.NoOverlapError ):
+        _ = image.get_cutout( 2048, 4200, 21, mode='partial', fill_value=np.nan)
+
 
 def test_fits_get_ra_dec_cutout( ou2024image_module ):
     image = ou2024image_module
@@ -87,6 +97,11 @@ def test_fits_get_ra_dec_cutout( ou2024image_module ):
     with pytest.raises(astropy.nddata.utils.PartialOverlapError):
         ra, dec = 7.6186202,-44.8483766
         cutout = image.get_ra_dec_cutout(ra, dec, 55)
+
+    # Now try with mode='partial'
+    cutout = image.get_ra_dec_cutout(ra, dec, 55, mode='partial', fill_value=np.nan)
+    np.testing.assert_equal(np.sum(np.isnan(cutout.data)), 1485)
+
 
 
 def test_fits_set_data( fitsimage_module ):
