@@ -1,0 +1,1 @@
+Fix mjd getter for OpenUniverse2024FITSImage
