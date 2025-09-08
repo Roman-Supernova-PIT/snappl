@@ -104,6 +104,7 @@ class Image:
         self.path = pathlib.Path( path )
         self._pointing = pointing
         self._sca = sca
+        self._mjd = None
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
         self._zeropoint = None
@@ -970,7 +971,7 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
         """
         if self._mjd is None:
             header = self.get_fits_header()
-            self.mjd =  float( header['MJD-OBS'] )
+            self._mjd =  float( header['MJD-OBS'] )
         return self._mjd
 
     @mjd.setter
@@ -978,8 +979,6 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
         # We need an MJD setter so that ImageCollection can set the MJD when fetching the images, much faster than
         # reading the header each time!
         self._mjd = val
-
-
 
     @property
     def exptime( self ):

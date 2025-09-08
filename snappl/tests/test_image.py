@@ -333,6 +333,10 @@ def test_ou2024_band( ou2024image_module ):
     assert ou2024image_module.band == 'Y106'
 
 
+def test_ou2024_mjd( ou2024image_module ):
+    assert ou2024image_module.mjd == pytest.approx( 62170.424, abs=1e-3 )
+
+
 def test_ou2024_get_fits_header( ou2024image, ou2024image_module ):
     assert isinstance( ou2024image_module._header, astropy.io.fits.header.Header )
     assert ou2024image_module._header == ou2024image_module.get_fits_header()

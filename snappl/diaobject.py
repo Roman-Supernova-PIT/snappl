@@ -228,4 +228,4 @@ class DiaObjectManual( DiaObject ):
         if any( ( i not in kwargs ) or ( kwargs[i] is None ) for i in ('id', 'ra', 'dec') ):
             raise ValueError( "finding a manual DiaObject requires all of id, ra, and dec" )
 
-        return [ DiaObjectManual( _called_from_find_objects=True, **kwargs ) ]
+        return [DiaObjectManual( _called_from_find_objects=True, ra=kwargs["ra"], dec=kwargs["dec"], id=kwargs["id"] )]
