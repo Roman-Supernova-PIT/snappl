@@ -1,0 +1,1 @@
+Fixed an issue with the manual diaobj constructor where extra args were passed
