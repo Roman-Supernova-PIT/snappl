@@ -716,16 +716,16 @@ class FITSImage( Numpy2DImage ):
 
 class ManualFITSImage(FITSImage):
     def __init__(self, header, data=None, noise=None, flags=None,
-                 path=None, exposure=None, sca=None, *args, **kwargs):
+                 path=None, exposure=None, sca=None, mjd=None, *args, **kwargs):
 
         self._data = data
         self._noise = noise
         self._flags = flags
         self._header = header
+        self._mjd = mjd
         self._wcs = None
         self._is_cutout = False
         self._image_shape = None
-
         self.path = None
         self.exposure = None
         self.sca = None
@@ -736,6 +736,25 @@ class ManualFITSImage(FITSImage):
         if self._header is None:
             raise RuntimeError("Header is not set for ManualFITSImage.")
         return self._header
+
+    @property
+    def mjd(self):
+        """The mjd of the image.
+
+        TODO : is this start-time, mid-time, or end-time?
+
+        """
+        if self._mjd is None:
+            raise RuntimeError("MJD is not set for ManualFITSImage.")
+        return self._mjd
+
+    @mjd.setter
+    def mjd(self, val):
+        # We need an MJD setter so that ImageCollection can set the MJD when fetching the images, much faster than
+        # reading the header each time!
+        self._mjd = val
+
+
 
 
 # ======================================================================
