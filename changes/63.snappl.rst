@@ -1,0 +1,1 @@
+Added the pointing, sca, mjd, and header properties to ManualFITSImages.
