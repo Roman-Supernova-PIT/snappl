@@ -286,7 +286,7 @@ class Image:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_wcs" )
 
     def _get_zeropoint( self ):
-        """Set self._zeropoint; see "zeropoint" property above."""
+        """Returns the zeropoint; see "zeropoint" property above."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_zeropoint" )
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode="strict", fill_value=np.nan):
