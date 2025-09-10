@@ -196,7 +196,7 @@ class Image:
 
         """
         if self._zeropoint is None:
-            self._get_zeropoint()
+            self._zeropoint = self._get_zeropoint()
         return self._zeropoint
 
     @zeropoint.setter
