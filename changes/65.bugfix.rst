@@ -1,0 +1,1 @@
+self.zeropoint returned None because it was not set to self._get_zeropoint.
