@@ -717,19 +717,21 @@ class FITSImage( Numpy2DImage ):
 
 class ManualFITSImage(FITSImage):
     def __init__(self, header, data=None, noise=None, flags=None,
-                 path=None, exposure=None, sca=None, *args, **kwargs):
+                 path=None, exposure=None, sca=None, pointing=None, mjd=None, band=None, *args, **kwargs):
 
         self._data = data
         self._noise = noise
         self._flags = flags
         self._header = header
+        self._mjd = mjd
         self._wcs = None
         self._is_cutout = False
         self._image_shape = None
-
         self.path = None
         self.exposure = None
-        self.sca = None
+        self._sca = sca
+        self.band = band
+        self._pointing = pointing
 
     def get_fits_header(self):
 
@@ -737,6 +739,64 @@ class ManualFITSImage(FITSImage):
         if self._header is None:
             raise RuntimeError("Header is not set for ManualFITSImage.")
         return self._header
+
+    @property
+    def mjd(self):
+        """The mjd of the image.
+
+        TODO : is this start-time, mid-time, or end-time?
+
+        """
+        if self._mjd is None:
+            raise RuntimeError("MJD is not set for ManualFITSImage.")
+        return self._mjd
+
+    @mjd.setter
+    def mjd(self, val):
+        # We need an MJD setter so that ImageCollection can set the MJD when fetching the images, much faster than
+        # reading the header each time!
+        self._mjd = val
+
+    @property
+    def band(self):
+        """The Roman passband of the image."""
+        if self._band is None:
+            raise RuntimeError("Band has not been set for ManualFITSImage.")
+        return self._band
+
+    @band.setter
+    def band(self, val):
+        self._band = val
+
+    @property
+    def pointing(self):
+        if self._pointing is None:
+            raise RuntimeError("Pointing has not been set for ManualFITSImage.")
+        return self._pointing
+
+    @property
+    def sca(self):
+        if self._sca is None:
+            raise RuntimeError("SCA has not been set for ManualFITSImage.")
+        return self._sca
+
+    @sca.setter
+    def sca(self, val):
+        self._sca = val
+
+    @pointing.setter
+    def pointing(self, val):
+        self._pointing = val
+
+    @property
+    def header(self):
+        if self._header is None:
+            raise RuntimeError("Header has not been set for ManualFITSImage.")
+        return self._header
+
+    @header.setter
+    def header(self, val):
+        self._header = val
 
 
 # ======================================================================
