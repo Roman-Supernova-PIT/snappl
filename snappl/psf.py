@@ -1718,9 +1718,7 @@ class GaussianPSF( PSF ):
 
         Returns
         -------
-          f: float or numpy array
-            If coords is 2d, a float, f(xp, yp)
-            If coords is 3d, a numpy array where f_n = f(xp_n, yp_n)
+          f(xp, yp): float
 
         """
         coords = np.vstack( (xrel, yrel) )
