@@ -1654,7 +1654,7 @@ class ou24PSF( ou24PSF_slow ):
 
 
 class GaussianPSF( PSF ):
-    """A Gaussian PSF that doesn't vary of the image, for testing purposes.
+    """A Gaussian PSF that doesn't vary across the image, for testing purposes.
 
        The gaussian rendered at (x, y) has flux density as a function of position (xp, yp):
 

@@ -84,7 +84,7 @@ def test_gaussian_psf():
     #   for how this is supposed to work.
     # Use a bigger stamp size so the "moment" centering that scipy.ndimage uses
     #   won't be subject to excessive clipping at the edges.
-    #   (It's still going to be subject to hte fact that scipy.ndimage.center_of_mass
+    #   (It's still going to be subject to the fact that scipy.ndimage.center_of_mass
     #   is assuming sampling, whereas we're doing integration, so they aren't
     #   consistently thinking about Gaussians.)
     gpsf = PSF.get_psf_object( 'gaussian', sigmax=0.2, sigmay=0.2, stamp_size=9 )
