@@ -580,9 +580,11 @@ class Numpy2DImage( Image ):
 class FITSImage( Numpy2DImage ):
     """Base class for classes that read FITS images and use an AstropyWCS wcs."""
 
-    def __init__( self, *args, **kwargs ):
+    def __init__( self, *args, noisepath=None, flagspath=None, **kwargs ):
         super().__init__( *args, **kwargs )
 
+        self.noisepath = pathlib.Path( noisepath ) if noisepath is not None else None
+        self.flagspath = pathlib.Path( flagspath ) if flagspath is not None else None
         self._data = None
         self._noise = None
         self._flags = None
@@ -605,6 +607,37 @@ class FITSImage( Numpy2DImage ):
     def get_fits_header( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_fits_header()" )
 
+
+    def _strip_wcs_header_keywords( self ):
+        """Try to strip all wcs keywords from self._header.
+        
+        Useful as a pre-step for saving the image if you want to write
+        the WCS to the image.  Using this makes sure (as best possible)
+        that you don't end up with conflicting WCS keywords in the
+        header.
+
+        This may not be complete, as it pattern matches expected keywords.
+        If it's missing some patterns, those won't get stripped.
+
+        """
+
+        if self._header is None:
+            self._header = self.get_fits_header()
+        
+        basematch = re.compile( r"^C(RVAL|RPIX|UNIT|DELT|TYPE)[12]$" )
+        cdmatch = re.compile( r"^CD[12]_[12]$" )
+        sipmatch = re.compile( r"^[AB]P?_(ORDER|(\d+)_(\d+))$" )
+        tpvmatch = re.compile( r"^P[CV]\d+_\d+$" )
+
+        tonuke = set()
+        for kw in hdr.keys():
+            if ( basematch.search(kw) or cdmatch.search(kw) or sipmatch.search(kw) or tpvmatch.search(kw) ):
+                tonuke.add( kw )
+
+        for kw in tonuke:
+            del hdr[kw]
+       
+    
     def get_wcs( self, wcsclass=None ):
         wcsclass = "AstropyWCS" if wcsclass is None else wcsclass
         if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
@@ -653,6 +686,7 @@ class FITSImage( Numpy2DImage ):
                 raise RuntimeError("get_data called with which='flags', but flags are not set.")
 
     def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan):
+
         """See Image.get_cutout
 
         The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
@@ -708,6 +742,106 @@ class FITSImage( Numpy2DImage ):
         y = int( np.floor( y + 0.5 ) )
         return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
 
+    def save( self, overwrite=False ):
+        """Write image to its path.
+
+        Has the side-effect if loading self._header if it is None, and
+        if replacing WCS keywords in self._header with keywords from the
+        current image WCS.
+
+        """
+
+        if not overwrite:
+            if ( self.path.exists() or
+                 ( self.noisepath is not None and self.noisepath.exists() ) or
+                 ( self.flagspath is not None and self.flagspath.exists() ) ):
+                raise RuntimeError( "FITSImage.save: overwrite is False, but image file(s) already exist" )
+        else:
+            if self.path.is_file()
+                self.path.unlink()
+            if ( self.noisepath is not None ) and ( self.noisepath.is_file() ):
+                self.noisepath.unlink()
+            if ( self.flagspath is not None ) and ( self.flagspath.is_file() ):
+                self.flagspath.unlink()
+
+        apwcs = self.get_wcs().get_astropy_wcs( readonly=True )
+        self._strip_wcs_header_keywords( self )
+        wcshdr = apwcs.to_header()
+        for k in self.wcshdr:
+            self._header[k] = self.wcshdr[k]
+
+        fits.writeto( self.path, self.data, self._header )
+        if ( self.noisepath is not None ):
+            fits.writeto( self.noisepath, self.noise, wcshdr )
+        if ( self.flagspath is not None ):
+            fits.writeto( self.flagspath, self.flags, wcshdr )
+    
+    
+# ======================================================================
+# FITSImageStdHeaders
+#
+# A FITSImage that knows it has the following information in THE
+#   following header keywords:
+#
+# SCA : sca
+# POINTING : pointing
+# BAND : band
+# ZP : zeropoint
+# MJD : mjd
+# EXPTIME : exptime
+
+class FITSImageStdHeaders( FITSImage ):
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
+
+    @property
+    def mjd( self ):
+        return self._header['MJD']
+
+    @mjd.setter
+    def mjd( self, val ):
+        self._header['MJD'] = val
+
+    @property
+    def pointing( self ):
+        return self._header['POINTING']
+
+    @pointing.setter
+    def pointing( self, val ):
+        self._header['POINTING'] = val
+
+    @property
+    def band( self ):
+        return self._header['BAND']
+
+    @band.setter
+    def band( self, val ):
+        self._header['BAND'] = val
+
+    @property
+    def zeropoint( self ):
+        return self._header['ZEROPOINT']
+
+    @zeropoint.setter
+    def zeropoint( self, val ):
+        self._header['ZERPOINT'] = val
+
+    @property
+    def mjd( self ):
+        return self._header['MJD']
+
+    @mjd.setter
+    def mjd( self, val ):
+        self._header['MJD'] = val
+
+    @property
+    def exptime( self ):
+        return self._header['EXPTIME']
+
+    @exptime.setter
+    def exptime( self, val ):
+        self._header['EXPTIME'] = val
+
 
 # ======================================================================
 # ManualFITSImage
@@ -717,13 +851,13 @@ class FITSImage( Numpy2DImage ):
 
 class ManualFITSImage(FITSImage):
     def __init__(self, header, data=None, noise=None, flags=None,
-                 path=None, exposure=None, sca=None, *args, **kwargs):
+                 path=None, exposure=None, sca=None, wcs=None, *args, **kwargs):
 
         self._data = data
         self._noise = noise
         self._flags = flags
         self._header = header
-        self._wcs = None
+        self._wcs = wcs
         self._is_cutout = False
         self._image_shape = None
 
@@ -731,9 +865,10 @@ class ManualFITSImage(FITSImage):
         self.exposure = None
         self.sca = None
 
-    def get_fits_header(self):
 
+    def get_fits_header(self):
         """Get the header of the image."""
+
         if self._header is None:
             raise RuntimeError("Header is not set for ManualFITSImage.")
         return self._header
@@ -758,12 +893,9 @@ class FITSImageOnDisk( FITSImage ):
 
     """
 
-    def __init__( self, *args, noisepath=None, flagspath=None,
-                  imhdu=0, noisehdu=0, flagshdu=0, **kwargs ):
+    def __init__( self, *args, imhdu=0, noisehdu=0, flagshdu=0, **kwargs ):
         super().__init__( *args, **kwargs )
 
-        self.noisepath = pathlib.Path( noisepath ) if noisepath is not None else None
-        self.flagspath = pathlib.Path( flagspath ) if flagspath is not None else None
         self.imhdu = imhdu
         self.noisehdu = noisehdu
         self.flagshdu = flagshdu
