@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>PSF &#8212; roman_snpit_snappl 0.1.dev1+g3db2133f7 documentation</title>
+    <title>PSF &#8212; roman_snpit_snappl 0.1.dev1+g656ebd8f3 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=66b969f5"></script>
+    <script src="../_static/documentation_options.js?v=fa78900e"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -380,17 +380,56 @@ shifts, then the fractional part of x will (usually) not be
 </dd>
 <dt class="field-odd">param x0<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The pixel position on the image corresponding to the center
-pixel of the returned PSF.  If either is None, they default
-to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above for why
-we don’t use round().)  The peak* of the PSF on the returned
-stamp will be at (x-x0,y-y0) relative to the center pixel of
-the returned stamp.</p>
+pixel of the returned stamp.  If either is None, they
+default to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above
+for why we don’t use round().)  The peak* of the PSF on the
+returned stamp will be at (x-x0,y-y0) relative to the center
+pixel of the returned stamp.</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>“peak” assumes the PSF is radially symmetric.  If it’s
 not, by “peak” read “center” or “fiducial point”.</p></li>
 </ul>
 </div></blockquote>
+<p>Lots and lots of notes and examples to think through exactly
+what this means:</p>
+<p>Algebra:</p>
+<dl class="simple">
+<dt>Define xc = floor(x + 0.5), yc = floor(y + 0.5).  This is</dt><dd><p>the “closest integral pixel position” on the original
+image to where the PSF is being rendered.  (It’s slightly
+different from the pixel position rounded to the nearest
+integer; see above.)</p>
+</dd>
+<dt>Define fx = x - xc, fy = y - yc ; both are in the range</dt><dd><p>[-0.5, 0.5).</p>
+</dd>
+<dt>Define midpix = stamp_size // 2</dt><dd><p>(so, for instance midpix=3 for a 7×7 stamp)</p>
+</dd>
+<dt>Given how we’ve defined the x and y parmaeters to this</dt><dd><p>function, on the original image, the peak of the PSF is at
+(x, y) = (xc + fx, yc + fy).</p>
+</dd>
+<dt>Pixel (midpix, midpix) on the stamp corresponds to (x0, y0)</dt><dd><p>on the original image (given the definition of the
+parameters to this function).</p>
+</dd>
+<dt>If (x0, y0) = (xc, yc), then the “closest integral pixel</dt><dd><p>position” for the peak of the PSF on the stamp is (midpix,
+midpix).</p>
+</dd>
+<dt>In general, the “closest integral pixel position” for the</dt><dd><p>peak of the PSF on the stamp is (midpix + xc - x0, midpix
++ yc - y0).  (If xc is 5 and x0 is 6, then the center of
+the stamp is to the right of the peak pixel on the stamp,
+so the peak pixel position is less than midpix.)</p>
+</dd>
+<dt>The peak position of the PSF on the stamp is</dt><dd><p>(midpix + xc - x0 + fx, midpix + yc - y0 + fy)
+(which is the same as (midpix + x - x0, midpix + y - y0)).</p>
+</dd>
+<dt>If we define (xrel=0, yrel=0) to be the peak of the PSF, then</dt><dd><p>(xrel, yrel) = (0, 0) is (midpix + xc + fx - x0, midpix +
+yc + fy - y0) on the stamp.</p>
+</dd>
+<dt>Therefore the center of the stamp, (midpix, midpix), is at</dt><dd><p>(xrel, yrel) = (x0 - xc - fx, y0 - yc - fy)</p>
+</dd>
+<dt>The center of the lower-left pixel of the stamp, (0, 0), is at</dt><dd><p>(xrel, yrel) = (x0 - xc - fx - midpix, y0 - yc -fy - midpix)</p>
+</dd>
+</dl>
+<p>Examples:</p>
 <p>For example: if you call psfobj.get_stamp(111., 113.), and
 if the PSF object as a stamp_size of 5, then you will get
 back an image that looks something like:</p>
@@ -519,17 +558,56 @@ to the center of the returned stamp.</p>
 </dd>
 <dt class="field-odd">param y0<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The pixel position on the image corresponding to the center
-pixel of the returned PSF.  If either is None, they default
-to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above for why
-we don’t use round().)  The peak* of the PSF on the returned
-stamp will be at (x-x0,y-y0) relative to the center pixel of
-the returned stamp.</p>
+pixel of the returned stamp.  If either is None, they
+default to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above
+for why we don’t use round().)  The peak* of the PSF on the
+returned stamp will be at (x-x0,y-y0) relative to the center
+pixel of the returned stamp.</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>“peak” assumes the PSF is radially symmetric.  If it’s
 not, by “peak” read “center” or “fiducial point”.</p></li>
 </ul>
 </div></blockquote>
+<p>Lots and lots of notes and examples to think through exactly
+what this means:</p>
+<p>Algebra:</p>
+<dl class="simple">
+<dt>Define xc = floor(x + 0.5), yc = floor(y + 0.5).  This is</dt><dd><p>the “closest integral pixel position” on the original
+image to where the PSF is being rendered.  (It’s slightly
+different from the pixel position rounded to the nearest
+integer; see above.)</p>
+</dd>
+<dt>Define fx = x - xc, fy = y - yc ; both are in the range</dt><dd><p>[-0.5, 0.5).</p>
+</dd>
+<dt>Define midpix = stamp_size // 2</dt><dd><p>(so, for instance midpix=3 for a 7×7 stamp)</p>
+</dd>
+<dt>Given how we’ve defined the x and y parmaeters to this</dt><dd><p>function, on the original image, the peak of the PSF is at
+(x, y) = (xc + fx, yc + fy).</p>
+</dd>
+<dt>Pixel (midpix, midpix) on the stamp corresponds to (x0, y0)</dt><dd><p>on the original image (given the definition of the
+parameters to this function).</p>
+</dd>
+<dt>If (x0, y0) = (xc, yc), then the “closest integral pixel</dt><dd><p>position” for the peak of the PSF on the stamp is (midpix,
+midpix).</p>
+</dd>
+<dt>In general, the “closest integral pixel position” for the</dt><dd><p>peak of the PSF on the stamp is (midpix + xc - x0, midpix
++ yc - y0).  (If xc is 5 and x0 is 6, then the center of
+the stamp is to the right of the peak pixel on the stamp,
+so the peak pixel position is less than midpix.)</p>
+</dd>
+<dt>The peak position of the PSF on the stamp is</dt><dd><p>(midpix + xc - x0 + fx, midpix + yc - y0 + fy)
+(which is the same as (midpix + x - x0, midpix + y - y0)).</p>
+</dd>
+<dt>If we define (xrel=0, yrel=0) to be the peak of the PSF, then</dt><dd><p>(xrel, yrel) = (0, 0) is (midpix + xc + fx - x0, midpix +
+yc + fy - y0) on the stamp.</p>
+</dd>
+<dt>Therefore the center of the stamp, (midpix, midpix), is at</dt><dd><p>(xrel, yrel) = (x0 - xc - fx, y0 - yc - fy)</p>
+</dd>
+<dt>The center of the lower-left pixel of the stamp, (0, 0), is at</dt><dd><p>(xrel, yrel) = (x0 - xc - fx - midpix, y0 - yc -fy - midpix)</p>
+</dd>
+</dl>
+<p>Examples:</p>
 <p>For example: if you call psfobj.get_stamp(111., 113.), and
 if the PSF object as a stamp_size of 5, then you will get
 back an image that looks something like:</p>
