@@ -63,7 +63,6 @@ def test_gaussian_psf():
 
     # Test rotations
     gpsf45 = PSF.get_psf_object( 'gaussian', x=0, y=0., sigmax=0.3, sigmay=0.2, theta=45. )
-    import pdb; pdb.set_trace()
     stamp45 = gpsf45.get_stamp( 0.5, 0.5 )
     assert stamp45[2, 2] == pytest.approx( stamp45[3, 3], rel=1e-7 )
     assert stamp45[3, 2] == pytest.approx( stamp45[2, 3], rel=1e-7 )
@@ -84,36 +83,78 @@ def test_gaussian_psf():
     # Test that centering all works right; see PSF.get_stamp documentation
     #   for how this is supposed to work.
     # Use a bigger stamp size so the "moment" centering that scipy.ndimage uses
-    #   won't be subject to excessive clipping at the edges
-    gpsf = PSF.get_psf_object( 'gaussian', sigmax=0.2, sigmay=0.2, stamp_size=7 )
+    #   won't be subject to excessive clipping at the edges.
+    #   (It's still going to be subject to hte fact that scipy.ndimage.center_of_mass
+    #   is assuming sampling, whereas we're doing integration, so they aren't
+    #   consistently thinking about Gaussians.)
+    gpsf = PSF.get_psf_object( 'gaussian', sigmax=0.2, sigmay=0.2, stamp_size=9 )
 
     stamp = gpsf.get_stamp( x=5, y=5, x0=5, y0=5 )
-    assert stamp.shape == (7, 7)
-    cx, cy = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert cx == pytest.approx( 4., abs=0.01 )
+    assert cy == pytest.approx( 4., abs=0.01 )
+
+    stamp = gpsf.get_stamp( x=5, y=5, x0=6, y0=6 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
     assert cx == pytest.approx( 3., abs=0.01 )
     assert cy == pytest.approx( 3., abs=0.01 )
 
-    stamp = gpsf.get_stamp( x=5, y=5, x0=6, y0=6 )
-    cx, cy = scipy.ndimage.center_of_mass( stamp )
-    assert cx == pytest.approx( 2., abs=0.01 )
-    assert cy == pytest.approx( 2., abs=0.01 )
+    stamp = gpsf.get_stamp( x=5.2, y=5.7 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
+    assert cx == pytest.approx( 4.066, abs=0.01 )     # ideally 4.2, but sampling
+    assert cy == pytest.approx( 3.843, abs=0.01 )     # ideally 3.7, but sampling
+
+    stamp = gpsf.get_stamp( x=5.7, y=5.2 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
+    assert cx == pytest.approx( 3.843, abs=0.01 )     # ideally 3.7, but sampling
+    assert cy == pytest.approx( 4.066, abs=0.01 )     # ideally 4.2, but sampling
 
     stamp = gpsf.get_stamp( x=5.2, y=5.7, x0=5, y0=5 )
-    cx, cy = scipy.ndimage.center_of_mass( stamp )
-    assert cx == pytest.approx( 3.2, abs=0.01 )
-    assert cy == pytest.approx( 2.7, abs=0.01 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
+    assert cx == pytest.approx( 4.066, abs=0.01 )     # ideally 4.2, but sampling
+    assert cy == pytest.approx( 4.843, abs=0.01 )     # ideally 4.7, but sampling
 
     stamp = gpsf.get_stamp( x=5.7, y=5.2, x0=5, y0=5 )
-    cx, cy = scipy.ndimage.center_of_mass( stamp )
-    assert cx == pytest.approx( 2.7, abs=0.01 )
-    assert cy == pytest.approx( 3.2, abs=0.01 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
+    assert cx == pytest.approx( 4.843, abs=0.01 )     # ideally 4.7, but sampling
+    assert cy == pytest.approx( 4.066, abs=0.01 )     # ideally 4.2, but sampling
 
-    stamp = gpsf.get_stamp( x=5.5, y=5.5, x0=5, y0=5 )
-    cx, cy = scipy.ndimage.center_of_mass( stamp )
-    assert cx == pytest.approx( 2.5, abs=0.01 )
-    assert cy == pytest.approx( 2.5, abs=0.01 )
-
-    stamp = gpsf.get_stamp( x=5.5, y=5.5, x0=4, y0=4 )
-    cx, cy = scipy.ndimage.center_of_mass( stamp )
+    stamp = gpsf.get_stamp( x=5.5, y=5.5 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
     assert cx == pytest.approx( 3.5, abs=0.01 )
     assert cy == pytest.approx( 3.5, abs=0.01 )
+
+    stamp = gpsf.get_stamp( x=5.5, y=5.5, x0=6, y0=6 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
+    assert cx == pytest.approx( 3.5, abs=0.01 )
+    assert cy == pytest.approx( 3.5, abs=0.01 )
+
+    stamp = gpsf.get_stamp( x=5.5, y=5.5, x0=5, y0=5 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
+    assert cx == pytest.approx( 4.5, abs=0.01 )
+    assert cy == pytest.approx( 4.5, abs=0.01 )
+
+    stamp = gpsf.get_stamp( x=5.5, y=5.5, x0=4, y0=4 )
+    cy, cx = scipy.ndimage.center_of_mass( stamp )
+    assert stamp.shape == (9, 9)
+    assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
+    assert cx == pytest.approx( 5.5, abs=0.01 )
+    assert cy == pytest.approx( 5.5, abs=0.01 )

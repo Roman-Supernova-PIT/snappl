@@ -312,14 +312,65 @@ class PSF:
 
           x0, y0: int, default None
             The pixel position on the image corresponding to the center
-            pixel of the returned PSF.  If either is None, they default
-            to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above for why
-            we don't use round().)  The peak* of the PSF on the returned
-            stamp will be at (x-x0,y-y0) relative to the center pixel of
-            the returned stamp.
+            pixel of the returned stamp.  If either is None, they
+            default to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above
+            for why we don't use round().)  The peak* of the PSF on the
+            returned stamp will be at (x-x0,y-y0) relative to the center
+            pixel of the returned stamp.
 
                * "peak" assumes the PSF is radially symmetric.  If it's
                  not, by "peak" read "center" or "fiducial point".
+
+            Lots and lots of notes and examples to think through exactly
+            what this means:
+
+            Algebra:
+
+            Define xc = floor(x + 0.5), yc = floor(y + 0.5).  This is
+              the "closest integral pixel position" on the original
+              image to where the PSF is being rendered.  (It's slightly
+              different from the pixel position rounded to the nearest
+              integer; see above.)
+
+            Define fx = x - xc, fy = y - yc ; both are in the range
+              [-0.5, 0.5).
+
+            Define midpix = stamp_size // 2
+              (so, for instance midpix=3 for a 7×7 stamp)
+
+            Given how we've defined the x and y parmaeters to this
+              function, on the original image, the peak of the PSF is at
+              (x, y) = (xc + fx, yc + fy).
+
+            Pixel (midpix, midpix) on the stamp corresponds to (x0, y0)
+              on the original image (given the definition of the
+              parameters to this function).
+
+            If (x0, y0) = (xc, yc), then the "closest integral pixel
+              position" for the peak of the PSF on the stamp is (midpix,
+              midpix).
+
+            In general, the "closest integral pixel position" for the
+              peak of the PSF on the stamp is (midpix + xc - x0, midpix
+              + yc - y0).  (If xc is 5 and x0 is 6, then the center of
+              the stamp is to the right of the peak pixel on the stamp,
+              so the peak pixel position is less than midpix.)
+
+            The peak position of the PSF on the stamp is
+              (midpix + xc - x0 + fx, midpix + yc - y0 + fy)
+              (which is the same as (midpix + x - x0, midpix + y - y0)).
+
+            If we define (xrel=0, yrel=0) to be the peak of the PSF, then
+              (xrel, yrel) = (0, 0) is (midpix + xc + fx - x0, midpix +
+              yc + fy - y0) on the stamp.
+
+            Therefore the center of the stamp, (midpix, midpix), is at
+              (xrel, yrel) = (x0 - xc - fx, y0 - yc - fy)
+
+            The center of the lower-left pixel of the stamp, (0, 0), is at
+              (xrel, yrel) = (x0 - xc - fx - midpix, y0 - yc -fy - midpix)
+
+            Examples:
 
             For example: if you call psfobj.get_stamp(111., 113.), and
             if the PSF object as a stamp_size of 5, then you will get
@@ -1674,8 +1725,8 @@ class GaussianPSF( PSF ):
         """
         coords = np.vstack( (xrel, yrel) )
         rcoords = np.matmul( self._rotmat, coords )
-        return self._norm * np.exp( - ( rcoords[0]**2 / (2. * self.sigmax**2) )
-                                    - ( rcoords[1]**2 / (2. * self.sigmay**2) ) )
+        return self._norm * np.exp( - ( rcoords[0][0]**2 / (2. * self.sigmax**2) )
+                                    - ( rcoords[1][0]**2 / (2. * self.sigmay**2) ) )
 
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
@@ -1684,11 +1735,12 @@ class GaussianPSF( PSF ):
         yc = int( np.floor(y + 0.5 ) )
         x0 = x0 if x0 is not None else xc
         y0 = y0 if y0 is not None else yc
-        # TODO : check that x0 and y0 are integers
-        offx = x0 - xc
-        offy = y0 - yc
+        if not ( isinstance( x0, numbers.Integral ) and isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers, got x0 as {type(x0)} and y0 as {type(y0)}" )
         millix = int( (x - xc) * 1000. )
         milliy = int( (y - yc) * 1000. )
+        offx = x0 - xc
+        offy = y0 - yc
         dex = ( millix, milliy, offx, offy )
 
         if dex in self._stamp_cache:
@@ -1706,9 +1758,11 @@ class GaussianPSF( PSF ):
             #   the overhead from the for loop is not all that big compared to the
             #   integration.
             for iy in range( 0, self.stamp_size ):
-                yrel = iy - midpix + offy + milliy / 1000.
+                # See docstring on PSF.get_stamp
+                yrel = offy - milliy / 1000. - midpix + iy
                 for ix in range( 0, self.stamp_size ):
-                    xrel = ix - midpix + offx + millix / 1000.
+                    # See docstring on PSF.get_stamp
+                    xrel = offx - millix / 1000. - midpix + ix
                     res = scipy.integrate.dblquad( self._gauss, xrel-0.5, xrel+0.5, yrel-0.5, yrel+0.5 )
                     stamp[ iy, ix ] = res[0]
 
