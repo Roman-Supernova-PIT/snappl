@@ -1,0 +1,1 @@
+Add extra convolution to ou24PSF_slow for when oversampling > 1. Important because then you get the native pixel response. This is not necessary for oversampling=1; the PSF is already returned at the native pixel response.

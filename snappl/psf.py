@@ -4,6 +4,7 @@ __all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
 
 # python standard library imports
 import base64
+import itertools
 import numbers
 import pathlib
 
@@ -1373,7 +1374,7 @@ class ou24PSF_slow( PSF ):
                                 dy=j * scale / self.oversampling_factor,
                             )
 
-                            for i, j in product(
+                            for i, j in itertools.product(
                                 np.arange((1 - self.oversampling_factor) / 2, (1 + self.oversampling_factor) / 2),
                                 np.arange((1 - self.oversampling_factor) / 2, (1 + self.oversampling_factor) / 2),
                             )
@@ -1385,7 +1386,7 @@ class ou24PSF_slow( PSF ):
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
 
-                
+
 
             else:
                 psf = galsim.Convolve(point, photon_ops[0])
