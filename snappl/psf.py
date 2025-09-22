@@ -1237,8 +1237,8 @@ class ou24PSF_slow( PSF ):
 
     """
 
-    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True, n_photons=1000000,
-                  _parent_class=False, **kwargs
+    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True,
+                  oversampling_factor=1, n_photons=1000000, _parent_class=False, **kwargs
                  ):
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'sed', 'config_file', 'size', 'include_photonOps', 'n_photons' ] )
@@ -1267,14 +1267,17 @@ class ou24PSF_slow( PSF ):
         self._x = self.sca_size // 2 if self._x is None else self._x
         self._y = self.sca_size // 2 if self._y is None else self._y
         self.include_photonOps = include_photonOps
+        self.oversampling_factor = oversampling_factor
         self.n_photons = n_photons
         self._stamps = {}
-
 
     @property
     def stamp_size( self ):
         return self.size
 
+    @property
+    def oversample_factor( self ):
+        return self.oversampling_factor
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, input_wcs=None):
         """Return a 2d numpy image of the PSF at the image resolution.
@@ -1355,9 +1358,34 @@ class ou24PSF_slow( PSF ):
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
             if self.include_photonOps:
+                # This next part is taken directly from roman_imsim.utils.roman_utils.getPSF_Image().
+                # NOTE: Above, we say that oversampling is not supported yet. There may still be
+                # things to sort out, but including this is a step toward supporting it. The below
+                # is an extra convolution so that we get the native pixel response if oversampling
+                # is included. The native pixel response is already output if oversampling_factor = 1.
+
+                if self.oversampling_factor > 1:
+                    scale = galsim.roman.pixel_scale
+                    comb = galsim.Add(
+                        [
+                            galsim.DeltaFunction(1.0).shift(
+                                dx=i * scale / self.oversampling_factor,
+                                dy=j * scale / self.oversampling_factor,
+                            )
+
+                            for i, j in product(
+                                np.arange((1 - self.oversampling_factor) / 2, (1 + self.oversampling_factor) / 2),
+                                np.arange((1 - self.oversampling_factor) / 2, (1 + self.oversampling_factor) / 2),
+                            )
+                        ]
+                    )
+
+                point = galsim.Convolve(point, comb)
                 point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
+
+                
 
             else:
                 psf = galsim.Convolve(point, photon_ops[0])
@@ -1497,6 +1525,8 @@ class ou24PSF( ou24PSF_slow ):
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
             if self.include_photonOps:
+                # NOTE: This function is missing the extra convolution in the oversampling that
+                # ou24PSF_slow has.
                 self._point.drawImage(self._rmutils.bpass, method='phot', rng=self._rmutils.rng, photon_ops=photon_ops,
                                       n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                       center=center, use_true_center=True, image=self._stamp)
