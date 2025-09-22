@@ -185,6 +185,11 @@ class Image:
         """Band (str)"""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement band" )
 
+    @band.setter
+    def band(self, val):
+        self._band = val
+
+
     @property
     def zeropoint( self ):
         """Image zeropoint for AB magnitudes.
@@ -708,6 +713,9 @@ class FITSImage( Numpy2DImage ):
         y = int( np.floor( y + 0.5 ) )
         return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
 
+    def set_fits_header(self, hdr):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement set_fits_header()" )
+
 
 # ======================================================================
 # ManualFITSImage
@@ -753,8 +761,9 @@ class ManualFITSImage(FITSImage):
 
     @mjd.setter
     def mjd(self, val):
-        # We need an MJD setter so that ImageCollection can set the MJD when fetching the images, much faster than
-        # reading the header each time!
+        # Turns out that if a subclass has a @property for mjd, it has to have its own @mjd.setter;
+        # it can't use the superclass' @mjd.setter even if the content is right.
+
         self._mjd = val
 
     @property
@@ -766,13 +775,8 @@ class ManualFITSImage(FITSImage):
 
     @band.setter
     def band(self, val):
-        self._band = val
+        raise NotImplementedError("Band setter is implemented in parent Image class")
 
-    @property
-    def pointing(self):
-        if self._pointing is None:
-            raise RuntimeError("Pointing has not been set for ManualFITSImage.")
-        return self._pointing
 
     @property
     def sca(self):
@@ -784,19 +788,22 @@ class ManualFITSImage(FITSImage):
     def sca(self, val):
         self._sca = val
 
+    @property
+    def pointing(self):
+        if self._pointing is None:
+            raise RuntimeError("Pointing has not been set for ManualFITSImage.")
+        return self._pointing
+
     @pointing.setter
     def pointing(self, val):
         self._pointing = val
 
-    @property
-    def header(self):
-        if self._header is None:
-            raise RuntimeError("Header has not been set for ManualFITSImage.")
-        return self._header
+    def set_fits_header(self, hdr):
+        if not isinstance(hdr, fits.header.Header):
+            raise TypeError(f"hdr must be a fits.header.Header, not a {type(hdr)}")
+        self._header = hdr
 
-    @header.setter
-    def header(self, val):
-        self._header = val
+
 
 
 # ======================================================================
