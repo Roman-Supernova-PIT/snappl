@@ -1364,7 +1364,6 @@ class ou24PSF_slow( PSF ):
                 # things to sort out, but including this is a step toward supporting it. The below
                 # is an extra convolution so that we get the native pixel response if oversampling
                 # is included. The native pixel response is already output if oversampling_factor = 1.
-
                 if self.oversampling_factor > 1:
                     scale = galsim.roman.pixel_scale
                     comb = galsim.Add(
@@ -1381,7 +1380,8 @@ class ou24PSF_slow( PSF ):
                         ]
                     )
 
-                point = galsim.Convolve(point, comb)
+                    point = galsim.Convolve(point, comb)
+
                 point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
