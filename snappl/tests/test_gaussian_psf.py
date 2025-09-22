@@ -38,7 +38,7 @@ def test_gaussian_psf():
     assert np.where( stamp.max() == stamp ) == ( np.array([2]), np.array([2]) )
     # 2nd moments are much more off this undersampled, so don't bother
 
-    # Make sure stretcy is right
+    # Make sure asymmetric PSFs render right
     gpsf = PSF.get_psf_object( 'gaussian', x=0, y=0, sigmax=0.3, sigmay=0.2, band='R062' )
     # σ=0.3 → FWHM=0.71, so size = 7
     assert gpsf.stamp_size == 7
