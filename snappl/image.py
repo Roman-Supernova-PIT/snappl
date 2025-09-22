@@ -799,8 +799,6 @@ class ManualFITSImage(FITSImage):
         self._pointing = val
 
     def set_fits_header(self, hdr):
-        if not isinstance(hdr, fits.header.Header):
-            raise TypeError(f"hdr must be a fits.header.Header, not a {type(hdr)}")
         self._header = hdr
 
 
