@@ -187,7 +187,7 @@ class Image:
 
     @band.setter
     def band(self, val):
-        self._band = val
+        raise NotImplementedError("{self.__class__.__name__} needs to implement band setter")
 
 
     @property
@@ -775,7 +775,7 @@ class ManualFITSImage(FITSImage):
 
     @band.setter
     def band(self, val):
-        raise NotImplementedError("Band setter is implemented in parent Image class")
+        self._band = val
 
 
     @property
