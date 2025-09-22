@@ -9,6 +9,7 @@ import pathlib
 
 # common library imports
 import numpy as np
+import scipy.integrate
 import yaml
 
 # astro library imports
@@ -110,6 +111,9 @@ class PSF:
 
         if psfclass == "ou24PSF":
             return ou24PSF( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "gaussian":
+            return GaussianPSF( _called_from_get_psf_object=True, **kwargs )
 
         raise ValueError( f"Unknown PSF class {psfclass}" )
 
@@ -308,14 +312,65 @@ class PSF:
 
           x0, y0: int, default None
             The pixel position on the image corresponding to the center
-            pixel of the returned PSF.  If either is None, they default
-            to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above for why
-            we don't use round().)  The peak* of the PSF on the returned
-            stamp will be at (x-x0,y-y0) relative to the center pixel of
-            the returned stamp.
+            pixel of the returned stamp.  If either is None, they
+            default to x0=floor(x+0.5) and y0=floor(y+0.5).  (See above
+            for why we don't use round().)  The peak* of the PSF on the
+            returned stamp will be at (x-x0,y-y0) relative to the center
+            pixel of the returned stamp.
 
                * "peak" assumes the PSF is radially symmetric.  If it's
                  not, by "peak" read "center" or "fiducial point".
+
+            Lots and lots of notes and examples to think through exactly
+            what this means:
+
+            Algebra:
+
+            Define xc = floor(x + 0.5), yc = floor(y + 0.5).  This is
+              the "closest integral pixel position" on the original
+              image to where the PSF is being rendered.  (It's slightly
+              different from the pixel position rounded to the nearest
+              integer; see above.)
+
+            Define fx = x - xc, fy = y - yc ; both are in the range
+              [-0.5, 0.5).
+
+            Define midpix = stamp_size // 2
+              (so, for instance midpix=3 for a 7×7 stamp)
+
+            Given how we've defined the x and y parmaeters to this
+              function, on the original image, the peak of the PSF is at
+              (x, y) = (xc + fx, yc + fy).
+
+            Pixel (midpix, midpix) on the stamp corresponds to (x0, y0)
+              on the original image (given the definition of the
+              parameters to this function).
+
+            If (x0, y0) = (xc, yc), then the "closest integral pixel
+              position" for the peak of the PSF on the stamp is (midpix,
+              midpix).
+
+            In general, the "closest integral pixel position" for the
+              peak of the PSF on the stamp is (midpix + xc - x0, midpix
+              + yc - y0).  (If xc is 5 and x0 is 6, then the center of
+              the stamp is to the right of the peak pixel on the stamp,
+              so the peak pixel position is less than midpix.)
+
+            The peak position of the PSF on the stamp is
+              (midpix + xc - x0 + fx, midpix + yc - y0 + fy)
+              (which is the same as (midpix + x - x0, midpix + y - y0)).
+
+            If we define (xrel=0, yrel=0) to be the peak of the PSF, then
+              (xrel, yrel) = (0, 0) is (midpix + xc + fx - x0, midpix +
+              yc + fy - y0) on the stamp.
+
+            Therefore the center of the stamp, (midpix, midpix), is at
+              (xrel, yrel) = (x0 - xc - fx, y0 - yc - fy)
+
+            The center of the lower-left pixel of the stamp, (0, 0), is at
+              (xrel, yrel) = (x0 - xc - fx - midpix, y0 - yc -fy - midpix)
+
+            Examples:
 
             For example: if you call psfobj.get_stamp(111., 113.), and
             if the PSF object as a stamp_size of 5, then you will get
@@ -1596,3 +1651,121 @@ class ou24PSF( ou24PSF_slow ):
 #             self._data = stamp.array
 
 #         return self._data
+
+
+class GaussianPSF( PSF ):
+    """A Gaussian PSF that doesn't vary across the image, for testing purposes.
+
+       The gaussian rendered at (x, y) has flux density as a function of position (xp, yp):
+
+           xr =  (xp - x) * cosθ + (yp - y) * sinθ
+           yr = -(xp - x) * sinθ + (yp - y) * cosθ
+           f(xp, yp) = 1 / (2π √(σ_x σ_y)) * exp( -xr²/(2 σ_x²) -yr²/(2 σ_y²) )
+
+       Pixel values are integrals of flux density over the square-shaped area of the pixel.
+
+    """
+
+    def __init__( self, sigmax=1., sigmay=1., theta=0., stamp_size=None, _parent_class=False, **kwargs ):
+        """Create an object that renders a Gaussian PSF.
+
+        Parmeters are as passed to PSF.__init__() plus:
+
+        Parameters
+        ----------
+          sigmax : float, default 1.
+            The σ_x value in pixels.  (See class docstring.)
+
+          sigmay : float, default 1.
+            The σ_y value in pixels.  (See class docstring.)
+
+          theta : float, default 0.
+            The rotation in degrees.  (See class docstring.)
+
+          stamp_size : int, default None
+            Must be an odd integer if given.  If not given, stamp size will be 2*floor(5*FWHM)+1 (using
+            the larger of σ_x, σ_y to determine FWHM).
+        """
+
+        super().__init__( _parent_class=True, **kwargs )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
+
+        self.sigmax = sigmax
+        self.sigmay = sigmay
+        self.theta = theta * np.pi / 180.
+        self._rotmat = np.array( [ [  np.cos(self.theta), np.sin(self.theta) ],
+                                   [ -np.sin(self.theta), np.cos(self.theta) ] ] )
+        self._norm = 1. / ( 2 * np.pi * sigmax * sigmay )
+
+        self._stamp_size = stamp_size
+        if self._stamp_size is None:
+            self._stamp_size = 2 * int( np.floor( 5. * max( sigmax, sigmay ) * 2. * np.sqrt(2 * np.log(2.)) ) ) + 1
+
+        self._stamp_cache = {}
+
+    @property
+    def stamp_size( self ):
+        return self._stamp_size
+
+
+    def _gauss( self, yrel, xrel ):
+        """Function.
+
+        Parmeters
+        ---------
+            yrel, xrel: float
+              Effectively, yp-y and xp-y as described in the class description.
+
+        Returns
+        -------
+          f(xp, yp): float
+
+        """
+        coords = np.vstack( (xrel, yrel) )
+        rcoords = np.matmul( self._rotmat, coords )
+        return self._norm * np.exp( - ( rcoords[0][0]**2 / (2. * self.sigmax**2) )
+                                    - ( rcoords[1][0]**2 / (2. * self.sigmay**2) ) )
+
+
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
+        midpix = int( np.floor( self.stamp_size / 2 ) )
+        xc = int( np.floor(x + 0.5 ) )
+        yc = int( np.floor(y + 0.5 ) )
+        x0 = x0 if x0 is not None else xc
+        y0 = y0 if y0 is not None else yc
+        if not ( isinstance( x0, numbers.Integral ) and isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers, got x0 as {type(x0)} and y0 as {type(y0)}" )
+        millix = int( (x - xc) * 1000. )
+        milliy = int( (y - yc) * 1000. )
+        offx = x0 - xc
+        offy = y0 - yc
+        dex = ( millix, milliy, offx, offy )
+
+        if dex in self._stamp_cache:
+            # Because calculating these is slow, cache them.
+            # It may be overkill to round the position to 0.001 before
+            #   caching; 0.01 may be good enough.
+            stamp = np.copy( self._stamp_cache[ dex ] )
+
+        else:
+            stamp = np.zeros( ( self.stamp_size, self.stamp_size ), dtype=np.float64 )
+
+            # There may be a clever way to do this without a for loop.  Not sure
+            #   if scipy.integrate.dblquad takes arrays.  Given that it documents
+            #   that it returns a single float, I think not.  In any event, I suspect
+            #   the overhead from the for loop is not all that big compared to the
+            #   integration.
+            for iy in range( 0, self.stamp_size ):
+                # See docstring on PSF.get_stamp
+                yrel = offy - milliy / 1000. - midpix + iy
+                for ix in range( 0, self.stamp_size ):
+                    # See docstring on PSF.get_stamp
+                    xrel = offx - millix / 1000. - midpix + ix
+                    res = scipy.integrate.dblquad( self._gauss, xrel-0.5, xrel+0.5, yrel-0.5, yrel+0.5 )
+                    stamp[ iy, ix ] = res[0]
+
+            self._stamp_cache[ dex ] = np.copy( stamp )
+
+        stamp *= flux
+
+        return stamp
