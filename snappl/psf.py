@@ -1713,7 +1713,7 @@ class GaussianPSF( PSF ):
 
         Parmeters
         ---------
-            yrel, xrel: float or 1-d numpy array
+            yrel, xrel: float
               Effectively, yp-y and xp-y as described in the class description.
 
         Returns
