@@ -6,12 +6,30 @@ ManualFITSImage
 .. autoclass:: ManualFITSImage
    :show-inheritance:
 
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~ManualFITSImage.band
+      ~ManualFITSImage.mjd
+      ~ManualFITSImage.pointing
+      ~ManualFITSImage.sca
+
    .. rubric:: Methods Summary
 
    .. autosummary::
 
       ~ManualFITSImage.get_fits_header
+      ~ManualFITSImage.set_fits_header
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: band
+   .. autoattribute:: mjd
+   .. autoattribute:: pointing
+   .. autoattribute:: sca
 
    .. rubric:: Methods Documentation
 
    .. automethod:: get_fits_header
+   .. automethod:: set_fits_header
