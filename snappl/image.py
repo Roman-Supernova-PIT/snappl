@@ -482,6 +482,42 @@ class Image:
                                 'Photometry cancelled.' )
             raise
 
+    def save( self, which='all', path=None, noisepath=None, flagspath=None, overwrite=False ):
+        """Save the image to its path(s).
+
+        May have side-effects on the internal data structure (e.g. FITS
+        subclasses modify the internally stored header).
+        
+        Paramters
+        ---------
+          which : str, default "all"
+            One of 'data', 'noise', 'flags', or 'all'
+
+          path : str, default None
+            Path to write the image to.  If not specified, will use use
+            self.path.  Does NOT update self.path.
+
+          noisepath : str, default None
+            Path to write the noise image to, if the noise image is
+            stored as a separate image.  (It isn't always; some
+            subclasses have it as a separate part of the data structure
+            that also has the image.)  If None, use an internally stored
+            noisepath.  If that is not set, and noisepath is None, and
+            this isn't a subclass that combines all the data planes into
+            one file, then any noise data array will not be written.
+
+          flagspath : str, defanot None
+            Path to write the flags image to, similar to noisepath.
+        
+          overwrite : bool, default False
+            Clobber existing images?
+
+        Not implemented for all subclasses.
+
+        """
+        raise NotImplementedError( f"{self.__class__.__name} doesn't implement save" )
+        
+        
 
 # ======================================================================
 # Lots of classes will probably internally store all of data, noise, and
@@ -580,11 +616,15 @@ class Numpy2DImage( Image ):
 class FITSImage( Numpy2DImage ):
     """Base class for classes that read FITS images and use an AstropyWCS wcs."""
 
-    def __init__( self, *args, noisepath=None, flagspath=None, **kwargs ):
+    def __init__( self, *args, noisepath=None, flagspath=None,
+                  imhdu=0, noisehdu=0, flagshdu=0, **kwargs ):
         super().__init__( *args, **kwargs )
 
         self.noisepath = pathlib.Path( noisepath ) if noisepath is not None else None
         self.flagspath = pathlib.Path( flagspath ) if flagspath is not None else None
+        self.imhdu = imhdu
+        self.noisehdu = noisehdu
+        self.flagshdu = flagshdu
         self._data = None
         self._noise = None
         self._flags = None
@@ -686,7 +726,6 @@ class FITSImage( Numpy2DImage ):
                 raise RuntimeError("get_data called with which='flags', but flags are not set.")
 
     def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan):
-
         """See Image.get_cutout
 
         The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
@@ -742,8 +781,9 @@ class FITSImage( Numpy2DImage ):
         y = int( np.floor( y + 0.5 ) )
         return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
 
-    def save( self, overwrite=False ):
-        """Write image to its path.
+    def save( self, which='all', path=None, noisepath=None, flagspath=None,
+              imagehdu=None, noisehdu=None, flagshdu=None, overwrite=False ):
+        """Write image to its path.  See Image.save
 
         Has the side-effect if loading self._header if it is None, and
         if replacing WCS keywords in self._header with keywords from the
@@ -751,18 +791,39 @@ class FITSImage( Numpy2DImage ):
 
         """
 
+        saveim = ( which == 'data' ) or ( which == 'all' )
+        saveno = ( which == 'noise' ) or ( which == 'all' )
+        savefl = ( which == 'flags' ) or ( which == 'all' )
+
+        imagehdu = imagehdu if imagehdu is not None else self.imagehdu
+        noisehdu = noisehdu if noisehdu is not None else self.noisehdu
+        flagshdu = flagshdu if flagshdu is not None else self.flagshdu
+
+        if ( imagehdu != 0 ) or ( noisehdu != 0 ) or ( flagshdu != 0 ):
+            raise NotImplementedError( "We need to implement saving to HDUs other than 0." )
+        
+        path = path if path is not None else self.path
+        if saveim and ( path is None ):
+            raise RuntimeError( "Can't save data, no path." )
+        noisepath = noisepath if noisepath is not None else self.noisepath
+        if saveno and ( noisepath is None ):
+            raise RuntimeError( "Can't save noise, no path." )
+        flagspath = flagspath if flagspath is not None else self.flagspath
+        if savefl and ( flagspath is None ):
+            raise RuntimeError( "Can't save flags, no path." )
+        
         if not overwrite:
-            if ( self.path.exists() or
-                 ( self.noisepath is not None and self.noisepath.exists() ) or
-                 ( self.flagspath is not None and self.flagspath.exists() ) ):
+            if ( path.exists() or
+                 ( noisepath is not None and noisepath.exists() ) or
+                 ( flagspath is not None and flagspath.exists() ) ):
                 raise RuntimeError( "FITSImage.save: overwrite is False, but image file(s) already exist" )
         else:
-            if self.path.is_file()
-                self.path.unlink()
-            if ( self.noisepath is not None ) and ( self.noisepath.is_file() ):
-                self.noisepath.unlink()
-            if ( self.flagspath is not None ) and ( self.flagspath.is_file() ):
-                self.flagspath.unlink()
+            if path.is_file()
+                path.unlink()
+            if ( noisepath is not None ) and ( noisepath.is_file() ):
+                noisepath.unlink()
+            if ( flagspath is not None ) and ( flagspath.is_file() ):
+                flagspath.unlink()
 
         apwcs = self.get_wcs().get_astropy_wcs( readonly=True )
         self._strip_wcs_header_keywords( self )
@@ -770,11 +831,11 @@ class FITSImage( Numpy2DImage ):
         for k in self.wcshdr:
             self._header[k] = self.wcshdr[k]
 
-        fits.writeto( self.path, self.data, self._header )
-        if ( self.noisepath is not None ):
-            fits.writeto( self.noisepath, self.noise, wcshdr )
-        if ( self.flagspath is not None ):
-            fits.writeto( self.flagspath, self.flags, wcshdr )
+        fits.writeto( path, self.data, self._header )
+        if ( noisepath is not None ) and ( self.noise is not None ):
+            fits.writeto( noisepath, self.noise, wcshdr )
+        if ( self.flagspath is not None ) and ( self.flags is not None ):
+            fits.writeto( flagspath, self.flags, wcshdr )
     
     
 # ======================================================================
@@ -849,7 +910,7 @@ class FITSImageStdHeaders( FITSImage ):
 # A FITS image that doesn't know where it got its data from, you just
 # feed it the data.
 
-class ManualFITSImage(FITSImage):
+class ManualFITSImage(FITSImageStdHeaders):
     def __init__(self, header, data=None, noise=None, flags=None,
                  path=None, exposure=None, sca=None, wcs=None, *args, **kwargs):
 
@@ -893,12 +954,9 @@ class FITSImageOnDisk( FITSImage ):
 
     """
 
-    def __init__( self, *args, imhdu=0, noisehdu=0, flagshdu=0, **kwargs ):
+    def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
-        self.imhdu = imhdu
-        self.noisehdu = noisehdu
-        self.flagshdu = flagshdu
 
     def uncompressed_version( self, include=[ 'data', 'noise', 'flags' ], base_dir=None ):
         """Make sure to get a FITSImageOnDisk that's not compressed.
@@ -1025,11 +1083,12 @@ class FITSImageOnDisk( FITSImage ):
                  else [ data, noise, flags ] )
 
 
-    def save_data( self, which="all", overwrite=False,
-                   path=None, imhdu=0,
+    def save( self, which="all", overwrite=False,
+                   path=None, imagehdu=0,
                    noisepath=None, noisehdu=None,
                    flagspath=None, flagshdu=None ):
         """Write the data to the file."""
+        # Can't use the parent version necessarily because we have to think about how to handle compression
         raise NotImplementedError( "OMG needs to be done" )
 
 

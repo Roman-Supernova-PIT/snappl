@@ -101,7 +101,12 @@ class ImageSimulatorStarCollection:
 class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""
    
-    def __init__( self, width, height, ra, dec, rotation, zeropoint=None, mjd=None, pixscale=None ):
+    def __init__( self, width, height, ra=ra, dec=dec, rotation=rotation, basename=None,
+                  zeropoint=None, mjd=None, pixscale=None ):
+
+        if basename is None:
+            raise ValueError( "Must pass a basename" )
+
         rotation = rotation * np.pi / 180.
         wcsdict = { 'CTYPE1': 'RA---TAN',
                     'CTYPE2': 'DEC---TAN',
@@ -120,9 +125,17 @@ class ImageSimulatorImage:
                                       data=np.zeros( ( height, width ), dtype=np.float32 ),
                                       noise=np.zeros( ( height, width ), dtype=np.float32 ),
                                       flags=np.zeros( ( height, width ), dtype=np.int16 ),
-                                      wcs=AstropyWCS( astropy.wcs.WCS( wcsdict ) ) )
+                                      wcs=AstropyWCS( astropy.wcs.WCS( wcsdict ) ),
+                                      path=f'{basename}_{mjd:7.1f}_image.fits',
+                                      noisepath=f'{basename}_{mjd:7.1f}_noise.fits',
+                                      flagspath=f'{basename}_{mjd:7.1f}_flags.fits' )
         self.image.mjd = mjd
         self.image.zeropoint = zeropoint
+        # TODO : make the rest of these settable
+        self.image.band = 'R062'
+        self.image.sca = 1
+        self.image.pointing = int( 10 * mjd )
+        self.image.exptime = 60.
                     
     def render_sky( self, skymean, skysigma, rng=None ):
         if rng is None:
@@ -140,20 +153,128 @@ class ImageSimulatorImage:
             star.add_to_image( self.image.data, self.image.noise, x, y, zeropoint=self.image.zeropoint, rng=rng )
         
 
+class ImageSimulator:
+    def __init__( self,
+                  seed=None,
+                  star_center_ra=None,
+                  star_center_dec=None,
+                  star_sky_radius=650.,
+                  min_star_magnitude=18.,
+                  max_star_magnitude=28.,
+                  alpha=1.,
+                  nstars=200,
+                  psf_class='gaussian',
+                  psf_kwargs=[],
+                  basename='simimage',
+                  width=4088,
+                  height=4088,
+                  pixscale=0.11,
+                  mjds=None,
+                  image_centers=None,
+                  image_rotations=[0.],
+                  zeropoints=[33.],
+                  sky_noise_rms=[100.],
+                  sky_level=[10.],
+                  transient_ra=None,
+                  transient_dec=None,
+                  transient_peak_mag=21.,
+                  transient_start_mjd=60010.,
+                  transient_end_mjd=60060.,
+                  overwrite=False ):
 
+        self.mjds = mjds if mjds is not None else np.arange( 60000., 60065., 5. )
+
+        if ( star_center_ra is None ) or ( star_center_dec ) is None:
+            raise ValueError( "star_center_ra and star_center_dec are required" )
+        
+        imdata = { 'ras': [],
+                   'decs': [],
+                   'rots': [],
+                   'zps': [],
+                   'skys': [],
+                  'skyrmses': [] }
+
+        if image_centers is None:
+            imdata['ras'] = [ star_center_ra for t in mjds ]
+            imdata['decs'] = [ star_center_dec for t in mjds ]
+        elif len( image_centers ) == 2:
+            imdata['ras'] = [ image_centers[0] for t in mjds ]
+            imdata['decs'] = [ image_centers[1] for t in mjds ]
+        elif len(image_centers ) == len(mjds) * 2:
+            imdata['ras'] = [ image_centers[i*2] for i in range(len(mjds)) ]
+            imdata['decs'] = [ image_centers[i*2 + 1] for i in range(len(jds)) ]
+        else:
+            raise ValueError( f"Generating {len(mjds)} images, so need either 2 values for image_centers "
+                              f"(ra, dec if they're all the same), or {2*len(mjds)} values (ra0, dec0, ra1, dec1, ...)" )
+
+        for prop, arg in zip( [ 'rots', 'zps', 'skys', 'skyrmses' ],
+                              [ 'image_rotations', 'zeropoints', 'sky_level', 'sky_noise_rms' ] ):
+            if locals()[arg] == 1:
+                imdata[prop] == [ locals()[arg][0] for t in mjds ]
+            elif len( locals()[arg] ) == len(mjds):
+                imdata[prop] = locals()[arg]
+            else:
+                raise ValueError( f"Generating {len(mjds)} images, so either need one (if they're all the same) or "
+                                  f"{len(mjds)} values for {arg}" )
+
+        self.seed = seed
+        self.width = width
+        self.height = height
+        self.basename = basename
+        self.pixscale = pixscale
+        self.star_center_ra = star_center_ra
+        self.star_center_dec = star_center_dec
+        self.star_sky_radius = star_sky_raidus
+        self.min_star_magnitude = min_star_magnitude
+        self.max_star_magnitude = max_star_magnitude
+        self.alpha = alpha
+        self.nstars = nstars
+        self.psf_class = psfclass
+        self.psf_kwargs = psf_kwargs
+
+        
+    def __call__( self ):
+        base_rng = np.random.default_rng( self.seed )
+        sky_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
+        star_rng = np.random.default_rng( baserng.integers( 1, 2147483648 ) )
+        transient_rng = np.random.default_rng( baserng.integrs( 1, 2147483648 ) )
+
+        images = [ ImageSimulatorImage( self.width, self.height, ra=imdata['ras'][i], dec=imdata['decs'][i],
+                                        rotation=imdata['rots'][i], basename=self.basename,
+                                        zeropoint=imdata['zps'][i], mjd=mjds[i], pixscale=self.pixscale )
+                   for i in range(len(mjds)) ]
+        for image, skymean, skyrms in zip( images, imdata['skys'], imdata['skyrmses'] ):
+            image.render_sky( skymean, skyrms, rng=sky_rng )
+            
+            stars = ImageSimulatorStarCollection( ra=self.star_center_ra, dec=self.star_center_dec,
+                                                  fieldrad=self.star_sky_radius,
+                                                  m0=self.min_star_magnitude, m1=self.max_star_magnitude,
+                                                  alpha=self.alpha, nstars=self.nstars,
+                                                  psf_classpself.sf_class, psf_kwargs=self.psf_kwargs,
+                                                  rng=star_rng )
+
+        for image in images:
+            image.add_stars( stars, star_rng )
+
+        # TODO Add transient
+
+        for image in images:
+            image.image.save( overwrite=args.overwrite )
+
+            
 # ======================================================================
 
 def main():
     parser = argparse.ArgumentParser( 'image_simulator', description="Quick and cheesy image simulator" )
     parser.add_argument( '--seed', type=int, default=None, help="RNG seed" )
 
-    parser.add_argument( '--sc', '--star-center', nargs=2, type=float, required=True,
+    parser.add_argument( '--star-center', '--sc', nargs=2, type=float, required=True,
                          help="Center of created starfield on sky (ra, dec in degrees)" )
-    parser.add_argument( '--sr', '--star-sky-radius', type=float, default=650.
+    parser.add_argument( '--star-sky-radius', '--sr', type=float, default=650.
                          help="Radius of created starfield in sky (arcsec), default 650." )
-    parser.add_argument( '--m0', '--min-magnitude', type=float, default=18.,
+    parser.add_argument( '--min-star-magnitude', '--m0', type=float, default=18.,
                          help="Minimum (brightest) magnitude star created (default 18)" )
-    parser.add_argument( '--m1', '--max-magnitude', type=float, default=28.,
+    parser.add_argument( '--max-star-magnitude', '--m1', type=float, default=28.,
                          help="Maxinum (dimmest) magnitude star created (default 18)" )
     parser.add_argument( '-a', '--alpha', type=float, default=1.,
                          help="Power law exponent for star distribution (default: 1)" )
@@ -161,17 +282,19 @@ def main():
                          help="Generate this many stars (default 200)" )
     parser.add_argument( '-p', '--psf-class', default='gaussian',
                          help="psfclass to use for stars (default 'gaussian')" )
-    parser.add_argument( '--pk', '--psf-kwargs', nargs='*', default=[],
+    parser.add_argument( '--psf-kwargs', '--pk', nargs='*', default=[],
                          help="Series of key=value PSF kwargs to pass to PSF.get_psf_object" )
 
-    parser.add_argument( '-b', '--basename', default='simimage', help="base for output filename" )
+    parser.add_argument( '-b', '--basename', default='simimage',
+                         help=( "base for output filename.  Written files will be basename_{mjd:7.1f}_image.fits, "
+                                "..._noise.fits, and ..._flags.fits" ) )
     parser.add_argument( '-w', '--width', type=int, default=4088, help="Image width (default: 4088)" )
     parser.add_argument( '-h', '--height', type=int, default=4088, help="Image height (default: 4088)" )
-    parser.add_argument( '--ps', '--pixscale', type=float, default=0.11,
+    parser.add_argument( '--pixscale', '--ps', type=float, default=0.11,
                          help="Image pixel scale in arcsec/pixel (default 0.11)" )
     parser.add_argument( '-t', '--mjds', type=float, nargs='+', default=None,
                          help="MJDs of images (default: start at 60000., space by 5 days for 60 days)" )
-    parser.add_argument( '--ic', '--image-centers', type=float, nargs='+', default=None,
+    parser.add_argument( '--image-centers', '--ic', type=float, nargs='+', default=None,
                          help="ra0 dec0 ra1 dec1 ... ran decn centers of images" )
     parser.add_argument( '-r', '--image-rotations', type=float, nargs='+', default=[0.],
                          help="Rotations (degrees) of images about centers" )
@@ -182,68 +305,28 @@ def main():
     parser.add_argument( '-s', '--sky-level', type=float, nargs='+', default=10.,
                          help="Image sky level (default: 10. for all)" )
 
-    parser.add_argument( '--tra', '--transient-ra', type=float, default=None,
+    parser.add_argument( '--transient-ra', '--tra', type=float, default=None,
                          help="RA of optional transient (decimal degrees); if None, render no transient" )
-    parser.add_argument( '--tdec', '--transient-dec', type=float, default=None,
+    parser.add_argument( '--transient-dec', '--tdec', type=float, default=None,
                          help="Dec of optional transient (decimal degrees)" )
-    parser.add_argument( '--tp', '--transient-peak-mag', type=float, default=21.,
+    parser.add_argument( '--transient-peak-mag', '--tp', type=float, default=21.,
                          help="Peak magnitude of transient (default: 21)" )
-    parser.add_argument( '--tt0', '--transient-start-mjd', type=float, default=60010.
+    parser.add_argument( '--transient-start-mjd', '--tt0', type=float, default=60010.
                          help="Start MJD of transient linear rise (default: 60010.)" )
-    parser.add_argument( '--ttm', '--transient-peak-mjd', type=float, default=60030.,
+    parser.add_argument( '--transient-peak-mjd', '--ttm', type=float, default=60030.,
                          help="Peak MJD of transient (default: 60030.)" )
-    parser.add_argument( '--tt1', '--transient-end-mjd', type=float, default=60010.,
+    parser.add_argument( '--transient-end-mjd', '--tt1', type=float, default=60010.,
                          help="End MJD of transient linear decay (default: 60060.)" )
+
+    parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
+                         help="Overwrite any existing images with the same filename." )
     
 
     args = parser.parse_args()
-    base_rng = np.random.default_rng( args.seed )
-    sky_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
-    star_rng = np.random.default_rng( baserng.integers( 1, 2147483648 ) )
-    transient_rng = np.random.default_rng( baserng.integrs( 1, 2147483648 ) )
+    sim = ImageSimulator( **vars(args) )
+    sim()
 
-    mjds = args.mjds if args.mjds is not None else np.arange( 60000., 60065., 5. )
-    imdata = { 'ras': [],
-               'decs': [],
-               'rots': [],
-               'zps': [],
-               'skys': [],
-               'skyrmses': [] }
 
-    if len( args.image_centers ) == 2:
-        imdata['ras'] = [ args.image_centers[0] for t in mjds ]
-        imdata['decs'] = [ args.image_centers[1] for t in mjds ]
-    elif len( args.image_centers ) == len(mjds) * 2:
-        imdata['ras'] = [ args.image_centers[i*2] for i in range(len(mjds)) ]
-        imdata['decs'] = [ args.image_centers[i*2 + 1] for i in range(len(jds)) ]
-    else:
-        raise ValueError( f"Generating {len(mjds)} images, so need either 2 values for --image-centers "
-                          f"(ra, dec if they're all the same), or {2*len(mjds)} values (ra0, dec0, ra1, dec1, ...)" )
-
-    for prop, arg in zip( [ 'rots', 'zps', 'skys', 'skyrmses' ],
-                          [ 'image_rotations', 'zeropoints', 'sky_level', 'sky_noise_rms' ] ):
-        if len( getattr( args, arg ) ) == 1:
-            imdata[prop] == [ getattr( args, arg )[0] for t in mjds ]
-        elif len( getattr( args, arg ) ) == len(mjds):
-            imdata[prop] = getattr( args, arg )
-        else:
-            raise ValueError( f"Generating {len(mjds)} images, so either need one (if they're all the same) or "
-                              f"{len(mjds)} values for {arg}" )
-
-    images = [ ImageSimulatorImage( args.width, args.height, imdata['ras'][i], imdata['decs'][i],
-                                    imdata['rots'][i], zeropoint=imdata['zps'][i], mjd=mjds[i],
-                                    pixscale=args.pixscale )
-               for i in range(len(mjds)) ]
-    for image, skymean, skyrms in zip( images, imdata['skys'], imdata['skyrmses'] ):
-        image.render_sky( skymean, skyrms, rng=sky_rng )
-
-    stars = ImageSimulatorStarCollection( ra=args.star_center[0], dec=args.star_center[1],
-                                          fieldrad=args.star_sky_radius, m0=args., m1=args,
-                                          alpha=args., nstars=args., psf_class=args.,
-                                          psf_kwargs=args., rng=star_rng )
-
-    for image in images:
-        image.add_stars( stars, star_rng )
-
-    
-    
+# ======================================================================
+if __name__ == "__main__":
+    main()
