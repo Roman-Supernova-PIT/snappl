@@ -186,6 +186,11 @@ class Image:
         """Band (str)"""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement band" )
 
+    @band.setter
+    def band(self, val):
+        raise NotImplementedError("{self.__class__.__name__} needs to implement band setter")
+
+
     @property
     def zeropoint( self ):
         """Image zeropoint for AB magnitudes.
@@ -926,6 +931,61 @@ class FITSImageStdHeaders( FITSImage ):
             except Exception:
                 self._header = fits.header.Header()
         return self._header
+
+    @property
+    def mjd(self):
+        """The mjd of the image.
+
+        TODO : is this start-time, mid-time, or end-time?
+
+        """
+        if self._mjd is None:
+            raise RuntimeError("MJD is not set for ManualFITSImage.")
+        return self._mjd
+
+    @mjd.setter
+    def mjd(self, val):
+        # Turns out that if a subclass has a @property for mjd, it has to have its own @mjd.setter;
+        # it can't use the superclass' @mjd.setter even if the content is right.
+
+        self._mjd = val
+
+    @property
+    def band(self):
+        """The Roman passband of the image."""
+        if self._band is None:
+            raise RuntimeError("Band has not been set for ManualFITSImage.")
+        return self._band
+
+    @band.setter
+    def band(self, val):
+        self._band = val
+
+
+    @property
+    def sca(self):
+        if self._sca is None:
+            raise RuntimeError("SCA has not been set for ManualFITSImage.")
+        return self._sca
+
+    @sca.setter
+    def sca(self, val):
+        self._sca = val
+
+    @property
+    def pointing(self):
+        if self._pointing is None:
+            raise RuntimeError("Pointing has not been set for ManualFITSImage.")
+        return self._pointing
+
+    @pointing.setter
+    def pointing(self, val):
+        self._pointing = val
+
+    def set_fits_header(self, hdr):
+        self._header = hdr
+
+
 
 
     @property
