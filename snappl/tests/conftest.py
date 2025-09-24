@@ -55,7 +55,7 @@ def manual_fits_image( ou2024imagepath):
     data = np.ones((25, 25), dtype = np.float32)
     noise = np.zeros((25, 25), dtype = np.float32)
     flags = np.zeros((25, 25), dtype = np.uint32)
-    return FITSImage(header, data, noise=noise, flags=flags)
+    return FITSImage( path=ou2024imagepath, header=header, data=data, noise=noise, flags=flags )
 
 
 @pytest.fixture
@@ -92,6 +92,20 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
     fitsim._flags = flg
 
     return fitsim
+
+
+@pytest.fixture
+def unloaded_fitsimage_basepath():
+    return '/photometry_test_data/simple_gaussian_test/sig1.0/test_60030.0'
+
+
+@pytest.fixture
+def unloaded_fitsimage( unloaded_fitsimage_basepath ):
+    p = unloaded_fitsimage_basepath
+    return FITSImage( path=f'{p}_image.fits',
+                      noisepath=f'{p}_noise.fits',
+                      flagspath=f'{p}_flags.fits',
+                     )
 
 
 @pytest.fixture( scope='module' )

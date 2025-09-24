@@ -648,6 +648,40 @@ class FITSImage( Numpy2DImage ):
             self.noisehdu = noisehdu
             self.flagshdu = flagshdu
 
+
+    @classmethod
+    def _fitsio_header_to_astropy_header( cls, hdr ):
+        # I'm agog that astropy.io.fits.Header can't just take a fitsio HEADER
+        #   as a constructor argument, but there you have it.
+
+        if not isinstance( hdr, fitsio.header.FITSHDR ):
+            raise TypeError( "_fitsio_header_to_astropy_header expects a fitsio.header.FITSHDR" )
+
+        ahdr = fits.Header()
+        for rec in hdr.records():
+            if 'comment' in rec:
+                ahdr[ rec['name'] ] = ( rec['value'], rec['comment'] )
+            else:
+                ahdr[ rec['name'] ] = rec['value']
+
+        return ahdr
+
+
+    @classmethod
+    def _astropy_header_to_fitsio_header( cls, ahdr ):
+        if not isinstance( ahdr, astropy.io.fits.header.Header ):
+            raise TypeError( "_astropy_header_to_fitsio_header expects a astrop.io.fits.header.Header" )
+
+        hdr = fitsio.header.FITSHDR()
+        for i, kw in enumerate( ahdr ):
+            rec = { 'name': kw, 'value': ahdr[i] }
+            if len( ahdr.comments[i] ) > 0:
+                rec['comment'] = ahdr.comments[i]
+            hdr.add_record( rec )
+
+        return hdr
+
+
     @property
     def image_shape(self):
         """tuple: (ny, nx) shape of image"""
@@ -667,8 +701,9 @@ class FITSImage( Numpy2DImage ):
         """Get the header of the image."""
 
         if self._header is None:
-            with fits.open( self.path ) as hdul:
-                self._header = hdul[ self.imagehdu ].header
+            with fitsio.FITS( self.path ) as f:
+                hdr = f[ self.imagehdu ].read_header()
+                self._header = FITSImage._fitsio_header_to_astropy_header( hdr )
         return self._header
 
 
@@ -852,6 +887,7 @@ class FITSImage( Numpy2DImage ):
         except Exception:
             wcshdr = None
 
+        # TODO : fitsioify these
         fits.writeto( path, self.data, self._header )
         if ( noisepath is not None ) and ( self.noise is not None ):
             fits.writeto( noisepath, self.noise, wcshdr )
@@ -1045,12 +1081,6 @@ class FITSImageOnDisk( FITSImage ):
             raise TypeError( f"hdr must be a fits.header.Header, not a {type(hdr)}" )
         self._header = hdr
 
-    def get_fits_header( self ):
-        if self._header is None:
-            with fits.open( self.path ) as hdul:
-                self._header = hdul[ self.imagehdu ].header
-        return self._header
-
     def get_data( self, which="all", always_reload=False, cache=False ):
         if self._is_cutout:
             raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
@@ -1076,29 +1106,29 @@ class FITSImageOnDisk( FITSImage ):
 
             # Open the data, and do everything else inside that with just in case
             #   noise and flags are part of the same FITS image.
-            with fits.open( self.path ) as imagehdul:
+            with fitsio.FITS( self.path ) as imagefits:
                 if "data" in toload:
-                    header = imagehdul[ self.imagehdu ].header
-                    data = imagehdul[ self.imagehdu ].data
+                    header = FITSImage._fitsio_header_to_astropy_header( imagefits[ self.imagehdu ].read_header() )
+                    data = imagefits[ self.imagehdu ].read()
                     if cache:
                         self._data = data
                         self._header = header
 
                 if "noise" in toload:
-                    if self.noisepath is not None:
-                        with fits.open( self.noisepath ) as noihdul:
-                            noise = noihdul[ self.noisehdu ].data
+                    if ( self.noisepath is not None ) and ( self.noisepath != self.path ):
+                        with fitsio.FITS( self.noisepath ) as noisefits:
+                            noise = noisefits[ self.noisehdu ].read()
                     else:
-                        noise = imagehdul[ self.noisehdu ].data
+                        noise = imagefits[ self.noisehdu ].read()
                     if cache:
                         self._noise = noise
 
                 if "flags" in toload:
-                    if self.flagspath is not None:
-                        with fits.open( self.flagspath ) as flghdul:
-                            flags = flghdul[ self.flagshdul ].data
+                    if ( self.flagspath is not None ) and ( self.flagspath != self.path ):
+                        with fitsio.FITS( self.flagspath ) as flagsfits:
+                            flags = flagsfits[ self.flagshdu ].read()
                     else:
-                        flags = imagehdul[ self.flagshdu ].data
+                        flags = imagefits[ self.flagshdu ].read()
                     if cache:
                         self._flags = flags
 

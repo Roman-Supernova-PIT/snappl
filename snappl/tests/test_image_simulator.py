@@ -1,9 +1,17 @@
+import pytest
 import pathlib
 import numpy as np
 
+from snpit_utils.utils import env_as_bool
 from snappl.image_simulator import ImageSimulator
 
 
+# This isn't really a *test* per se, but is a thing here
+# to generate some test images we stick in /photometry_test_data
+# Set env var GENERATE_IMAGE_SIMULATOR_TESTS to 1 before
+# running tests to run this.  It's very slow.
+@pytest.mark.skipif( not env_as_bool('GENERATE_IMAGE_SIMULATOR_TESTS'),
+                     reason='Set GENERATE_IMAGE_SIMULATOR_TESTS=1 to run this "test"' )
 def test_image_simulator():
     try:
         sim = ImageSimulator(

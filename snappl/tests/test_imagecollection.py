@@ -40,7 +40,8 @@ def test_imagecollectionou2024_get_image():
     assert hdr['MJD-OBS'] == pytest.approx( 62170.424, abs=1e-3 )
     assert hdr['FILTER'] == 'Y106'
     assert isinstance( img1.data, np.ndarray )
-    assert img1.data.dtype == '>f8'
+    # assert img1.data.dtype == '>f8'
+    assert img1.data.dtype == np.dtype('float64')
     assert img1.data.shape == ( 4088, 4088 )
     assert img1.noise.dtype == '>f4'
     assert img1.noise.shape == ( 4088, 4088 )
