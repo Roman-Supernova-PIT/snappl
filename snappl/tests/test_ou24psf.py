@@ -8,6 +8,7 @@ from photutils.psf import ImagePSF
 
 import snappl.psf
 from snappl.psf import PSF
+from snappl.imagecollection import ImageCollection
 
 
 def test_slow_normalization():
@@ -270,10 +271,17 @@ def test_set_wcs():
     assert psfobj_1._wcs != psfobj_2._wcs, "The initial WCS should be different for different PSF objects with" + \
     "different pointing/sca."
 
-    psfobj_1 = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
-    psfobj_2 = PSF.get_psf_object("ou24PSF", pointing=5934, sca=3, size=41.0)
+    img_collection = ImageCollection()
+    img_collection = img_collection.get_collection("ou2024")
+    dummy_image = img_collection.get_image(pointing=5934, sca=3, band="Y106")
+    psfobj_1 = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0, image=dummy_image)
+    psfobj_2 = PSF.get_psf_object("ou24PSF", pointing=5934, sca=3, size=41.0 )
 
     psfobj_1.get_stamp( seed=42 )
-    psfobj_2.get_stamp( seed=42, input_wcs=psfobj_1._wcs )
+    psfobj_2.get_stamp( seed=42)
 
-    assert psfobj_1._wcs == psfobj_2._wcs, "The WCS should be the same after setting it manually."
+    terms = ["dudx", "dudy", "dvdx", "dvdy"]
+    for term in terms:
+        np.testing.assert_allclose(getattr(psfobj_1._wcs, term), getattr(psfobj_2._wcs, term),
+                                      err_msg=f"The WCS term {term} should be the same after setting it manually.",
+                                      rtol=1e-7)
