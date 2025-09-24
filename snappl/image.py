@@ -849,7 +849,7 @@ class FITSImage( Numpy2DImage ):
               imagehdu=None, noisehdu=None, flagshdu=None, overwrite=False ):
         """Write image to its path.  See Image.save
 
-        Has the side-effect if loading self._header if it is None, and
+        Has the side-effect of loading self._header if it is None, and
         if replacing WCS keywords in self._header with keywords from the
         current image WCS.
 
