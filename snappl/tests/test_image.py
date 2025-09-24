@@ -288,7 +288,7 @@ def test_fits_std_imagenames( unloaded_fitsimage_basepath ):
         noise = np.float32( rng.uniform( size=(256, 256) ) )
         flags = np.int16( rng.integers( 2, size=(256, 256) ) )
         newim = FITSImage( path='test_fits_std_imagenames', std_imagenames=True,
-                           data=data, noise=noise, flags=flags )
+                           data=data, noise=noise, flags=flags, header=im.get_fits_header() )
         assert newim._data is data
         assert newim._noise is noise
         assert newim._flags is flags
@@ -303,14 +303,28 @@ def test_fits_std_imagenames( unloaded_fitsimage_basepath ):
         assert np.all( testim.noise == noise )
         assert np.all( testim.flags == flags )
 
+        # Make sure we can't overwrite
+        with pytest.raises( RuntimeError, match=( r"FITSImage.save: overwrite is False, but "
+                                                  r"image file\(s\) already exist" ) ):
+            newim.save()
+
+        # Make sure we can overwrite
+        newim._data = data + 1.
+        newim._noise = noise + 1.
+        newim._flags = flags + 1
+        newim.save( overwrite=True )
+        testim = FITSImage( path=bpath, std_imagenames=True )
+        assert np.allclose( testim.data, data + 1., atol=1e-6 )
+        assert np.allclose( testim.noise, noise + 1., atol=1e-6 )
+        assert np.all( testim.flags == flags + 1 )
+
     finally:
         ipath.unlink( missing_ok=True )
         npath.unlink( missing_ok=True )
         fpath.unlink( missing_ok=True )
 
-
-
 # TODO : test saving with WCS
+
 
 # ======================================================================
 # ManualFITSImage tests

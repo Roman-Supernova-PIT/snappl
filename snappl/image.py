@@ -879,6 +879,8 @@ class FITSImage( Numpy2DImage ):
             if ( flagspath is not None ) and ( flagspath.is_file() ):
                 flagspath.unlink()
 
+        # Make sure header is loaded
+        self.get_fits_header()
         try:
             apwcs = self.get_wcs().get_astropy_wcs( readonly=True )
             wcshdr = apwcs.to_header()
@@ -887,12 +889,14 @@ class FITSImage( Numpy2DImage ):
         except Exception:
             wcshdr = None
 
-        # TODO : fitsioify these
-        fits.writeto( path, self.data, self._header )
+        with fitsio.FITS( path, 'rw' ) as f:
+            f.write( self.data, header=FITSImage._astropy_header_to_fitsio_header( self._header ) )
         if ( noisepath is not None ) and ( self.noise is not None ):
-            fits.writeto( noisepath, self.noise, wcshdr )
+            with fitsio.FITS( noisepath, 'rw' ) as f:
+                f.write( self.noise, header=FITSImage._astropy_header_to_fitsio_header( wcshdr ) )
         if ( self.flagspath is not None ) and ( self.flags is not None ):
-            fits.writeto( flagspath, self.flags, wcshdr )
+            with fitsio.FITS( flagspath, 'rw' ) as f:
+                f.write( self.flags, header=FITSImage._astropy_header_to_fitsio_header( wcshdr ) )
 
 
 # ======================================================================

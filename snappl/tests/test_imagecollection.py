@@ -43,7 +43,8 @@ def test_imagecollectionou2024_get_image():
     # assert img1.data.dtype == '>f8'
     assert img1.data.dtype == np.dtype('float64')
     assert img1.data.shape == ( 4088, 4088 )
-    assert img1.noise.dtype == '>f4'
+    # assert img1.noise.dtype == '>f4'
+    assert img1.noise.dtype == np.dtype('float32')
     assert img1.noise.shape == ( 4088, 4088 )
     assert img1.flags.dtype == np.dtype('uint32')
     assert img1.flags.shape == ( 4088, 4088 )
