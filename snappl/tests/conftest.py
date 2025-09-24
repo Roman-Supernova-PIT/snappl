@@ -8,7 +8,7 @@ import tox # noqa: F401
 from tox.pytest import init_fixture # noqa: F401
 
 from snappl.imagecollection import ImageCollection
-from snappl.image import FITSImage, ManualFITSImage, RomanDatamodelImage
+from snappl.image import FITSImage, RomanDatamodelImage
 
 from snpit_utils.config import Config
 
@@ -55,7 +55,7 @@ def manual_fits_image( ou2024imagepath):
     data = np.ones((25, 25), dtype = np.float32)
     noise = np.zeros((25, 25), dtype = np.float32)
     flags = np.zeros((25, 25), dtype = np.uint32)
-    return ManualFITSImage(header, data, noise=noise, flags=flags)
+    return FITSImage(header, data, noise=noise, flags=flags)
 
 
 @pytest.fixture

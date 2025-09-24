@@ -4,7 +4,7 @@ import pathlib
 
 from snpit_utils.config import Config
 from snpit_utils.http import retry_post
-from snappl.image import OpenUniverse2024FITSImage
+from snappl.image import OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders
 
 
 class ImageCollection:
@@ -32,9 +32,11 @@ class ImageCollection:
             * manual_fits - FITS images that aren't really part of a collection
 
           subset : str or None
-            Name of the subset, if relevant for that collection.  (As of
-            this writing, none of the implemented collections use
-            subset.)
+            Name of the subset, if relevant for that collection.
+              * manual_fits
+                 * (None) - a single FITS file on disk
+                 * "threefile" - follows the convention of snappl.image.FITSImageStdHeaders
+                                 and std_imagenames=True passed to the constructor
 
           **kwargs : Some collections types require additional arguments.
 
@@ -42,7 +44,12 @@ class ImageCollection:
         if collection == 'ou2024':
             return ImageCollectionOU2024( **kwargs )
         elif collection == 'manual_fits':
-            return ImageCollectionManualFITS( **kwargs )
+            if subset is None:
+                return ImageCollectionManualFITS( **kwargs )
+            elif subset == "threefile":
+                return ImageCollectionManualFITS( threefile=True, **kwargs )
+            else:
+                raise ValueError( f"Unknown subset {subset} of manual_fits" )
         else:
             raise ValueError( f"Unknown image collection {collection} (subset {subset})" )
 
@@ -255,15 +262,47 @@ class ImageCollectionOU2024:
 
 
 class ImageCollectionManualFITS:
-    """Manually specified custom images."""
+    """Manually specified custom images.
 
-    def __init__( self, base_path=None ):
+    One version of this (constructed with threefile=True) assumes that
+    there are three files associated with an image whose path is given
+    as {path}:
+       {path}_image.fits
+       {path}_noise.fits
+       {path}_flags.fits
+
+    In addition, the threefile version assumes that the following header
+    keywords all exist in the header of the _image.fits file:
+      BAND
+      EXPTIME
+      MJD
+      POINTING
+      SCA
+      ZPT
+    (in addition to a WCS in the _image.fits header).
+
+    """
+
+    def __init__( self, base_path=None, threefile=False ):
         if base_path is None:
             raise RuntimeError( "manual_fits collection needs a base path" )
         self.base_path = pathlib.Path( base_path )
+        self.threefile = threefile
 
     def get_image_path( self, pointing, band, sca, base_path=None ):
         raise NotImplementedError( "get_image_path is not defined for ImageCollectionManualFITS" )
 
     def find_images( self, **kwargs ):
         raise NotImplementedError( "find_images is not defined for ImageCollectionManualFITS" )
+
+    def get_image( self, path=None, pointing=None, band=None, sca=None, base_path=None ):
+        if path is None:
+            raise ValueError( "ImageCollectionManualFITS.get_image requires a path, it can't "
+                              "handle pointing/band/sca." )
+
+        base_path = pathlib.Path(base_path) if base_path is not None else self.base_path
+        if self.threefile:
+            return FITSImageStdHeaders( path=base_path / path, std_imagenames=True )
+
+        else:
+            return FITSImage( path=path )
