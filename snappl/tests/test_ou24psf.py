@@ -278,7 +278,7 @@ def test_set_wcs():
     psfobj_2 = PSF.get_psf_object("ou24PSF", pointing=5934, sca=3, size=41.0 )
 
     psfobj_1.get_stamp( seed=42 )
-    psfobj_2.get_stamp( seed=42)
+    psfobj_2.get_stamp( seed=42 )
 
     terms = ["dudx", "dudy", "dvdx", "dvdy"]
     for term in terms:
