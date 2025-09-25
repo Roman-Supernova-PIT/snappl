@@ -1,0 +1,1 @@
+Add image_simulator.py ; redo image.py FITS classes ; fitsio reading/writing

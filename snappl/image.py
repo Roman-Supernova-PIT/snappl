@@ -1,4 +1,4 @@
-__all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'ManualFITSImage', 'FITSImageOnDisk',
+__all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'FITSImageOnDisk',
             'OpenUniverse2024FITSImage', 'RomanDatamodelImage' ]
 
 import re
@@ -7,6 +7,7 @@ import random
 
 import numpy as np
 import pandas
+import fitsio
 from astropy.io import fits
 from astropy.nddata.utils import Cutout2D
 from astropy.coordinates import SkyCoord
@@ -487,6 +488,47 @@ class Image:
                                 'Photometry cancelled.' )
             raise
 
+    def save_data( self, which='all', path=None, noisepath=None, flagspath=None, overwrite=False ):
+        """Same as save; here for backwards compatibility.  Use save."""
+        self.save( which=which, path=path, noisepath=noisepath, flagspath=flagspath, overwrite=overwrite )
+
+
+    def save( self, which='all', path=None, noisepath=None, flagspath=None, overwrite=False ):
+        """Save the image to its path(s).
+
+        May have side-effects on the internal data structure (e.g. FITS
+        subclasses modify the internally stored header).
+
+        Paramters
+        ---------
+          which : str, default "all"
+            One of 'data', 'noise', 'flags', or 'all'
+
+          path : str, default None
+            Path to write the image to.  If not specified, will use use
+            self.path.  Does NOT update self.path.
+
+          noisepath : str, default None
+            Path to write the noise image to, if the noise image is
+            stored as a separate image.  (It isn't always; some
+            subclasses have it as a separate part of the data structure
+            that also has the image.)  If None, use an internally stored
+            noisepath.  If that is not set, and noisepath is None, and
+            this isn't a subclass that combines all the data planes into
+            one file, then any noise data array will not be written.
+
+          flagspath : str, defanot None
+            Path to write the flags image to, similar to noisepath.
+
+          overwrite : bool, default False
+            Clobber existing images?
+
+        Not implemented for all subclasses.
+
+        """
+        raise NotImplementedError( f"{self.__class__.__name} doesn't implement save" )
+
+
 
 # ======================================================================
 # Lots of classes will probably internally store all of data, noise, and
@@ -495,12 +537,12 @@ class Image:
 class Numpy2DImage( Image ):
     """Abstract class for classes that store their array internall as a numpy 2d array."""
 
-    def __init__( self, *args, **kwargs ):
+    def __init__( self, *args, data=None, noise=None, flags=None, **kwargs ):
         super().__init__( *args, **kwargs )
 
-        self._data = None
-        self._noise = None
-        self._flags = None
+        self._data = data
+        self._noise = noise
+        self._flags = flags
         self._image_shape = None
 
     @property
@@ -576,22 +618,74 @@ class Numpy2DImage( Image ):
 
 
 # ======================================================================
-# A base class for FITSImages which use an AstropyWCS wcs.  Not useful
-#   by itself, because which image you load will have different
-#   assumptions about which HDU holds image, weight, flags, plus header
-#   information will be different etc.  However, there will be some
-#   shared code between all FITS implementations, so that's here.
+# A base class for FITSImages which use an AstropyWCS wcs.  Of limited
+#   use by itself.  Although you pass it paths, it doesn't actually
+#   read from paths; see FITSImageOnDisk for somethign that can.
 
 class FITSImage( Numpy2DImage ):
     """Base class for classes that read FITS images and use an AstropyWCS wcs."""
 
-    def __init__( self, *args, **kwargs ):
+    def __init__( self, *args, noisepath=None, flagspath=None,
+                  imagehdu=0, noisehdu=0, flagshdu=0, header=None, wcs=None,
+                  std_imagenames=False, **kwargs ):
         super().__init__( *args, **kwargs )
 
-        self._data = None
-        self._noise = None
-        self._flags = None
-        self._header = None
+        self._header = header
+        self._wcs = wcs
+
+        if std_imagenames:
+            if any( i != 0 for i in ( imagehdu, noisehdu, flagshdu ) ):
+                raise ValueError( "std_imagenames requireds (image|noise|flags)hdu = 0" )
+            if ( noisepath is not None ) or ( flagspath is not None ):
+                raise ValueError( "std_imagenames can't be passed with noisepath or flagspath" )
+
+            self.imagehdu = 0
+            self.noisehdu = 0
+            self.flagshdu = 0
+            self.noisepath = self.path.parent / f"{self.path.name}_noise.fits"
+            self.flagspath = self.path.parent / f"{self.path.name}_flags.fits"
+            self.path = self.path.parent / f"{self.path.name}_image.fits"
+
+        else:
+            self.noisepath = pathlib.Path( noisepath ) if noisepath is not None else None
+            self.flagspath = pathlib.Path( flagspath ) if flagspath is not None else None
+            self.imagehdu = imagehdu
+            self.noisehdu = noisehdu
+            self.flagshdu = flagshdu
+
+
+    @classmethod
+    def _fitsio_header_to_astropy_header( cls, hdr ):
+        # I'm agog that astropy.io.fits.Header can't just take a fitsio HEADER
+        #   as a constructor argument, but there you have it.
+
+        if not isinstance( hdr, fitsio.header.FITSHDR ):
+            raise TypeError( "_fitsio_header_to_astropy_header expects a fitsio.header.FITSHDR" )
+
+        ahdr = fits.Header()
+        for rec in hdr.records():
+            if 'comment' in rec:
+                ahdr[ rec['name'] ] = ( rec['value'], rec['comment'] )
+            else:
+                ahdr[ rec['name'] ] = rec['value']
+
+        return ahdr
+
+
+    @classmethod
+    def _astropy_header_to_fitsio_header( cls, ahdr ):
+        if not isinstance( ahdr, astropy.io.fits.header.Header ):
+            raise TypeError( "_astropy_header_to_fitsio_header expects a astrop.io.fits.header.Header" )
+
+        hdr = fitsio.header.FITSHDR()
+        for i, kw in enumerate( ahdr ):
+            rec = { 'name': kw, 'value': ahdr[i] }
+            if len( ahdr.comments[i] ) > 0:
+                rec['comment'] = ahdr.comments[i]
+            hdr.add_record( rec )
+
+        return hdr
+
 
     @property
     def image_shape(self):
@@ -607,8 +701,51 @@ class FITSImage( Numpy2DImage ):
 
         return self._image_shape
 
+    def set_fits_header( self, hdr ):
+        if not isinstance( hdr, fits.Header ):
+            raise TypeError( "FITS header must be an astropy.fits.io.header.Header" )
+        self._header = hdr
+
+    # Subclasses may want to replace this with something different based on how they work
     def get_fits_header( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_fits_header()" )
+        """Get the header of the image."""
+
+        if self._header is None:
+            with fitsio.FITS( self.path ) as f:
+                hdr = f[ self.imagehdu ].read_header()
+                self._header = FITSImage._fitsio_header_to_astropy_header( hdr )
+        return self._header
+
+
+    def _strip_wcs_header_keywords( self ):
+        """Try to strip all wcs keywords from self._header.
+
+        Useful as a pre-step for saving the image if you want to write
+        the WCS to the image.  Using this makes sure (as best possible)
+        that you don't end up with conflicting WCS keywords in the
+        header.
+
+        This may not be complete, as it pattern matches expected keywords.
+        If it's missing some patterns, those won't get stripped.
+
+        """
+
+        if self._header is None:
+            self._header = self.get_fits_header()
+
+        basematch = re.compile( r"^C(RVAL|RPIX|UNIT|DELT|TYPE)[12]$" )
+        cdmatch = re.compile( r"^CD[12]_[12]$" )
+        sipmatch = re.compile( r"^[AB]P?_(ORDER|(\d+)_(\d+))$" )
+        tpvmatch = re.compile( r"^P[CV]\d+_\d+$" )
+
+        tonuke = set()
+        for kw in self._header.keys():
+            if ( basematch.search(kw) or cdmatch.search(kw) or sipmatch.search(kw) or tpvmatch.search(kw) ):
+                tonuke.add( kw )
+
+        for kw in tonuke:
+            del self._header[kw]
+
 
     def get_wcs( self, wcsclass=None ):
         wcsclass = "AstropyWCS" if wcsclass is None else wcsclass
@@ -621,41 +758,36 @@ class FITSImage( Numpy2DImage ):
                 self._wcs = GalsimWCS.from_header( hdr )
         return self._wcs
 
-    def get_data(self, which="all"):
+    def get_data( self, which="all", always_reload=False, cache=False ):
         if self._is_cutout:
             raise RuntimeError(
                 "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported."
             )
+
         if which not in Image.data_array_list:
             raise ValueError(f"Unknown which {which}, must be all, data, noise, or flags")
+        which = [ 'data', 'noise', 'flags' ] if which == 'all' else [ which ]
 
-        if (which == "all"):
-            if (self._data is not None) and (self._noise is not None) and (self._flags is not None):
-                return [self._data, self._noise, self._flags]
-            else:
-                raise RuntimeError(
-                    f"get_data called with which='all', but not all data arrays are set. "
-                    f"Data: {self._data is not None}, Noise: {self._noise is not None},"
-                    f" Flags: {self._flags is not None}"
-                )
+        pathmap = { 'data': self.path,
+                    'noise': self.noisepath,
+                    'flags': self.flagspath }
+        hdumap = { 'data': self.imagehdu,
+                   'noise': self.noisehdu,
+                   'flags': self.flagshdu }
 
-        if (which == "data"):
-            if (self._data is not None):
-                return [self._data]
-            else:
-                raise RuntimeError("get_data called with which='data', but data is not set.")
+        rval = []
+        for plane in which:
+            prop = f'_{plane}'
+            data = getattr( self, prop )
+            if always_reload or ( data is None ):
+                with fitsio.FITS( pathmap[plane] ) as f:
+                    data = f[ hdumap[plane] ].read()
+                if cache:
+                    setattr( self, prop, data )
+            rval.append( data )
 
-        if (which == "noise"):
-            if (self._noise is not None):
-                return [self._noise]
-            else:
-                raise RuntimeError("get_data called with which='noise', but noise is not set.")
+        return rval
 
-        if (which == "flags"):
-            if (self._flags is not None):
-                return [self._flags]
-            else:
-                raise RuntimeError("get_data called with which='flags', but flags are not set.")
 
     def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan):
         """See Image.get_cutout
@@ -713,94 +845,167 @@ class FITSImage( Numpy2DImage ):
         y = int( np.floor( y + 0.5 ) )
         return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
 
-    def set_fits_header(self, hdr):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement set_fits_header()" )
+    def save( self, which='all', path=None, noisepath=None, flagspath=None,
+              imagehdu=None, noisehdu=None, flagshdu=None, overwrite=False ):
+        """Write image to its path.  See Image.save
+
+        Has the side-effect of loading self._header if it is None, and
+        if replacing WCS keywords in self._header with keywords from the
+        current image WCS.
+
+        """
+
+        saveim = ( which == 'data' ) or ( which == 'all' )
+        saveno = ( which == 'noise' ) or ( which == 'all' )
+        savefl = ( which == 'flags' ) or ( which == 'all' )
+
+        imagehdu = imagehdu if imagehdu is not None else self.imagehdu
+        noisehdu = noisehdu if noisehdu is not None else self.noisehdu
+        flagshdu = flagshdu if flagshdu is not None else self.flagshdu
+
+        if ( imagehdu != 0 ) or ( noisehdu != 0 ) or ( flagshdu != 0 ):
+            raise NotImplementedError( "We need to implement saving to HDUs other than 0." )
+
+        path = path if path is not None else self.path
+        if saveim and ( path is None ):
+            raise RuntimeError( "Can't save data, no path." )
+        noisepath = noisepath if noisepath is not None else self.noisepath
+        if saveno and ( noisepath is None ):
+            raise RuntimeError( "Can't save noise, no path." )
+        flagspath = flagspath if flagspath is not None else self.flagspath
+        if savefl and ( flagspath is None ):
+            raise RuntimeError( "Can't save flags, no path." )
+
+        if not overwrite:
+            if ( path.exists() or
+                 ( noisepath is not None and noisepath.exists() ) or
+                 ( flagspath is not None and flagspath.exists() ) ):
+                raise RuntimeError( "FITSImage.save: overwrite is False, but image file(s) already exist" )
+        else:
+            if path.is_file():
+                path.unlink()
+            if ( noisepath is not None ) and ( noisepath.is_file() ):
+                noisepath.unlink()
+            if ( flagspath is not None ) and ( flagspath.is_file() ):
+                flagspath.unlink()
+
+        # Make sure header is loaded
+        self.get_fits_header()
+        try:
+            apwcs = self.get_wcs().get_astropy_wcs( readonly=True )
+            wcshdr = apwcs.to_header()
+            self._strip_wcs_header_keywords()
+            self._header.extend( wcshdr )
+        except Exception:
+            wcshdr = None
+
+        with fitsio.FITS( path, 'rw' ) as f:
+            f.write( self.data, header=FITSImage._astropy_header_to_fitsio_header( self._header ) )
+        if ( noisepath is not None ) and ( self.noise is not None ):
+            with fitsio.FITS( noisepath, 'rw' ) as f:
+                f.write( self.noise, header=FITSImage._astropy_header_to_fitsio_header( wcshdr ) )
+        if ( self.flagspath is not None ) and ( self.flags is not None ):
+            with fitsio.FITS( flagspath, 'rw' ) as f:
+                f.write( self.flags, header=FITSImage._astropy_header_to_fitsio_header( wcshdr ) )
 
 
 # ======================================================================
-# ManualFITSImage
+# FITSImageStdHeaders
 #
-# A FITS image that doesn't know where it got its data from, you just
-# feed it the data.
+# A FITSImage that knows it has information in header keywords
+#   that can be configurated at instantiation time.
 
-class ManualFITSImage(FITSImage):
-    def __init__(self, header, data=None, noise=None, flags=None,
-                 path=None, exposure=None, sca=None, pointing=None, mjd=None, band=None, *args, **kwargs):
+class FITSImageStdHeaders( FITSImage ):
+    def __init__( self, *args,
+                  header_kws = {
+                      'band': "BAND",
+                      'exptime': "EXPTIME",
+                      'mjd': "MJD",
+                      'pointing': "POINTING",
+                      'sca': "SCA",
+                      'zeropoint': "ZPT" },
+                  **kwargs ):
+        super().__init__( *args, **kwargs )
+        self._header_kws = header_kws
 
-        self._data = data
-        self._noise = noise
-        self._flags = flags
-        self._header = header
-        self._mjd = mjd
-        self._wcs = None
-        self._is_cutout = False
-        self._image_shape = None
-        self.path = None
-        self.exposure = None
-        self._sca = sca
-        self.band = band
-        self._pointing = pointing
 
-    def get_fits_header(self):
-
-        """Get the header of the image."""
+    def get_fits_header( self ):
         if self._header is None:
-            raise RuntimeError("Header is not set for ManualFITSImage.")
+            try:
+                self._header = FITSImage.get_fits_header( self )
+            except Exception:
+                self._header = fits.header.Header()
         return self._header
 
     @property
-    def mjd(self):
-        """The mjd of the image.
-
-        TODO : is this start-time, mid-time, or end-time?
-
-        """
-        if self._mjd is None:
-            raise RuntimeError("MJD is not set for ManualFITSImage.")
-        return self._mjd
+    def mjd( self ):
+        hdr = self.get_fits_header()
+        return hdr[ self._header_kws['band'] ]
 
     @mjd.setter
-    def mjd(self, val):
-        # Turns out that if a subclass has a @property for mjd, it has to have its own @mjd.setter;
-        # it can't use the superclass' @mjd.setter even if the content is right.
-
-        self._mjd = val
+    def mjd( self, val ):
+        hdr = self.get_fits_header()
+        hdr[ self._header_kws['band'] ] = val
 
     @property
-    def band(self):
-        """The Roman passband of the image."""
-        if self._band is None:
-            raise RuntimeError("Band has not been set for ManualFITSImage.")
-        return self._band
-
-    @band.setter
-    def band(self, val):
-        self._band = val
-
-
-    @property
-    def sca(self):
-        if self._sca is None:
-            raise RuntimeError("SCA has not been set for ManualFITSImage.")
-        return self._sca
-
-    @sca.setter
-    def sca(self, val):
-        self._sca = val
-
-    @property
-    def pointing(self):
-        if self._pointing is None:
-            raise RuntimeError("Pointing has not been set for ManualFITSImage.")
-        return self._pointing
+    def pointing( self ):
+        hdr = self.get_fits_header()
+        return hdr[ self._header_kws['pointing'] ]
 
     @pointing.setter
-    def pointing(self, val):
-        self._pointing = val
+    def pointing( self, val ):
+        hdr = self.get_fits_header()
+        hdr[ self._header_kws['pointing'] ] = val
 
-    def set_fits_header(self, hdr):
-        self._header = hdr
+    @property
+    def sca( self ):
+        hdr = self.get_fits_header()
+        return hdr[ self._header_kws['sca'] ]
 
+    @sca.setter
+    def sca( self, val ):
+        hdr = self.get_fits_header()
+        hdr[ self._header_kws['sca'] ] = val
+
+    @property
+    def band( self ):
+        hdr = self.get_fits_header()
+        return hdr[ self._header_kws['band'] ]
+
+    @band.setter
+    def band( self, val ):
+        hdr = self.get_fits_header()
+        hdr[ self._header_kws['band'] ] = val
+
+    @property
+    def zeropoint( self ):
+        hdr = self.get_fits_header()
+        return hdr[ self._header_kws['zeropoint'] ]
+
+    @zeropoint.setter
+    def zeropoint( self, val ):
+        hdr = self.get_fits_header()
+        hdr[ self._header_kws['zeropoint'] ] = val
+
+    @property
+    def mjd( self ):
+        hdr = self.get_fits_header()
+        return hdr[ self._header_kws['mjd'] ]
+
+    @mjd.setter
+    def mjd( self, val ):
+        hdr = self.get_fits_header()
+        hdr[ self._header_kws['mjd'] ] = val
+
+    @property
+    def exptime( self ):
+        hdr = self.get_fits_header()
+        return hdr[ self._header_kws['exptime'] ]
+
+    @exptime.setter
+    def exptime( self, val ):
+        hdr = self.get_fits_header()
+        hdr[ self._header_kws['exptime'] ] = val
 
 
 
@@ -823,15 +1028,9 @@ class FITSImageOnDisk( FITSImage ):
 
     """
 
-    def __init__( self, *args, noisepath=None, flagspath=None,
-                  imhdu=0, noisehdu=0, flagshdu=0, **kwargs ):
+    def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
 
-        self.noisepath = pathlib.Path( noisepath ) if noisepath is not None else None
-        self.flagspath = pathlib.Path( flagspath ) if flagspath is not None else None
-        self.imhdu = imhdu
-        self.noisehdu = noisehdu
-        self.flagshdu = flagshdu
 
     def uncompressed_version( self, include=[ 'data', 'noise', 'flags' ], base_dir=None ):
         """Make sure to get a FITSImageOnDisk that's not compressed.
@@ -895,12 +1094,6 @@ class FITSImageOnDisk( FITSImage ):
             raise TypeError( f"hdr must be a fits.header.Header, not a {type(hdr)}" )
         self._header = hdr
 
-    def get_fits_header( self ):
-        if self._header is None:
-            with fits.open( self.path ) as hdul:
-                self._header = hdul[ self.imhdu ].header
-        return self._header
-
     def get_data( self, which="all", always_reload=False, cache=False ):
         if self._is_cutout:
             raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
@@ -926,29 +1119,29 @@ class FITSImageOnDisk( FITSImage ):
 
             # Open the data, and do everything else inside that with just in case
             #   noise and flags are part of the same FITS image.
-            with fits.open( self.path ) as imhdul:
+            with fitsio.FITS( self.path ) as imagefits:
                 if "data" in toload:
-                    header = imhdul[ self.imhdu ].header
-                    data = imhdul[ self.imhdu ].data
+                    header = FITSImage._fitsio_header_to_astropy_header( imagefits[ self.imagehdu ].read_header() )
+                    data = imagefits[ self.imagehdu ].read()
                     if cache:
                         self._data = data
                         self._header = header
 
                 if "noise" in toload:
-                    if self.noisepath is not None:
-                        with fits.open( self.noisepath ) as noihdul:
-                            noise = noihdul[ self.noisehdu ].data
+                    if ( self.noisepath is not None ) and ( self.noisepath != self.path ):
+                        with fitsio.FITS( self.noisepath ) as noisefits:
+                            noise = noisefits[ self.noisehdu ].read()
                     else:
-                        noise = imhdul[ self.noisehdu ].data
+                        noise = imagefits[ self.noisehdu ].read()
                     if cache:
                         self._noise = noise
 
                 if "flags" in toload:
-                    if self.flagspath is not None:
-                        with fits.open( self.flagspath ) as flghdul:
-                            flags = flghdul[ self.flagshdul ].data
+                    if ( self.flagspath is not None ) and ( self.flagspath != self.path ):
+                        with fitsio.FITS( self.flagspath ) as flagsfits:
+                            flags = flagsfits[ self.flagshdu ].read()
                     else:
-                        flags = imhdul[ self.flagshdu ].data
+                        flags = imagefits[ self.flagshdu ].read()
                     if cache:
                         self._flags = flags
 
@@ -958,14 +1151,23 @@ class FITSImageOnDisk( FITSImage ):
                  else [ data, noise, flags ] )
 
 
-    def save_data( self, which="all", overwrite=False,
-                   path=None, imhdu=0,
+    def save( self, which="all", overwrite=False,
+                   path=None, imagehdu=0,
                    noisepath=None, noisehdu=None,
                    flagspath=None, flagshdu=None ):
         """Write the data to the file."""
-        raise NotImplementedError( "OMG needs to be done" )
 
+        path = path if path is not None else self.path
+        noisepath = noisepath if noisepath is not None else self.noisepath
+        flagspath = flagspath if flagspath is not None else self.flagspath
 
+        if not all( ( p is None ) or ( p.name[-5:] == '.fits' ) for p in [ path, noisepath, flagspath ] ):
+            raise NotImplementedError( "I don't know how to save compressed files, only files "
+                                       "whose names end in .fits" )
+
+        FITSImage.save( self, which=which, overwrite=overwrite,
+                        path=path, noisepath=noisepath, flagspath=flagspath,
+                        imagehdu=imagehdu, noisehdu=noisehdu, flagshdu=flagshdu )
 
 
 # ======================================================================
@@ -976,10 +1178,10 @@ class FITSImageOnDisk( FITSImage ):
 #  HDU 3 : DQ (32-bit integer)
 
 class OpenUniverse2024FITSImage( FITSImageOnDisk ):
-    def __init__( self, *args, noisepath=None, flagspath=None, imhdu=1, noisehdu=2, flagshdu=3, **kwargs ):
+    def __init__( self, *args, noisepath=None, flagspath=None, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs ):
         super().__init__( *args,
                           noisepath=noisepath, flagspath=flagspath,
-                          imhdu=imhdu, noisehdu=noisehdu, flagshdu=flagshdu,
+                          imagehdu=imagehdu, noisehdu=noisehdu, flagshdu=flagshdu,
                           **kwargs )
 
     _filenamere = re.compile( r'^Roman_TDS_simple_model_(?P<band>[^_]+)_(?P<pointing>\d+)_(?P<sca>\d+).fits' )

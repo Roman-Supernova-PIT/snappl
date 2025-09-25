@@ -1,7 +1,11 @@
 import pytest
+import pathlib
 
 import numpy as np
 import astropy
+import astropy.io.fits
+import fitsio
+import fitsio.header
 
 from snappl.image import FITSImage
 from snappl.wcs import AstropyWCS, GalsimWCS
@@ -15,6 +19,53 @@ from snappl.psf import PSF
 #   stuff that isn't defined in FITSImage.  However, all the
 #   tests in this section tests the functions which themselves
 #   are defined in FITSImage.
+
+def test_fits_fitsio_header_to_astropy_header():
+    hdr = fitsio.header.FITSHDR()
+    hdr.add_record( fitsio.header.FITSRecord( { 'name': 'TEST1', 'value': 1, 'comment': 'testing 1' } ) )
+    hdr.add_record( "TEST2   =                 42.0 / testing 2" )
+    hdr.add_record( fitsio.header.FITSRecord( { 'name': 'TEST3', 'value': 'kittens', 'comment': 'testing 3' } ) )
+    # hdr.add_record( fitsio.header.FITSRecord( { 'name': 'COMMENT', 'value': 'this is the first comment' } ) )
+    # hdr.add_record( fitsio.header.FITSRecord( { 'name': 'COMMENT', 'value': 'this is the second comment' } ) )
+    hdr.add_record( 'COMMENT this is the first comment' )
+    hdr.add_record( 'COMMENT this is the second comment' )
+
+    ahdr = FITSImage._fitsio_header_to_astropy_header( hdr )
+
+    for i, (kw, val, com, rec) in enumerate( zip( [ 'TEST1', 'TEST2', 'TEST3', 'COMMENT', 'COMMENT' ],
+                                                  [ 1, 42.0, 'kittens',
+                                                    'this is the first comment', 'this is the second comment'],
+                                                  [ 'testing 1', 'testing 2', 'testing 3', '', '' ],
+                                                  ahdr ) ):
+        assert ahdr[i] == val
+        assert ahdr.comments[i] == com
+        if kw != 'COMMENT':
+            assert ahdr[rec] == val
+            assert ahdr.comments[rec] == com
+
+
+def test_fits_astropy_header_to_fitsio_header():
+    ahdr = astropy.io.fits.header.Header()
+    ahdr.append( ('TEST1', 1, 'testing 1') )
+    ahdr.append( ('TEST2', 42.0, 'testing 2') )
+    ahdr.append( ('TEST3', 'kittens', 'testing 3') )
+    ahdr.append( ('COMMENT', 'this is the first comment') )
+    ahdr.append( ('COMMENT', 'this is the second comment') )
+
+    hdr = FITSImage._astropy_header_to_fitsio_header( ahdr )
+
+    for i, (kw, val, com, rec) in enumerate( zip( [ 'TEST1', 'TEST2', 'TEST3', 'COMMENT', 'COMMENT' ],
+                                                  [ 1, 42.0, 'kittens',
+                                                    'this is the first comment', 'this is the second comment'],
+                                                  [ 'testing 1', 'testing 2', 'testing 3', '', '' ],
+                                                  ahdr ) ):
+        assert hdr.records()[i]['name'] == kw
+        assert hdr.records()[i]['value'] == val
+        if 'comment' in hdr.records()[i]:
+            assert hdr.records()[i]['comment'] == com
+        if kw != 'COMMENT':
+            assert hdr[kw] == val
+
 
 def test_fits_get_wcs( ou2024image, fitsimage_module, check_wcs ):
     assert isinstance( fitsimage_module._wcs, AstropyWCS )
@@ -103,9 +154,84 @@ def test_fits_get_ra_dec_cutout( ou2024image_module ):
     np.testing.assert_equal(np.sum(np.isnan(cutout.data)), 1485)
 
 
+# Also incidentally tests Numpy2dImage.free
+# TODO : test that loading data loads header
+def test_fits_get_data( unloaded_fitsimage ):
+    im = unloaded_fitsimage
 
-def test_fits_set_data( fitsimage_module ):
-    image = fitsimage_module
+    assert im._data is None
+    assert im._noise is None
+    assert im._flags is None
+
+    # Accessing one of data, noise, or flags should load all
+    assert im.data.shape == ( 1024, 1024 )
+    assert im._data.shape == ( 1024, 1024 )
+    assert im._noise.shape == ( 1024, 1024 )
+    assert im._flags.shape == ( 1024, 1024 )
+
+    # Clear
+    im.free()
+    assert im._data is None
+    assert im._noise is None
+    assert im._flags is None
+
+    # Try loading without caching
+    data, noise, flags = im.get_data()
+    assert data.shape == ( 1024, 1024 )
+    assert noise.shape == ( 1024, 1024 )
+    assert flags.shape == ( 1024, 1024 )
+    assert im._data is None
+    assert im._noise is None
+    assert im._flags is None
+
+    # Try loading with caching
+    data, noise, flags = im.get_data( cache=True )
+    assert data.shape == ( 1024, 1024 )
+    assert noise.shape == ( 1024, 1024 )
+    assert flags.shape == ( 1024, 1024 )
+    assert im._data is data
+    assert im._noise is noise
+    assert im._flags is flags
+
+    # Try loading the cached data
+    data, = im.get_data( which='data' )
+    assert data is im._data
+    noise, = im.get_data( which='noise' )
+    assert noise is im._noise
+    flags, = im.get_data( which='flags' )
+    assert flags is im._flags
+    data, noise, flags = im.get_data()
+    assert im._data is data
+    assert im._noise is noise
+    assert im._flags is flags
+
+    # Try always reloading
+    data, = im.get_data( which='data', always_reload=True )
+    assert data is not im._data
+    noise, = im.get_data( which='noise', always_reload=True )
+    assert noise is not im._noise
+    flags, = im.get_data( which='flags', always_reload=True )
+    assert flags is not im._flags
+    data, noise, flags = im.get_data( always_reload=True )
+    assert im._data is not data
+    assert im._noise is not noise
+    assert im._flags is not flags
+
+    # Always reloading with cache
+    origdata = im._data
+    orignoise = im._noise
+    origflags = im._flags
+    data, noise, flags = im.get_data( always_reload=True, cache=True )
+    assert data is im._data
+    assert data is not origdata
+    assert noise is im._noise
+    assert noise is not orignoise
+    assert flags is im._flags
+    assert flags is not origflags
+
+
+def test_fits_set_data( unloaded_fitsimage ):
+    image = unloaded_fitsimage
 
     origim = image.data
     orignoi = image.noise
@@ -136,47 +262,68 @@ def test_fits_set_data( fitsimage_module ):
         image._flags = origfl
 
 
-def test_fits_get_data(fitsimage_module):
-    image = fitsimage_module
+def test_fits_std_imagenames( unloaded_fitsimage_basepath ):
+    base = unloaded_fitsimage_basepath
+    im = FITSImage( base, std_imagenames=True )
+    assert isinstance( im.get_fits_header(), astropy.io.fits.header.Header )
+    assert im.path == pathlib.Path( f'{base}_image.fits' )
+    assert im.noisepath == pathlib.Path( f'{base}_noise.fits' )
+    assert im.flagspath == pathlib.Path( f'{base}_flags.fits' )
 
-    origim = image.data
-    orignoi = image.noise
-    origfl = image.flags
+    assert im.data.shape == (1024, 1024)
+    assert im.noise.shape == (1024, 1024)
+    assert im.flags.shape == (1024, 1024)
 
-    np.testing.assert_array_equal(origim, image.get_data(which="data")[0])
-    np.testing.assert_array_equal(orignoi, image.get_data(which="noise")[0])
-    np.testing.assert_array_equal(origfl, image.get_data(which="flags")[0])
-    np.testing.assert_array_equal(origim, image.get_data()[0])
-    np.testing.assert_array_equal(orignoi, image.get_data()[1])
-    np.testing.assert_array_equal(origfl, image.get_data()[2])
+    bpath = 'test_fits_std_imagenames'
+    ipath = pathlib.Path( f"{bpath}_image.fits" )
+    npath = pathlib.Path( f"{bpath}_noise.fits" )
+    fpath = pathlib.Path( f"{bpath}_flags.fits" )
+    try:
+        assert not ipath.exists()
+        assert not npath.exists()
+        assert not fpath.exists()
 
-    # Now remove data and ensure that it fails
-    with pytest.raises(RuntimeError, match="get_data called with"):
-        image._data = None
-        image.get_data(which = "data")
+        rng = np.random.default_rng()
+        data = np.float32( rng.uniform( size=(256, 256) ) )
+        noise = np.float32( rng.uniform( size=(256, 256) ) )
+        flags = np.int16( rng.integers( 2, size=(256, 256) ) )
+        newim = FITSImage( path='test_fits_std_imagenames', std_imagenames=True,
+                           data=data, noise=noise, flags=flags, header=im.get_fits_header() )
+        assert newim._data is data
+        assert newim._noise is noise
+        assert newim._flags is flags
 
-    with pytest.raises(RuntimeError, match="get_data called with"):
-        image._noise = None
-        image.get_data(which = "noise")
+        newim.save()
+        assert ipath.is_file()
+        assert npath.is_file()
+        assert fpath.is_file()
 
-    with pytest.raises(RuntimeError, match="get_data called with"):
-        image._flags = None
-        image.get_data(which = "flags")
+        testim = FITSImage( path=bpath, std_imagenames=True )
+        assert np.all( testim.data == data )
+        assert np.all( testim.noise == noise )
+        assert np.all( testim.flags == flags )
 
-    with pytest.raises(RuntimeError, match="get_data called with"):
-        image._data = None
-        image._noise = None
-        image._flags = None
-        image.get_data(which = "all")
+        # Make sure we can't overwrite
+        with pytest.raises( RuntimeError, match=( r"FITSImage.save: overwrite is False, but "
+                                                  r"image file\(s\) already exist" ) ):
+            newim.save()
 
-    # Restore the data for other tests
-    image._data = origim
+        # Make sure we can overwrite
+        newim._data = data + 1.
+        newim._noise = noise + 1.
+        newim._flags = flags + 1
+        newim.save( overwrite=True )
+        testim = FITSImage( path=bpath, std_imagenames=True )
+        assert np.allclose( testim.data, data + 1., atol=1e-6 )
+        assert np.allclose( testim.noise, noise + 1., atol=1e-6 )
+        assert np.all( testim.flags == flags + 1 )
 
-    # Should be able to get data even if that's the only thing loaded
-    np.testing.assert_array_equal(origim, image.get_data(which="data")[0])
+    finally:
+        ipath.unlink( missing_ok=True )
+        npath.unlink( missing_ok=True )
+        fpath.unlink( missing_ok=True )
 
-    image._noise = orignoi
-    image._flags = origfl
+# TODO : test saving with WCS
 
 
 # ======================================================================
@@ -248,18 +395,23 @@ def test_ou2024_get_data( ou2024image ):
         #   straight.  (...except that the integer flags don't seem to
         #   be big-endian, so I am confused as to what astropy and/or fitsio
         #   and/or numpy really does.)
+        #
+        # ... but now that we're using FITSIO, it looks like it byte swaps,
+        #   so everything changed below.
 
         # I choose an area around a nice galaxy to sum
         data, = ou2024image.get_data( 'data' )
         assert isinstance( data, np.ndarray )
         assert data.shape == ( 4088, 4088 )
-        assert data.dtype == ">f8"
+        # assert data.dtype == ">f8"
+        assert data.dtype == np.dtype('float64')
         assert data[2300:2336, 2482:2589].sum() == pytest.approx( 429719.0, rel=1e-5 )
 
         noise, = ou2024image.get_data( 'noise' )
         assert isinstance( noise, np.ndarray )
         assert noise.shape == ( 4088, 4088 )
-        assert noise.dtype == ">f4"
+        # assert noise.dtype == ">f4"
+        assert noise.dtype == np.dtype('float32')
         assert noise[2300:2336, 2482:2589].sum() == pytest.approx( 427641, rel=1e-5 )
 
         flags, = ou2024image.get_data( 'flags' )
