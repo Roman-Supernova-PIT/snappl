@@ -18,7 +18,6 @@ import galsim
 from roman_imsim.utils import roman_utils
 
 # roman snpit library imports
-from snappl.wcs import BaseWCS
 from snpit_utils.config import Config
 from snpit_utils.logger import SNLogger
 
@@ -33,7 +32,8 @@ class PSF:
     """
 
     @classmethod
-    def get_psf_object( cls, psfclass, x=None, y=None, band=None, pointing=None, sca=None, **kwargs ):
+    def get_psf_object( cls, psfclass, x=None, y=None, band=None, pointing=None, sca=None,
+                        image=None, seed=None, **kwargs ):
         """Return a PSF object whose type is specified by psfclass.
 
         Parameters
@@ -73,6 +73,13 @@ class PSF:
           sca: int, default None
             Probably only relevant for the ou24PSF classes.
 
+          image : snappl.image.Image
+            Optional, The image that the psf is for. This is not used all subclasses, but is
+            needed for some, currently the ou24 PSFs.
+
+            seed: int, default None
+              A random seed to pass to galsim.BaseDeviate for photonOps.
+
           **kwargs: ...
             Specific subclasses may require or accept additional
             arguments.  They will be documented in the subclasses's
@@ -92,7 +99,9 @@ class PSF:
                          'y': y,
                          'band': band,
                          'pointing': pointing,
-                         'sca': sca } )
+                         'sca': sca,
+                         'image' : image,
+                         'seed' : seed } )
 
         if psfclass == "photutilsImagePSF":
             return photutilsImagePSF( _called_from_get_psf_object=True, **kwargs )
@@ -125,7 +134,7 @@ class PSF:
     # getting access to oversampled PSFs?
 
     def __init__( self, x=None, y=None, band=None, pointing=None, sca=None,
-                  _called_from_get_psf_object=False, **kwargs ):
+                  _called_from_get_psf_object=False, image=None, seed=None, **kwargs ):
         """Don't call this or the constructor of a subclass directly, call PSF.get_psf_object().
 
         See get_psf_object for parameter documentation.
@@ -138,13 +147,15 @@ class PSF:
         self._consumed_args = set()
         if not _called_from_get_psf_object:
             raise RuntimeError( f"Don't instantiate a {self.__class__.__name__} directly, call PSF.get_psf_object" )
-        self._consumed_args.update( [ 'x', 'y', 'band', 'pointing', 'sca', '_called_from_get_psf_object' ] )
-
+        self._consumed_args.update( [ 'x', 'y', 'band', 'pointing', 'sca', '_called_from_get_psf_object', "seed",
+                                     "image" ] )
         self._x = float( x ) if x is not None else None
         self._y = float( y ) if y is not None else None
         self._band = band
         self._pointing = pointing
         self._sca = sca
+        self._image = image
+        self._seed = seed
 
 
     @property
@@ -1237,8 +1248,8 @@ class ou24PSF_slow( PSF ):
 
     """
 
-    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True, n_photons=1000000,
-                  _parent_class=False, **kwargs
+    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True,
+                   n_photons=1000000, _parent_class=False, **kwargs
                  ):
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'sed', 'config_file', 'size', 'include_photonOps', 'n_photons' ] )
@@ -1276,16 +1287,13 @@ class ou24PSF_slow( PSF ):
         return self.size
 
 
-    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, input_wcs=None):
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None ):
         """Return a 2d numpy image of the PSF at the image resolution.
 
         Parameters are as in PSF.get_stamp, plus:
 
         Parameters
         ----------
-          input_wcs : BaseWCS or galsim.BaseWCS
-            WARNING: DO NOT USE. Not part of a standard interface, for testing purposes only.
-            An alternative WCS to use for the stamp.
 
           seed : int
             A random seed to pass to galsim.BaseDeviate for photonOps.
@@ -1293,6 +1301,11 @@ class ou24PSF_slow( PSF ):
             as of yet), so don't use it in production pipeline code.
             However, it will be useful in tests for purposes of testing
             reproducibility.
+
+          image : snappl.image.Image or None
+            The image that the PSF is associated with. This image will be used to
+            determine the WCS of the PSF stamp. If None, the WCS will be determined
+            using rmutils.getLocalWCS.
 
         """
 
@@ -1327,16 +1340,17 @@ class ou24PSF_slow( PSF ):
             # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
             # wcs = rmutils.getLocalWCS( x+1, y+1 )self._
 
-            if input_wcs is None:
+            if self._image is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )
-            elif isinstance(input_wcs, BaseWCS):
-                SNLogger.warning( "Using user-supplied wcs for ou24PSF." )
-                self._wcs = input_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
-            elif isinstance( input_wcs, galsim.BaseWCS ):
-                SNLogger.warning( "Using user-supplied wcs for ou24PSF." )
-                self._wcs = input_wcs.local( image_pos = galsim.PositionD(x+1, y+1 ))
             else:
-                raise TypeError( f"wcs must be a galsim.BaseWCS, not a {type(input_wcs)}" )
+                image_wcs = self._image.get_wcs()
+                if image_wcs is None:
+                    SNLogger.warning( f"The image passed to {self.__class__.__name__}"
+                    " has no WCS; using rmutils.getLocalWCS." )
+                    self._wcs = rmutils.getLocalWCS( x+1, y+1 )
+                else:
+                    SNLogger.debug(f"Using the WCS from the image passed to {self.__class__.__name__}.")
+                    self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
 
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
             point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, rmutils.bpass )
@@ -1377,24 +1391,19 @@ class ou24PSF( ou24PSF_slow ):
 
     """
 
-    def __init__( self, _parent_class=False, **kwargs ):
+    def __init__(self, _parent_class=False, **kwargs):
         super().__init__(_parent_class=True, **kwargs)
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
         self._psf = None
 
-    def _init_psf_object( self, x0=None, y0=None, flux=1., input_wcs = None):
+    def _init_psf_object( self, x0=None, y0=None, flux=1.):
         """Create the galsim PSF object, WCS, and galsim.chromatic.SimpleChromaticTransformation
            that can be reused for multiple calls to get_stamp.
-
-        WARNING: Do not use input_wcs. Not part of a standard interface, for testing & simulation purposes only.
-
 
         Parameters are as in PSF.get_stamp, plus:
 
         Parameters
         ----------
-        input_wcs : BaseWCS or galsim.BaseWCS
-            An alternative WCS to use for the stamp.
 
         seed : int
             A random seed to pass to galsim.BaseDeviate for photonOps.
@@ -1408,16 +1417,18 @@ class ou24PSF( ou24PSF_slow ):
         self._rmutils = roman_utils(self.config_file, self._pointing, self._sca)
         self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
         # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
-        if input_wcs is None:
+        if self._image is None:
+            SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
             self._wcs = self._rmutils.getLocalWCS( x0+1, y0+1 )
-        elif isinstance(input_wcs, BaseWCS):
-            SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
-            self._wcs = input_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x0+1, y0+1))
-        elif isinstance( input_wcs, galsim.BaseWCS):
-            SNLogger.debug( "Using user-supplied wcs for ou24PSF." )
-            self._wcs = input_wcs.local( image_pos=galsim.PositionD(x0+1, y0+1))
         else:
-            raise TypeError( f"wcs must be a galsim.BaseWCS, not a {type(input_wcs)}" )
+            image_wcs = self._image.get_wcs()
+            if image_wcs is None:
+                SNLogger.warning( f"The image passed to {self.__class__.__name__}"
+                " has no WCS; using rmutils.getLocalWCS." )
+                self._wcs = self._rmutils.getLocalWCS( x0+1, y0+1 )
+            else:
+                SNLogger.debug(f"Using the WCS from the image passed to {self.__class__.__name__}.")
+                self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x0+1, y0+1 ))
         SNLogger.debug( f"ou24PSF wcs fetched at: {x0, y0}" )
         SNLogger.debug( f"ou24PSF wcs: {self._wcs}" )
         self._stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
@@ -1427,7 +1438,7 @@ class ou24PSF( ou24PSF_slow ):
         self._stored_x0 = x0
         self._stored_y0 = y0
 
-    def get_stamp(self, x=None, y=None, x0=None, y0=None, flux=1.0, seed=None, input_wcs=None):
+    def get_stamp(self, x=None, y=None, x0=None, y0=None, flux=1.0, seed=None, image=None):
         """Return a 2d numpy image of the PSF at the image resolution.
         Parameters are as in PSF.get_stamp, plus:
 
@@ -1444,6 +1455,10 @@ class ou24PSF( ou24PSF_slow ):
             However, it will be useful in tests for purposes of testing
             reproducibility.
 
+          image : snappl.image.Image or None
+            The image that the PSF is associated with. This image will be used to
+            determine the WCS of the PSF stamp. If None, the WCS will be determined
+            using rmutils.getLocalWCS.
         """
 
         # If a position is not given, assume the middle of the SCA
@@ -1465,7 +1480,7 @@ class ou24PSF( ou24PSF_slow ):
             SNLogger.debug( "Initializing ou24PSF galsim PSF object." )
             # If we don't have a psf object, then we need to initialize it, we then re use it for multiple calls to
             # get_stamp.
-            self._init_psf_object( x0=x0, y0=y0, flux=flux, input_wcs = input_wcs)
+            self._init_psf_object( x0=x0, y0=y0, flux=flux )
         else:
             if x0 != self._stored_x0 or y0 != self._stored_y0:
                 raise ValueError("ou24PSF.get_stamp called with x0 or y0 that does not match the x0 or y0 used"
