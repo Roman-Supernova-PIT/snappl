@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>ou24PSF &#8212; roman_snpit_snappl 0.1.dev1+g12f678aa4 documentation</title>
+    <title>ou24PSF &#8212; roman_snpit_snappl 0.1.dev1+gd4d2d8a7f documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=cf98bfbd"></script>
+    <script src="../_static/documentation_options.js?v=969742e2"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -114,7 +114,7 @@ intentionally mean to subvert the system.</p>
 <p class="rubric">Methods Summary</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.ou24PSF.get_stamp" title="snappl.psf.ou24PSF.get_stamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stamp</span></code></a>([x, y, x0, y0, flux, seed, input_wcs])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.ou24PSF.get_stamp" title="snappl.psf.ou24PSF.get_stamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stamp</span></code></a>([x, y, x0, y0, flux, seed, image])</p></td>
 <td><p>Return a 2d numpy image of the PSF at the image resolution.</p></td>
 </tr>
 </tbody>
@@ -122,7 +122,7 @@ intentionally mean to subvert the system.</p>
 <p class="rubric">Methods Documentation</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.psf.ou24PSF.get_stamp">
-<span class="sig-name descname"><span class="pre">get_stamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_wcs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#ou24PSF.get_stamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.ou24PSF.get_stamp" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_stamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#ou24PSF.get_stamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.ou24PSF.get_stamp" title="Link to this definition">¶</a></dt>
 <dd><p>Return a 2d numpy image of the PSF at the image resolution.
 Parameters are as in PSF.get_stamp, plus:</p>
 <dl class="field-list simple">
@@ -135,6 +135,9 @@ NOTE: this is not part of the base PSF interface (at least,
 as of yet), so don’t use it in production pipeline code.
 However, it will be useful in tests for purposes of testing
 reproducibility.</p></li>
+<li><p><strong>image</strong> (<a class="reference internal" href="snappl.image.Image.html#snappl.image.Image" title="snappl.image.Image"><em>snappl.image.Image</em></a><em> or </em><em>None</em>) – The image that the PSF is associated with. This image will be used to
+determine the WCS of the PSF stamp. If None, the WCS will be determined
+using rmutils.getLocalWCS.</p></li>
 </ul>
 </dd>
 </dl>
