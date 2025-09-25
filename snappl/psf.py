@@ -1340,10 +1340,10 @@ class ou24PSF_slow( PSF ):
             # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
             # wcs = rmutils.getLocalWCS( x+1, y+1 )self._
 
-            if self.image is None:
+            if self._image is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )
             else:
-                image_wcs = self.image.get_wcs()
+                image_wcs = self._image.get_wcs()
                 if image_wcs is None:
                     SNLogger.warning( f"The image passed to {self.__class__.__name__}"
                     " has no WCS; using rmutils.getLocalWCS." )
@@ -1417,11 +1417,11 @@ class ou24PSF( ou24PSF_slow ):
         self._rmutils = roman_utils(self.config_file, self._pointing, self._sca)
         self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
         # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
-        if self.image is None:
+        if self._image is None:
             SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
             self._wcs = self._rmutils.getLocalWCS( x0+1, y0+1 )
         else:
-            image_wcs = self.image.get_wcs()
+            image_wcs = self._image.get_wcs()
             if image_wcs is None:
                 SNLogger.warning( f"The image passed to {self.__class__.__name__}"
                 " has no WCS; using rmutils.getLocalWCS." )
