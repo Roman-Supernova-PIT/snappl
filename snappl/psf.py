@@ -18,7 +18,6 @@ import galsim
 from roman_imsim.utils import roman_utils
 
 # roman snpit library imports
-from snappl.wcs import BaseWCS
 from snpit_utils.config import Config
 from snpit_utils.logger import SNLogger
 
@@ -1304,7 +1303,7 @@ class ou24PSF_slow( PSF ):
             reproducibility.
 
           image : snappl.image.Image or None
-            The image that the PSF is associated with. This image will be used to 
+            The image that the PSF is associated with. This image will be used to
             determine the WCS of the PSF stamp. If None, the WCS will be determined
             using rmutils.getLocalWCS.
 
