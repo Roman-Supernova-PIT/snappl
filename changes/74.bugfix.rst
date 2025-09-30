@@ -1,0 +1,1 @@
+Fix an issue in ImageSimulator where pointsources were all 2× too bright.
