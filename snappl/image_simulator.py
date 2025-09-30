@@ -8,6 +8,7 @@ import astropy.wcs
 import astropy.io.fits
 
 from snpit_utils.logger import SNLogger
+from snpit_utils.utils import isSequence
 from snappl.psf import PSF
 from snappl.image import FITSImageStdHeaders
 from snappl.wcs import AstropyWCS
@@ -33,11 +34,11 @@ class ImageSimulatorPointSource:
         x0 = int( np.floor( x + 0.5 ) )
         y0 = int( np.floor( y + 0.5 ) )
         stamp = self.psf.get_stamp( x, y, x0=x0, y0=y0, flux=flux )
+        var = np.zeros( stamp.shape )
         if noisy:
             if rng is None:
                 rng = np.random.default_rng()
             w = stamp > 0
-            var = np.zeros( stamp.shape )
             var[ w ] = stamp[ w ] / gain
             stamp[ w ] += rng.normal( 0., np.sqrt( var[w] ) )
 
@@ -189,7 +190,7 @@ class ImageSimulatorImage:
         self.image.data += rng.normal( skymean, skysigma, size=self.image.data.shape )
         self.image.noise += np.full( self.image.noise.shape, skysigma**2 )
 
-    def add_stars( self, stars, rng=None, numprocs=12 ):
+    def add_stars( self, stars, rng=None, noisy=False, numprocs=12 ):
         if rng is None:
             rng = np.random.default_rng()
 
@@ -214,7 +215,7 @@ class ImageSimulatorImage:
                 x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                 try:
                     data = star.render_star( self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                             zeropoint=self.image.zeropoint, rng=rng )
+                                             zeropoint=self.image.zeropoint, rng=rng, noisy=noisy )
                     add_star_to_image( i, data )
                 except Exception as ex:
                     omg( ex )
@@ -224,7 +225,7 @@ class ImageSimulatorImage:
                     x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                     doer = functools.partial( star.render_star,
                                               self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                              zeropoint=self.image.zeropoint, rng=rng )
+                                              zeropoint=self.image.zeropoint, rng=rng, noisy=noisy )
                     callback = functools.partial( add_star_to_image, i )
                     pool.apply_async( doer, callback=callback, error_callback=omg )
                 pool.close()
@@ -234,7 +235,7 @@ class ImageSimulatorImage:
             raise RuntimeError( "Bad things have happened." )
 
 
-    def add_transient( self, transient, rng=None ):
+    def add_transient( self, transient, rng=None, noisy=False ):
         if rng is None:
             rng = np.random.default_rng()
 
@@ -243,7 +244,7 @@ class ImageSimulatorImage:
         ( stamp, var,
           imcoords, stampcoords ) = transient.render_transient( self.image.data.shape[1], self.image.data.shape[0],
                                                                 x, y, self.image.mjd, zeropoint=self.image.zeropoint,
-                                                                rng=rng )
+                                                                rng=rng, noisy=noisy )
         if stamp is not None:
             ix0, ix1, iy0, iy1 = imcoords
             sx0, sx1, sy0, sy1 = stampcoords
@@ -254,8 +255,7 @@ class ImageSimulatorImage:
 class ImageSimulator:
     def __init__( self,
                   seed=None,
-                  star_center_ra=None,
-                  star_center_dec=None,
+                  star_center=None,
                   star_sky_radius=320.,
                   min_star_magnitude=18.,
                   max_star_magnitude=28.,
@@ -263,6 +263,7 @@ class ImageSimulator:
                   nstars=200,
                   psf_class='gaussian',
                   psf_kwargs=[],
+                  no_star_noise=False,
                   basename='simimage',
                   width=4088,
                   height=4088,
@@ -282,13 +283,17 @@ class ImageSimulator:
                   transient_peak_mjd=60030.,
                   transient_start_mjd=60010.,
                   transient_end_mjd=60060.,
+                  no_transient_noise=False,
                   overwrite=False,
                   numprocs=12 ):
 
         self.mjds = mjds if mjds is not None else np.arange( 60000., 60065., 5. )
 
-        if ( star_center_ra is None ) or ( star_center_dec ) is None:
-            raise ValueError( "star_center_ra and star_center_dec are required" )
+        if star_center is None:
+            raise ValueError( "star_center and star_center is required" )
+        if ( not isSequence(star_center) ) or ( len(star_center) != 2 ):
+            raise ValueError( "star_center must have 2 values" )
+        star_center_ra, star_center_dec = star_center
 
         self.imdata = { 'mjds': mjds,
                         'ras': [],
@@ -337,6 +342,7 @@ class ImageSimulator:
         self.nstars = nstars
         self.psf_class = psf_class
         self.psf_kwargs = psf_kwargs
+        self.no_star_noise = no_star_noise
         self.band = band
         self.sca = sca
         self.exptime = exptime
@@ -346,6 +352,7 @@ class ImageSimulator:
         self.transient_peak_mjd = transient_peak_mjd
         self.transient_start_mjd = transient_start_mjd
         self.transient_end_mjd = transient_end_mjd
+        self.no_transient_noise = no_transient_noise
         self.overwrite = overwrite
         self.numprocs = numprocs
 
@@ -388,8 +395,8 @@ class ImageSimulator:
                                           zeropoint=self.imdata['zps'][i], mjd=self.imdata['mjds'][i],
                                           pixscale=self.pixscale, band=self.band, sca=self.sca, exptime=self.exptime )
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
-            image.add_stars( stars, star_rng, numprocs=self.numprocs )
-            image.add_transient( transient, rng=transient_rng )
+            image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise )
+            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise )
             image.image.noise = np.sqrt( image.image.noise )
             SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
             image.image.save( overwrite=self.overwrite )
@@ -412,33 +419,35 @@ def main():
                          help="Maxinum (dimmest) magnitude star created (default 18)" )
     parser.add_argument( '-a', '--alpha', type=float, default=1.,
                          help="Power law exponent for star distribution (default: 1)" )
-    parser.add_argument( '-n', '--nstars', type=float, default=200,
+    parser.add_argument( '-n', '--nstars', type=int, default=200,
                          help="Generate this many stars (default 200)" )
     parser.add_argument( '-p', '--psf-class', default='gaussian',
                          help="psfclass to use for stars (default 'gaussian')" )
     parser.add_argument( '--psf-kwargs', '--pk', nargs='*', default=[],
                          help="Series of key=value PSF kwargs to pass to PSF.get_psf_object" )
+    parser.add_argument( '--no-star-noise', action='store_true', default=False,
+                         help="Set this to not add poisson noise to stars." )
 
     parser.add_argument( '-b', '--basename', default='simimage',
                          help=( "base for output filename.  Written files will be basename_{mjd:7.1f}_image.fits, "
                                 "..._noise.fits, and ..._flags.fits" ) )
-    parser.add_argument( '-w', '--width', type=int, default=4088, help="Image width (default: 4088)" )
-    parser.add_argument( '-h', '--height', type=int, default=4088, help="Image height (default: 4088)" )
+    parser.add_argument( '--width', type=int, default=4088, help="Image width (default: 4088)" )
+    parser.add_argument( '--height', type=int, default=4088, help="Image height (default: 4088)" )
     parser.add_argument( '--pixscale', '--ps', type=float, default=0.11,
                          help="Image pixel scale in arcsec/pixel (default 0.11)" )
     parser.add_argument( '-t', '--mjds', type=float, nargs='+', default=None,
                          help="MJDs of images (default: start at 60000., space by 5 days for 60 days)" )
     parser.add_argument( '--image-centers', '--ic', type=float, nargs='+', default=None,
                          help="ra0 dec0 ra1 dec1 ... ran decn centers of images" )
-    parser.add_argument( '-r', '--image-rotations', type=float, nargs='+', default=[0.],
+    parser.add_argument( '-θ', '--image-rotations', type=float, nargs='+', default=[0.],
                          help="Rotations (degrees) of images about centers" )
-    parser.add_argument( '-z', '--zerpoints', type=float, nargs='+', default=[33.],
+    parser.add_argument( '-z', '--zeropoints', type=float, nargs='+', default=[33.],
                          help="Image zeropoints (default: 33. for all)" )
     parser.add_argument( '-r', '--sky-noise-rms', type=float, nargs='+', default=100.,
                          help="Image sky RMS noise (default: 100. for all)" )
     parser.add_argument( '-s', '--sky-level', type=float, nargs='+', default=10.,
                          help="Image sky level (default: 10. for all)" )
-    parser.add_argument( '-b', '--band', default="R062",
+    parser.add_argument( '-f', '--band', '--filter', default="R062",
                          help="Stuck in the BAND Header in the images (default R062)." )
     parser.add_argument( '--sca', default=1,
                          help="Stuck in the SCA Header in the images (default 1)" )
@@ -455,8 +464,10 @@ def main():
                          help="Start MJD of transient linear rise (default: 60010.)" )
     parser.add_argument( '--transient-peak-mjd', '--ttm', type=float, default=60030.,
                          help="Peak MJD of transient (default: 60030.)" )
-    parser.add_argument( '--transient-end-mjd', '--tt1', type=float, default=60010.,
+    parser.add_argument( '--transient-end-mjd', '--tt1', type=float, default=60060.,
                          help="End MJD of transient linear decay (default: 60060.)" )
+    parser.add_argument( '--no-transient-noise', action='store_true', default=False,
+                         help="Set this to not add poisson noise to transients." )
 
     parser.add_argument( '--numprocs', type=int, default=12, help="Number of star rendering processes (default 12)" )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,

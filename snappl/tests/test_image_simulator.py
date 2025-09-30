@@ -1,6 +1,8 @@
 import pytest
 import pathlib
 import numpy as np
+import photutils.aperture
+from matplotlib import pyplot
 
 from snpit_utils.utils import env_as_bool
 from snappl.image_simulator import ImageSimulator
@@ -78,7 +80,8 @@ def test_image_simulator_one_transient_image():
 #   threads).
 @pytest.mark.skipif( not env_as_bool('GENERATE_IMAGE_SIMULATOR_TESTS'),
                      reason='Set GENERATE_IMAGE_SIMULATOR_TESTS=1 to run this "test"' )
-def test_image_simulator_gen_simple_gaussian_test_images():
+def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
+    outdir, plotdir = output_directories
     try:
 
         kwargs = {
@@ -87,10 +90,10 @@ def test_image_simulator_gen_simple_gaussian_test_images():
             'star_center_dec' : -13.,
             'star_sky_radius' : 150.,
             'alpha' : 1.,
-            'nstars' : 1000,
+            'nstars' : 1, #1000,
             'psf_class' : 'gaussian',
             'psf_kwargs' : [ 'sigmax=1.0', 'sigmay=1.0', 'theta=0.' ],
-            'basename' : 'test_image_simulator',
+            'basename' : str( outdir / 'test_image_simulator' ),
             'width' : 1024,
             'height' : 1024,
             'pixscale' : 0.11,
@@ -127,6 +130,9 @@ def test_image_simulator_gen_simple_gaussian_test_images():
 
         zp = kwargs['zeropoints'][0]
         peakflux = 10 ** ( (kwargs['transient_peak_mag'] - zp) / -2.5 )
+        fluxen = []
+        aperflux = []
+        apererr = []
         for mjd in kwargs['mjds']:
             flux = 0.
             if ( mjd >= kwargs['transient_start_mjd'] ) and ( mjd <= kwargs['transient_end_mjd'] ):
@@ -146,7 +152,25 @@ def test_image_simulator_gen_simple_gaussian_test_images():
 
             assert totdata == pytest.approx( flux, abs=2. * totnoise )
 
+            aperture = photutils.aperture.CircularAperture( (x, y), 5. )
+            res = photutils.aperture.aperture_photometry( image.data, aperture, error=image.noise )
+
+            fluxen.append( flux )
+            aperflux.append( res['aperture_sum'][0] )
+            apererr.append( res['aperture_sum_err'][0] )
+
+        import pdb; pdb.set_trace()
+        fig, ax = pyplot.subplots()
+        ax.errorbar( kwargs['mjds'], np.array(aperflux) - np.array(fluxen), apererr, linestyle='none', marker='s',
+                     color='red', label='5-pix radius aperture' )
+        xmin, xmax = ax.get_xlim()
+        ax.hlines( 0, xmin, xmax, linestyle='dotted', color='black' )
+        ax.set_label( 'MJD' )
+        ax.set_ylabel( 'Apphot flux - true flux (counts)' )
+        ax.legend()
+        fig.savefig( plotdir / 'test_image_simulator_aperphot.png' )
+
+
     finally:
-        direc = pathlib.Path( '.' )
-        for f in direc.glob( "test_image_simulator*fits" ):
+        for f in outdir.glob( "test_image_simulator*fits" ):
             f.unlink()

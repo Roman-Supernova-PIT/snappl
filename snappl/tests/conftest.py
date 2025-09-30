@@ -1,4 +1,5 @@
 import pytest
+import pathlib
 
 import numpy as np
 
@@ -11,6 +12,21 @@ from snappl.imagecollection import ImageCollection
 from snappl.image import FITSImage, RomanDatamodelImage
 
 from snpit_utils.config import Config
+
+
+@pytest.fixture( scope='session' )
+def output_directories():
+    outdir = pathlib.Path( 'test_output' )
+    if outdir.exists() and not outdir.is_dir():
+        raise RuntimeError( f"{outdir} exists but is not a directory" )
+    outdir.mkdir( parents=True, exist_ok=True )
+
+    plotdir = pathlib.Path( 'test_plots' )
+    if plotdir.exists() and not plotdir.is_dir():
+        raise RuntimeError( f"{plotdir} exists but is not a directory" )
+    plotdir.mkdir( parents=True, exist_ok=True )
+
+    return outdir, plotdir
 
 
 @pytest.fixture( scope='session', autouse = True )
