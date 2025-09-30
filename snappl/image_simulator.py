@@ -13,23 +13,6 @@ from snappl.image import FITSImageStdHeaders
 from snappl.wcs import AstropyWCS
 
 
-def _kwargs_list_to_kwargs( kwargs_list ):
-    unpack = re.compile( r"^([a-zA-Z0-9_]+)\s*=\s*(.*[^\s])\s*$" )
-    kwargs = {}
-    for arg in kwargs_list:
-        mat = unpack.search( arg )
-        if mat is None:
-            raise ValueError( f"Failed to parse key=val from '{arg}'" )
-        try:
-            kwargs[ mat.group(1) ] = int( mat.group(2) )
-        except ValueError:
-            try:
-                kwargs[ mat.group(1) ] = float( mat.group(2) )
-            except ValueError:
-                kwargs[ mat.group(1) ] = mat.group(2)
-    return kwargs
-
-
 class ImageSimulatorPointSource:
     def __init__( self, ra=None, dec=None, psf=None ):
         if any( i is None for i in [ ra, dec, psf ] ):
@@ -56,7 +39,7 @@ class ImageSimulatorPointSource:
             w = stamp > 0
             var = np.zeros( stamp.shape )
             var[ w ] = stamp[ w ] / gain
-            stamp[ w ] += rng.normal( stamp[w], np.sqrt( var[w] ) )
+            stamp[ w ] += rng.normal( 0., np.sqrt( var[w] ) )
 
         sx0 = 0
         sx1 = stamp.shape[1]
@@ -114,13 +97,10 @@ class ImageSimulationStar( ImageSimulatorPointSource ):
 
 
 class ImageSimulatorStarCollection:
-    def __init__( self, ra=None, dec=None, fieldrad=None, m0=None, m1=None, alpha=None, nstars=None,
-                  psf_class='gaussian', psf_kwargs=['sigmax=1.', 'sigmay=1.', 'theta=0.'],
-                  rng=None ):
+    def __init__( self, psf, ra=None, dec=None, fieldrad=None, m0=None, m1=None, alpha=None, nstars=None, rng=None ):
         if rng is None:
             self.rng = np.random.default_rng()
-        kwargs = _kwargs_list_to_kwargs( psf_kwargs )
-        self.psf = PSF.get_psf_object( psf_class, **kwargs )
+        self.psf = psf
 
         stars = []
         norm = ( alpha + 1 ) / ( m1 ** (alpha + 1) - m0 ** (alpha + 1) )
@@ -375,15 +355,28 @@ class ImageSimulator:
         star_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
         transient_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
 
-        stars = ImageSimulatorStarCollection( ra=self.star_center_ra, dec=self.star_center_dec,
+        unpack = re.compile( r"^([a-zA-Z0-9_]+)\s*=\s*(.*[^\s])\s*$" )
+        kwargs = {}
+        for arg in self.psf_kwargs:
+            mat = unpack.search( arg )
+            if mat is None:
+                raise ValueError( f"Failed to parse key=val from '{arg}'" )
+            try:
+                kwargs[ mat.group(1) ] = int( mat.group(2) )
+            except ValueError:
+                try:
+                    kwargs[ mat.group(1) ] = float( mat.group(2) )
+                except ValueError:
+                    kwargs[ mat.group(1) ] = mat.group(2)
+        psf = PSF.get_psf_object( self.psf_class, **kwargs )
+
+        stars = ImageSimulatorStarCollection( psf=psf, ra=self.star_center_ra, dec=self.star_center_dec,
                                               fieldrad=self.star_sky_radius,
                                               m0=self.min_star_magnitude, m1=self.max_star_magnitude,
-                                              alpha=self.alpha, nstars=self.nstars,
-                                              psf_class=self.psf_class, psf_kwargs=self.psf_kwargs,
-                                              rng=star_rng )
+                                              alpha=self.alpha, nstars=self.nstars, rng=star_rng )
 
         transient = ImageSimulatorTransient( ra=self.transient_ra, dec=self.transient_dec,
-                                             psf=stars.stars[0].psf, peak_mag=self.transient_peak_mag,
+                                             psf=psf, peak_mag=self.transient_peak_mag,
                                              peak_mjd=self.transient_peak_mjd, start_mjd=self.transient_start_mjd,
                                              end_mjd=self.transient_end_mjd )
 

@@ -24,7 +24,7 @@ dependencies = [
   "pandas",
   "h5py",
   "roman-datamodels",
-  "snpit_utils",
+  "snpit_utils>=0.0.11",
   "towncrier",
   "setuptools_scm",
   "cruft",

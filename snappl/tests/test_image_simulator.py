@@ -4,57 +4,148 @@ import numpy as np
 
 from snpit_utils.utils import env_as_bool
 from snappl.image_simulator import ImageSimulator
+from snappl.image import FITSImageStdHeaders
 
 
-# This isn't really a *test* per se, but is a thing here
-# to generate some test images we stick in /photometry_test_data
-# Set env var GENERATE_IMAGE_SIMULATOR_TESTS to 1 before
-# running tests to run this.  It's very slow.
+def test_image_simulator_one_transient_image():
+    fnamebase = 'test_image_simulator_one_transient_image'
+    assert not pathlib.Path( f'{fnamebase}_image.fits' ).exists()
+    assert not pathlib.Path( f'{fnamebase}_noise.fits' ).exists()
+    assert not pathlib.Path( f'{fnamebase}_flags.fits' ).exists()
+    try:
+        kwargs = {
+            'seed' : 64738,
+            'star_center_ra' : 120.,
+            'star_center_dec' : -13.,
+            'star_sky_radius' : 150.,
+            'alpha' : 1.,
+            'nstars' : 0,
+            'psf_class' : 'gaussian',
+            'psf_kwargs' : [ 'sigmax=1.0', 'sigmay=1.0', 'theta=0.' ],
+            'basename' : fnamebase,
+            'width' : 256,
+            'height' : 256,
+            'pixscale' : 0.11,
+            'mjds' : [ 60030. ],
+            'image_centers' : [ 120., -13. ],
+            'image_rotations' : [ 0. ],
+            'zeropoints' : [ 33. ],
+            'sky_noise_rms' : [ 100. ],
+            'sky_level' : [ 10. ],
+            'transient_peak_mag' : 21.,
+            'transient_peak_mjd' : 60030.,
+            'transient_start_mjd' : 60010.,
+            'transient_end_mjd' : 60060.,
+            'transient_ra' : 120.,
+            'transient_dec' : -13.,
+            'numprocs' : 1
+        }
+        sim = ImageSimulator( **kwargs )
+        sim()
+
+        image = FITSImageStdHeaders( f'{fnamebase}_{kwargs["mjds"][0]:7.1f}', std_imagenames=True )
+        assert image.mjd == pytest.approx( kwargs['mjds'][0], abs=0.0001 )
+        assert image.sca == 1
+        assert image.pointing == int( 100 * kwargs['mjds'][0] )
+        assert image.band == 'R062'
+        assert image.image_shape == ( kwargs['height'], kwargs['width'] )
+        wcs = image.get_wcs()
+        x, y  = wcs.world_to_pixel( kwargs['transient_ra'], kwargs['transient_dec'] )
+        x0 = int( np.floor( x + 0.5 ) )
+        y0 = int( np.floor( y + 0.5 ) )
+        assert x0 == kwargs['width'] // 2
+        assert y0 == kwargs['height'] // 2
+        totdata = image.data[ y0-3:y0+4, x0-3:x0+4 ].sum()
+        totnoise = np.sqrt( ( image.noise[ y0-3:y0+4, x0-3:x0+4 ] ** 2 ).sum() )
+        # Make sure noise is sane
+        assert totnoise == pytest.approx( np.sqrt( 49 * kwargs['sky_noise_rms'][0]**2 ), rel=0.1 )
+
+        flux = 10 ** ( ( kwargs['transient_peak_mag'] - kwargs['zeropoints'][0] ) / -2.5 )
+        assert totdata == pytest.approx( flux, abs=2. * totnoise )
+
+    finally:
+        direc = pathlib.Path( '.' )
+        for f in direc.glob( f"{fnamebase}*fits" ):
+            f.unlink()
+
+
+# This test is really slow, so don't run it on github CI, and don't run
+#   it locally by default.  Do make sure to run it if you futz around
+#   with the image simulator.  It's here mostly to generate images we're
+#   going to stick in photometry_test_data.  Set
+#   GENERATE_IMAGE_SIMULATOR_TESTS env var to 1 to actually run this
+#   test.  I chose the nprocs=12 because my desktop has 12 CPU cores (24
+#   threads).
 @pytest.mark.skipif( not env_as_bool('GENERATE_IMAGE_SIMULATOR_TESTS'),
                      reason='Set GENERATE_IMAGE_SIMULATOR_TESTS=1 to run this "test"' )
-def test_image_simulator():
+def test_image_simulator_gen_simple_gaussian_test_images():
     try:
-        sim = ImageSimulator(
-            seed=42,
-            star_center_ra=120.,
-            star_center_dec=-13.,
-            star_sky_radius=150.,
-            alpha=1.,
-            nstars=1000,
-            psf_class='gaussian',
-            psf_kwargs=[ 'sigmax=1.0', 'sigmay=1.0', 'theta=0.' ],
-            basename='test_image_simulator',
-            width=1024,
-            height=1024,
-            pixscale=0.11,
-            mjds=list( np.arange( 60000., 60065., 5. ) ),
-            image_centers=[ 120., -13.,
-                            120.005, -13.,
-                            120.01, -13.,
-                            120., -13.005,
-                            120., -13.01,
-                            119.995, -13.,
-                            119.99, -13.,
-                            120., -12.995,
-                            120., -12.99,
-                            120.01, -12.99,
-                            119.99, -12.99,
-                            120.01, -13.01,
-                            119.99, -13.01 ],
-            image_rotations=list( np.arange( 0., 330., 26. ) ),
-            zeropoints=[33.],
-            sky_noise_rms=[100.],
-            sky_level=[10.],
-            numprocs=12,
-            transient_ra=120.,
-            transient_dec=-13.,
-            transient_peak_mag=21.,
-            transient_peak_mjd=60030.,
-            transient_start_mjd=60010.,
-            transient_end_mjd=60060.
-        )
+
+        kwargs = {
+            'seed' : 42,
+            'star_center_ra' : 120.,
+            'star_center_dec' : -13.,
+            'star_sky_radius' : 150.,
+            'alpha' : 1.,
+            'nstars' : 1000,
+            'psf_class' : 'gaussian',
+            'psf_kwargs' : [ 'sigmax=1.0', 'sigmay=1.0', 'theta=0.' ],
+            'basename' : 'test_image_simulator',
+            'width' : 1024,
+            'height' : 1024,
+            'pixscale' : 0.11,
+            'mjds' : list( np.arange( 60000., 60065., 5. ) ),
+            'image_centers' : [ 120., -13.,
+                                120.005, -13.,
+                                120.01, -13.,
+                                120., -13.005,
+                                120., -13.01,
+                                119.995, -13.,
+                                119.99, -13.,
+                                120., -12.995,
+                                120., -12.99,
+                                120.01, -12.99,
+                                119.99, -12.99,
+                                120.01, -13.01,
+                                119.99, -13.01 ],
+            'image_rotations' : list( np.arange( 0., 330., 26. ) ),
+            'zeropoints' : [ 33. ],
+            'sky_noise_rms' : [ 100. ],
+            'sky_level' : [ 10. ],
+            'transient_peak_mag' : 21.,
+            'transient_peak_mjd' : 60030.,
+            'transient_start_mjd' : 60010.,
+            'transient_end_mjd' : 60060.,
+            'transient_ra' : 120.,
+            'transient_dec' : -13.,
+            'numprocs' : 12,
+        }
+        sim = ImageSimulator( **kwargs )
         sim()
-        import pdb; pdb.set_trace()
+
+        # Let's do a quick and dirty check to make sure the lightcurve is sane.
+
+        zp = kwargs['zeropoints'][0]
+        peakflux = 10 ** ( (kwargs['transient_peak_mag'] - zp) / -2.5 )
+        for mjd in kwargs['mjds']:
+            flux = 0.
+            if ( mjd >= kwargs['transient_start_mjd'] ) and ( mjd <= kwargs['transient_end_mjd'] ):
+                mjdedge = ( kwargs['transient_start_mjd'] if mjd < kwargs['transient_peak_mjd']
+                            else kwargs['transient_end_mjd'] )
+                flux = peakflux * ( mjd - mjdedge ) / ( kwargs['transient_peak_mjd'] - mjdedge )
+
+            fname = f'{kwargs["basename"]}_{mjd:7.1f}'
+            image = FITSImageStdHeaders( fname, std_imagenames=True )
+            wcs = image.get_wcs()
+            x, y  = wcs.world_to_pixel( kwargs['transient_ra'], kwargs['transient_dec'] )
+            x0 = int( np.floor( x + 0.5 ) )
+            y0 = int( np.floor( y + 0.5 ) )
+
+            totdata = image.data[ y0-3:y0+4, x0-3:x0+4 ].sum()
+            totnoise = np.sqrt( ( image.noise[ y0-3:y0+4, x0-3:x0+4 ] ** 2 ).sum() )
+
+            assert totdata == pytest.approx( flux, abs=2. * totnoise )
+
     finally:
         direc = pathlib.Path( '.' )
         for f in direc.glob( "test_image_simulator*fits" ):
