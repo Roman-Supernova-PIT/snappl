@@ -20,3 +20,5 @@ photometry:
     snappl:
         A25ePSF_path: /snappl/snappl/tests/testdata/A25ePSF
         temp_dir: /tmp
+
+        simdex_server: https://roman-desc-simdex.rknop.net

@@ -189,8 +189,8 @@ class DiaObjectOU2024( DiaObject ):
         if mjd_end_min is not None:
             params['mjd_end_max'] = float( mjd_end_max )
 
-
-        res = retry_post( 'https://roman-desc-simdex.lbl.gov/findtransients', json=params )
+        simdex = Config.get.value( 'photometry.snappl.simdex_server' )
+        res = retry_post( f'{simdex}/findtransients', json=params )
         objinfo = res.json()
 
         diaobjects = []

@@ -247,7 +247,9 @@ class ImageCollectionOU2024:
         if exptime_max is not None:
             params['exptime_max'] = float(exptime_max)
 
-        res = retry_post( "https://roman-desc-simdex.lbl.gov/findromanimages", json=params ).json()
+        simdex = Config.get.value( 'photometry.snappl.simdex_server' )
+
+        res = retry_post( f"{simdex}/findromanimages", json=params ).json()
 
         images = []
         for i in range( len(res['pointing']) ):
