@@ -247,7 +247,7 @@ class ImageCollectionOU2024:
         if exptime_max is not None:
             params['exptime_max'] = float(exptime_max)
 
-        simdex = Config.get.value( 'photometry.snappl.simdex_server' )
+        simdex = Config.get().value( 'photometry.snappl.simdex_server' )
         res = retry_post( f"{simdex}/findromanimages", json=params ).json()
 
         images = []

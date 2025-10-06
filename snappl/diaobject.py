@@ -189,7 +189,7 @@ class DiaObjectOU2024( DiaObject ):
         if mjd_end_min is not None:
             params['mjd_end_max'] = float( mjd_end_max )
 
-        simdex = Config.get.value( 'photometry.snappl.simdex_server' )
+        simdex = Config.get().value( 'photometry.snappl.simdex_server' )
         res = retry_post( f'{simdex}/findtransients', json=params )
         objinfo = res.json()
 
