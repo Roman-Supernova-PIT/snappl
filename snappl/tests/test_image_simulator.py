@@ -86,11 +86,10 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
 
         kwargs = {
             'seed' : 42,
-            'star_center_ra' : 120.,
-            'star_center_dec' : -13.,
+            'star_center' : (120., -13. ),
             'star_sky_radius' : 150.,
             'alpha' : 1.,
-            'nstars' : 1, #1000,
+            'nstars' : 1000,
             'psf_class' : 'gaussian',
             'psf_kwargs' : [ 'sigmax=1.0', 'sigmay=1.0', 'theta=0.' ],
             'basename' : str( outdir / 'test_image_simulator' ),
@@ -125,6 +124,10 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
         }
         sim = ImageSimulator( **kwargs )
         sim()
+
+        # Uncomment this next line to pause if you want to save the
+        # images; They'll all get deleted at the end of the test.
+        # import pdb; pdb.set_trace()
 
         # Let's do a quick and dirty check to make sure the lightcurve is sane.
 
@@ -169,7 +172,6 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
         ax.set_ylabel( 'Apphot flux - true flux (counts)' )
         ax.legend()
         fig.savefig( plotdir / 'test_image_simulator_aperphot.png' )
-
 
     finally:
         for f in outdir.glob( "test_image_simulator*fits" ):
