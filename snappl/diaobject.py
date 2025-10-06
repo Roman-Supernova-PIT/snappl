@@ -1,5 +1,6 @@
 __all__ = [ 'DiaObject', 'DiaObjectOU2024', 'DiaObjectManual' ]
 
+from snpit_utils.config import Config
 from snpit_utils.http import retry_post
 
 
