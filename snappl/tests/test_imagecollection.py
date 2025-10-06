@@ -55,7 +55,6 @@ def test_imagecollectionou2024_get_image():
 
 
 def test_imagecollectionou2024_find_images():
-    cfg = Config.get()
     col = ImageCollection.get_collection( "ou2024" )
 
     # TODO, more tests, this is just a quick and basic
