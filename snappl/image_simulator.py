@@ -5,7 +5,6 @@ import multiprocessing
 
 import numpy as np
 import astropy.wcs
-import astropy.io.fits
 
 from snpit_utils.logger import SNLogger
 from snpit_utils.utils import isSequence

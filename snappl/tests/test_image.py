@@ -4,7 +4,6 @@ import pathlib
 import numpy as np
 import astropy
 import astropy.io.fits
-import fitsio
 import fitsio.header
 
 from snappl.image import FITSImage
