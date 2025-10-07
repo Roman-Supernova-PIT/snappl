@@ -17,8 +17,7 @@ def test_image_simulator_one_transient_image():
     try:
         kwargs = {
             'seed' : 64738,
-            'star_center_ra' : 120.,
-            'star_center_dec' : -13.,
+            'star_center': (120., -13.),
             'star_sky_radius' : 150.,
             'alpha' : 1.,
             'nstars' : 0,

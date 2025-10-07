@@ -162,12 +162,22 @@ def test_fits_get_data( unloaded_fitsimage ):
     assert im._noise is None
     assert im._flags is None
 
-    # Accessing one of data, noise, or flags should load all
+    # Accessing one of data, noise, or flags should only load that one
     assert im.data.shape == ( 1024, 1024 )
     assert im._data.shape == ( 1024, 1024 )
+    assert im._noise is None
+    assert im._flags is None
+    im.free()
+    assert im.noise.shape == ( 1024, 1024 )
     assert im._noise.shape == ( 1024, 1024 )
+    assert im._data is None
+    assert im._flags is None
+    im.free()
+    assert im.flags.shape == ( 1024, 1024 )
     assert im._flags.shape == ( 1024, 1024 )
-
+    assert im._data is None
+    assert im._flags is None
+    
     # Clear
     im.free()
     assert im._data is None
