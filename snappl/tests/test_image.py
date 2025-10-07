@@ -177,7 +177,7 @@ def test_fits_get_data( unloaded_fitsimage ):
     assert im._flags.shape == ( 1024, 1024 )
     assert im._data is None
     assert im._flags is None
-    
+
     # Clear
     im.free()
     assert im._data is None
