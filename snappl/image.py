@@ -938,7 +938,7 @@ class FITSImageStdHeaders( FITSImage ):
         if self._header is None:
             try:
                 self._header = FITSImage.get_fits_header( self )
-            except Exception as e:
+            except Exception:
                 self._header = fits.header.Header()
         return self._header
 
