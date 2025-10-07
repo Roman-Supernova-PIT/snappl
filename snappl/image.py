@@ -102,7 +102,10 @@ class Image:
             Roman.
 
         """
-        self.path = pathlib.Path( path )
+        if path is None:
+            self.path = None
+        else:
+            self.path = pathlib.Path( path )
         self._pointing = pointing
         self._sca = sca
         self._mjd = None
@@ -556,7 +559,7 @@ class Numpy2DImage( Image ):
         if ( isinstance(new_value, np.ndarray)
              and np.issubdtype(new_value.dtype, np.floating)
              and len(new_value.shape) ==2
-            ):
+            ) or (new_value is None):
             self._data = new_value
         else:
             raise TypeError( "Data must be a 2d numpy array of floats." )
@@ -569,10 +572,11 @@ class Numpy2DImage( Image ):
 
     @noise.setter
     def noise( self, new_value ):
-        if ( isinstance( new_value, np.ndarray )
-             and np.issubdtype( new_value.dtype, np.floating )
-             and len( new_value.shape ) == 2
-            ):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.floating)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
             self._noise = new_value
         else:
             raise TypeError( "Noise must be a 2d numpy array of floats." )
@@ -585,10 +589,11 @@ class Numpy2DImage( Image ):
 
     @flags.setter
     def flags( self, new_value ):
-        if ( isinstance( new_value, np.ndarray )
-             and np.issubdtype( new_value.dtype, np.integer )
-             and len( new_value.shape ) == 2
-            ):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.integer)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
             self._flags = new_value
         else:
             raise TypeError( "Flags must be a 2d numpy array of integers." )
@@ -709,7 +714,6 @@ class FITSImage( Numpy2DImage ):
     # Subclasses may want to replace this with something different based on how they work
     def get_fits_header( self ):
         """Get the header of the image."""
-
         if self._header is None:
             with fitsio.FITS( self.path ) as f:
                 hdr = f[ self.imagehdu ].read_header()
@@ -929,23 +933,15 @@ class FITSImageStdHeaders( FITSImage ):
         self._header_kws = header_kws
 
 
+
     def get_fits_header( self ):
         if self._header is None:
             try:
                 self._header = FITSImage.get_fits_header( self )
-            except Exception:
+            except Exception as e:
                 self._header = fits.header.Header()
         return self._header
 
-    @property
-    def mjd( self ):
-        hdr = self.get_fits_header()
-        return hdr[ self._header_kws['band'] ]
-
-    @mjd.setter
-    def mjd( self, val ):
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['band'] ] = val
 
     @property
     def pointing( self ):
@@ -996,6 +992,7 @@ class FITSImageStdHeaders( FITSImage ):
     def mjd( self, val ):
         hdr = self.get_fits_header()
         hdr[ self._header_kws['mjd'] ] = val
+        self._header = hdr
 
     @property
     def exptime( self ):
