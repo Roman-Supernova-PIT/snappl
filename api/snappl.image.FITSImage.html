@@ -5,17 +5,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>FITSImage &#8212; roman_snpit_snappl 0.1.dev1+gd4d2d8a7f documentation</title>
+    <title>FITSImage &#8212; roman_snpit_snappl 0.1.dev1+g719a5ba90 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=969742e2"></script>
+    <script src="../_static/documentation_options.js?v=4441bccb"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="ManualFITSImage" href="snappl.image.ManualFITSImage.html" />
+    <link rel="next" title="FITSImageStdHeaders" href="snappl.image.FITSImageStdHeaders.html" />
     <link rel="prev" title="Numpy2DImage" href="snappl.image.Numpy2DImage.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -60,7 +60,7 @@
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="../api.html">snappl API</a><ul>
       <li>Previous: <a href="snappl.image.Numpy2DImage.html" title="previous chapter">Numpy2DImage</a></li>
-      <li>Next: <a href="snappl.image.ManualFITSImage.html" title="next chapter">ManualFITSImage</a></li>
+      <li>Next: <a href="snappl.image.FITSImageStdHeaders.html" title="next chapter">FITSImageStdHeaders</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -88,7 +88,7 @@
           <a href="snappl.image.Numpy2DImage.html" title="Previous document">Numpy2DImage</a>
         </li>
         <li>
-          <a href="snappl.image.ManualFITSImage.html" title="Next document">ManualFITSImage</a>
+          <a href="snappl.image.FITSImageStdHeaders.html" title="Next document">FITSImageStdHeaders</a>
           &rarr;
         </li>
     </ul>
@@ -102,7 +102,7 @@
 <h1>FITSImage<a class="headerlink" href="#fitsimage" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.image.FITSImage">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.image.</span></span><span class="sig-name descname"><span class="pre">FITSImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImage" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.image.</span></span><span class="sig-name descname"><span class="pre">FITSImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flagspath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imagehdu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisehdu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flagshdu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wcs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std_imagenames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImage" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="snappl.image.Numpy2DImage.html#snappl.image.Numpy2DImage" title="snappl.image.Numpy2DImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">Numpy2DImage</span></code></a></p>
 <p>Base class for classes that read FITS images and use an AstropyWCS wcs.</p>
 <p>Instantiate an image.  You probably don’t want to do that.</p>
@@ -121,7 +121,7 @@ Image.get_data(), and manage the data object lifetime yourself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – <p>Path to image file, or otherwise some kind of indentifier
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <p>Path to image file, or otherwise some kind of indentifier
 that allows the object to find the image.  Exactly what
 this needs to be is subclass-dependent, but it is usually
 a full absolute path on disk.</p>
@@ -131,10 +131,10 @@ get_image() method of an appropriate ImageCollection instead
 of instantiating an Image directly, or use the
 get_image_path() method of an appropriate ImageCollection.</p>
 </p></li>
-<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em>) – The exposure this image is associated with.  If None, then
+<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em>) – The exposure this image is associated with.  If None, then
 the image will try to figure out the pointing from the path,
 if the specific Image subclass is able to do that.</p></li>
-<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>default None</em>) – The Sensor Chip Assembly that would be called the
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The Sensor Chip Assembly that would be called the
 chip number for any other telescope but is called SCA for
 Roman.</p></li>
 </ul>
@@ -154,11 +154,11 @@ Roman.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_cutout" title="snappl.image.FITSImage.get_cutout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_cutout</span></code></a>(x, y, xsize[, ysize, mode, ...])</p></td>
 <td><p>See Image.get_cutout</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_data" title="snappl.image.FITSImage.get_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_data</span></code></a>([which])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_data" title="snappl.image.FITSImage.get_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_data</span></code></a>([which, always_reload, cache])</p></td>
 <td><p>Read the data from disk and return one or more 2d numpy arrays of data.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_fits_header" title="snappl.image.FITSImage.get_fits_header"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_fits_header</span></code></a>()</p></td>
-<td><p></p></td>
+<td><p>Get the header of the image.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_ra_dec_cutout" title="snappl.image.FITSImage.get_ra_dec_cutout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ra_dec_cutout</span></code></a>(ra, dec, xsize[, ysize, ...])</p></td>
 <td><p>See Image.get_ra_dec_cutout</p></td>
@@ -166,7 +166,10 @@ Roman.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImage.get_wcs" title="snappl.image.FITSImage.get_wcs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_wcs</span></code></a>([wcsclass])</p></td>
 <td><p>Get image WCS.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImage.set_fits_header" title="snappl.image.FITSImage.set_fits_header"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_fits_header</span></code></a>(hdr)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImage.save" title="snappl.image.FITSImage.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([which, path, noisepath, flagspath, ...])</p></td>
+<td><p>Write image to its path.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImage.set_fits_header" title="snappl.image.FITSImage.set_fits_header"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_fits_header</span></code></a>(hdr)</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -178,7 +181,7 @@ Roman.</p></li>
 <dd><p>(ny, nx) shape of image</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)">tuple</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -193,12 +196,12 @@ Roman.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.image.FITSImage.get_data">
-<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImage.get_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImage.get_data" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">always_reload</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImage.get_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImage.get_data" title="Link to this definition">¶</a></dt>
 <dd><p>Read the data from disk and return one or more 2d numpy arrays of data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>which</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – <dl class="simple">
+<li><p><strong>which</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <dl class="simple">
 <dt>What to read:</dt><dd><p>’data’ : just the image data
 ‘noise’ : just the noise data
 ‘flags’ : just the flags data
@@ -206,12 +209,12 @@ Roman.</p></li>
 </dd>
 </dl>
 </p></li>
-<li><p><strong>always_reload</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default False</em>) – Whether this is supported depends on the subclass.  If this
+<li><p><strong>always_reload</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – Whether this is supported depends on the subclass.  If this
 is false, then get_data() has the option of returning the
 values of self.data, self.noise, and/or self.flags instead
 of always loading the data.  If this is True, then
 get_data() will ignore the self._data et al. properties.</p></li>
-<li><p><strong>cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default False</em>) – Normally, get_data() just reads the data and does not do any
+<li><p><strong>cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – Normally, get_data() just reads the data and does not do any
 internal caching.  If this is True, and the subclass
 supports it, then the object will cache the loaded data so
 that future calls with always_reload will not need to reread
@@ -225,7 +228,7 @@ out of scope, the data will be freed (unless the caller saved it
 somewhere.  This does mean it’s read from disk every time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)">list</a> (length 1 or 3 ) of 2d numpy arrays</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> (length 1 or 3 ) of 2d numpy arrays</p>
 </dd>
 </dl>
 </dd></dl>
@@ -233,7 +236,8 @@ somewhere.  This does mean it’s read from disk every time.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.image.FITSImage.get_fits_header">
 <span class="sig-name descname"><span class="pre">get_fits_header</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImage.get_fits_header"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImage.get_fits_header" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Get the header of the image.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.image.FITSImage.get_ra_dec_cutout">
@@ -248,16 +252,25 @@ somewhere.  This does mean it’s read from disk every time.</p>
 <dd><p>Get image WCS.  Will be an object of type BaseWCS (from wcs.py) (really likely a subclass).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>wcsclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><em>None</em>) – By default, the subclass of BaseWCS you get back will be
+<dd class="field-odd"><p><strong>wcsclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – By default, the subclass of BaseWCS you get back will be
 defined by the Image subclass of the object you call this
 on.  If you want a specific subclass of BaseWCS, you can put
 the name of that class here.  It may not always work; not
 all types of images are able to return all types of wcses.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)">object</a> of a subclass of <a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS">snappl.wcs.BaseWCS</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a> of a subclass of <a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS">snappl.wcs.BaseWCS</a></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.image.FITSImage.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flagspath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imagehdu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisehdu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flagshdu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImage.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImage.save" title="Link to this definition">¶</a></dt>
+<dd><p>Write image to its path.  See Image.save</p>
+<p>Has the side-effect of loading self._header if it is None, and
+if replacing WCS keywords in self._header with keywords from the
+current image WCS.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -280,7 +293,7 @@ all types of images are able to return all types of wcses.</p>
           <a href="snappl.image.Numpy2DImage.html" title="Previous document">Numpy2DImage</a>
         </li>
         <li>
-          <a href="snappl.image.ManualFITSImage.html" title="Next document">ManualFITSImage</a>
+          <a href="snappl.image.FITSImageStdHeaders.html" title="Next document">FITSImageStdHeaders</a>
           &rarr;
         </li>
     </ul>

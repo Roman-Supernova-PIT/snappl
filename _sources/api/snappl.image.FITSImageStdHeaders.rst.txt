@@ -1,0 +1,37 @@
+FITSImageStdHeaders
+===================
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: FITSImageStdHeaders
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~FITSImageStdHeaders.band
+      ~FITSImageStdHeaders.exptime
+      ~FITSImageStdHeaders.mjd
+      ~FITSImageStdHeaders.pointing
+      ~FITSImageStdHeaders.sca
+      ~FITSImageStdHeaders.zeropoint
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~FITSImageStdHeaders.get_fits_header
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: band
+   .. autoattribute:: exptime
+   .. autoattribute:: mjd
+   .. autoattribute:: pointing
+   .. autoattribute:: sca
+   .. autoattribute:: zeropoint
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_fits_header

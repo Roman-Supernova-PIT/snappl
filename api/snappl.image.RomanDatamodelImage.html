@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>RomanDatamodelImage &#8212; roman_snpit_snappl 0.1.dev1+gd4d2d8a7f documentation</title>
+    <title>RomanDatamodelImage &#8212; roman_snpit_snappl 0.1.dev1+g719a5ba90 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=969742e2"></script>
+    <script src="../_static/documentation_options.js?v=4441bccb"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -122,7 +122,7 @@ Image.get_data(), and manage the data object lifetime yourself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – <p>Path to image file, or otherwise some kind of indentifier
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <p>Path to image file, or otherwise some kind of indentifier
 that allows the object to find the image.  Exactly what
 this needs to be is subclass-dependent, but it is usually
 a full absolute path on disk.</p>
@@ -132,10 +132,10 @@ get_image() method of an appropriate ImageCollection instead
 of instantiating an Image directly, or use the
 get_image_path() method of an appropriate ImageCollection.</p>
 </p></li>
-<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em>) – The exposure this image is associated with.  If None, then
+<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em>) – The exposure this image is associated with.  If None, then
 the image will try to figure out the pointing from the path,
 if the specific Image subclass is able to do that.</p></li>
-<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>default None</em>) – The Sensor Chip Assembly that would be called the
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The Sensor Chip Assembly that would be called the
 chip number for any other telescope but is called SCA for
 Roman.</p></li>
 </ul>
@@ -236,14 +236,14 @@ open the roman_datamodels image.</p>
 <dd><p>Get image WCS.  Will be an object of type BaseWCS (from wcs.py) (really likely a subclass).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>wcsclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><em>None</em>) – By default, the subclass of BaseWCS you get back will be
+<dd class="field-odd"><p><strong>wcsclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – By default, the subclass of BaseWCS you get back will be
 defined by the Image subclass of the object you call this
 on.  If you want a specific subclass of BaseWCS, you can put
 the name of that class here.  It may not always work; not
 all types of images are able to return all types of wcses.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)">object</a> of a subclass of <a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS">snappl.wcs.BaseWCS</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a> of a subclass of <a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS">snappl.wcs.BaseWCS</a></p>
 </dd>
 </dl>
 </dd></dl>

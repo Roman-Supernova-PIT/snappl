@@ -21,6 +21,7 @@ FITSImage
       ~FITSImage.get_fits_header
       ~FITSImage.get_ra_dec_cutout
       ~FITSImage.get_wcs
+      ~FITSImage.save
       ~FITSImage.set_fits_header
 
    .. rubric:: Attributes Documentation
@@ -34,4 +35,5 @@ FITSImage
    .. automethod:: get_fits_header
    .. automethod:: get_ra_dec_cutout
    .. automethod:: get_wcs
+   .. automethod:: save
    .. automethod:: set_fits_header

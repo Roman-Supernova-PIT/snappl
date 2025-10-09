@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Image &#8212; roman_snpit_snappl 0.1.dev1+gd4d2d8a7f documentation</title>
+    <title>Image &#8212; roman_snpit_snappl 0.1.dev1+g719a5ba90 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=969742e2"></script>
+    <script src="../_static/documentation_options.js?v=4441bccb"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -103,7 +103,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.image.Image">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.image.</span></span><span class="sig-name descname"><span class="pre">Image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#Image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.Image" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Encapsulates a single 2d image.</p>
 <p>Properties inclue the following.  Some of these properties may not
 be defined for some subclasses of Image.</p>
@@ -139,7 +139,7 @@ Image.get_data(), and manage the data object lifetime yourself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – <p>Path to image file, or otherwise some kind of indentifier
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <p>Path to image file, or otherwise some kind of indentifier
 that allows the object to find the image.  Exactly what
 this needs to be is subclass-dependent, but it is usually
 a full absolute path on disk.</p>
@@ -149,10 +149,10 @@ get_image() method of an appropriate ImageCollection instead
 of instantiating an Image directly, or use the
 get_image_path() method of an appropriate ImageCollection.</p>
 </p></li>
-<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em>) – The exposure this image is associated with.  If None, then
+<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em>) – The exposure this image is associated with.  If None, then
 the image will try to figure out the pointing from the path,
 if the specific Image subclass is able to do that.</p></li>
-<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>default None</em>) – The Sensor Chip Assembly that would be called the
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The Sensor Chip Assembly that would be called the
 chip number for any other telescope but is called SCA for
 Roman.</p></li>
 </ul>
@@ -237,6 +237,12 @@ Roman.</p></li>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Image.psf_phot" title="snappl.image.Image.psf_phot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">psf_phot</span></code></a>(init_params, psf[, forced_phot, ...])</p></td>
 <td><p>Do psf photometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.Image.save" title="snappl.image.Image.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([which, path, noisepath, flagspath, ...])</p></td>
+<td><p>Save the image to its path(s).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Image.save_data" title="snappl.image.Image.save_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_data</span></code></a>([which, path, noisepath, ...])</p></td>
+<td><p>Same as save; here for backwards compatibility.</p></td>
 </tr>
 </tbody>
 </table>
@@ -351,10 +357,10 @@ photutils.background.Background2D with box size bgsize.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>coords</strong> (<em>astropy.table.Table</em>) – Must have (at least) columns ‘x’ and ‘y’ representing
 0-origin pixel coordinates. (CHECK THIS)</p></li>
-<li><p><strong>ap_r</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>default 9</em>) – Aperture radius in pixels</p></li>
-<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>default 'subpixel'</em>) – Passed to the “method” parmeter of photutils.photometry.aperture_photometry</p></li>
-<li><p><strong>subpixels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>default 5</em>) – Number of subpixels to use for the ‘subpixel’ method.</p></li>
-<li><p><strong>bgsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>default 511</em>) – Box size for photutils Background2D background subtraction.
+<li><p><strong>ap_r</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default 9</em>) – Aperture radius in pixels</p></li>
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default 'subpixel'</em>) – Passed to the “method” parmeter of photutils.photometry.aperture_photometry</p></li>
+<li><p><strong>subpixels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default 5</em>) – Number of subpixels to use for the ‘subpixel’ method.</p></li>
+<li><p><strong>bgsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default 511</em>) – Box size for photutils Background2D background subtraction.
 Set to &lt;=0 to not do background subtraction.</p></li>
 <li><p><strong>**kwargs</strong> (<em>further arguments are passed directly to photutils.photometry.aperture_photometry</em>)</p></li>
 </ul>
@@ -388,14 +394,14 @@ This implementation assumes that the image WCS is an AstropyWCS.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – x pixel coordinate of the center of the cutout.</p></li>
-<li><p><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – y pixel coordinate of the center of the cutout.</p></li>
-<li><p><strong>xsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Width of the cutout in pixels.</p></li>
-<li><p><strong>ysize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Height of the cutout in pixels. If None, set to xsize.</p></li>
-<li><p><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>default 'strict'</em>) – “strict” does not allow for partial overlap between the cutout and the original image,
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – x pixel coordinate of the center of the cutout.</p></li>
+<li><p><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – y pixel coordinate of the center of the cutout.</p></li>
+<li><p><strong>xsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Width of the cutout in pixels.</p></li>
+<li><p><strong>ysize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Height of the cutout in pixels. If None, set to xsize.</p></li>
+<li><p><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default 'strict'</em>) – “strict” does not allow for partial overlap between the cutout and the original image,
 “partial” will fill in non-overlapping pixels with fill_value. This is identical to the
 mode parameter of astropy.nddata.Cutout2D.</p></li>
-<li><p><strong>fill_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>default np.nan</em>) – Fill value for pixels that are outside the original
+<li><p><strong>fill_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default np.nan</em>) – Fill value for pixels that are outside the original
 image when mode=’partial’. This is identical to the fill_value parameter
 of astropy.nddata.Cutout2D.</p></li>
 </ul>
@@ -416,7 +422,7 @@ of astropy.nddata.Cutout2D.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>which</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – <dl class="simple">
+<li><p><strong>which</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <dl class="simple">
 <dt>What to read:</dt><dd><p>’data’ : just the image data
 ‘noise’ : just the noise data
 ‘flags’ : just the flags data
@@ -424,12 +430,12 @@ of astropy.nddata.Cutout2D.</p></li>
 </dd>
 </dl>
 </p></li>
-<li><p><strong>always_reload</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default False</em>) – Whether this is supported depends on the subclass.  If this
+<li><p><strong>always_reload</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – Whether this is supported depends on the subclass.  If this
 is false, then get_data() has the option of returning the
 values of self.data, self.noise, and/or self.flags instead
 of always loading the data.  If this is True, then
 get_data() will ignore the self._data et al. properties.</p></li>
-<li><p><strong>cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default False</em>) – Normally, get_data() just reads the data and does not do any
+<li><p><strong>cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – Normally, get_data() just reads the data and does not do any
 internal caching.  If this is True, and the subclass
 supports it, then the object will cache the loaded data so
 that future calls with always_reload will not need to reread
@@ -443,7 +449,7 @@ out of scope, the data will be freed (unless the caller saved it
 somewhere.  This does mean it’s read from disk every time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)">list</a> (length 1 or 3 ) of 2d numpy arrays</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> (length 1 or 3 ) of 2d numpy arrays</p>
 </dd>
 </dl>
 </dd></dl>
@@ -455,14 +461,14 @@ somewhere.  This does mean it’s read from disk every time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – RA coordinate of the center of the cutout, in degrees.</p></li>
-<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – DEC coordinate of the center of the cutout, in degrees.</p></li>
-<li><p><strong>xsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Width of the cutout in pixels.</p></li>
-<li><p><strong>ysize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Height of the cutout in pixels. If None, set to xsize.</p></li>
-<li><p><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>default 'strict'</em>) – “strict” does not allow for partial overlap between the cutout and the original image,
+<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – RA coordinate of the center of the cutout, in degrees.</p></li>
+<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – DEC coordinate of the center of the cutout, in degrees.</p></li>
+<li><p><strong>xsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Width of the cutout in pixels.</p></li>
+<li><p><strong>ysize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Height of the cutout in pixels. If None, set to xsize.</p></li>
+<li><p><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default 'strict'</em>) – “strict” does not allow for partial overlap between the cutout and the original image,
 “partial” will fill in non-overlapping pixels with fill_value. This is identical to the
 mode parameter of astropy.nddata.Cutout2D.</p></li>
-<li><p><strong>fill_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>default np.nan</em>) – Fill value for pixels that are outside the original
+<li><p><strong>fill_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default np.nan</em>) – Fill value for pixels that are outside the original
 image when mode=’partial’. This is identical to the fill_value parameter
 of astropy.nddata.Cutout2D.</p></li>
 </ul>
@@ -482,14 +488,14 @@ of astropy.nddata.Cutout2D.</p></li>
 <dd><p>Get image WCS.  Will be an object of type BaseWCS (from wcs.py) (really likely a subclass).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>wcsclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><em>None</em>) – By default, the subclass of BaseWCS you get back will be
+<dd class="field-odd"><p><strong>wcsclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – By default, the subclass of BaseWCS you get back will be
 defined by the Image subclass of the object you call this
 on.  If you want a specific subclass of BaseWCS, you can put
 the name of that class here.  It may not always work; not
 all types of images are able to return all types of wcses.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)">object</a> of a subclass of <a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS">snappl.wcs.BaseWCS</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a> of a subclass of <a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS">snappl.wcs.BaseWCS</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -510,17 +516,56 @@ all types of images are able to return all types of wcses.</p>
 <li><p><strong>init_params</strong> (<em>something</em>) – passed to the init_params of a call to a
 photutils.psf.PSFPHotometry object.</p></li>
 <li><p><strong>psf</strong> (<a class="reference internal" href="snappl.psf.PSF.html#snappl.psf.PSF" title="snappl.psf.PSF"><em>snappl.psf.PSF</em></a>) – The PSF profile to fit to the image.</p></li>
-<li><p><strong>forced_phot</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default True</em>) – If True, then the x and y positions are fixed.  If False,
+<li><p><strong>forced_phot</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default True</em>) – If True, then the x and y positions are fixed.  If False,
 then they will be fit along with the flux.</p></li>
-<li><p><strong>fit_shape</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><em>tuple</em></a><em> of </em><em>(</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>)</em><em>, </em><em>default</em><em> (</em><em>5</em><em>, </em><em>5</em><em>)</em>) – Shape of the stamp around the positions in which to do the fit.</p></li>
-<li><p><strong>bginner</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>default 15</em>) – Radius of inner boundry of annulus in which to measure background.</p></li>
-<li><p><strong>bouter</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>default 25</em>) – Radius of outer boundry of annulus in which to measure background.</p></li>
+<li><p><strong>fit_shape</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em> of </em><em>(</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>)</em><em>, </em><em>default</em><em> (</em><em>5</em><em>, </em><em>5</em><em>)</em>) – Shape of the stamp around the positions in which to do the fit.</p></li>
+<li><p><strong>bginner</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default 15</em>) – Radius of inner boundry of annulus in which to measure background.</p></li>
+<li><p><strong>bouter</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default 25</em>) – Radius of outer boundry of annulus in which to measure background.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>TODO</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.image.Image.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flagspath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#Image.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.Image.save" title="Link to this definition">¶</a></dt>
+<dd><p>Save the image to its path(s).</p>
+<p>May have side-effects on the internal data structure (e.g. FITS
+subclasses modify the internally stored header).</p>
+<section id="paramters">
+<h2>Paramters<a class="headerlink" href="#paramters" title="Link to this heading">¶</a></h2>
+<blockquote>
+<div><dl class="simple">
+<dt>which<span class="classifier">str, default “all”</span></dt><dd><p>One of ‘data’, ‘noise’, ‘flags’, or ‘all’</p>
+</dd>
+<dt>path<span class="classifier">str, default None</span></dt><dd><p>Path to write the image to.  If not specified, will use use
+self.path.  Does NOT update self.path.</p>
+</dd>
+<dt>noisepath<span class="classifier">str, default None</span></dt><dd><p>Path to write the noise image to, if the noise image is
+stored as a separate image.  (It isn’t always; some
+subclasses have it as a separate part of the data structure
+that also has the image.)  If None, use an internally stored
+noisepath.  If that is not set, and noisepath is None, and
+this isn’t a subclass that combines all the data planes into
+one file, then any noise data array will not be written.</p>
+</dd>
+<dt>flagspath<span class="classifier">str, defanot None</span></dt><dd><p>Path to write the flags image to, similar to noisepath.</p>
+</dd>
+<dt>overwrite<span class="classifier">bool, default False</span></dt><dd><p>Clobber existing images?</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Not implemented for all subclasses.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.image.Image.save_data">
+<span class="sig-name descname"><span class="pre">save_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flagspath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#Image.save_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.Image.save_data" title="Link to this definition">¶</a></dt>
+<dd><p>Same as save; here for backwards compatibility.  Use save.</p>
 </dd></dl>
 
 </dd></dl>

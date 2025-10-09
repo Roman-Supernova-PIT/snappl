@@ -39,6 +39,8 @@ Image
       ~Image.get_wcs
       ~Image.includes_radec
       ~Image.psf_phot
+      ~Image.save
+      ~Image.save_data
 
    .. rubric:: Attributes Documentation
 
@@ -69,3 +71,5 @@ Image
    .. automethod:: get_wcs
    .. automethod:: includes_radec
    .. automethod:: psf_phot
+   .. automethod:: save
+   .. automethod:: save_data
