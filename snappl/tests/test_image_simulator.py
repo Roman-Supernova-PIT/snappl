@@ -126,6 +126,10 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
         sim = ImageSimulator( **kwargs )
         sim()
 
+        # Uncomment this next line to pause if you want to save the
+        # images; They'll all get deleted at the end of the test.
+        # import pdb; pdb.set_trace()
+
         # Let's do a quick and dirty check to make sure the lightcurve is sane.
 
         zp = kwargs['zeropoints'][0]
@@ -169,7 +173,6 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
         ax.set_ylabel( 'Apphot flux - true flux (counts)' )
         ax.legend()
         fig.savefig( plotdir / 'test_image_simulator_aperphot.png' )
-
 
     finally:
         for f in outdir.glob( "test_image_simulator*fits" ):
