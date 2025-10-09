@@ -17,18 +17,18 @@ classifiers = [
   "Programming Language :: Python"
 ]
 dependencies = [
-  "astropy==7.1.0",
-  "fitsio==1.2.5",
-  "galsim==2.7.2",
-  "gwcs==0.26.0",
-  "h5py==3.14.0",
-  "numpy==2.3.3",
-  "pandas==2.3.3",
-  "photutils==2.3.0",
-  "pyyaml==6.0.3",
-  "roman-datamodels==0.27.0",
-  "scipy==1.16.2",
-  "snpit_utils>=0.0.11",
+  "astropy>=7.1.0,<8.0.0",
+  "fitsio>=1.2.5,<2.0.0",
+  "galsim>=2.7.2,<3.0.0",
+  "gwcs>=0.26.0,<0.27.0",
+  "h5py>=3.14.0,<4.0.0",
+  "numpy>=2.2.6,<3.0.0",
+  "pandas>=2.3.3,<3.0.0",
+  "photutils>=2.3.0,<3.0.0",
+  "pyyaml>=6.0.3,<7.0.0",
+  "roman-datamodels>=0.27.0,<0.28.0",
+  "scipy>=1.16.2,<2.0.0",
+  "snpit_utils>=0.0.12,<0.1.0"
 ]
 license-files = ["LICENSE"]
 
