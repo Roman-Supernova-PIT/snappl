@@ -273,7 +273,8 @@ class ImageSimulatorImage:
         x, y = self.image.get_wcs().world_to_pixel( static_source.ra, static_source.dec )
         SNLogger.debug( f"...adding static source to image at ({x:.2f}, {y:.2f})..." )
         ( stamp, var,
-          imcoords, stampcoords ) = static_source.render_static_source( self.image.data.shape[1], self.image.data.shape[0],
+          imcoords, stampcoords ) = static_source.render_static_source( self.image.data.shape[1],
+                                                                        self.image.data.shape[0],
                                                                        x, y, self.image.mjd,
                                                                        zeropoint=self.image.zeropoint,
                                                                        rng=rng, noisy=noisy)
