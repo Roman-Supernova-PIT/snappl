@@ -152,8 +152,6 @@ class Image:
 
     @property
     def sca( self ):
-        if self._sca is None:
-            raise NotImplementedError( f"{self.__class__.__name__} doesn't know how to figure out the sca." )
         return self._sca
 
     @sca.setter
@@ -162,8 +160,6 @@ class Image:
 
     @property
     def pointing( self ):
-        if self._pointing is None:
-            raise NotImplementedError( f"{self.__class__.__name__} doesn't know how to figure out the pointing." )
         return self._pointing
 
     @pointing.setter
@@ -713,8 +709,8 @@ class FITSImage( Numpy2DImage ):
 
     # Subclasses may want to replace this with something different based on how they work
     def get_fits_header( self ):
-        """Get the header of the image. Note that FITSImage and subclasses set self._header here, inside
-        get_fits_header."""
+        """Get the header of the image.
+        Note that FITSImage and subclasses set self._header here, inside get_fits_header."""
         if self._header is None:
             with fitsio.FITS( self.path ) as f:
                 hdr = f[ self.imagehdu ].read_header()
