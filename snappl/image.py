@@ -375,7 +375,7 @@ class Image:
         except astropy.wcs.wcs.NoConvergence:
             return False
         # NOTE : we're assuming a full-size image here.  Think about cutouts!
-        return ( x >= 0 ) and ( x < 4088 ) and ( y >= 0 ) and ( y < 4008 )
+        return ( x >= 0 ) and ( x < 4088 ) and ( y >= 0 ) and ( y < 4088 )
 
 
     def ap_phot( self, coords, ap_r=9, method='subpixel', subpixels=5, bgsize=511, **kwargs ):
