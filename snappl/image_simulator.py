@@ -164,6 +164,22 @@ class ImageSimulatorTransient( ImageSimulatorPointSource ):
                                   noisy=noisy, rng=rng )
 
 
+class ImageSimulatorStaticSource(ImageSimulatorPointSource):
+    """ A class for static sources (galaxies) that don't vary with time."""
+    def __init__(self, mag, **kwargs):
+        super().__init__(**kwargs)
+        if mag is None:
+            raise ValueError("ImageSimulatorStaticSource requires a magnitude")
+        self.mag = mag
+
+    def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None):
+
+        flux = 10 ** ((self.peak_mag - zeropoint) / -2.5)
+        SNLogger.debug(f"Adding transient with mag {self.mag:.2f} (flux {flux:.0f}) on mjd {mjd}")
+
+        # To start, we are hardcoding that static sources are just point sources.
+        return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng)
+
 
 class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""
@@ -269,6 +285,23 @@ class ImageSimulatorImage:
             self.image.data[ iy0:iy1, ix0:ix1 ] += stamp[ sy0:sy1, sx0:sx1 ]
             self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
 
+    def add_static_source( self, static_source, rng=None ):
+        if rng is None:
+            rng = np.random.default_rng()
+
+        x, y = self.image.get_wcs().world_to_pixel( static_source.ra, static_source.dec )
+        SNLogger.debug( f"...adding static source to image at ({x:.2f}, {y:.2f})..." )
+        ( stamp, var,
+          imcoords, stampcoords ) = static_source.render_static_source( self.image.data.shape[1], self.image.data.shape[0],
+                                                                       x, y, self.image.mjd,
+                                                                       zeropoint=self.image.zeropoint,
+                                                                       rng=rng )
+        if stamp is not None:
+            ix0, ix1, iy0, iy1 = imcoords
+            sx0, sx1, sy0, sy1 = stampcoords
+            self.image.data[ iy0:iy1, ix0:ix1 ] += stamp[ sy0:sy1, sx0:sx1 ]
+            self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
+
 
 class ImageSimulator:
     def __init__( self,
@@ -302,6 +335,9 @@ class ImageSimulator:
                   transient_start_mjd=60010.,
                   transient_end_mjd=60060.,
                   overwrite=False,
+                  static_source_ra=None,
+                  static_source_dec=None,
+                  static_source_mag=None,
                   numprocs=12 ):
 
         self.mjds = mjds if mjds is not None else np.arange( 60000., 60065., 5. )
@@ -365,6 +401,9 @@ class ImageSimulator:
         self.transient_peak_mjd = transient_peak_mjd
         self.transient_start_mjd = transient_start_mjd
         self.transient_end_mjd = transient_end_mjd
+        self.static_source_ra = static_source_ra
+        self.static_source_dec = static_source_dec
+        self.static_source_mag = static_source_mag
         self.overwrite = overwrite
         self.numprocs = numprocs
 
@@ -386,6 +425,9 @@ class ImageSimulator:
                                              peak_mjd=self.transient_peak_mjd, start_mjd=self.transient_start_mjd,
                                              end_mjd=self.transient_end_mjd )
 
+        static_source = ImageSimulatorStaticSource( ra=self.static_source_ra, dec=self.static_source_dec,
+                                                    psf=stars.stars[0].psf, mag=self.static_source_mag )
+
         for i in range( len( self.imdata['mjds'] ) ):
             SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
             image =  ImageSimulatorImage( self.width, self.height,
@@ -396,6 +438,7 @@ class ImageSimulator:
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
             image.add_stars( stars, star_rng, numprocs=self.numprocs )
             image.add_transient( transient, rng=transient_rng )
+            image.add_static_source( static_source, rng=transient_rng )
             image.image.noise = np.sqrt( image.image.noise )
             SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
             image.image.save( overwrite=self.overwrite )
@@ -463,6 +506,13 @@ def main():
                          help="Peak MJD of transient (default: 60030.)" )
     parser.add_argument( '--transient-end-mjd', '--tt1', type=float, default=60010.,
                          help="End MJD of transient linear decay (default: 60060.)" )
+
+    parser.add_argument( '--static-source-ra', type=float, default=None,
+                         help="RA of optional static source (decimal degrees); if None, render no static source" )
+    parser.add_argument( '--static-source-dec', type=float, default=None,
+                         help="Dec of optional static source (decimal degrees)" )
+    parser.add_argument( '--static-source-mag', type=float, default=22.,
+                         help="Magnitude of static source (default: 22)" )
 
     parser.add_argument( '--numprocs', type=int, default=12, help="Number of star rendering processes (default 12)" )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
