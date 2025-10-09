@@ -707,13 +707,14 @@ class FITSImage( Numpy2DImage ):
         return self._image_shape
 
     def set_fits_header( self, hdr ):
-        if not isinstance( hdr, fits.Header ):
+        if not isinstance( hdr, fits.Header ) and hdr is not None:
             raise TypeError( "FITS header must be an astropy.fits.io.header.Header" )
         self._header = hdr
 
     # Subclasses may want to replace this with something different based on how they work
     def get_fits_header( self ):
-        """Get the header of the image."""
+        """Get the header of the image. Note that FITSImage and subclasses set self._header here, inside
+        get_fits_header."""
         if self._header is None:
             with fitsio.FITS( self.path ) as f:
                 hdr = f[ self.imagehdu ].read_header()
@@ -992,7 +993,6 @@ class FITSImageStdHeaders( FITSImage ):
     def mjd( self, val ):
         hdr = self.get_fits_header()
         hdr[ self._header_kws['mjd'] ] = val
-        self._header = hdr
 
     @property
     def exptime( self ):
@@ -1087,7 +1087,7 @@ class FITSImageOnDisk( FITSImage ):
 
 
     def set_header( self, hdr ):
-        if not isinstance( hdr, fits.header.Header ):
+        if not isinstance( hdr, fits.header.Header ) and hdr is not None:
             raise TypeError( f"hdr must be a fits.header.Header, not a {type(hdr)}" )
         self._header = hdr
 
