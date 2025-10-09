@@ -102,7 +102,10 @@ class Image:
             Roman.
 
         """
-        self.path = pathlib.Path( path )
+        if path is None:
+            self.path = None
+        else:
+            self.path = pathlib.Path( path )
         self._pointing = pointing
         self._sca = sca
         self._mjd = None
@@ -149,8 +152,6 @@ class Image:
 
     @property
     def sca( self ):
-        if self._sca is None:
-            raise NotImplementedError( f"{self.__class__.__name__} doesn't know how to figure out the sca." )
         return self._sca
 
     @sca.setter
@@ -159,8 +160,6 @@ class Image:
 
     @property
     def pointing( self ):
-        if self._pointing is None:
-            raise NotImplementedError( f"{self.__class__.__name__} doesn't know how to figure out the pointing." )
         return self._pointing
 
     @pointing.setter
@@ -372,7 +371,7 @@ class Image:
         except astropy.wcs.wcs.NoConvergence:
             return False
         # NOTE : we're assuming a full-size image here.  Think about cutouts!
-        return ( x >= 0 ) and ( x < 4088 ) and ( y >= 0 ) and ( y < 4008 )
+        return ( x >= 0 ) and ( x < 4088 ) and ( y >= 0 ) and ( y < 4088 )
 
 
     def ap_phot( self, coords, ap_r=9, method='subpixel', subpixels=5, bgsize=511, **kwargs ):
@@ -556,7 +555,7 @@ class Numpy2DImage( Image ):
         if ( isinstance(new_value, np.ndarray)
              and np.issubdtype(new_value.dtype, np.floating)
              and len(new_value.shape) ==2
-            ):
+            ) or (new_value is None):
             self._data = new_value
         else:
             raise TypeError( "Data must be a 2d numpy array of floats." )
@@ -569,10 +568,11 @@ class Numpy2DImage( Image ):
 
     @noise.setter
     def noise( self, new_value ):
-        if ( isinstance( new_value, np.ndarray )
-             and np.issubdtype( new_value.dtype, np.floating )
-             and len( new_value.shape ) == 2
-            ):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.floating)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
             self._noise = new_value
         else:
             raise TypeError( "Noise must be a 2d numpy array of floats." )
@@ -585,10 +585,11 @@ class Numpy2DImage( Image ):
 
     @flags.setter
     def flags( self, new_value ):
-        if ( isinstance( new_value, np.ndarray )
-             and np.issubdtype( new_value.dtype, np.integer )
-             and len( new_value.shape ) == 2
-            ):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.integer)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
             self._flags = new_value
         else:
             raise TypeError( "Flags must be a 2d numpy array of integers." )
@@ -702,14 +703,14 @@ class FITSImage( Numpy2DImage ):
         return self._image_shape
 
     def set_fits_header( self, hdr ):
-        if not isinstance( hdr, fits.Header ):
+        if not isinstance( hdr, fits.Header ) and hdr is not None:
             raise TypeError( "FITS header must be an astropy.fits.io.header.Header" )
         self._header = hdr
 
     # Subclasses may want to replace this with something different based on how they work
     def get_fits_header( self ):
-        """Get the header of the image."""
-
+        """Get the header of the image.
+        Note that FITSImage and subclasses set self._header here, inside get_fits_header."""
         if self._header is None:
             with fitsio.FITS( self.path ) as f:
                 hdr = f[ self.imagehdu ].read_header()
@@ -929,6 +930,7 @@ class FITSImageStdHeaders( FITSImage ):
         self._header_kws = header_kws
 
 
+
     def get_fits_header( self ):
         if self._header is None:
             try:
@@ -937,15 +939,6 @@ class FITSImageStdHeaders( FITSImage ):
                 self._header = fits.header.Header()
         return self._header
 
-    @property
-    def mjd( self ):
-        hdr = self.get_fits_header()
-        return hdr[ self._header_kws['band'] ]
-
-    @mjd.setter
-    def mjd( self, val ):
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['band'] ] = val
 
     @property
     def pointing( self ):
@@ -1090,7 +1083,7 @@ class FITSImageOnDisk( FITSImage ):
 
 
     def set_header( self, hdr ):
-        if not isinstance( hdr, fits.header.Header ):
+        if not isinstance( hdr, fits.header.Header ) and hdr is not None:
             raise TypeError( f"hdr must be a fits.header.Header, not a {type(hdr)}" )
         self._header = hdr
 
