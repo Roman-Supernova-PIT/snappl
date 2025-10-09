@@ -548,7 +548,7 @@ class Numpy2DImage( Image ):
     @property
     def data( self ):
         if self._data is None:
-            self._load_data()
+            self._load_data( which='data' )
         return self._data
 
     @data.setter
@@ -564,7 +564,7 @@ class Numpy2DImage( Image ):
     @property
     def noise( self ):
         if self._noise is None:
-            self._load_data()
+            self._load_data( which='noise' )
         return self._noise
 
     @noise.setter
@@ -580,7 +580,7 @@ class Numpy2DImage( Image ):
     @property
     def flags( self ):
         if self._flags is None:
-            self._load_data()
+            self._load_data( which='flags' )
         return self._flags
 
     @flags.setter
@@ -607,9 +607,9 @@ class Numpy2DImage( Image ):
             self._image_shape = self.data.shape
         return self._image_shape
 
-    def _load_data( self ):
+    def _load_data( self, which="all" ):
         """Loads (or reloads) the data from disk."""
-        self.get_data( which="all", cache=True, always_reload=False )
+        self.get_data( which=which, cache=True, always_reload=False )
 
     def free( self ):
         self._data = None

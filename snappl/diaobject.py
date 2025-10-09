@@ -54,7 +54,7 @@ class DiaObject:
         ----------
           collection : str
             Which collection of object to search.  Currently only
-            "ou2024" and "manuasl" are implemented, but others will be later.
+            "ou2024" and "manual" are implemented, but others will be later.
 
           subset : str
             Subset of collection to search.  Many collections (including
