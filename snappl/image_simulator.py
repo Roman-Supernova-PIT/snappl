@@ -267,22 +267,23 @@ class ImageSimulatorImage:
             self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
 
     def add_static_source( self, static_source, rng=None, noisy = False ):
-        if rng is None:
-            rng = np.random.default_rng()
+        if static_source is not None:
+            if rng is None:
+                rng = np.random.default_rng()
 
-        x, y = self.image.get_wcs().world_to_pixel( static_source.ra, static_source.dec )
-        SNLogger.debug( f"...adding static source to image at ({x:.2f}, {y:.2f})..." )
-        ( stamp, var,
-          imcoords, stampcoords ) = static_source.render_static_source( self.image.data.shape[1],
-                                                                        self.image.data.shape[0],
-                                                                       x, y, self.image.mjd,
-                                                                       zeropoint=self.image.zeropoint,
-                                                                       rng=rng, noisy=noisy)
-        if stamp is not None:
-            ix0, ix1, iy0, iy1 = imcoords
-            sx0, sx1, sy0, sy1 = stampcoords
-            self.image.data[ iy0:iy1, ix0:ix1 ] += stamp[ sy0:sy1, sx0:sx1 ]
-            self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
+            x, y = self.image.get_wcs().world_to_pixel( static_source.ra, static_source.dec )
+            SNLogger.debug( f"...adding static source to image at ({x:.2f}, {y:.2f})..." )
+            ( stamp, var,
+            imcoords, stampcoords ) = static_source.render_static_source( self.image.data.shape[1],
+                                                                            self.image.data.shape[0],
+                                                                        x, y, self.image.mjd,
+                                                                        zeropoint=self.image.zeropoint,
+                                                                        rng=rng, noisy=noisy)
+            if stamp is not None:
+                ix0, ix1, iy0, iy1 = imcoords
+                sx0, sx1, sy0, sy1 = stampcoords
+                self.image.data[ iy0:iy1, ix0:ix1 ] += stamp[ sy0:sy1, sx0:sx1 ]
+                self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
 
 
 class ImageSimulator:
@@ -428,9 +429,11 @@ class ImageSimulator:
                                              psf=psf, peak_mag=self.transient_peak_mag,
                                              peak_mjd=self.transient_peak_mjd, start_mjd=self.transient_start_mjd,
                                              end_mjd=self.transient_end_mjd )
-
-        static_source = ImageSimulatorStaticSource( ra=self.static_source_ra, dec=self.static_source_dec,
-                                                    psf=stars.stars[0].psf, mag=self.static_source_mag )
+        if all ( i is not None for i in [ self.static_source_ra, self.static_source_dec, self.static_source_mag ] ):
+            static_source = ImageSimulatorStaticSource( ra=self.static_source_ra, dec=self.static_source_dec,
+                                                    psf=psf, mag=self.static_source_mag )
+        else:
+            static_source = None
 
         for i in range( len( self.imdata['mjds'] ) ):
             SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
