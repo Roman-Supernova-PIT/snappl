@@ -2,6 +2,7 @@ __all__ = [ 'DiaObject', 'DiaObjectOU2024', 'DiaObjectManual' ]
 
 from snpit_utils.config import Config
 from snpit_utils.http import retry_post
+from snpit_utils.db import Provenance, SNPITDBClient
 
 
 class DiaObject:
@@ -33,37 +34,276 @@ class DiaObject:
 
     """
 
-    def __init__( self, id=None, ra=None, dec=None, mjd_discovery=None, mjd_peak=None,
-                  mjd_start=None, mjd_end=None, _called_from_find_objects=False ):
+    def __init__( self, id=None, provenance_id=None, ra=None, dec=None, mjd_discovery=None, mjd_peak=None,
+                  mjd_start=None, mjd_end=None, properties={}, _called_from_find_objects=False ):
         """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
         if not _called_from_find_objects:
-            raise RuntimeError( "Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects." )
+            raise RuntimeError( "Don't call a DiaObject or subclass constructor. "
+                                "Use DiaObject.find_objects or DiaObject.get_object." )
         self.id = id
+        self.provenance_id = provenance_id
         self.ra = ra
         self.dec = dec
         self.mjd_discovery = mjd_discovery
         self.mjd_peak = mjd_peak
         self.mjd_start = mjd_start
         self.mjd_end = mjd_end
+        self.properties = {}
 
     @classmethod
-    def find_objects( cls, collection=None, subset=None, **kwargs ):
+    def _parse_tag_and_process( cls, provenance_tag, process=None, provenance_id=None,
+                                multiple_ok=False, nosubclass=False, dhclient=None ):
+        """Convert a collection and subset to a provenance a process, OR to a DiaObject subclass.
+
+        Parameters
+        ----------
+          proveneance_tag: str
+
+          process: str, default None
+            Must be None if provenance_tag corresponds to a DiaObject
+            subclass.  Otherwise, if multiple_ok is False, then process is
+            required; if multiple_ok is True, you'll get back a list of
+            all provenences for all processes with the requested tag.
+
+          provenance_id: UUID or str, default None
+            If given, verify that the returned process is what's
+            expected.  Must be None if process is None.
+
+          multiple_ok: bool, default False
+
+          nosubclass: bool, default False
+            If True, then we are saying that we know that provenance_tag
+            is something in the database.
+
+          dhclient: SNPITDBClient
+
+        Returns
+        -------
+          If provenance_tag corresponds to something that yields a
+          DiaObject subclass, then you get that subclass back.
+
+          Otherwise:
+            If process is None and multiple_ok is False, that's an error.
+
+            If process is None and multiple_ok is True, you get back a list of Provenance.
+
+            Otherwise: you get back a Provenance
+
+        """
+
+        subclassmap = { 'ou2024': DiaOjbectOU2024,
+                        'manual': DiaObjectManual }
+
+        if ( provenance_tag in subclassmap ) and ( not nosubclass ):
+            if process is not None:
+                raise ValueError( f"process must be None for provenance tag {provenance_tag} and nosubclass=False" )
+            if provenance_id is not None:
+                raise ValueError( f"provenence tag {provenance_tag} with nosubclass=False does not support "
+                                  f"passing provenance_id" )
+            return subclassmap[ provenance_tag ]
+
+        # If we get here, we know we're searching the database
+
+        if process is None:
+            if not multiple_ok:
+                raise ValueError( "Process must be None unless multiple_ok is True" )
+            if provenance_id is not None:
+                raise ValueError( "Cannot specify a provenance_id when process is None" )
+
+        provs = Provenance.get_provs_for_tag( dhclient, provenance_tag, process )
+        if provenance_id is not None:
+            if str(provs.id) != str(provenance_id):
+                raise ValueError( f"Provenance tag {provenance_tag} and process {process} is provenance "
+                                  f"{provs.id} in the database, but you expected {provenance_id}" )
+        return provs
+
+
+    @classmethod
+    def get_object( cls, provenance=None, provenance_tag=None, process=None,
+                    name=None, iauname=None, diaobject_id=None,
+                    multiple_ok=False, dbclient=None ):
+        """Get a DiaObject. from the database.
+
+        You must pass at most one of:
+          * provenance_id
+          * provenance_tag and process
+
+        Specify the object with exactly one of:
+          * diaobject_id
+          * name
+          * iauname
+
+        If you pass diaobject_id, then it's optional to pass one either
+        provenance_id or (provenance_tag and process).  If you do pass
+        one of those, then you will get an error of the diaobject_id
+        you asked for isn't in the set you asked for.
+
+        Note that if you ask for "name", there might be multiple objects
+        in the database with the same name for a given provenance,
+        because the database does not enforce uniqueness.  (It does for
+        iauname.)  "name" is really more of an advisory field.  If
+        multiple_ok is False (the default), this is an error; if
+        multiple_ok is True, you'll get a list back.
+
+        NOTE : in the future we will add the concept of "root diaobject"
+        so that we can identify when the same objects show up in
+        different provenances.  This method will change when that
+        happens.
+
+        Parameters
+        ----------
+          provenance: Provenance, UUID, or UUIDifiable str
+            The provenance of the object you're looking for.  You don't
+            need this if you pass provenance_tag and process.
+
+         provenance_tag : str
+           The human-readable provenance tag for the provenance of
+           objects you want to dig through.  Usually requires 'process'.
+           provenance_tag is required if you dont pass provenance_id,
+           otherwise it's optional.
+
+         process : str
+           The process associated with the provenance_tag (needed to
+           determine a unique provenance id).
+
+         name : str (usually; might be an int for some provenance_tags)
+           The name of the object as determined by whoever it was that
+           was making the mess when loading objects into the database.
+           This is not guaranteed to be unique.  However, if you know
+           what you're doing, it may be useful.  If you are happy
+           receiving all the objects for a given provenance with the
+           same name, set multiple_ok to True; otherwise, it'll be an
+           error if more than one object has the same name.
+
+         iauname : str
+           The iau/tns name of the object you want to find.  These are
+           guaranteed to be unique within a given provenance.
+
+         diaobject_id : UUID or str or maybe something else
+           The Romamn SNPIT internal database id of the object you want.
+           If you specify this, you don't need anything else.  If you
+           also give one of (provenance_id, provenance_tag and process,
+           collection and subset), then this method will verify that the
+           object_id you're looking for is within the right provenance.
+
+         multiple_ok : bool, default False
+           Only matters if you specify name instead of object_id or
+           iauname.  Ignored if you don't specify name.  See Returns.
+
+         dbclient : SNPITDBClient, default None
+           The database web api connection object to use.  If you don't
+           specify one, a new one will be made based on what's in your
+           configuration.
+
+        Returns
+        -------
+          DiaObject or list of DiaObject
+
+          If you specify name and you set multiple_ok=True, then you get
+          a list of DiaObject back.  Otherwise, you get a single one.
+          If no object is found with your criteria, a RuntimeError
+          exception will be raised.
+
+        """
+
+        provenance_id = provenance.id if isinstance( provenance, Provenance ) else provenance
+
+        if ( provenance_id is None ) and ( provenance_tag is None ) and ( diaobject_id is None ):
+            raise ValueError( "Must specify a either a provenance or a provenance_tag "
+                              "if you don't pass a diaobject_id" )
+
+        dhclient = SNPITDBClient() if dhclient is None else dhclient
+
+        if provenance_tag is not None:
+            prov = cls._parse_tag_and_process( provenance_tag, process, provenance_id=provenance_id,
+                                               multiple_ok=False, dhclient=dhclient )
+            if isinstance( prov, DiaObject ):
+                return prov._get_object( diaobject_id=diaobject_id, name=name, iauname=iauname,
+                                         multiple_ok=multiple_ok )
+            else:
+                provenance_id = prov.id
+
+
+        if diaobject_id is not None:
+            kwargs = dhclient.send( f"getdiaobject/{diaobject_id}" )
+            if len(kwargs) == 0:
+                raise RuntimeError( f"Could not find diaobject {diaobject_id}" )
+            else:
+                if ( provenance_id is not None ) and ( str(kwargs['provenance_id']) != str(provenance_id) ):
+                    raise ValueError( f"Error, you asked for object {diaobject_id} in provenance "
+                                      f"{provenance_id}, but that object is actually in provenance "
+                                      f"{kwargs['provenance_id']}" )
+
+                return DiaObject( _called_from_find_objects=True, **kwargs  )
+
+        else:
+            res = dhclient.send( f"/finddiaobjects/{provenance_id}",
+                                 { 'name': name, 'iauname': iauname } )
+            if len(res) == 0:
+                # TODO : make this error message more informative.  (Needs lots of logic
+                #   based on what was passed... should probably construct the string
+                #   at the top of the function.)
+                raise RuntimeError( "Found no objects that match your criteria." )
+
+            if ( name is not None ) and multiple_ok:
+                return [ DiaObject( _called_from_find_objects=True, **r ) for r in res ]
+
+            elif len(res) > 1:
+                # Another error message that needs to be made more informative
+                raise RuntimeError( f"More than one object matched your criteria." )
+
+            else:
+                return DiaObject( _called_from_find_objects=True, **(res[0]) )
+
+
+
+    @classmethod
+    def _get_object( cls, name=None, iauname=None, diaobject_id=None, multiple_ok=False ):
+        raise NotImplementedError( f"{cls.__name__} isn't able to do _get_object" )
+
+
+    @classmethod
+    def find_objects( cls, provenance=None, provenance_tag=None, process=None, dhclient=None, **kwargs ):
         """Find objects.
 
         Parameters
         ----------
-          collection : str
-            Which collection of object to search.  Currently only
-            "ou2024" and "manual" are implemented, but others will be later.
+          provenance : Provenance, UUID, or UUIDifiable str
+            The provenance to search.  Must specify either this or
+            provenance_tag.  If you specify both, it will verify
+            consistency.
 
-          subset : str
-            Subset of collection to search.  Many collections (including
-            ou2024) will ignore this.
+          provenance_tag : str
+            The provenance tag to search.  For some provenance tags,
+            this goes to a specific subclass (and in that case,
+            provenance_id must be None), but for most, it queries the
+            Roman SNPIT itnernal database.  Optional if you specify
+            provenance_id.
 
-          id : <something>
-            The ID of the object.  Should work as a str.  This is an
-            opaque thing that will be different for different
-            collections.
+          process : str, default None
+            Usually required; can be None only if provenance_tag is one
+            of the few that go to a specific subclass.
+
+          dbclient : SNPITDBClient, default None
+            The database web api connection object to use.  If you don't
+            specify one, a new one will be made based on what's in your
+            configuration.
+
+          diaobject_id : <something>, default None
+            The optional ID of the object.  A str will usually work.  For
+            provenance_tags that go to the Roman SNPIT internal
+            database, this needs to be something that can be converted
+            to a UUID.  For provenance_tags that correspond to a
+            specific subclass, exactly what this is depends on the
+            subclass.
+
+          name : str
+            The optional name of the object.  May not be implemented for
+            all provenance tags.
+
+          iauname : str
+            The TNS/IAU name of the object.  May not be implemented for
+            all provenance_tags.
 
           ra: float
             RA in degrees to search.
@@ -93,21 +333,40 @@ class DiaObject:
         -------
           list of DiaObject
 
-          In reality, it will be a list of objects of a subclass of
+          In reality, it may be a list of objects of a subclass of
           DiaObject, but the calling code should not know or depend on
           that, it should treat them all as just DiaObject objects.
 
         """
 
-        if collection == 'ou2024':
-            return DiaObjectOU2024._find_objects( subset=subset, **kwargs )
-        elif collection == 'manual':
-            return DiaObjectManual._find_objects( subset=subset, **kwargs )
-        else:
-            raise ValueError( f"Unknown collection {collection}" )
+        provenance_id = provenance.id if isinstance( provenance, Provenance ) else provenance
+
+        if ( provenance_id is None ) and ( provenance_tag is None ):
+            raise ValueError( "Must specify at least one of provenance and provenance_tag" )
+
+        dhclient = SNPITDBClient() if dhclient is None else dhclient
+
+        if provenance_tag is not None:
+            prov = cls._parse_tag_and_process( provenance_tag, process=process, provenance_id=provenance_id,
+                                               multiple_ok=False, dbclient=dbclient )
+            if isinstance( prov, DiaObject ):
+                return prov._find_objects( **kwargs )
+
+            provenance_id = prov.id
+
+        res = dhclient.send( f"findobjects/{provenance_id}", kwargs )
+        return [ DiaObject( **r ) for r in res ]
+
 
     @classmethod
     def _find_objects( cls, subset=None, **kwargs ):
+        """Class-specific implementation of find_object.
+
+        The implementation here assumes it's a collection that's in the
+        Roman SNPIT database.  Other classes might want to implement
+        their own version (e.g. DiaObjectOU2024 and DiaObjectManual).
+
+        """
         raise NotImplementedError( f"{cls.__name__} needs to implement _find_objects" )
 
 
