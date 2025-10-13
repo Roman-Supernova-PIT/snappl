@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: Roman-Supernova-PIT/photometry_test_data
-          path: photometry_test_data
+          path: ../photometry_test_data
 
       - name: lfs pull photometry test data
         run: |
