@@ -4,7 +4,7 @@ import numpy as np
 
 import snappl.image
 from snappl.imagecollection import ImageCollection, ImageCollectionOU2024, ImageCollectionManualFITS
-from snpit_utils.config import Config
+from snappl.config import Config
 
 
 def test_get_collection():

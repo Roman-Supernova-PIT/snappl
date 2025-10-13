@@ -11,8 +11,6 @@ jobs:
   tests:
     name: run snappl tests in docker container
     runs-on: ubuntu-latest
-    env:
-      COMPOSE_FILE: snappl/tests/docker-compose.yaml
 
     steps:
       - name: Dump docker logs on failure
@@ -59,11 +57,21 @@ jobs:
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      - name: pull latest SNPIT cpu image
+      - name: pull environment archive
         run: |
-          docker pull rknop/roman-snpit-env:cpu-dev
+          cd /home/runner/work/snappl
+          git clone https://github.com/Roman-Supernova-PIT/environment.git
+
+
+      - name: pull docker images
+        run: |
+          cd /home/runner/work/snappl/environment/test-docker-environment
+          docker compose pull mailhog postgres webserver shell
 
       - name: run test
         run: |
-          cd main
-          docker compose run runtests
+          cd /home/runner/work/snappl/environment/test-docker-environment
+          docker compose up -d webserver shell
+          docker compose exec shell bash -c 'cd /home/snappl && pip install -e .[test]'
+          docker compose exec shell bash -c 'cd /home/snpit_utils/tests && pytest -v'
+          docker compose down -v

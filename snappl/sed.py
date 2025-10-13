@@ -9,8 +9,8 @@ import pathlib
 import pandas as pd
 
 
-from snpit_utils.config import Config
-from snpit_utils.logger import SNLogger
+from snappl.config import Config
+from snappl.logger import SNLogger
 
 
 class SED_collection:

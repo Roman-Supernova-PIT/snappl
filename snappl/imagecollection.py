@@ -2,8 +2,8 @@ __all__ = [ 'ImageCollection', 'ImageCollectionOU2024', 'ImageCollectionManualFI
 
 import pathlib
 
-from snpit_utils.config import Config
-from snpit_utils.http import retry_post
+from snappl.config import Config
+from snappl.http import retry_post
 from snappl.image import OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders
 
 

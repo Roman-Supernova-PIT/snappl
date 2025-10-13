@@ -1,0 +1,8 @@
+preloads:
+  - testpreload1.yaml
+
+preload1dict1:
+   preload2_1val1: 2_1val1
+   preload2_1val2: 2_1val2
+
+preload2scalar2: 2scalar2

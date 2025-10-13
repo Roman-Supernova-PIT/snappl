@@ -1,0 +1,250 @@
+__all__ = [ 'setup_flask_app' ]
+import flask
+import flask_session
+
+from rkwebutil import rkauth_flask
+
+from snappl.config import Config
+from snappl.db import db
+from snappl.db.baseview import BaseView
+
+
+# ======================================================================
+
+def setup_flask_app( application ):
+    global urls
+
+    application.config.from_mapping(
+        SECRET_KEY=Config.get().value( 'webserver.flask_secret_key' ),
+        SESSION_COOKIE_PATH='/',
+        SESSION_TYPE='filesystem',
+        SESSION_PERMANENT=True,
+        SESSION_USE_SIGNER=True,
+        SESSION_FILE_DIR=Config.get().value( 'webserver.sessionstore' ),
+        SESSION_FILE_THRESHOLD=1000,
+    )
+
+    _server_session = flask_session.Session( application )
+
+    dbhost, dbport, dbname, dbuser, dbpasswd = db.get_connect_info()
+    rkauth_flask.RKAuthConfig.setdbparams(
+        db_host=dbhost,
+        db_port=dbport,
+        db_name=dbname,
+        db_user=dbuser,
+        db_password=dbpasswd,
+        email_from = Config.get().value( 'webserver.emailfrom' ),
+        email_subject = 'roman-snpit-db password reset',
+        email_system_name = 'roman-snpit-db',
+        smtp_server = Config.get().value( 'webserver.smtpserver' ),
+        smtp_port = Config.get().value( 'webserver.smtpport' ),
+        smtp_use_ssl = Config.get().value( 'webserver.smtpusessl' ),
+        smtp_username = Config.get().value( 'webserver.smtpusername' ),
+        smtp_password = Config.get().value( 'webserver.smtppassword' )
+    )
+    application.register_blueprint( rkauth_flask.bp )
+
+    usedurls = {}
+    for url, cls in urls.items():
+        if url not in usedurls.keys():
+            usedurls[ url ] = 0
+            name = url
+        else:
+            usedurls[ url ] += 1
+            name = f'{url}.{usedurls[url]}'
+
+        application.add_url_rule (url, view_func=cls.as_view(name), methods=['GET', 'POST'], strict_slashes=False )
+
+
+# ======================================================================
+
+class MainPage( BaseView ):
+    def dispatch_request( self ):
+        return flask.render_template( "romansnpitdb.html" )
+
+
+# ======================================================================
+
+class TestEndpoint( BaseView ):
+    # This one is used in one of the snappl tests
+
+    def dispatch_request( self, param=None ):
+        resp = { 'param': param }
+        if flask.request.is_json:
+            resp['json'] = flask.request.json
+        return resp
+
+
+# ======================================================================
+
+class BaseProvenance( BaseView ):
+    def get_upstreams( self, prov, dbcon ):
+        rows, cols = dbcon.execute( "SELECT p.* FROM provenance p "
+                                    "INNER JOIN provenance_upstream u ON u.upstream_id=p.id "
+                                    "WHERE u.downstream_id=%(id)s",
+                                    { 'id': prov['id'] } )
+        if ( rows is None ) or ( len(rows) == 0 ):
+            prov[ 'upstreams' ] = []
+        else:
+            prov[ 'upstreams' ] = [ { cols[i]: row[i] for i in range( len(cols) ) } for row in rows ]
+            for prov in prov[ 'upstreams' ]:
+                self.get_upstreams( prov, dbcon )
+            # Sort prov['upstreams'] by id, because that's the standard we use to make it reproducible
+            prov[ 'upstreams' ].sort( key=lambda x: x['id'] )
+
+
+    def tag_provenance( self, dbcon, tag, process, provid, replace=False ):
+        rows, cols = dbcon.execute( "SELECT * FROM provenance_tag WHERE tag=%(tag)s AND process=%(process)s",
+                                    { 'tag': tag, 'process': process } )
+        if len(rows) > 0:
+            if len(rows) > 1:
+                raise RuntimeError( f"Database corruption error!  >1 entry with tag {tag} "
+                                    f"and process {process}" )
+            cols = { c: i for i, c in enumerate(cols) }
+            if str(rows[0][cols['provenance_id']]) == str(provid):
+                # Hey, right thing is already tagged!
+                return
+            else:
+                if replace:
+                    dbcon.execute( "DELETE FROM provenance_tag WHERE tag=%(tag)s AND process=%(process)s",
+                                   { 'tag': tag, 'process': process } )
+                else:
+                    raise RuntimeError( f"Error, there already exists a provenance for tag {tag} and "
+                                        f"process {process}" )
+
+        dbcon.execute( "INSERT INTO provenance_tag(tag, process, provenance_id) "
+                       "VALUES (%(tag)s, %(proc)s, %(id)s)",
+                       { 'tag': tag, 'proc': process, 'id': provid } )
+        dbcon.commit()
+
+
+
+# ======================================================================
+
+class GetProvenance( BaseProvenance ):
+    def do_the_things( self, provid, process=None ):
+        with db.DBCon() as con:
+            if process is None:
+                rows, cols = con.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': provid } )
+            else:
+                rows, cols = con.execute( "SELECT p.* FROM provenance p "
+                                          "INNER JOIN provenance_tag t ON p.id=t.provenance_id "
+                                          "WHERE t.process=%(process)s AND t.tag=%(tag)s",
+                                          { 'process': process, 'tag': provid } )
+            if len(rows) == 0:
+                return f"Unknown provenance {provid}{'' if process is None else f' for process {process}'}", 500
+            if len(rows) > 1:
+                return ( f"Database corruption!  More than one provenance {provid}"
+                         f"{'' if process is None else f' for process {process}'}!" ), 500
+            prov = { cols[i]: rows[0][i] for i in range( len(cols) ) }
+            self.get_upstreams( prov, con )
+
+        return prov
+
+
+# ======================================================================
+
+class CreateProvenance( BaseProvenance ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected JSON payoad", 500
+        data = flask.request.json
+
+        if 'upstreams' in data:
+            upstream_ids = [ p['id'] for p in data['upstreams'] ]
+            del data['upstreams']
+        elif 'upstream_ids' in data:
+            upstream_ids = data['upstream_ids']
+            del data['upstream_ids']
+        else:
+            upstream_ids = []
+
+        tag = None
+        replace_tag = None
+        if 'tag' in data:
+            tag = data['tag']
+            del data['tag']
+        if 'replace_tag' in data:
+            replace_tag = data['replace_tag']
+            del data['replace_tag']
+
+        existok = False
+        if 'exist_ok' in data:
+            existok = data['exist_ok']
+            del data['exist_ok']
+
+        prov = db.Provenance( **data )
+        with db.DBCon() as dbcon:
+            rows, _cols = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': data['id'] } )
+            if len(rows) == 0:
+                prov.insert( dbcon=dbcon.con, nocommit=True, refresh=False )
+            elif not existok:
+                return f"Error, provenance {data['id']} already exists", 500
+
+            if tag is not None:
+                self.tag_provenance( dbcon, tag, data['process'], data['id'], replace=replace_tag )
+
+            for uid in upstream_ids:
+                dbcon.execute( "INSERT INTO provenance_upstream(downstream_id,upstream_id) "
+                               "VALUES (%(down)s,%(up)s)",
+                               { 'down': prov.id, 'up': uid } )
+            dbcon.commit()
+
+        return { "status": "ok" }
+
+
+# ======================================================================
+
+class TagProvenance( BaseProvenance ):
+    def do_the_things( self, tag, process, provid, replace=0 ):
+        with db.DBCon() as dbcon:
+            self.tag_provenance( dbcon, tag, process, provid, replace )
+        return { "status": "ok" }
+
+
+# ======================================================================
+
+class ProvenancesForTag( BaseProvenance ):
+    def do_the_things( self, tag ):
+        with db.DBCon() as dbcon:
+            rows, cols = dbcon.execute( "SELECT p.* FROM provenance p "
+                                        "INNER JOIN provenance_tag t ON p.id=t.provenance_id "
+                                        "WHERE t.tag=%(tag)s",
+                                        { 'tag': tag } )
+            provs = [ { cols[i]: row[i] for i in range( len(cols) ) } for row in rows ]
+            for prov in provs:
+                self.get_upstreams( prov, dbcon )
+
+        return provs
+
+
+# ======================================================================
+
+class GetDiaObject( BaseView ):
+    def do_the_things( self, diaobjectid ):
+        return "Not implemented", 500
+
+
+# ======================================================================
+
+class FindDiaObjects( BaseView ):
+    def do_the_things( self, provid ):
+        return "Not implemented", 500
+
+
+# ======================================================================
+
+urls = {
+    "/": MainPage,
+    "/test/<param>": TestEndpoint,
+
+    "/getprovenance/<provid>": GetProvenance,
+    "/getprovenance/<provid>/<process>": GetProvenance,   # provid is really a tag
+    "/createprovenance": CreateProvenance,
+    "/tagprovenance/<tag>/<process>/<provid>": TagProvenance,
+    "/tagprovenance/<tag>/<process>/<provid>/<int:replace>": TagProvenance,
+    "/provenancesfortag/<tag>": ProvenancesForTag,
+
+    "/getdiaobject/<diaobjectid>": GetDiaObject,
+    "/finddiaobjects/<provid>": FindDiaObjects,
+}

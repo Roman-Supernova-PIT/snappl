@@ -6,7 +6,7 @@ import scipy
 from astropy.io import fits
 from photutils.psf import ImagePSF
 
-from snpit_utils.logger import SNLogger
+from snappl.logger import SNLogger
 
 
 # This is a test class for tests of image-based PSFs that should all return

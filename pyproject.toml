@@ -1,6 +1,6 @@
 [project]
 name = "roman_snpit_snappl"
-description = "Photometry utilities for the Roman SNPIT"
+description = "General, database, and photometry utilities for the Roman SNPIT"
 requires-python = ">=3.11"
 dynamic = ["version"]
 authors = [{ name = "Roman Supernova Project Infrastructure Team"}]
@@ -25,10 +25,14 @@ dependencies = [
   "numpy>=2.2.6,<3.0.0",
   "pandas>=2.3.3,<3.0.0",
   "photutils>=2.3.0,<3.0.0",
+  "pycryptodome>=3.23.0,<4.0.0",
+  "python-dateutil>=2.9.0.post0,<3.0.0",
+  "pytz>=2025.2",
   "pyyaml>=6.0.3,<7.0.0",
+  "rkwebutil>=2.2.3,<3.0.0",
   "roman-datamodels>=0.27.0,<0.28.0",
   "scipy>=1.16.2,<2.0.0",
-  "snpit_utils>=0.2.0,<0.3.0"
+  "simplejson>=3.20.2,<4.0.0"
 ]
 license-files = ["LICENSE"]
 
@@ -48,7 +52,8 @@ test = [
     "pytest-cov",
     "requests",
     "tox",
-    "devpi_process"
+    "devpi_process",
+    "psycopg>=3.2.9,<4.0.0"
 ]
 docs = [
     "sphinx",

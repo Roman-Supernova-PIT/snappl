@@ -18,8 +18,8 @@ import galsim
 from roman_imsim.utils import roman_utils
 
 # roman snpit library imports
-from snpit_utils.config import Config
-from snpit_utils.logger import SNLogger
+from snappl.config import Config
+from snappl.logger import SNLogger
 
 
 class PSF:
@@ -216,12 +216,11 @@ class PSF:
         at least sometimes require you to specify array indexes (such as
         pixel positions) assuming 1-indexed arrays.  Be very careful and
         read lots of documentation!  If we've done it right, everything
-        in snpit_utils and snappl uses standard python numpy 0-based
-        array indexes, so you will hopefully not become confused.
-        What's more more, the astropy.wcs.WCS class also uses the
-        convention of 0-based arrays.  (However, be careful, because
-        astropy.wcs has an alternate interface that uses the other
-        convention.)
+        in snappl uses standard python numpy 0-based array indexes, so
+        you will hopefully not become confused.  What's more more, the
+        astropy.wcs.WCS class also uses the convention of 0-based
+        arrays.  (However, be careful, because astropy.wcs has an
+        alternate interface that uses the other convention.)
 
         Another place you will find 1-indexed arrays are in the WCSes
         defined in FITS headers, and in at least some FITS image display

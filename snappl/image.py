@@ -23,8 +23,8 @@ from photutils.background import LocalBackground, MMMBackground, Background2D
 import galsim.roman
 import roman_datamodels as rdm
 
-from snpit_utils.logger import SNLogger
-from snpit_utils.config import Config
+from snappl.logger import SNLogger
+from snappl.config import Config
 from snappl.wcs import AstropyWCS, GalsimWCS, GWCS
 
 

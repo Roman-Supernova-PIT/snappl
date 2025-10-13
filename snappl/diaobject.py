@@ -1,8 +1,10 @@
 __all__ = [ 'DiaObject', 'DiaObjectOU2024', 'DiaObjectManual' ]
 
-from snpit_utils.config import Config
-from snpit_utils.http import retry_post
-from snpit_utils.db import Provenance, SNPITDBClient
+import inspect
+
+from snappl.config import Config
+from snappl.http import retry_post
+from snappl.db import Provenance, SNPITDBClient
 
 
 class DiaObject:
@@ -24,21 +26,27 @@ class DiaObject:
     mjd_end : MJD when the lightcurve stops existing.  Definition like
               mjd_start.  May be None if unknown.
 
-    Some subclasses may support additional properties, but use those
-    with care, as you are making your code less generral when you use
-    them.
+    properties : dictionary of additional properties.  DO NOT RELY ON
+                 THIS HAVING ANY PARTICULAR KEYS.  Different
+                 provenances, and maybe even different objects within
+                 the same provenance, may have different keys in this
+                 dictionary.  This is more to be used for debugging
+                 purposes.  (If there is an additional key that every
+                 object should have, we should add it as a top-level
+                 property, and add that column to the database.)
 
-    This is an abstract base class.  If you must, instantiate subclass
-    objects directly.  If you want to find an existing object, use the
-    find_objects class method.
+    Don't instantiate one of these directly.  Instead, use
+    DiaObject.get_object or DiaObject.find_objects.  If you're trying to
+    get a manual object, use provenance_tag 'manual' with
+    DiaObject.get_object.
 
     """
 
     def __init__( self, id=None, provenance_id=None, ra=None, dec=None, mjd_discovery=None, mjd_peak=None,
                   mjd_start=None, mjd_end=None, properties={}, _called_from_find_objects=False ):
-        """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
+        """Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects."""
         if not _called_from_find_objects:
-            raise RuntimeError( "Don't call a DiaObject or subclass constructor. "
+            raise RuntimeError( "Don't call a DiaObject or subclass constructor.  "
                                 "Use DiaObject.find_objects or DiaObject.get_object." )
         self.id = id
         self.provenance_id = provenance_id
@@ -52,7 +60,7 @@ class DiaObject:
 
     @classmethod
     def _parse_tag_and_process( cls, provenance_tag, process=None, provenance_id=None,
-                                multiple_ok=False, nosubclass=False, dhclient=None ):
+                                multiple_ok=False, nosubclass=False, dbclient=None ):
         """Convert a collection and subset to a provenance a process, OR to a DiaObject subclass.
 
         Parameters
@@ -75,7 +83,7 @@ class DiaObject:
             If True, then we are saying that we know that provenance_tag
             is something in the database.
 
-          dhclient: SNPITDBClient
+          dbclient: SNPITDBClient
 
         Returns
         -------
@@ -91,7 +99,7 @@ class DiaObject:
 
         """
 
-        subclassmap = { 'ou2024': DiaOjbectOU2024,
+        subclassmap = { 'ou2024': DiaObjectOU2024,
                         'manual': DiaObjectManual }
 
         if ( provenance_tag in subclassmap ) and ( not nosubclass ):
@@ -110,7 +118,7 @@ class DiaObject:
             if provenance_id is not None:
                 raise ValueError( "Cannot specify a provenance_id when process is None" )
 
-        provs = Provenance.get_provs_for_tag( dhclient, provenance_tag, process )
+        provs = Provenance.get_provs_for_tag( dbclient, provenance_tag, process )
         if provenance_id is not None:
             if str(provs.id) != str(provenance_id):
                 raise ValueError( f"Provenance tag {provenance_tag} and process {process} is provenance "
@@ -152,7 +160,7 @@ class DiaObject:
 
         Parameters
         ----------
-          provenance: Provenance, UUID, or UUIDifiable str
+         provenance: Provenance, UUID, or UUIDifiable str
             The provenance of the object you're looking for.  You don't
             need this if you pass provenance_tag and process.
 
@@ -212,20 +220,22 @@ class DiaObject:
             raise ValueError( "Must specify a either a provenance or a provenance_tag "
                               "if you don't pass a diaobject_id" )
 
-        dhclient = SNPITDBClient() if dhclient is None else dhclient
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
 
         if provenance_tag is not None:
             prov = cls._parse_tag_and_process( provenance_tag, process, provenance_id=provenance_id,
-                                               multiple_ok=False, dhclient=dhclient )
-            if isinstance( prov, DiaObject ):
+                                               multiple_ok=False, dbclient=dbclient )
+            if isinstance( prov, Provenance ):
+                provenance_id = prov.id
+            elif inspect.isclass( prov ) and issubclass( prov, DiaObject ):
                 return prov._get_object( diaobject_id=diaobject_id, name=name, iauname=iauname,
                                          multiple_ok=multiple_ok )
             else:
-                provenance_id = prov.id
-
+                raise TypeError( f"Unexpected type return {type(prov)} from _parse_tag_and_process; "
+                                 f"this shouldn't happen." )
 
         if diaobject_id is not None:
-            kwargs = dhclient.send( f"getdiaobject/{diaobject_id}" )
+            kwargs = dbclient.send( f"getdiaobject/{diaobject_id}" )
             if len(kwargs) == 0:
                 raise RuntimeError( f"Could not find diaobject {diaobject_id}" )
             else:
@@ -237,7 +247,7 @@ class DiaObject:
                 return DiaObject( _called_from_find_objects=True, **kwargs  )
 
         else:
-            res = dhclient.send( f"/finddiaobjects/{provenance_id}",
+            res = dbclient.send( f"/finddiaobjects/{provenance_id}",
                                  { 'name': name, 'iauname': iauname } )
             if len(res) == 0:
                 # TODO : make this error message more informative.  (Needs lots of logic
@@ -250,7 +260,7 @@ class DiaObject:
 
             elif len(res) > 1:
                 # Another error message that needs to be made more informative
-                raise RuntimeError( f"More than one object matched your criteria." )
+                raise RuntimeError( "More than one object matched your criteria." )
 
             else:
                 return DiaObject( _called_from_find_objects=True, **(res[0]) )
@@ -263,7 +273,7 @@ class DiaObject:
 
 
     @classmethod
-    def find_objects( cls, provenance=None, provenance_tag=None, process=None, dhclient=None, **kwargs ):
+    def find_objects( cls, provenance=None, provenance_tag=None, process=None, dbclient=None, **kwargs ):
         """Find objects.
 
         Parameters
@@ -344,17 +354,20 @@ class DiaObject:
         if ( provenance_id is None ) and ( provenance_tag is None ):
             raise ValueError( "Must specify at least one of provenance and provenance_tag" )
 
-        dhclient = SNPITDBClient() if dhclient is None else dhclient
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
 
         if provenance_tag is not None:
             prov = cls._parse_tag_and_process( provenance_tag, process=process, provenance_id=provenance_id,
                                                multiple_ok=False, dbclient=dbclient )
-            if isinstance( prov, DiaObject ):
+            if isinstance( prov, Provenance ):
+                provenance_id = prov.id
+            elif inspect.isclass( prov ) and issubclass( prov, DiaObject ):
                 return prov._find_objects( **kwargs )
+            else:
+                raise TypeError( f"Unexpected type return {type(prov)} from _parse_tag_and_process; "
+                                 f"this shouldn't happen." )
 
-            provenance_id = prov.id
-
-        res = dhclient.send( f"findobjects/{provenance_id}", kwargs )
+        res = dbclient.send( f"findobjects/{provenance_id}", kwargs )
         return [ DiaObject( **r ) for r in res ]
 
 
@@ -376,7 +389,7 @@ class DiaObjectOU2024( DiaObject ):
     """A transient from the OpenUniverse 2024 sims."""
 
     def __init__( self, *args, **kwargs ):
-        """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
+        """Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects."""
         super().__init__( *args, **kwargs )
 
         # Non-standard fields
@@ -479,7 +492,7 @@ class DiaObjectManual( DiaObject ):
     """A manually-specified object that's not saved anywhere."""
 
     def __init__( self, *args, **kwargs ):
-        """Don't call a DiaObject or subclass constructor.  Use DiaOjbect.find_objects."""
+        """Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects."""
         super().__init__( *args, **kwargs )
 
 
