@@ -25,12 +25,6 @@ jobs:
       - name: run ruff
         uses: astral-sh/ruff-action@v3
 
-      - name: something
-        run: |
-          echo "github.workspace = " ${{ github.workspace }}
-          ls
-          ls snappl
-          
       - name: checkout photometry test data
         uses: actions/checkout@v5
         with:
@@ -39,6 +33,7 @@ jobs:
 
       - name: lfs pull photometry test data
         run: |
+          cd ..
           git lfs install --local
           AUTH=$(git config --local http.${{ github.server_url }}/.extraheader)
           git config --local --unset http.${{ github.server_url }}/.extraheader
@@ -64,16 +59,18 @@ jobs:
 
       - name: pull environment archive
         run: |
+          cd ..
           git clone https://github.com/Roman-Supernova-PIT/environment.git
 
 
       - name: pull docker images
         run: |
-          cd environment/test-docker-environment
+          cd ../environment/test-docker-environment
           docker compose pull mailhog postgres webserver shell
 
       - name: run test
         run: |
+          cd ..
           ls
           echo "--------"
           ls snappl
