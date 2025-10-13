@@ -27,7 +27,7 @@ jobs:
 
       - name: something
         run: |
-          echo "github.workspace = " ${github.workspace}
+          echo "github.workspace = " ${{ github.workspace }}
           ls
           ls snappl
           
