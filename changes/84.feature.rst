@@ -1,0 +1,3 @@
+Incorporate functionality of snpit_utils and roman-snpit-db.
+
+Add the ability to get DiaObject from the Roman SNPIT internal database.
