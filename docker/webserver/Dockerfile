@@ -65,9 +65,11 @@ RUN source /venv/bin/activate && pip install .
 
 RUN mkdir -p /roman-snpit-db/templates
 RUN mkdir -p /roman-snpit-db/static
-# RUN cp -p /venv/lib/python3.11/site-packages/rkwebutil/static/* /roman-snpit-db/static/
-# RUN cp -p /venv/lib/python3.11/site-packages/snappl/db/static/* /roman-snpit-db/static/
-# RUN cp -p /venv/lib/python3.11/site-packages/snappl/db/templates/* /roman-snpit-db/templates/
+
+# Could save a wee bit of image size by making symbolic links instead of copying
+RUN cp -p /venv/lib/python3.11/site-packages/rkwebutil/static/* /roman-snpit-db/static/
+RUN cp -p /venv/lib/python3.11/site-packages/snappl/db/static/* /roman-snpit-db/static/
+RUN cp -p /venv/lib/python3.11/site-packages/snappl/db/templates/* /roman-snpit-db/templates/
 
 
 # ======================================================================

@@ -29,19 +29,6 @@ jobs:
         run: |
           cd ..
           git clone http://github.com/Roman-Supernova-PIT/photometry_test_data
-          cd photometry_test_data
-          git lfs install --local
-          git lfs pull
-
-      - name: lfs pull photometry test data
-        run: |
-          cd ../photometry_test_data
-          ls -R
-#           git lfs install --local
-#           AUTH=$(git config --local http.${{ github.server_url }}/.extraheader)
-#           git config --local --unset http.${{ github.server_url }}/.extraheader
-#           git config --local http.${{ github.server_url }}/${{ github.repository }}.git/info/lfs/objects/batch.extraheader "$AUTH"
-#           git lfs pull
 
       - name: log into github container registry
         uses: docker/login-action@v3
@@ -54,6 +41,7 @@ jobs:
         run: |
           # try to save HDD space on the runner by removing some unneeded stuff
           # ref: https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
+          # (For some perverse reason, this step seems to take 1.5-2 minutes on github runners!)
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
@@ -79,6 +67,7 @@ jobs:
           echo "--------"
           cd environment/test-docker-environment
           docker compose up -d webserver shell
-          docker compose exec shell bash -c 'cd /home/snappl && pip install -e .[test]'
-          docker compose exec shell bash -c 'cd /home/snappl/snappl/tests && pytest -v'
+          docker compose run createdb
+          # docker compose exec shell bash -c 'cd /home/snappl && pip install -e .[test]'
+          # docker compose exec shell bash -c 'cd /home/snappl/snappl/tests && pytest -v'
           docker compose down -v
