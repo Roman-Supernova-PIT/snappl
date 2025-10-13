@@ -59,19 +59,18 @@ jobs:
 
       - name: pull environment archive
         run: |
-          cd /home/runner/work/snappl
           git clone https://github.com/Roman-Supernova-PIT/environment.git
 
 
       - name: pull docker images
         run: |
-          cd /home/runner/work/snappl/environment/test-docker-environment
+          cd environment/test-docker-environment
           docker compose pull mailhog postgres webserver shell
 
       - name: run test
         run: |
-          cd /home/runner/work/snappl/environment/test-docker-environment
+          cd environment/test-docker-environment
           docker compose up -d webserver shell
           docker compose exec shell bash -c 'cd /home/snappl && pip install -e .[test]'
-          docker compose exec shell bash -c 'cd /home/snpit_utils/tests && pytest -v'
+          docker compose exec shell bash -c 'cd /home/snappl/snappl/tests && pytest -v'
           docker compose down -v
