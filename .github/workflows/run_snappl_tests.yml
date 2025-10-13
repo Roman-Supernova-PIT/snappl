@@ -41,15 +41,16 @@ jobs:
         run: |
           # try to save HDD space on the runner by removing some unneeded stuff
           # ref: https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
-          # (For some perverse reason, this step seems to take 1.5-2 minutes on github runners!)
+          # (For some perverse reason, this step seems to take 1.5-2 minutes on github runners!
+          # For that reason, this is commented out, for now.  Uncomment it if we run into trouble.)
           df -h
-          echo "------"
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          echo "------"
-          df -h
+          # echo "------"
+          # sudo rm -rf /usr/share/dotnet
+          # sudo rm -rf /opt/ghc
+          # sudo rm -rf "/usr/local/share/boost"
+          # sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          # echo "------"
+          # df -h
 
       - name: pull environment archive
         run: |
@@ -70,8 +71,7 @@ jobs:
           ls snappl
           echo "--------"
           cd environment/test-docker-environment
-          # docker compose up -d webserver shell
-          docker compose run createdb
-          # docker compose exec shell bash -c 'cd /home/snappl && pip install -e .[test]'
-          # docker compose exec shell bash -c 'cd /home/snappl/snappl/tests && pytest -v'
+          docker compose up -d webserver shell
+          docker compose exec shell bash -c 'cd /home/snappl && pip install -e .[test]'
+          docker compose exec shell bash -c 'cd /home/snappl/snappl/tests && pytest -v'
           docker compose down -v
