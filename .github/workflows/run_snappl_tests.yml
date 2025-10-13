@@ -20,7 +20,6 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v5
         with:
-          path: main
           submodules: recursive
 
       - name: run ruff

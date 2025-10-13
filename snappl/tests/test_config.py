@@ -36,7 +36,11 @@ def cfg():
     return Config.get( _rundir / "config_test_data/test.yaml" )
 
 
-@pytest.mark.skip( "Remove this skip if/when the env var is set" )
+# It would be nice to use this test, but it's not really consistenet
+#   with the init_config() autouse fixture.  I haven't figured out
+#   a way to meaningfully test this without removing that fixture,
+#   and removing that fixture introduces other pain.
+@pytest.mark.skip( "This test doesn't work" )
 def test_default_default():
     # make sure that when we load a config without parameters,
     # it uses the default config file
