@@ -32,7 +32,7 @@ jobs:
 
       - name: lfs pull photometry test data
         run: |
-          cd ..
+          cd ../photometry_test_data
           git lfs install --local
           AUTH=$(git config --local http.${{ github.server_url }}/.extraheader)
           git config --local --unset http.${{ github.server_url }}/.extraheader
