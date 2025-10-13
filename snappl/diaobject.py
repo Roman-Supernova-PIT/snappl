@@ -43,21 +43,24 @@ class DiaObject:
 
     """
 
-    def __init__( self, id=None, provenance_id=None, ra=None, dec=None, mjd_discovery=None, mjd_peak=None,
-                  mjd_start=None, mjd_end=None, properties={}, _called_from_find_objects=False ):
+    def __init__( self, id=None, provenance_id=None, ra=None, dec=None, name=None, iauname=None,
+                  mjd_discovery=None, mjd_peak=None, mjd_start=None, mjd_end=None,
+                  properties={}, _called_from_find_objects=False ):
         """Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects."""
         if not _called_from_find_objects:
             raise RuntimeError( "Don't call a DiaObject or subclass constructor.  "
                                 "Use DiaObject.find_objects or DiaObject.get_object." )
         self.id = id
         self.provenance_id = provenance_id
-        self.ra = ra
-        self.dec = dec
-        self.mjd_discovery = mjd_discovery
-        self.mjd_peak = mjd_peak
-        self.mjd_start = mjd_start
-        self.mjd_end = mjd_end
-        self.properties = {}
+        self.ra = float( ra ) if ra is not None else None
+        self.dec = float( dec ) if dec is not None else None
+        self.name = str( name ) if name is not None else None
+        self.iauname = str( iauname ) if iauname is not None else None
+        self.mjd_discovery = float( mjd_discovery ) if mjd_discovery is not None else None
+        self.mjd_peak = float( mjd_peak ) if mjd_peak is not None else None
+        self.mjd_start = float( mjd_start ) if mjd_start is not None else None
+        self.mjd_end = float( mjd_end ) if mjd_end is not None else None
+        self.properties = properties
 
     @classmethod
     def _parse_tag_and_process( cls, provenance_tag, process=None, provenance_id=None,
@@ -119,7 +122,7 @@ class DiaObject:
             if provenance_id is not None:
                 raise ValueError( "Cannot specify a provenance_id when process is None" )
 
-        provs = Provenance.get_provs_for_tag( dbclient, provenance_tag, process )
+        provs = Provenance.get_provs_for_tag( provenance_tag, process, dbclient=dbclient )
         if provenance_id is not None:
             if str(provs.id) != str(provenance_id):
                 raise ValueError( f"Provenance tag {provenance_tag} and process {process} is provenance "
@@ -229,6 +232,9 @@ class DiaObject:
             if isinstance( prov, Provenance ):
                 provenance_id = prov.id
             elif inspect.isclass( prov ) and issubclass( prov, DiaObject ):
+                # EARLY RETURN -- This is a "fake" provenance_tag that doesn't
+                #   refer to a provenance_tag in the database, but rather
+                #   something that uses one of the subclasses below.
                 return prov._get_object( diaobject_id=diaobject_id, name=name, iauname=iauname,
                                          multiple_ok=multiple_ok )
             else:
@@ -248,8 +254,14 @@ class DiaObject:
                 return DiaObject( _called_from_find_objects=True, **kwargs  )
 
         else:
-            res = dbclient.send( f"/finddiaobjects/{provenance_id}",
-                                 { 'name': name, 'iauname': iauname } )
+            if ( name is None ) and ( iauname is None ):
+                raise ValueError( "Must give one of diaobject_id, name, or iauname" )
+            subdict = {}
+            if name is not None:
+                subdict['name'] = name
+            if iauname is not None:
+                subdict['iauname'] = iauname
+            res = dbclient.send( f"/finddiaobjects/{provenance_id}", subdict )
             if len(res) == 0:
                 # TODO : make this error message more informative.  (Needs lots of logic
                 #   based on what was passed... should probably construct the string
@@ -368,8 +380,8 @@ class DiaObject:
                 raise TypeError( f"Unexpected type return {type(prov)} from _parse_tag_and_process; "
                                  f"this shouldn't happen." )
 
-        res = dbclient.send( f"findobjects/{provenance_id}", kwargs )
-        return [ DiaObject( **r ) for r in res ]
+        res = dbclient.send( f"finddiaobjects/{provenance_id}", kwargs )
+        return [ DiaObject( **r, _called_from_find_objects=True ) for r in res ]
 
 
     @classmethod
@@ -420,7 +432,7 @@ class DiaObjectOU2024( DiaObject ):
 
     @classmethod
     def _find_objects( cls, subset=None,
-                       id=None,
+                       name=None,
                        ra=None,
                        dec=None,
                        radius=1.0,
@@ -448,8 +460,8 @@ class DiaObjectOU2024( DiaObject ):
             params['dec'] = float( dec )
             params['radius'] = float( radius )
 
-        if id is not None:
-            params['id'] = int( id )
+        if name is not None:
+            params['id'] = int( name )
 
         if mjd_start_min is not None:
             params['mjd_start_min'] = float( mjd_start_min )
@@ -469,19 +481,20 @@ class DiaObjectOU2024( DiaObject ):
 
         diaobjects = []
         for i in range( len( objinfo['id'] ) ):
-            diaobj = DiaObjectOU2024( id=objinfo['id'][i],
+            props = { prop: objinfo[prop][i] for prop in
+                      [ 'healpix', 'host_id', 'gentype', 'model_name', 'z_cmb', 'mw_ebv', 'mw_extinction_applied',
+                        'av', 'rv', 'v_pec', 'host_ra', 'host_dec', 'host_mag_g', 'host_mag_i', 'host_mag_f',
+                        'host_sn_sep', 'peak_mag_g', 'peak_mag_i', 'peak_mag_f', 'lens_dmu',
+                        'lens_dmu_applied', 'model_params' ] }
+
+            diaobj = DiaObjectOU2024( name=str( objinfo['id'][i] ),
                                       ra=objinfo['ra'][i],
                                       dec=objinfo['dec'][i],
                                       mjd_peak=objinfo['peak_mjd'][i],
                                       mjd_start=objinfo['start_mjd'][i],
                                       mjd_end=objinfo['end_mjd'][i],
-                                      _called_from_find_objects=True
-                                     )
-            for prop in ( [ 'healpix', 'host_id', 'gentype', 'model_name', 'z_cmb', 'mw_ebv', 'mw_extinction_applied',
-                            'av', 'rv', 'v_pec', 'host_ra', 'host_dec', 'host_mag_g', 'host_mag_i', 'host_mag_f',
-                            'host_sn_sep', 'peak_mag_g', 'peak_mag_i', 'peak_mag_f', 'lens_dmu',
-                            'lens_dmu_applied', 'model_params' ] ):
-                setattr( diaobj, prop, objinfo[prop][i] )
+                                      properties=props,
+                                      _called_from_find_objects=True )
             diaobjects.append( diaobj )
 
         return diaobjects
@@ -499,7 +512,8 @@ class DiaObjectManual( DiaObject ):
 
     @classmethod
     def _find_objects( cls, collection=None, subset=None, **kwargs ):
-        if any( ( i not in kwargs ) or ( kwargs[i] is None ) for i in ('id', 'ra', 'dec') ):
-            raise ValueError( "finding a manual DiaObject requires all of id, ra, and dec" )
+        if any( ( i not in kwargs ) or ( kwargs[i] is None ) for i in ('name', 'ra', 'dec') ):
+            raise ValueError( "finding a manual DiaObject requires all of name, ra, and dec" )
 
-        return [DiaObjectManual( _called_from_find_objects=True, ra=kwargs["ra"], dec=kwargs["dec"], id=kwargs["id"] )]
+        return [ DiaObjectManual( _called_from_find_objects=True, ra=kwargs["ra"], dec=kwargs["dec"],
+                                  name=kwargs["name"] ) ]

@@ -18,45 +18,45 @@ def test_provenance( dbclient ):
     provstodel = { 'provs': [] }
     try:
         provstodel['provs'] = [ wayupstream.id, upstream2.id, upstream1.id, upstream1a.id ]
-        wayupstream.save_to_db( dbclient, tag='kitten' )
-        upstream2.save_to_db( dbclient, tag='foo' )
-        upstream1.save_to_db( dbclient, tag='foo' )
-        upstream1a.save_to_db( dbclient, tag='bar' )
+        wayupstream.save_to_db( tag='kitten', dbclient=dbclient )
+        upstream2.save_to_db( tag='foo', dbclient=dbclient )
+        upstream1.save_to_db( tag='foo', dbclient=dbclient )
+        upstream1a.save_to_db( tag='bar', dbclient=dbclient )
 
         # Make sure we can't save something that already exists
         # (I don't know why sometimes I get one error, sometimes the other.)
         # with pytest.raises( RuntimeError, match="Got response 500: Error, provenance.* already exists" ):
         with pytest.raises( RuntimeError, match="Error saving provenance.*; it already exists in the database." ):
-            wayupstream.save_to_db( dbclient, tag='foo', exists=False )
+            wayupstream.save_to_db( tag='foo', exists=False, dbclient=dbclient )
         # Make sure that didn't tag wayupstream with foo
-        provs = Provenance.get_provs_for_tag( dbclient, 'foo' )
+        provs = Provenance.get_provs_for_tag( 'foo', dbclient=dbclient )
         assert len( provs) == 2
         assert str(wayupstream.id) not in [ p.id for p in provs ]
 
         # Make sure we can get a process we saved
-        prov = Provenance.get( dbclient, "proc1", 42, 13, exists=True )
+        prov = Provenance.get( "proc1", 42, 13, exists=True, dbclient=dbclient )
         assert isinstance( prov, Provenance )
         assert prov.id == upstream2.id
 
         # Make sure we can't get a process we haven't saved if exists=True
         with pytest.raises( RuntimeError, match='^Requested provenance .* does not exist in the database.' ):
-            prov = Provenance.get( dbclient, "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ],
-                                   exists=True )
+            prov = Provenance.get( "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ],
+                                   exists=True, dbclient=dbclient )
 
         # Make sure that if get a process with savetodb=False (the default), it doesn't get saved
-        prov = Provenance.get( dbclient, "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ] )
+        prov = Provenance.get( "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ], dbclient=dbclient )
         assert prov.id == downstream.id
         with pytest.raises( RuntimeError, match='^Requested provenance .* does not exist in the database.' ):
-            prov = Provenance.get( dbclient, "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ],
-                                   exists=True )
+            prov = Provenance.get( "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ],
+                                   exists=True, dbclient=dbclient )
 
         # Make sure that if we say savedb, the provenance is created
         provstodel['provs'].append( downstream.id )
-        prov = Provenance.get( dbclient, "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ],
-                               savetodb=True )
+        prov = Provenance.get( "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ],
+                               savetodb=True, dbclient=dbclient )
         assert prov.id == downstream.id
-        prov = Provenance.get( dbclient, "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ],
-                               exists=True )
+        prov = Provenance.get( "proc3", major=23, minor=64738, upstreams=[ upstream1, upstream2 ],
+                               exists=True, dbclient=dbclient )
         assert prov.id == downstream.id
 
         # And, while we're here, let's make sure prov came back with all its toys.
@@ -75,14 +75,14 @@ def test_provenance( dbclient ):
 
         # Make sure we can get a provenance by an id:
 
-        prov = Provenance.get_by_id( dbclient, downstream.id )
+        prov = Provenance.get_by_id( downstream.id, dbclient=dbclient )
         check_provs( prov, downstream )
 
         # Make sure we can get provenances for a tag
-        prov = Provenance.get_provs_for_tag( dbclient, 'foo', 'proc2' )
+        prov = Provenance.get_provs_for_tag( 'foo', 'proc2', dbclient=dbclient )
         check_provs( prov, upstream1 )
 
-        provs = Provenance.get_provs_for_tag( dbclient, 'foo' )
+        provs = Provenance.get_provs_for_tag( 'foo', dbclient=dbclient )
         assert len(provs) == 2
         provs.sort( key=lambda x: x.id )
         origprovs = [ upstream1, upstream2 ]
@@ -98,8 +98,8 @@ def test_provenance( dbclient ):
                                                                           } )
         assert downstream2.id != downstream.id
         provstodel['provs'].append( downstream2.id )
-        downstream2.save_to_db( dbclient )
-        prov = Provenance.get_by_id( dbclient, downstream2.id )
+        downstream2.save_to_db( dbclient=dbclient )
+        prov = Provenance.get_by_id( downstream2.id, dbclient=dbclient )
         check_provs( prov, downstream2 )
         assert prov.params['answer'] == 42
         assert prov.params['numbers'] == [ 4, 8, 15, 16, 23, 42 ]

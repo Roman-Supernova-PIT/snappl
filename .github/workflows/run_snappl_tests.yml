@@ -69,6 +69,10 @@ jobs:
 
       - name: run test
         run: |
+          ls
+          echo "--------"
+          ls snappl
+          echo "--------"
           cd environment/test-docker-environment
           docker compose up -d webserver shell
           docker compose exec shell bash -c 'cd /home/snappl && pip install -e .[test]'

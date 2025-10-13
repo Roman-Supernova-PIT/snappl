@@ -222,14 +222,61 @@ class ProvenancesForTag( BaseProvenance ):
 
 class GetDiaObject( BaseView ):
     def do_the_things( self, diaobjectid ):
-        return "Not implemented", 500
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': diaobjectid } )
+
+        if len(rows) > 1:
+            return f"Database corruption; multiple diaobjects with id {diaobjectid}", 500
+        elif len(rows) == 0:
+            return f"Object not found: {diaobjectid}", 500
+        else:
+            return rows[0]
 
 
 # ======================================================================
 
 class FindDiaObjects( BaseView ):
     def do_the_things( self, provid ):
-        return "Not implemented", 500
+        subdict = { 'provid': provid }
+        conditions = []
+        if flask.request.is_json:
+            data = flask.request.json
+
+            if ( 'ra' in data ) or ( 'dec' in data ):
+                if not ( ( 'ra' in data ) and ( 'dec' in data ) ):
+                    return "Error, if you specify ra or dec, you must specify both"
+                radius = 1.0
+                if 'radius' in data:
+                    radius = data['radius']
+                    del data['radius']
+                conditions.append( "q3c_radial_query(ra,dec,%(ra)s,%(dec)s,%(radius)s)" )
+                subdict.update( { 'ra': data['ra'], 'dec': data['dec'], 'radius': radius / 3600. } )
+                del data['ra']
+                del data['dec']
+
+            for kw in [ 'name', 'iauname' ]:
+                if kw in data:
+                    conditions.append( f"{kw}=%({kw})s" )
+                    subdict[kw] = str( data[kw] ) if data[kw] is not None else None
+                    del data[kw]
+            for kw in [ 'mjd_discovery', 'mjd_peak', 'mjd_start', 'mjd_end' ]:
+                for edge, op in zip( [ 'min', 'max' ], [ '>=', '<=' ] ):
+                    if f'{kw}_{edge}' in data and data[f'{kw}_{edge}'] is not None:
+                        conditions.append( f"{kw} {op} %({kw}_{edge})s" )
+                        subdict[f'{kw}_{edge}'] = data[f'{kw}_{edge}']
+                        del data[f'{kw}_{edge}']
+            if len(data) != 0:
+                return f"Error, unknown parameters: {data.keys()}", 500
+
+        q = "SELECT * FROM diaobject WHERE provenance_id=%(provid)s"
+        if len(conditions) > 0:
+            q += ' AND '
+            q += ' AND '.join( conditions )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( q, subdict )
+
+        return rows
 
 
 # ======================================================================

@@ -85,7 +85,7 @@ CREATE TABLE diaobject(
     ra double precision,
     dec double precision,
     mjd_discovery double precision,
-    mjd_max double precision,
+    mjd_peak double precision,
     mjd_start double precision,
     mjd_end double precision,
     properties JSONB
@@ -94,6 +94,10 @@ CREATE INDEX ix_diaobject_q3c ON diaobject (q3c_ang2ipix(ra,dec));
 CREATE INDEX ix_diaobject_name ON diaobject(name);
 CREATE INDEX ix_diaobject_iauname ON diaobject(iauname);
 CREATE UNIQUE INDEX ix_diaobject_prov_iauname ON diaobject(provenance_id,iauname);
+CREATE INDEX ix_diaobject_mjd_discovery ON diaobject(mjd_discovery);
+CREATE INDEX ix_diaobject_mjd_peak ON diaobject(mjd_peak);
+CREATE INDEX ix_diaobject_mjd_start ON diaobject(mjd_start);
+CREATE INDEX ix_diaobject_mjd_end ON diaobject(mjd_end);
 ALTER TABLE diaobject ADD CONSTRAINT fk_diaobject_prov
   FOREIGN KEY(provenance_id) REFERENCES provenance(id) ON DELETE RESTRICT;
 CREATE INDEX ix_diaobject_provenance_id ON diaobject(provenance_id);
@@ -103,7 +107,7 @@ COMMENT ON COLUMN diaobject.iauname IS 'IAU/TNS name of the transient.';
 COMMENT ON COLUMN diaobject.ra IS 'Approx (±1"ish) RA of object; ICRS decimal degrees';
 COMMENT ON COLUMN diaobject.dec IS 'Approx (±1"ish) Dec of object; ICRS decimal degrees';
 COMMENT ON COLUMN diaobject.mjd_discovery IS 'MJD of image where the transient was discovered';
-COMMENT ON COLUMN diaobject.mjd_max IS 'Approx. MJD where transient is at peak flux';
+COMMENT ON COLUMN diaobject.mjd_peak IS 'Approx. MJD where transient is at peak flux';
 COMMENT ON COLUMN diaobject.mjd_start IS 'Approx. MJD where the transient lightcurve "starts"';
 COMMENT ON COLUMN diaobject.mjd_end IS 'Approx. MJD where the transient lightcurve "ends"';
 COMMENT ON COLUMN diaobject.properties IS 'Collection-specific additional properties of the transient';

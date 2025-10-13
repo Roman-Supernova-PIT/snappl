@@ -4,6 +4,7 @@ import json
 import uuid
 
 from snappl.utils import SNPITJsonEncoder
+from snappl.dbclient import SNPITDBClient
 
 
 class Provenance:
@@ -105,7 +106,7 @@ class Provenance:
         self.id = uuid.UUID( md5sum.hexdigest() )
 
 
-    def save_to_db( self, dbclient, tag=None, replace_tag=False, exists=None ):
+    def save_to_db( self, tag=None, replace_tag=False, exists=None, dbclient=None ):
         """Save this provenance to the database.
 
         Will call self.update_id() as a side effect, just to make sure
@@ -118,9 +119,6 @@ class Provenance:
 
         Parmaeters
         ----------
-          dbclient: snappl.dbclient.SNPITDBClient
-            This is needed to talk to the Roman SNPIT database web server.
-
           tag : str, default None
             Add this provenance to this provenance tag for this process.
 
@@ -139,11 +137,16 @@ class Provenance:
             exception.  It doesn't make a lot of sense, usually, to call
             this method with exists=True.
 
+          dbclient: snappl.dbclient.SNPITDBClient
+            This is needed to talk to the Roman SNPIT database web
+            server.  If not given, will construct one based on config.
+
         """
 
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
         self.update_id()
         try:
-            savedprov = self.get_by_id( dbclient, self.id )
+            savedprov = self.get_by_id( self.id, dbclient=dbclient )
         except Exception:
             savedprov = None
 
@@ -171,17 +174,14 @@ class Provenance:
 
 
     @classmethod
-    def get( cls, dbclient, process, major, minor, params={}, environment=None, env_major=None, env_minor=None,
-             upstreams=[], exists=None, savetodb=False ):
+    def get( cls, process, major, minor, params={}, environment=None, env_major=None, env_minor=None,
+             upstreams=[], exists=None, savetodb=False, dbclient=None ):
         """Get a Provenance based on properties.
 
         Arguments are the same as are passed to the Provenance constructor, plus:
 
         Parameters
         ----------
-          dbclient: snappl.dbclient.SNPITDBClient
-            This is needed to talk to the Roman SNPIT database web server.
-
           process, major, minor, params, environment, env_major, env_minor : varied
             These are the same as what's passed to the Provenance constructor
 
@@ -207,13 +207,18 @@ class Provenance:
             be raised if the provenance is already in the database,
             otherwise the new provenance will be saved.
 
+          dbclient: snappl.dbclient.SNPITDBClient
+            This is needed to talk to the Roman SNPIT database web
+            server.  If not given, will construct one based on config.
+
         """
 
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
         prov = cls( process, major, minor, params=params, environment=environment,
                     env_major=env_major, env_minor=env_minor, upstreams=upstreams )
         if exists:
             try:
-                existing = cls.get_by_id( dbclient, prov.id )
+                existing = cls.get_by_id( prov.id, dbclient=dbclient )
             except Exception:
                 raise RuntimeError( f"Requested provenance {prov.id} does not exist in the database." )
 
@@ -223,7 +228,7 @@ class Provenance:
 
         if savetodb:
             try:
-                prov.save_to_db( dbclient, exists=exists )
+                prov.save_to_db( exists=exists, dbclient=dbclient )
             except Exception:
                 if ( exists is not None ) and ( not exists ):
                     raise
@@ -245,40 +250,43 @@ class Provenance:
 
 
     @classmethod
-    def get_by_id( cls, dbclient, provid ):
+    def get_by_id( cls, provid, dbclient ):
         """Return a Provenance pulled from the database.
 
         Raises an exception if it does not exist.
 
         Parameters
         ----------
-          dbclient: snappl.dbclient.SNPITDBClient
-            This is needed to talk to the Roman SNPIT database web server.
-
           provid: UUID
              The ID to fetch
 
+          dbclient: snappl.dbclient.SNPITDBClient
+            This is needed to talk to the Roman SNPIT database web
+            server.  If not given, will construct one based on config.
+
         """
 
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
         return cls.parse_provenance( dbclient.send( f"getprovenance/{provid}" ) )
 
 
 
     @classmethod
-    def get_provs_for_tag( cls, dbclient, tag, process=None ):
+    def get_provs_for_tag( cls, tag, process=None, dbclient=None ):
         """Get the Provenances for a given provenance tag.
 
         Parameters
         ----------
-          dbclient: snappl.dbclient.SNPITDBClient
-            This is needed to talk to the Roman SNPIT database web server.
-
           tag : str
             The provenance tag to search
 
           process : str, default None
             The process to get provenances for.  If None, will get all
             provenances associated with the tag.
+
+          dbclient: snappl.dbclient.SNPITDBClient
+            This is needed to talk to the Roman SNPIT database web
+            server.  If not given, will construct one based on config.
 
         Returns
         -------
@@ -289,6 +297,7 @@ class Provenance:
           process is None, you get back a list of Provenance.
 
         """
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
         if process is not None:
             return cls.parse_provenance( dbclient.send( f"/getprovenance/{tag}/{process}" ) )
         else:

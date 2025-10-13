@@ -30,7 +30,7 @@ def load_snana_ou2024_diaobject( provid, pqf, dbcon=None ):
                     'ra': float(row.ra),
                     'dec': float(row.dec),
                     'mjd_discovery': float(row.start_mjd),
-                    'mjd_max': float(row.peak_mjd),
+                    'mjd_peak': float(row.peak_mjd),
                     'mjd_start': float(row.start_mjd),
                     'mjd_end': float(row.end_mjd),
                     'properties': simplejson.dumps(
