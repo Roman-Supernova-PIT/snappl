@@ -26,10 +26,9 @@ jobs:
         uses: astral-sh/ruff-action@v3
 
       - name: checkout photometry test data
-        uses: actions/checkout@v5
-        with:
-          repository: Roman-Supernova-PIT/photometry_test_data
-          path: ../photometry_test_data
+        run: |
+          cd ..
+          git clone http://github.com/Roman-Supernova-PIT/photometry_test_data
 
       - name: lfs pull photometry test data
         run: |
