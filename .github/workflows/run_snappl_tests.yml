@@ -28,8 +28,9 @@ jobs:
       - name: checkout photometry test data
         run: |
           cd ..
-          git lfs install --local
           git clone http://github.com/Roman-Supernova-PIT/photometry_test_data
+          git lfs install --local
+          git lfs pull
 
       - name: lfs pull photometry test data
         run: |
