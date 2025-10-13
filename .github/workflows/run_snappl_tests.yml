@@ -28,16 +28,18 @@ jobs:
       - name: checkout photometry test data
         run: |
           cd ..
+          git lfs install --local
           git clone http://github.com/Roman-Supernova-PIT/photometry_test_data
 
       - name: lfs pull photometry test data
         run: |
           cd ../photometry_test_data
-          git lfs install --local
-          AUTH=$(git config --local http.${{ github.server_url }}/.extraheader)
-          git config --local --unset http.${{ github.server_url }}/.extraheader
-          git config --local http.${{ github.server_url }}/${{ github.repository }}.git/info/lfs/objects/batch.extraheader "$AUTH"
-          git lfs pull
+          ls -R
+#           git lfs install --local
+#           AUTH=$(git config --local http.${{ github.server_url }}/.extraheader)
+#           git config --local --unset http.${{ github.server_url }}/.extraheader
+#           git config --local http.${{ github.server_url }}/${{ github.repository }}.git/info/lfs/objects/batch.extraheader "$AUTH"
+#           git lfs pull
 
       - name: log into github container registry
         uses: docker/login-action@v3
