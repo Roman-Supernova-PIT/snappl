@@ -1,7 +1,7 @@
 import uuid
 import pytest
 
-from snapple.db.db import Provenance
+from snappl.db.db import Provenance
 
 from basetest import BaseTestDB
 

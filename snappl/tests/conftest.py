@@ -16,7 +16,7 @@ from snappl.image import FITSImage, RomanDatamodelImage
 from snappl.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
 from snappl.config import Config
 from snappl.dbclient import SNPITDBClient
-from snappl.provneance import Provenance
+from snappl.provenance import Provenance
 from snappl.db.db import DBCon
 
 
@@ -187,7 +187,6 @@ def loaded_ou2024_test_diaobjects():
             # Load up the necessary provenance
 
             prov = Provenance( 'import_ou2024_diaobjects', 0, 1 )
-            import pdb; pdb.set_trace()
             rows, cols = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
             if len(rows) == 0:
                 dbcon.execute( "INSERT INTO provenance(id,process,major,minor,params) "

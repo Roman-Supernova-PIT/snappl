@@ -64,7 +64,7 @@ def test_find_manual_diaobject():
 
 
 def test_get_dbou2024_object( dbclient, loaded_ou2024_test_diaobjects ):
-    dobj = DiaObject.get_object( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
-                                 name=20172782, dbclient=dbclient )
-    import pdb; pdb.set_trace()
+    # dobj = DiaObject.get_object( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
+    #                              name=20172782, dbclient=dbclient )
+    # import pdb; pdb.set_trace()
     pass

@@ -1,7 +1,7 @@
 import pytest
 
 from snappl.db.db import DBCon
-from snappl import Provenance
+from snappl.provenance import Provenance
 
 
 def test_create_get_provenance( dbclient ):

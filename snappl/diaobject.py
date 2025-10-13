@@ -4,7 +4,8 @@ import inspect
 
 from snappl.config import Config
 from snappl.http import retry_post
-from snappl.db import Provenance, SNPITDBClient
+from snappl.provenance import Provenance
+from snappl.dbclient import SNPITDBClient
 
 
 class DiaObject:

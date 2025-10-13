@@ -19,7 +19,7 @@ def apply_migrations():
         # Make this not verbose
         SNLogger.set_level( logging.INFO )
 
-        direc = importlib.resources.files( 'snappl.db.db.migrations' )
+        direc = importlib.resources.files( 'snappl.db.migrations' )
         sqlfiles = [ f for f in direc.iterdir() if f.name[-4:] == '.sql' ]
         sqlfiles.sort()
 

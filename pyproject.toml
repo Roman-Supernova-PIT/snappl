@@ -16,6 +16,13 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python"
 ]
+# Note re: dependencies.
+# To run the webserver, you also need flask, flask-session, gevent,
+#   gunicorn, and psycopg.
+# However, most use of snappl won't be running the webserver, so we
+#   don't list those as explicit dependencies.  (No need to bloat the
+#   environment.  The Dockerfile in docker/webserver explicitly installs
+#   these packages.
 dependencies = [
   "astropy>=7.1.0,<8.0.0",
   "fitsio>=1.2.5,<2.0.0",

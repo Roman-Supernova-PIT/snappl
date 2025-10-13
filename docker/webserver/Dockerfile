@@ -49,13 +49,14 @@ RUN python3 -mvenv /venv
 
 RUN source /venv/bin/activate && \
     pip --no-cache install \
-       "pytest>=8.4.2,<9.0.0" \
-       "pytest-timestamper==0.0.10" \
-       "remote-pdb==2.1.0" \
-       "flask>=3.1.2,<4.0.0" \
        "flask-session>=0.8.0,<1.0.0" \
+       "flask>=3.1.2,<4.0.0" \
        "gevent>=25.9.1,<26.0.0" \
-       "gunicorn>=23.0.0,<24.0.0"
+       "gunicorn>=23.0.0,<24.0.0" \
+       "psycopg>3.2.9,<4.0.0" \
+       "pytest-timestamper==0.0.10" \
+       "pytest>=8.4.2,<9.0.0" \
+       "remote-pdb==2.1.0"
 
 RUN mkdir -p /usr/src/snappl_install
 WORKDIR /usr/src/snappl_install

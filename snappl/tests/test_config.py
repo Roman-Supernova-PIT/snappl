@@ -10,20 +10,24 @@ _rundir = pathlib.Path( __file__ ).parent.resolve()
 
 @pytest.fixture( autouse=True )
 def config_cleanup():
-    # A call to config.Config.get(...) may load Config
-    #   class variables, such as setting the default
-    #   config.  This autouse fixture will clean that
-    #   up to keep tests sandboxed.  Don't copy this
-    #   code anywhere else, as it "illegally" pokes
-    #   inside of the Config class in ways you
-    #   aren't really supposed to.
+    # This fixture gives us a blank slate for testing configs, but also
+    # restores the original state of the Config class variables so we
+    # don't screw up the work of other fixtures (like the init_config
+    # autouse session fixture in conftest.py).
 
     orig_def_def = Config._default_default
+    orig_def = Config._default
+
+    # Give us a blank slate in case another fixture already loaded the config
+
+    Config._default = None
+    Config._configs= {}
 
     yield True
 
     Config._default_default = orig_def_def
-    Config._default = None
+    Config._default = orig_def
+    # This next one is OK, things that need it will just reload.
     Config._configs = {}
 
 
