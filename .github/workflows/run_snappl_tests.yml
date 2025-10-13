@@ -24,6 +24,12 @@ jobs:
 
       - name: run ruff
         uses: astral-sh/ruff-action@v3
+
+      - name: something
+        run: |
+          echo "github.workspace = " ${github.workspace}
+          ls
+          ls snappl
           
       - name: checkout photometry test data
         uses: actions/checkout@v5
