@@ -229,9 +229,9 @@ def test_loading_and_getting( cfg ):
     assert cfg.value( 'destrapplist.0' ) == 'app1_1'
     assert cfg.value( 'destrapplist.1' ) == 'app1_2'
     assert cfg.value( 'destrapplist.2' ) == 'app2_1'
-    with pytest.raises( ValueError, match="Error getting field destrapplist.3 from destrapplist" ):
+    with pytest.raises( ValueError, match="3 >= 3, the length of the list for destrapplist.3" ):
         _ = cfg.value( 'destrapplist.3' )
-    with pytest.raises( ValueError, match="Error getting field destrapplist.10 from destrapplist" ):
+    with pytest.raises( ValueError, match="10 >= 3, the length of the list for destrapplist.10" ):
         _ = cfg.value( 'destrapplist.10' )
 
     # destrappdict is set in testdestrapp1 and modified and added to in testdestrapp2
@@ -341,19 +341,19 @@ def test_nest( cfg ):
 
 
 def test_missing_value_with_default( cfg ):
-    with pytest.raises(ValueError, match="Field .* doesn't exist"):
+    with pytest.raises(ValueError, match="Can't find field nest_foo"):
         cfg.value( 'nest_foo' )
     assert cfg.value( 'nest_foo', 'default' ) == 'default'
 
-    with pytest.raises(ValueError, match="Error getting field .*"):
+    with pytest.raises(ValueError, match="Can't find field nest.nest15"):
         cfg.value( 'nest.nest15' )
     assert cfg.value( 'nest.nest15', 15) == 15
 
-    with pytest.raises(ValueError, match="Error getting field .*"):
+    with pytest.raises(ValueError, match="99 >= 2, the length of the list for nest.nest1.99"):
         cfg.value( 'nest.nest1.99' )
     assert cfg.value( 'nest.nest1.99', None) is None
 
-    with pytest.raises(ValueError, match="Error getting field .*"):
+    with pytest.raises(ValueError, match="Can't find field nest.nest1.0.nest1a.foo"):
         cfg.value( 'nest.nest1.0.nest1a.foo' )
     assert cfg.value( 'nest.nest1.0.nest1a.foo', 'bar') == 'bar'
 
@@ -412,5 +412,29 @@ def test_set( cfg ):
     clone.set_value( 'totallynewvalue.one', 'one' )
     clone.set_value( 'totallynewvalue.two', 'two' )
     assert clone.value('totallynewvalue') == { 'one': 'one', 'two': 'two' }
-    with pytest.raises( ValueError, match="Field totallynewvalue doesn't exist" ):
+    with pytest.raises( ValueError, match="Can't find field totallynewvalue" ):
         _ = cfg.value( 'totallynewvalue' )
+
+
+def test_delete_field( cfg ):
+    with pytest.raises( RuntimeError, match="Not permitted to modify static Config object." ):
+        cfg.delete_field( 'override1list1' )
+
+    newcfg = Config.get( clone=cfg )
+
+    with pytest.raises( TypeError, match="Can't remove elements of lists: override1list1.0" ):
+        newcfg.delete_field( 'override1list1.0' )
+    assert newcfg.value( 'override1list1' ) == cfg.value( 'override1list1' )
+
+    with pytest.raises( ValueError, match="Can't find config field does.not.exist to delete it." ):
+        newcfg.delete_field( "does.not.exist" )
+    newcfg.delete_field( "does.not.exist", missing_ok=True )
+    assert newcfg._data == cfg._data
+
+    newcfg.delete_field( 'maindict.mainval2' )
+    assert set( newcfg.value( 'maindict' ).keys() ) == { 'bool_value', 'false_bool_value', 'mainval1', 'mainval3' }
+
+    for kw in [ k for k in newcfg._data.keys() if k != 'mainscalar1' ]:
+        newcfg.delete_field( kw )
+    assert set( newcfg._data.keys() ) == { 'mainscalar1' }
+    assert newcfg.value( 'mainscalar1' ) == 'main1'

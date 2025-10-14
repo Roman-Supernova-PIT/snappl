@@ -3,6 +3,7 @@ import hashlib
 import json
 import uuid
 
+from snappl.config import Config
 from snappl.utils import SNPITJsonEncoder
 from snappl.dbclient import SNPITDBClient
 
@@ -29,7 +30,7 @@ class Provenance:
           minor : int
             Semantic minor version of the code described by process.
 
-          params : dict, default {}
+          params : Config or dict, default {}
             Parameters that uniquely define process. This should include
             all parameters that would be the same for all runs on one
             set of data.  So, for instance, for difference imaging
@@ -39,6 +40,11 @@ class Provenance:
             parameters to SFFT, detection thresholds, and the name and
             parameters of however you decided to figure out which
             template image to use.
+
+            You can also pass a snappl.config.Config object, in which
+            case the parameters will be extracted from that.  This
+            assumes that the "system" top level key of that Config has
+            all, but only, the system-specific stuff.
 
           environment : int, default None
             Which SNPIT environment did the process use?  TODO: this
@@ -59,7 +65,6 @@ class Provenance:
         self.process = process
         self.major = major
         self.minor = minor
-        self.params = params
         self.environment = environment
         self.env_major = env_major
         self.env_minor = env_minor
@@ -68,6 +73,14 @@ class Provenance:
             raise TypeError( "upstream must be a list of Provenance" )
         # Sort upstreams by id so they are in a reproducible order
         self.upstreams.sort( key=lambda x: x.id )
+
+        if isinstance( params, Config ):
+            self.params = params.dump_to_dict_for_params()
+        elif isinstance( params, dict ):
+            self.params = params
+        else:
+            raise TypeError( f"params must be a Config or a dict, not a {type(params)}" )
+
         self.update_id()
 
     def spec_dict( self ):

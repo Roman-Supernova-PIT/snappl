@@ -187,15 +187,15 @@ def loaded_ou2024_test_diaobjects():
             # Load up the necessary provenance
 
             prov = Provenance( 'import_ou2024_diaobjects', 0, 1 )
-            rows, cols = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
+            rows, _cols = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
             if len(rows) == 0:
                 dbcon.execute( "INSERT INTO provenance(id,process,major,minor,params) "
                                "VALUES (%(id)s,%(proc)s,%(maj)s,%(min)s,%(params)s)",
                                { 'id': prov.id, 'proc': prov.process, 'maj': prov.major, 'min': prov.minor,
                                  'params': psycopg.types.json.Jsonb({}) } )
-            rows, cols = dbcon.execute( "SELECT tag,process,provenance_id FROM provenance_tag "
-                                        "WHERE tag=%(tag)s AND process=%(proc)s",
-                                        { 'tag': 'dbou2024_test', 'proc': prov.process } )
+            rows, _cols = dbcon.execute( "SELECT tag,process,provenance_id FROM provenance_tag "
+                                         "WHERE tag=%(tag)s AND process=%(proc)s",
+                                         { 'tag': 'dbou2024_test', 'proc': prov.process } )
             if len(rows) > 1:
                 raise RuntimeError( "This should never happen." )
             elif len(rows) == 1:

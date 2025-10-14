@@ -1,3 +1,3 @@
 preloads:
-  - /default_test_config.yaml
+  - /default_snpit_config.yaml
   - /home/environment/test-docker-environment/test_config_for_db.yaml

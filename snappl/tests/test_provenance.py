@@ -1,6 +1,7 @@
 import pytest
 import psycopg
 
+from snappl.config import Config
 from snappl.provenance import Provenance
 
 
@@ -104,6 +105,13 @@ def test_provenance( dbclient ):
         assert prov.params['answer'] == 42
         assert prov.params['numbers'] == [ 4, 8, 15, 16, 23, 42 ]
         assert prov.params['cat'] == 'Echelle'
+
+        # Check that creating a provenance with params from Config does the right thing.
+
+        prov = Provenance( process="configed", major=1, minor=8, params=Config.get() )
+        provstodel['provs'].append( prov.id )
+        import pdb; pdb.set_trace()
+        pass
 
     finally:
         with open( '/secrets/pgpasswd' ) as ifp:
