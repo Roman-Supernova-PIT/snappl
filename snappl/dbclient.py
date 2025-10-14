@@ -34,18 +34,18 @@ class SNPITDBClient( rkAuthClient ):
         ----------
           url : string
             The base URL of the roman snpit internal db.  If not given,
-            will use the config value db.url
+            will use the config value system.db.url
 
           username : string
             Username on the roman snpit internal db web api.  If not
-            given, will use the config value db.username
+            given, will use the config value system.db.username
 
           password : string
             Password on the roman snpit internal db web api.  If not
-            given, will first try using the config value db.password; if
+            given, will first try using the config value system.db.password; if
             that is None, or if that is not in the config file, will
             read the passowrd as the first line in the file given in the
-            config value db.passwordfile
+            config value system.db.passwordfile
 
           retries : int, default 5
             When calling send or post, if the request to the server
@@ -74,15 +74,15 @@ class SNPITDBClient( rkAuthClient ):
 
         """
         cfg = Config.get()
-        url = url if url is not None else cfg.value( 'db.url' )
-        username = username if username is not None else cfg.value( 'db.username' )
+        url = url if url is not None else cfg.value( 'system.db.url' )
+        username = username if username is not None else cfg.value( 'system.db.username' )
         if ( password is None ) and ( passwordfile is None ):
             try:
-                password = cfg.value( 'db.password' )
+                password = cfg.value( 'system.db.password' )
             except Exception:
                 password = None
             if password is None:
-                with open( cfg.value( 'db.passwordfile' ) ) as ifp:
+                with open( cfg.value( 'system.db.passwordfile' ) ) as ifp:
                     password = ifp.readline().strip()
         else:
             if password is None:

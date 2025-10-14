@@ -10,7 +10,7 @@ from snappl.dbclient import SNPITDBClient
 
 class Provenance:
     def __init__( self, process, major, minor, params={}, environment=None, env_major=None, env_minor=None,
-                  upstreams=[] ):
+                  omitkeys=['system'], keepkeys=None, upstreams=[] ):
         """Instantiate a Provenance
 
         Once instantiated, will have a property id that holds the UUID
@@ -61,6 +61,16 @@ class Provenance:
             no need for upstreams of upstreams, as those will be tracked by the immedaite
             upstreams.  Can also send a single Provenance.
 
+          omitkeys : list of str, default ['system']
+            Ignored unless params is a Config object.  In this case,
+            these are the keys from the Config to omit and not include
+            in the parameters dictionary.  Only one of omitkeys or
+            keepkeys can be non-None.
+
+          keepkeys : list of str, default None
+            Ignored unless params is a Config object.  In this case,
+            only include the specified keys from the Config.
+
         """
         self.process = process
         self.major = major
@@ -75,7 +85,7 @@ class Provenance:
         self.upstreams.sort( key=lambda x: x.id )
 
         if isinstance( params, Config ):
-            self.params = params.dump_to_dict_for_params()
+            self.params = params.dump_to_dict_for_params( omitkeys=omitkeys, keepkeys=keepkeys )
         elif isinstance( params, dict ):
             self.params = params
         else:

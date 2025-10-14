@@ -110,8 +110,16 @@ def test_provenance( dbclient ):
 
         prov = Provenance( process="configed", major=1, minor=8, params=Config.get() )
         provstodel['provs'].append( prov.id )
-        import pdb; pdb.set_trace()
-        pass
+        assert 'system' not in prov.params
+
+        prov = Provenance( process="configed", major=1, minor=8, params=Config.get(), omitkeys=[] )
+        provstodel['provs'].append( prov.id )
+        assert 'system' in prov.params
+
+        prov = Provenance( process="configed", major=1, minor=8, params=Config.get(),
+                           keepkeys=['system.db'], omitkeys=None )
+        assert set( prov.params.keys() ) == { 'system' }
+        assert set( prov.params['system'].keys() ) == { 'db' }
 
     finally:
         with open( '/secrets/pgpasswd' ) as ifp:
