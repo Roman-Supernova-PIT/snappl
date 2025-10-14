@@ -170,7 +170,7 @@ class ImageCollectionOU2024:
     @property
     def base_path( self ):
         if self._base_path is None:
-            self._base_path = pathlib.Path( Config.get().value( 'ou24.images' ) )
+            self._base_path = pathlib.Path( Config.get().value( 'system.ou24.images' ) )
         return self._base_path
 
     def get_image( self, path=None, pointing=None, band=None, sca=None, base_path=None ):
@@ -247,7 +247,7 @@ class ImageCollectionOU2024:
         if exptime_max is not None:
             params['exptime_max'] = float(exptime_max)
 
-        simdex = Config.get().value( 'photometry.snappl.simdex_server' )
+        simdex = Config.get().value( 'system.ou24.simdex_server' )
         res = retry_post( f"{simdex}/findromanimages", json=params ).json()
 
         images = []

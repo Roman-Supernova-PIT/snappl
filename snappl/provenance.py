@@ -273,7 +273,7 @@ class Provenance:
 
 
     @classmethod
-    def get_by_id( cls, provid, dbclient ):
+    def get_by_id( cls, provid, dbclient=None ):
         """Return a Provenance pulled from the database.
 
         Raises an exception if it does not exist.

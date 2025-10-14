@@ -44,13 +44,13 @@ all_table_names = [ 'lightcurve', 'summed_image', 'summed_image_component',
 
 def get_connect_info():
     cfg = Config.get()
-    dbhost = cfg.value( 'db.postgres_host' )
-    dbport = cfg.value( 'db.postgres_port' )
-    dbname = cfg.value( 'db.postgres_database' )
-    dbuser = cfg.value( 'db.postgres_username' )
-    dbpasswd = cfg.value( 'db.postgres_password' )
+    dbhost = cfg.value( 'system.db.postgres_host' )
+    dbport = cfg.value( 'system.db.postgres_port' )
+    dbname = cfg.value( 'system.db.postgres_database' )
+    dbuser = cfg.value( 'system.db.postgres_username' )
+    dbpasswd = cfg.value( 'system.db.postgres_password' )
     if dbpasswd is None:
-        with open( cfg.value( 'db.postgres_password_file' ) ) as ifp:
+        with open( cfg.value( 'system.db.postgres_password_file' ) ) as ifp:
             dbpasswd = ifp.readline().strip()
 
     return dbhost, dbport, dbname, dbuser, dbpasswd
@@ -170,8 +170,8 @@ class DBCon:
             self.con = get_dbcon()
             # TODO : make these next two configurable rather than hardcoded
             # These are useful for debugging, but are profligate for production
-            self.echoqueries = cfg.value( 'db.echoqueries' )
-            self.alwaysexplain = cfg.value( 'db.alwaysexplain' )
+            self.echoqueries = cfg.value( 'system.db.echoqueries' )
+            self.alwaysexplain = cfg.value( 'system.db.alwaysexplain' )
             self.dictcursor = dictcursor
             self.cursorisdict = dictcursor
 

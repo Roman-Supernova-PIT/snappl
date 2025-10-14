@@ -112,6 +112,7 @@ ENV PYTHONPATH=/roman-snpit-db
 RUN mkdir /sessions
 
 COPY docker/webserver/config-test.yaml /roman-snpit-db/
+COPY docker/webserver/roman-snpit-server.py /roman-snpit-db/
 
 ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
 

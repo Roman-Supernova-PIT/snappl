@@ -63,82 +63,86 @@ class DiaObject:
         self.properties = properties
 
     @classmethod
-    def _parse_tag_and_process( cls, provenance_tag, process=None, provenance_id=None,
-                                multiple_ok=False, nosubclass=False, dbclient=None ):
-        """Convert a collection and subset to a provenance a process, OR to a DiaObject subclass.
+    def _parse_tag_and_process( cls, collection='snpitdb', provenance_tag=None, process=None, provenance=None,
+                                dbclient=None ):
+        """Figure out either the DiaObject subclass, or the Provenance, as appropraite.
 
         Parameters
         ----------
-          proveneance_tag: str
+          collection : str, default 'snpitdb'
+            Which collection of objects to search.  Options are:
+              * snpitdb : use the Roman SNPIT Internal DB as defined in Config
+              * ou2024 : use OpenUniverse2024 truth tables
+              * manual : manually create objects
+
+          provenance_tag: str
+            The provenance tag to use for objects if collection is
+            'snpitdb'.  Invalid if collection is not 'snpitdb'.
 
           process: str, default None
-            Must be None if provenance_tag corresponds to a DiaObject
-            subclass.  Otherwise, if multiple_ok is False, then process is
-            required; if multiple_ok is True, you'll get back a list of
-            all provenences for all processes with the requested tag.
+            The process to use for objects if collection is 'snpitdb'.
+            Required if provenance_tag is not None.  Invalid if
+            collecton is not 'snpitdb'.
 
-          provenance_id: UUID or str, default None
-            If given, verify that the returned process is what's
-            expected.  Must be None if process is None.
-
-          multiple_ok: bool, default False
-
-          nosubclass: bool, default False
-            If True, then we are saying that we know that provenance_tag
-            is something in the database.
+          provenanced: Provenance or UUID or str, default None
+            The provenance to use for objects if collection is
+            'snpitdb'.  If you specify both provenance_tag and process,
+            you don't need to specify this.  You can pass either
+            a Provenance object, or just the id.
 
           dbclient: SNPITDBClient
 
         Returns
         -------
-          If provenance_tag corresponds to something that yields a
-          DiaObject subclass, then you get that subclass back.
+          If collection is 'snpit', you get back a Provenance if you
+          gave one of (provenance_id) or (provenanace_tag and process),
+          or None if you didn't.
 
-          Otherwise:
-            If process is None and multiple_ok is False, that's an error.
-
-            If process is None and multiple_ok is True, you get back a list of Provenance.
-
-            Otherwise: you get back a Provenance
+          Otherwise, you get back a DiaObject subclass.
 
         """
 
         subclassmap = { 'ou2024': DiaObjectOU2024,
                         'manual': DiaObjectManual }
 
-        if ( provenance_tag in subclassmap ) and ( not nosubclass ):
-            if process is not None:
-                raise ValueError( f"process must be None for provenance tag {provenance_tag} and nosubclass=False" )
-            if provenance_id is not None:
-                raise ValueError( f"provenence tag {provenance_tag} with nosubclass=False does not support "
-                                  f"passing provenance_id" )
-            return subclassmap[ provenance_tag ]
+        if collection in subclassmap:
+            if any( i is not None for i in [ provenance_tag, process, provenance ] ):
+                raise ValueError( f"provenance_tag, process, and provenance are all invalid for "
+                                  f"collection {collection}" )
+            return subclassmap[ collection ]
+        elif collection != 'snpitdb':
+            raise ValueError( f"Unknown DiaObject collection {collection}" )
 
         # If we get here, we know we're searching the database
 
-        if process is None:
-            if not multiple_ok:
-                raise ValueError( "Process must be None unless multiple_ok is True" )
-            if provenance_id is not None:
-                raise ValueError( "Cannot specify a provenance_id when process is None" )
+        provid = provenance.id if isinstance( provenance, Provenance ) else provenance
 
-        provs = Provenance.get_provs_for_tag( provenance_tag, process, dbclient=dbclient )
-        if provenance_id is not None:
-            if str(provs.id) != str(provenance_id):
-                raise ValueError( f"Provenance tag {provenance_tag} and process {process} is provenance "
-                                  f"{provs.id} in the database, but you expected {provenance_id}" )
-        return provs
+        if ( provenance_tag is None ) != ( process is None ):
+            raise ValueError( "Either both or neither of provenance_tag and process must be given with "
+                              "collection='snpitdb'." )
+
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+
+        if provenance_tag is not None:
+            prov = Provenance.get_provs_for_tag( provenance_tag, process, dbclient=dbclient )
+            if ( provid is not None ) and ( str(prov.id) != str(provid) ):
+                raise ValueError( f"Provenance tag {provenance_tag} and process {process} returned "
+                                  f"provenance {prov.id}, but you specified {provid}" )
+        elif isinstance( provenance, Provenance ):
+            prov = provenance
+        elif provenance is not None:
+            prov = Provenance.get_by_id( provid, dbclient=dbclient )
+        else:
+            prov = None
+
+        return prov
 
 
     @classmethod
-    def get_object( cls, provenance=None, provenance_tag=None, process=None,
+    def get_object( cls, collection='snpitdb', provenance=None, provenance_tag=None, process=None,
                     name=None, iauname=None, diaobject_id=None,
                     multiple_ok=False, dbclient=None ):
         """Get a DiaObject. from the database.
-
-        You must pass at most one of:
-          * provenance_id
-          * provenance_tag and process
 
         Specify the object with exactly one of:
           * diaobject_id
@@ -164,19 +168,32 @@ class DiaObject:
 
         Parameters
         ----------
-         provenance: Provenance, UUID, or UUIDifiable str
+         collection : str, default 'snpitdb'
+            Which collection of objects to search.  Options are:
+              * snpitdb : use the Roman SNPIT Internal DB as defined in Config
+                          This requires either provenance_id, or provenance_tag and process
+              * ou2024 : use OpenUniverse2024 truth tables
+              * manual : manually create objects
+
+         provenance: Provenance, UUID, or UUIDifiable str, default None
             The provenance of the object you're looking for.  You don't
-            need this if you pass provenance_tag and process.
+            need this if you pass provenance_tag and process, or if you
+            pass diaobject_id.  Invalid if collection is not 'snpitdb'.
 
-         provenance_tag : str
-           The human-readable provenance tag for the provenance of
-           objects you want to dig through.  Usually requires 'process'.
-           provenance_tag is required if you dont pass provenance_id,
-           otherwise it's optional.
+         provenance_tag : str, default None
+           The human-readable provenance tag for the provenance of objects
+           you want to dig through.  Requires 'process'.  You must
+           specify at least one of provenance_Tag or provenance.
+           Invalid if collection is not 'snpitdb'.
 
-         process : str
+         process : str, default None
            The process associated with the provenance_tag (needed to
-           determine a unique provenance id).
+           determine a unique provenance id).  Needed if provenance_tag
+           is not None.
+
+         diaobject_id : UUID or str, default None
+           The diaobject_id of the object to get.  Invalid if collection
+           is not 'snpitdb'.
 
          name : str (usually; might be an int for some provenance_tags)
            The name of the object as determined by whoever it was that
@@ -218,40 +235,34 @@ class DiaObject:
 
         """
 
-        provenance_id = provenance.id if isinstance( provenance, Provenance ) else provenance
+        prov = cls._parse_tag_and_process( collection=collection, provenance_tag=provenance_tag, process=process,
+                                           provenance=provenance, dbclient=dbclient )
 
-        if ( provenance_id is None ) and ( provenance_tag is None ) and ( diaobject_id is None ):
-            raise ValueError( "Must specify a either a provenance or a provenance_tag "
-                              "if you don't pass a diaobject_id" )
+        # First see if we're dealing with a subclass
+        if inspect.isclass( prov ) and ( issubclass( prov, DiaObject ) ):
+            if diaobject_id is not None:
+                raise ValueError( f"diaobject_id is invalid for collection {collection}" )
+            return prov._get_object( diaobject_id=diaobject_id, name=name, iauname=iauname,
+                                     multiple_ok=multiple_ok )
+
+        # If not, then we know we're dealing with the database
+
+        if ( prov is None ) and ( diaobject_id is None ):
+            raise ValueError( "Must give one of diaobject_id, provenance_id, or (provenance_tag and process)" )
 
         dbclient = SNPITDBClient() if dbclient is None else dbclient
-
-        if provenance_tag is not None:
-            prov = cls._parse_tag_and_process( provenance_tag, process, provenance_id=provenance_id,
-                                               multiple_ok=False, dbclient=dbclient )
-            if isinstance( prov, Provenance ):
-                provenance_id = prov.id
-            elif inspect.isclass( prov ) and issubclass( prov, DiaObject ):
-                # EARLY RETURN -- This is a "fake" provenance_tag that doesn't
-                #   refer to a provenance_tag in the database, but rather
-                #   something that uses one of the subclasses below.
-                return prov._get_object( diaobject_id=diaobject_id, name=name, iauname=iauname,
-                                         multiple_ok=multiple_ok )
-            else:
-                raise TypeError( f"Unexpected type return {type(prov)} from _parse_tag_and_process; "
-                                 f"this shouldn't happen." )
 
         if diaobject_id is not None:
             kwargs = dbclient.send( f"getdiaobject/{diaobject_id}" )
             if len(kwargs) == 0:
-                raise RuntimeError( f"Could not find diaobject {diaobject_id}" )
+                raise RuntimeError( f"COuld not find diaobject {diaobject_id}" )
             else:
-                if ( provenance_id is not None ) and ( str(kwargs['provenance_id']) != str(provenance_id) ):
+                if ( prov is not None ) and ( str(kwargs['provenance_id']) != str( prov.id ) ):
                     raise ValueError( f"Error, you asked for object {diaobject_id} in provenance "
-                                      f"{provenance_id}, but that object is actually in provenance "
+                                      f"{prov.id}, but that object is actually in provenance "
                                       f"{kwargs['provenance_id']}" )
 
-                return DiaObject( _called_from_find_objects=True, **kwargs  )
+                return DiaObject( _called_from_find_objects=True, **kwargs )
 
         else:
             if ( name is None ) and ( iauname is None ):
@@ -261,7 +272,7 @@ class DiaObject:
                 subdict['name'] = name
             if iauname is not None:
                 subdict['iauname'] = iauname
-            res = dbclient.send( f"/finddiaobjects/{provenance_id}", subdict )
+            res = dbclient.send( f"/finddiaobjects/{prov.id}", subdict )
             if len(res) == 0:
                 # TODO : make this error message more informative.  (Needs lots of logic
                 #   based on what was passed... should probably construct the string
@@ -281,31 +292,40 @@ class DiaObject:
 
 
     @classmethod
-    def _get_object( cls, name=None, iauname=None, diaobject_id=None, multiple_ok=False ):
+    def _get_object( cls, name=None, iauname=None, multiple_ok=False ):
         raise NotImplementedError( f"{cls.__name__} isn't able to do _get_object" )
 
 
     @classmethod
-    def find_objects( cls, provenance=None, provenance_tag=None, process=None, dbclient=None, **kwargs ):
+    def find_objects( cls, collection='snpitdb', provenance=None, provenance_tag=None, process=None,
+                      dbclient=None, **kwargs ):
         """Find objects.
 
         Parameters
         ----------
+         collection : str, default 'snpitdb'
+            Which collection of objects to search.  Options are:
+              * snpitdb : use the Roman SNPIT Internal DB as defined in Config
+                          This requires either provenance_id, or provenance_tag and process
+              * ou2024 : use OpenUniverse2024 truth tables
+              * manual : manually create objects
+
           provenance : Provenance, UUID, or UUIDifiable str
             The provenance to search.  Must specify either this or
             provenance_tag.  If you specify both, it will verify
-            consistency.
+            consistency.  Invalid if collection is not 'snpitdb'.
 
           provenance_tag : str
             The provenance tag to search.  For some provenance tags,
             this goes to a specific subclass (and in that case,
             provenance_id must be None), but for most, it queries the
             Roman SNPIT itnernal database.  Optional if you specify
-            provenance_id.
+            provenance.  Invalid if collection is not 'snpitdb'.
 
           process : str, default None
-            Usually required; can be None only if provenance_tag is one
-            of the few that go to a specific subclass.
+            The process associated with the provenacne_tag that allows
+            the code to determine a unique provenance.  Needed if
+            provenance_tag is not None.
 
           dbclient : SNPITDBClient, default None
             The database web api connection object to use.  If you don't
@@ -313,20 +333,16 @@ class DiaObject:
             configuration.
 
           diaobject_id : <something>, default None
-            The optional ID of the object.  A str will usually work.  For
-            provenance_tags that go to the Roman SNPIT internal
-            database, this needs to be something that can be converted
-            to a UUID.  For provenance_tags that correspond to a
-            specific subclass, exactly what this is depends on the
-            subclass.
+            The diaobject_id of the object to find.  Only valid if
+            collection is 'snpitdb'.
 
           name : str
             The optional name of the object.  May not be implemented for
-            all provenance tags.
+            all collections.
 
           iauname : str
             The TNS/IAU name of the object.  May not be implemented for
-            all provenance_tags.
+            all collections.
 
           ra: float
             RA in degrees to search.
@@ -362,25 +378,17 @@ class DiaObject:
 
         """
 
-        provenance_id = provenance.id if isinstance( provenance, Provenance ) else provenance
+        prov = cls._parse_tag_and_process( collection=collection, provenance_tag=provenance_tag, process=process,
+                                           provenance=provenance, dbclient=dbclient )
 
-        if ( provenance_id is None ) and ( provenance_tag is None ):
-            raise ValueError( "Must specify at least one of provenance and provenance_tag" )
+        # First see if we're dealing with a subclass
+        if inspect.isclass( prov ) and ( issubclass( prov, DiaObject ) ):
+            return prov._find_objects( **kwargs )
+
+        # Otherwise, we know we're dealing with the database
 
         dbclient = SNPITDBClient() if dbclient is None else dbclient
-
-        if provenance_tag is not None:
-            prov = cls._parse_tag_and_process( provenance_tag, process=process, provenance_id=provenance_id,
-                                               multiple_ok=False, dbclient=dbclient )
-            if isinstance( prov, Provenance ):
-                provenance_id = prov.id
-            elif inspect.isclass( prov ) and issubclass( prov, DiaObject ):
-                return prov._find_objects( **kwargs )
-            else:
-                raise TypeError( f"Unexpected type return {type(prov)} from _parse_tag_and_process; "
-                                 f"this shouldn't happen." )
-
-        res = dbclient.send( f"finddiaobjects/{provenance_id}", kwargs )
+        res = dbclient.send( f"finddiaobjects/{prov.id}", kwargs )
         return [ DiaObject( **r, _called_from_find_objects=True ) for r in res ]
 
 
@@ -475,7 +483,7 @@ class DiaObjectOU2024( DiaObject ):
         if mjd_end_min is not None:
             params['mjd_end_max'] = float( mjd_end_max )
 
-        simdex = Config.get().value( 'photometry.snappl.simdex_server' )
+        simdex = Config.get().value( 'system.ou24.simdex_server' )
         res = retry_post( f'{simdex}/findtransients', json=params )
         objinfo = res.json()
 

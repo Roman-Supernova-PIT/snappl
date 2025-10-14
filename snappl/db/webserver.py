@@ -15,12 +15,12 @@ def setup_flask_app( application ):
     global urls
 
     application.config.from_mapping(
-        SECRET_KEY=Config.get().value( 'webserver.flask_secret_key' ),
+        SECRET_KEY=Config.get().value( 'system.webserver.flask_secret_key' ),
         SESSION_COOKIE_PATH='/',
         SESSION_TYPE='filesystem',
         SESSION_PERMANENT=True,
         SESSION_USE_SIGNER=True,
-        SESSION_FILE_DIR=Config.get().value( 'webserver.sessionstore' ),
+        SESSION_FILE_DIR=Config.get().value( 'system.webserver.sessionstore' ),
         SESSION_FILE_THRESHOLD=1000,
     )
 
@@ -33,14 +33,14 @@ def setup_flask_app( application ):
         db_name=dbname,
         db_user=dbuser,
         db_password=dbpasswd,
-        email_from = Config.get().value( 'webserver.emailfrom' ),
+        email_from = Config.get().value( 'system.webserver.emailfrom' ),
         email_subject = 'roman-snpit-db password reset',
         email_system_name = 'roman-snpit-db',
-        smtp_server = Config.get().value( 'webserver.smtpserver' ),
-        smtp_port = Config.get().value( 'webserver.smtpport' ),
-        smtp_use_ssl = Config.get().value( 'webserver.smtpusessl' ),
-        smtp_username = Config.get().value( 'webserver.smtpusername' ),
-        smtp_password = Config.get().value( 'webserver.smtppassword' )
+        smtp_server = Config.get().value( 'system.webserver.smtpserver' ),
+        smtp_port = Config.get().value( 'system.webserver.smtpport' ),
+        smtp_use_ssl = Config.get().value( 'system.webserver.smtpusessl' ),
+        smtp_username = Config.get().value( 'system.webserver.smtpusername' ),
+        smtp_password = Config.get().value( 'system.webserver.smtppassword' )
     )
     application.register_blueprint( rkauth_flask.bp )
 

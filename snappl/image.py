@@ -1238,7 +1238,7 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
     @property
     def truthpath( self ):
         """Path to truth catalog.  WARNING: this is OpenUniverse2024FITSImage-specific, use with care."""
-        tds_base = pathlib.Path( Config.get().value( 'ou24.tds_base' ) )
+        tds_base = pathlib.Path( Config.get().value( 'system.ou24.tds_base' ) )
         return ( tds_base / f'truth/{self.band}/{self.pointing}/'
                  f'Roman_TDS_index_{self.band}_{self.pointing}_{self.sca}.txt' )
 

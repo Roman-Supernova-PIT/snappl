@@ -11,7 +11,7 @@ def test_no_construct_directly():
 
 
 def test_find_ou2024_diaobject():
-    objs = DiaObject.find_objects( provenance_tag='ou2024', name=20172782 )
+    objs = DiaObject.find_objects( collection='ou2024', name=20172782 )
     assert isinstance( objs, list )
     assert len(objs) == 1
     obj = objs[0]
@@ -25,11 +25,11 @@ def test_find_ou2024_diaobject():
     assert obj.properties['gentype'] == 10
     assert obj.properties['peak_mag_g'] == pytest.approx( 23.16, abs=0.01 )
 
-    objs = DiaObject.find_objects( provenance_tag='ou2024', name=1 )
+    objs = DiaObject.find_objects( collection='ou2024', name=1 )
     assert isinstance( objs, list )
     assert len(objs) == 0
 
-    objs = DiaObject.find_objects( provenance_tag='ou2024', ra=7.5510934, dec=-44.8071811, radius=1.0 )
+    objs = DiaObject.find_objects( collection='ou2024', ra=7.5510934, dec=-44.8071811, radius=1.0 )
     assert isinstance( objs, list )
     assert len(objs) == 1
     obj = objs[0]
@@ -37,7 +37,7 @@ def test_find_ou2024_diaobject():
     assert obj.ra == pytest.approx( 7.5510934, abs=1e-5 )
     assert obj.dec == pytest.approx( -44.8071811, abs=1e-5 )
 
-    objs = DiaObject.find_objects( provenance_tag='ou2024', ra=7.5510934, dec=-44.8071811, radius=60.0 )
+    objs = DiaObject.find_objects( collection='ou2024', ra=7.5510934, dec=-44.8071811, radius=60.0 )
     assert len(objs) == 19
     assert any( o.name == '20172782' for o in objs )
 
@@ -54,9 +54,9 @@ def test_find_manual_diaobject():
         for d in omit:
             del tmpkwargs[d]
         with pytest.raises( ValueError, match="finding a manual DiaObject requires all of name, ra, and dec" ):
-            objs = DiaObject.find_objects( provenance_tag="manual", **tmpkwargs )
+            objs = DiaObject.find_objects( collection="manual", **tmpkwargs )
 
-    objs = DiaObject.find_objects( provenance_tag="manual", **kwargs )
+    objs = DiaObject.find_objects( collection="manual", **kwargs )
     assert len( objs ) == 1
     obj = objs[0]
     assert obj.name == '42'
@@ -72,6 +72,7 @@ def _check_objects( obj1, obj2 ):
 
 
 def test_get_dbou2024_object( dbclient, loaded_ou2024_test_diaobjects ):
+    # Using the default collection of 'snpitdb' here
 
     # Get object with provenance tag, process, and name
     dobj = DiaObject.get_object( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
