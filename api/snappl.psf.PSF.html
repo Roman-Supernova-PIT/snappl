@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>PSF &#8212; roman_snpit_snappl 0.1.dev1+g7aea0cd05 documentation</title>
+    <title>PSF &#8212; roman_snpit_snappl 0.1.dev1+g6429d0875 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=b7ae1e21"></script>
+    <script src="../_static/documentation_options.js?v=7c2eccc2"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -274,12 +274,11 @@ some legacy conventions left over.  Some libraries (e.g. galsim)
 at least sometimes require you to specify array indexes (such as
 pixel positions) assuming 1-indexed arrays.  Be very careful and
 read lots of documentation!  If we’ve done it right, everything
-in snpit_utils and snappl uses standard python numpy 0-based
-array indexes, so you will hopefully not become confused.
-What’s more more, the astropy.wcs.WCS class also uses the
-convention of 0-based arrays.  (However, be careful, because
-astropy.wcs has an alternate interface that uses the other
-convention.)</p>
+in snappl uses standard python numpy 0-based array indexes, so
+you will hopefully not become confused.  What’s more more, the
+astropy.wcs.WCS class also uses the convention of 0-based
+arrays.  (However, be careful, because astropy.wcs has an
+alternate interface that uses the other convention.)</p>
 <p>Another place you will find 1-indexed arrays are in the WCSes
 defined in FITS headers, and in at least some FITS image display
 programs.  If you use ds9 (the standard FITS image display

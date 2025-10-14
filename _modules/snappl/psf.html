@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g7aea0cd05 documentation</title>
+    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g6429d0875 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=b7ae1e21"></script>
+    <script src="../../_static/documentation_options.js?v=7c2eccc2"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -106,8 +106,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">roman_imsim.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">roman_utils</span>
 
 <span class="c1"># roman snpit library imports</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">snpit_utils.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">snpit_utils.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNLogger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNLogger</span>
 
 
 <div class="viewcode-block" id="PSF">
@@ -311,12 +311,11 @@
 <span class="sd">        at least sometimes require you to specify array indexes (such as</span>
 <span class="sd">        pixel positions) assuming 1-indexed arrays.  Be very careful and</span>
 <span class="sd">        read lots of documentation!  If we&#39;ve done it right, everything</span>
-<span class="sd">        in snpit_utils and snappl uses standard python numpy 0-based</span>
-<span class="sd">        array indexes, so you will hopefully not become confused.</span>
-<span class="sd">        What&#39;s more more, the astropy.wcs.WCS class also uses the</span>
-<span class="sd">        convention of 0-based arrays.  (However, be careful, because</span>
-<span class="sd">        astropy.wcs has an alternate interface that uses the other</span>
-<span class="sd">        convention.)</span>
+<span class="sd">        in snappl uses standard python numpy 0-based array indexes, so</span>
+<span class="sd">        you will hopefully not become confused.  What&#39;s more more, the</span>
+<span class="sd">        astropy.wcs.WCS class also uses the convention of 0-based</span>
+<span class="sd">        arrays.  (However, be careful, because astropy.wcs has an</span>
+<span class="sd">        alternate interface that uses the other convention.)</span>
 
 <span class="sd">        Another place you will find 1-indexed arrays are in the WCSes</span>
 <span class="sd">        defined in FITS headers, and in at least some FITS image display</span>
