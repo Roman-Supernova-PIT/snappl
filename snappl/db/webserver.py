@@ -237,8 +237,9 @@ class GetDiaObject( BaseView ):
 
 class FindDiaObjects( BaseView ):
     def do_the_things( self, provid ):
+        q = "SELECT * FROM diaobject WHERE "
+        conditions = [ 'provenance_id=%(provid)s' ]
         subdict = { 'provid': provid }
-        conditions = []
         if flask.request.is_json:
             data = flask.request.json
 
@@ -268,10 +269,7 @@ class FindDiaObjects( BaseView ):
             if len(data) != 0:
                 return f"Error, unknown parameters: {data.keys()}", 500
 
-        q = "SELECT * FROM diaobject WHERE provenance_id=%(provid)s"
-        if len(conditions) > 0:
-            q += ' AND '
-            q += ' AND '.join( conditions )
+        q += ' AND '.join( conditions )
 
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( q, subdict )
