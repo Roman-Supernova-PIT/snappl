@@ -1,24 +1,3 @@
-ou24:
-  tds_base: /photometry_test_data/ou2024
-  config_file: /photometry_test_data/ou2024/tds.yaml
-
-  sn_truth_dir: /photometry_test_data/ou2024/snana_truth
-  # sn_truth_dir: /snana_pq_dir
-
-  images: /photometry_test_data/ou2024/images/simple_model
-
-  sims_sed_library: /photometry_test_data/ou2024/sims_sed_library
-  # Comment from Cole & Rob: This is a path to the SEDs that were used to generate the
-  # OU24 simulations.  Only a subset of the files are stored in
-  # photometry_test_data, so if you want to use it for real, you'll need
-  # to get the file yourself.  If you are interested in getting the SEDs yourself,
-  # go into the directory where you want it to live and run the command:
-  # curl https://s3df.slac.stanford.edu/groups/rubin/static/sim-data/sed_library/seds_170124.tar.gz  | tar xv
-  # Courtesy of M. Troxel ^^^
-
-photometry:
-    snappl:
-        A25ePSF_path: /snappl/snappl/tests/testdata/A25ePSF
-        temp_dir: /tmp
-
-        simdex_server: https://roman-desc-simdex.rknop.net
+preloads:
+  - /default_test_config.yaml
+  - /home/environment/test-docker-environment/test_config_for_db.yaml

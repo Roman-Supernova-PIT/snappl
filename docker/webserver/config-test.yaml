@@ -1,0 +1,27 @@
+# This is the config file used for the tests.
+# You should not use it for real.  Ideally, you
+# should have a config stored as a secret somewhere
+# which you mount (say to /secrets/conifg.yaml),
+# and then set the env var SNPIT_CONFIG to point
+# to that config.
+
+webserver:
+  flask_secret_key: o6950bi77gvbc2jie49lklotwll69ayv
+  sessionstore: /sessions
+  emailfrom: nobody@nowhere.org
+  smtpserver: mailhog
+  smtpport: 1025
+  smtpusessl: False
+  smtpusername: NULL
+  smtppassword: NULL
+  
+
+db:
+  postgres_host: postgres
+  postgres_port: 5432
+  postgres_database: roman_snpit
+  postgres_username: postgres
+  postgres_password: fragile
+  # These next two are for debugging purposes and should always be false in production
+  echoqueries: true
+  alwaysexplain: false

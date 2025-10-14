@@ -11,8 +11,6 @@ jobs:
   tests:
     name: run snappl tests in docker container
     runs-on: ubuntu-latest
-    env:
-      COMPOSE_FILE: snappl/tests/docker-compose.yaml
 
     steps:
       - name: Dump docker logs on failure
@@ -22,26 +20,15 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v5
         with:
-          path: main
           submodules: recursive
 
       - name: run ruff
         uses: astral-sh/ruff-action@v3
-          
-      - name: checkout photometry test data
-        uses: actions/checkout@v5
-        with:
-          repository: Roman-Supernova-PIT/photometry_test_data
-          path: photometry_test_data
 
-      - name: lfs pull photometry test data
+      - name: checkout photometry test data
         run: |
-          git lfs install --local
-          AUTH=$(git config --local http.${{ github.server_url }}/.extraheader)
-          git config --local --unset http.${{ github.server_url }}/.extraheader
-          git config --local http.${{ github.server_url }}/${{ github.repository }}.git/info/lfs/objects/batch.extraheader "$AUTH"
-          git lfs pull
-        working-directory: photometry_test_data
+          cd ..
+          git clone http://github.com/Roman-Supernova-PIT/photometry_test_data
 
       - name: log into github container registry
         uses: docker/login-action@v3
@@ -52,18 +39,39 @@ jobs:
 
       - name: cleanup
         run: |
-          # try to save HDD space on the runner by removing some unneeded stuff
+          # try to save HDD space on the runner by removing some unneeded stuff (~8GB)
           # ref: https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          # (For some perverse reason, this step seems to take 1.5-2 minutes on github runners!
+          # For that reason, this is commented out, for now.  Uncomment it if we run into trouble.)
+          df -h
+          # echo "------"
+          # sudo rm -rf /usr/share/dotnet
+          # sudo rm -rf /opt/ghc
+          # sudo rm -rf "/usr/local/share/boost"
+          # sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          # echo "------"
+          # df -h
 
-      - name: pull latest SNPIT cpu image
+      - name: pull environment archive
         run: |
-          docker pull rknop/roman-snpit-env:cpu-dev
+          cd ..
+          git clone https://github.com/Roman-Supernova-PIT/environment.git
+
+
+      - name: pull docker images
+        run: |
+          cd ../environment/test-docker-environment
+          docker compose pull mailhog postgres webserver shell
 
       - name: run test
         run: |
-          cd main
-          docker compose run runtests
+          cd ..
+          ls
+          echo "--------"
+          ls snappl
+          echo "--------"
+          cd environment/test-docker-environment
+          docker compose up -d webserver shell
+          docker compose exec shell bash -c 'cd /home/snappl && pip install -e .[test]'
+          docker compose exec shell bash -c 'cd /home/snappl/snappl/tests && pytest -v'
+          docker compose down -v
