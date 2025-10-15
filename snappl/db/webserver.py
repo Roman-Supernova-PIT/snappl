@@ -279,6 +279,73 @@ class FindDiaObjects( BaseView ):
 
 # ======================================================================
 
+class GetL2Image( BaseView ):
+    def do_the_things( self, imageid ):
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM l2image WHERE id=%(id)s", { 'id': imageid } )
+
+        if len( rows ) > 1:
+            return f"Database corruption: multiple l2image with id {imageid}", 500
+        elif len( rows ) == 0:
+            return f"L2image not found: {imageid}", 500
+        else:
+            return rows[0]
+
+
+# ======================================================================
+
+class FindL2Images( BaseView ):
+    def do_the_things( self, provid ):
+        q = "SELECT * FROM l2image WHERE "
+        conditions = [ 'provenance_id=%(provid)s' ]
+        subdict = { 'provid': provid }
+
+        if flask.request.is_json:
+            data = flask.request.json
+
+            if ( 'ra' in data ) or ( 'dec' in data ):
+                # 'ra' and 'dec' are supposed to be "includes this".
+                if not ( ( 'ra' in data ) and ( 'dec' in data ) ):
+                    return "Error, if you specify ra or dec, you must specify both"
+                conditions.append( "q3c_poly_query( %(ra), %(dec), "
+                                   "ARRAY[ ra_corner_00, dec_corner_00, ra_corner_01, dec_corner_01, "
+                                   "       ra_corner_11, dec_corner_11, ra_corner_10, dec_corner_10 ]" )
+                subdict.update( { 'ra': data['ra'], 'dec': data['dec'] } )
+                del data['ra']
+                del data['dec']
+
+            for kw in [ 'pointing', 'sca', 'filter', 'filepath' ]:
+                if kw in data:
+                    conditions.append( f"{kw}=%({kw})s" )
+                    subdict[kw] = data[kw] if data[kw] is not None else None
+                    del data[kw]
+
+            for kw in [ 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
+                        'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
+                        'width', 'height', 'mjd_start', 'exptime' ]:
+                if kw in data:
+                    conditions.append( f"{kw}=%({kw})s" )
+                    subdict[kw] = data[kw] if data[kw] is not None else None
+                    del data[kw]
+                for edge, op in zip( [ 'min', 'max' ], [ '>=', '<=' ] ):
+                    if f'{kw}_{edge}' in data and data[f'{kw}_{edge}'] is not None:
+                        conditions.append( f"{kw} {op} %({kw}_{edge})s" )
+                        subdict[f'{kw}_{edge}'] = data[f'{kw}_{edge}']
+                        del data[f'{kw}_{edge}']
+
+            if len(data) != 0:
+                return f"Error, unknown parameters: {data.keys()}", 500
+
+        q += ' AND '.join( conditions )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( q, subdict )
+
+        return rows
+
+
+# ======================================================================
+
 urls = {
     "/": MainPage,
     "/test/<param>": TestEndpoint,
@@ -292,4 +359,7 @@ urls = {
 
     "/getdiaobject/<diaobjectid>": GetDiaObject,
     "/finddiaobjects/<provid>": FindDiaObjects,
+
+    "/getl2image/<l2imageid>": GetL2Image,
+    "/findl2images/<provid>": FindL2Images,
 }

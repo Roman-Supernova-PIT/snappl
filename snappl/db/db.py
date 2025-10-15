@@ -718,11 +718,8 @@ class DBBase:
 
         q, subdict = cls._construct_pk_query_where( *args )
         q = f"SELECT * FROM {cls.__tablename__} {q}"
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
-            cols = [ desc[0] for desc in cursor.description ]
-            rows = cursor.fetchall()
+        with DBCon( dbcon ) as con:
+            rows, cols = con.execute( q, subdict )
 
         if len(rows) > 1:
             raise RuntimeError( f"Found multiple rows of {cls.__tablename__} with primary keys {args}; "
@@ -782,12 +779,9 @@ class DBBase:
             _and = "AND"
             comma = ","
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
+        with DBCon( dbcon ) as con:
             q = f"SELECT * FROM {cls.__tablename__} JOIN (VALUES {mess}) AS t({collist}) ON {onlist} "
-            cursor.execute( q, subdict )
-            cols = [ desc[0] for desc in cursor.description ]
-            rows = cursor.fetchall()
+            rows, cols = con.execute( q, subdict )
 
         objs = []
         for row in rows:
@@ -811,11 +805,8 @@ class DBBase:
             q += f"{_and} {k}=%({k})s "
             _and = "AND"
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, attrs )
-            cols = [ desc[0] for desc in cursor.description ]
-            rows = cursor.fetchall()
+        with DBCon( dbcon ) as con:
+            rows, cols = con.execute( q, attrs )
 
         objs = []
         for row in rows:
@@ -829,11 +820,8 @@ class DBBase:
         q, subdict = self._construct_pk_query_where( *self.pks )
         q = f"SELECT * FROM {self.__tablename__} {q}"
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
-            cols = [ desc[0] for desc in cursor.description ]
-            rows = cursor.fetchall()
+        with DBCon( dbcon ) as con:
+            rows, cols = con.execute( q, subdict )
 
         if len(rows) > 1:
             raise RuntimeError( f"Found more than one row in {self.__tablename__} with primary keys "
@@ -853,9 +841,8 @@ class DBBase:
         q = ( f"INSERT INTO {self.__tablename__}({','.join(subdict.keys())}) "
               f"VALUES ({','.join( [ f'%({c})s' for c in subdict.keys() ] )})" )
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
+        with DBCon( dbcon ) as con:
+            con.execute( q, subdict )
             if not nocommit:
                 con.commit()
                 if refresh:
@@ -864,9 +851,8 @@ class DBBase:
     def delete_from_db( self, dbcon=None, nocommit=False ):
         where, subdict = self._construct_pk_query_where( me=self )
         q = f"DELETE FROM {self.__tablename__} {where}"
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
+        with DBCon( dbcon ) as con:
+            con.execute( q, subdict )
             con.commit()
 
 
@@ -881,9 +867,8 @@ class DBBase:
         subdict.update( wheresubdict )
         q += where
 
-        with DB( dbcon) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
+        with DBCon( dbcon) as con:
+            con.execute( q, subdict )
             if not nocommit:
                 con.commit()
                 if refresh:
@@ -966,11 +951,10 @@ class DBBase:
         else:
             raise TypeError( f"data must be something other than a {cls.__name__}" )
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( "DROP TABLE IF EXISTS temp_bulk_upsert" )
-            cursor.execute( f"CREATE TEMP TABLE temp_bulk_upsert (LIKE {cls.__tablename__})" )
-            with cursor.copy( f"COPY temp_bulk_upsert({','.join(columns)}) FROM STDIN" ) as copier:
+        with DBCon( dbcon ) as con:
+            con.execute( "DROP TABLE IF EXISTS temp_bulk_upsert" )
+            con.execute( f"CREATE TEMP TABLE temp_bulk_upsert (LIKE {cls.__tablename__})" )
+            with con.cursor.copy( f"COPY temp_bulk_upsert({','.join(columns)}) FROM STDIN" ) as copier:
                 for v in values:
                     copier.write_row( v )
 
@@ -988,9 +972,9 @@ class DBBase:
             if nocommit:
                 return q
             else:
-                cursor.execute( q )
-                ninserted = cursor.rowcount
-                cursor.execute( "DROP TABLE temp_bulk_upsert" )
+                con.cursor.execute( q )
+                ninserted = con.cursor.rowcount
+                con.execute( "DROP TABLE temp_bulk_upsert" )
                 con.commit()
                 return ninserted
 

@@ -1,4 +1,4 @@
-__all__ = [ 'isSequence', 'parse_bool', 'env_as_bool' ]
+__all__ = [ 'isSequence', 'parse_bool', 'env_as_bool', 'SNPITJsonEncoder' ]
 
 import os
 import numbers
@@ -61,6 +61,15 @@ def parse_bool(text):
 def env_as_bool( varname ):
     """Parse an environment variable as a boolean."""
     return parse_bool( os.getenv(varname) )
+
+
+def asUUID( id ):
+    """Pass either a UUID or a string representation of one, get a UUID back."""
+    if isinstance( id, uuid.UUID ):
+        return id
+    if not isinstance( id, str ):
+        raise TypeError( f"asUUID requires a UUID or a str, not a {type(id)}" )
+    return uuid.UUID( id )
 
 
 class SNPITJsonEncoder( simplejson.JSONEncoder ):

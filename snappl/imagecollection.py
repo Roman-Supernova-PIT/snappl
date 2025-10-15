@@ -5,6 +5,8 @@ import pathlib
 from snappl.config import Config
 from snappl.http import retry_post
 from snappl.image import OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders
+from snappl.provenance import Provenance
+from snappl.dbclient import SNPITDBClient
 
 
 class ImageCollection:
@@ -21,7 +23,8 @@ class ImageCollection:
     """
 
     @classmethod
-    def get_collection( cls, collection, subset=None, **kwargs ):
+    def get_collection( cls, collection='snpitdb', subset=None, provenance_tag=None, process=None, provenance=None,
+                        **kwargs ):
         """Get an ImageCollection object.
 
         Parameters
@@ -30,6 +33,7 @@ class ImageCollection:
             Name of the collection.  Currently defined collections:
             * ou2024 - Open Universe 2024 FITS images
             * manual_fits - FITS images that aren't really part of a collection
+            * snpitdb - Images from Roman SNPIT internal DB.
 
           subset : str or None
             Name of the subset, if relevant for that collection.
@@ -38,9 +42,38 @@ class ImageCollection:
                  * "threefile" - follows the convention of snappl.image.FITSImageStdHeaders
                                  and std_imagenames=True passed to the constructor
 
+          provenance_tag : str
+            The Roman SNPIT internal database provenance tag for the
+            provenance of the images.  Either provenance_tag or
+            provenance is required when collection is 'snpitdb'.
+            Invalid if collection is not 'snpitdb'.
+
+          process : str
+            The process to go with provenance_tag; required when
+            provenance_tag is not None.
+
+          provenance : Provenance or UUID or str
+            The Roman SNPIT internal database Provenance or provenance
+            id for the images.  Either provenance_tag or provenance is
+            required when collection is 'snpitdb'.  Invalid if
+            collection is not 'snpitdb'.
+
           **kwargs : Some collections types require additional arguments.
 
         """
+        if collection == 'snpitdb':
+            if ( provenance is None ) and ( provenance_tag is None ):
+                raise ValueError( 'Collection snpitdb requires either provenance_tag or provenance' )
+            if ( provenance_tag is None ) != ( process is None ):
+                raise ValueError( 'Must specify either both or neither or provenance_tag and process' )
+            return ImageCollectionDB.get_collection( provenance_tag=provenance_tag, process=process,
+                                                     provenance=provenance, **kwargs )
+
+        # If we get here, we know collection isn't 'snpitdb'
+
+        if any( i is not None for i in [ provenance_tag, process, provenance ] ):
+            raise ValueError( "provenance_tag, process, and provenance are only valid for collection snpitdb" )
+
         if collection == 'ou2024':
             return ImageCollectionOU2024( **kwargs )
         elif collection == 'manual_fits':
@@ -88,7 +121,6 @@ class ImageCollection:
 
 
     def get_image_path( self, pointing, band, sca, base_path=None ):
-
         """Return the absolute path to the desired image, if that makes sense.
 
         This will only make sense for image collections where an image
@@ -307,3 +339,80 @@ class ImageCollectionManualFITS:
 
         else:
             return FITSImage( path=path )
+
+
+# ======================================================================
+# There are multiple different database image collections, based on
+#   different image formats and base paths.
+
+class ImageCollectionDB:
+    def __init__( self, provenance=None, base_path=None, base_path_config_value=None, _from_subclass=False ):
+        if not _from_subclass:
+            raise RuntimeError( "Don't instantiate ImageCollectionDB directly, make a subclass." )
+
+        if provenance is None:
+            raise ValueError( "provenance is required" )
+        self.provenance = provenance
+
+        if base_path is None:
+            if base_path_config_value is None:
+                raise ValueError( "At least one of base_path and base_path_config_value is required." )
+            base_path = Config.get().value( base_path_config_value )
+        self.base_path = pathlib.Path( base_path )
+
+
+    @classmethod
+    def get_collection( cls, provenance_tag=None, process=None, provenance=None, base_path=None, dbclient=None ):
+        classdict = { 'ou2024': ImageCollectionDBOU2024 }
+
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        if provenance is None:
+            provenance = Provenance.get_provs_for_tag( provenance_tag, process=process, dbclient=dbclient )
+        if not isinstance( provenance, Provenance ):
+            provenance = Provenance.get_by_id( provenance, dbclient=dbclient )
+
+        if 'image_class' not in provenance.params:
+            raise ValueError( f"Invalid image provenance for provenance {provenance.id}, "
+                              f"image_class is not in params" )
+        if provenance.params[ 'image_class' ] not in classdict:
+            raise ValueError( f"Unknown image_class {provenance.params['image_class']}" )
+
+        return classdict[provenance.params['image_class']]( provenance=provenance, base_path=base_path )
+
+
+    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, base_path=None ):
+        if sum( [ image_id is not None ],
+                [ path is not None ],
+                [ ( pointing is not None ) and ( band is not None ) and ( sca is not None ) ]
+               ) != 1:
+            raise ValueError( "Must specify exactly one of image_id, path, or (pointing, band, and sca)." )
+
+        raise NotImplementedError( "Not implemented yet." )
+
+
+    def get_image_path( self, pointing, band, sca, base_path=None, image_id=None ):
+        raise NotImplementedError( "Not implemented yet." )
+
+
+    def find_images( self, **kwargs ):
+        raise NotImplementedError( "Not implemented yet." )
+
+
+
+class ImageCollectionDBOU2024( ImageCollectionDB ):
+    def __init__( self, **kwargs ):
+        super().__init__( _from_subclass=True, base_path_config_value='system.ou24.images', **kwargs )
+
+
+    def find_images( self, dbclient=None, base_path=None, **kwargs ):
+        base_path = pathlib.Path( Config.get().value( 'system.ou24.images' ) if base_path is None else base_path )
+
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        rows = dbclient.send( f'findl2images/{self.provenance.id}', kwargs )
+
+        images = []
+        for row in rows:
+            path = base_path / row['filepath']
+            images.append( OpenUniverse2024FITSImage( path ) )
+
+        return images
