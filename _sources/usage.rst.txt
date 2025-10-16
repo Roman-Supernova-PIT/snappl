@@ -173,7 +173,7 @@ If, instead, you know (e.g. because the user passed this on the command line) th
 Parameters
 ==========
 
-The ``params`` field of a Provenance should include everything necessary for the specified version of your code to produce the same output on the same input.  It should _not_ include things like input filenames.  The idea is that the _same_ Provenance will apply to everything that is part of a given run.  Only when you are changing the configuration, or when you are getting input files from an earlier part of the pipeline, should the Provenance change.
+The ``params`` field of a Provenance is a dictionary that should include everything necessary for the specified version of your code to produce the same output on the same input.  It should *not* include things like input filenames.  The idea is that the *same* Provenance will apply to everything that is part of a given run.  Only when you are changing the configuration, or when you are getting input files from an earlier part of the pipeline, should the Provenance change.
 
 If you are using the :ref:`config` system, and you've put all of these parameters (but no system-specific, like base paths, and no input files) in the config ``yaml`` file, then you can get a suitable ``params`` with::
 
@@ -190,6 +190,8 @@ Upstreams
 The upstream provenances are the ones that created the input files you use.  For example, campari has three basic types of inputs: a *diaobject*, the supernova it's running on; a *diaobject_position*, an updated position of the object; and *images*, the images it's fitting its model to.  Thus, it would have three upstream provenances, one for each of these things.
 
 It can figure out these upstreams by just looking at the ``provenance_id`` field of the objects its using.  Again, for example, campari will have (somehow) obtained a ``snappl.diaobject.DiaObject`` object; call that ``diaobj``.  It can get the diaobject provenance by just looking at ``diaobj.provenance_id``.  (To actually get the full Provenance object from the id, run ``snappl.provenance.Provenance.get_by_id( provenance_id )``.)
+
+Upstreams is part of the provenance because even if you run your code with all the same parameters, if you're taking input files that were from a differently configured process earlier in the pipline, you expect different outputs.  Upstreams basically specify which sorts of input files are valid for this provenance.
 
 
 Creating a Provenance
@@ -215,4 +217,4 @@ Here, ``<tag>`` is the :ref:`provenance tag <provenance_tags>` that you want to 
 The Roman SNPIT Test Environment
 --------------------------------
 
-(This is currently a bit of a mess, and I haven't figured out how to get this to work on Perlmutter.  However, if you're on a desktop or laptop with an ``x86_64`` architecture, then you should be able to get this running on your machine using Docker.  Read all the comments at the top of `this file in the environment repo <https://github.com/Roman-Supernova-PIT/environment/blob/main/test-docker-environment/default_test_config.yaml>`_.)
+(This is currently a bit of a mess, and I haven't figured out how to get this to work on Perlmutter.  However, if you're on a desktop or laptop with an ``x86_64`` architecture, then you should be able to get this running on your machine using Docker.  Read all the comments at the top of `this file in the environment repo <https://github.com/Roman-Supernova-PIT/environment/blob/main/test-docker-environment/docker-compose.yaml>`_.)
