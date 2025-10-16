@@ -147,3 +147,33 @@ def test_write_lightcurve():
         # Clean up test file
         (pathlib.Path(__file__).parent / "testdata" /
          f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").unlink()
+
+    # The lightcurve should save all of the required columns to the front of the table,
+    # regardless of the order they were provided in.
+    data_dict = {
+        "mjd": [60000.0, 60001.0],
+        "unrequired_col": [3.0, 4.0],
+        "band": ["Y", "Y"],
+        "flux": [1000.0, 1100.0],
+        "another_unrequired_col": ["cupcake", "banana"],
+        "flux_err": [50.0, 55.0],
+        "zpt": [25.0, 25.0],
+        "NEA": [5.0, 5.0],
+        "yet_another_unrequired_col": [True, False],
+        "sky_background": [200.0, 210.0],
+    }
+    lc = lightcurve(data_dict, meta_dict)
+    n_required = len([f for f in data_dict.keys() if "unrequired" not in f])
+    try:
+        lc.write(pathlib.Path(__file__).parent / "testdata")
+        read_table = Table.read(pathlib.Path(__file__).parent / "testdata" /
+            f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet", format="parquet")
+
+        for col in data_dict.keys():
+            if "unrequired" not in col:
+                assert col in read_table.columns[:n_required]
+
+    finally:
+        # Clean up test file
+        (pathlib.Path(__file__).parent / "testdata" /
+         f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").unlink()
