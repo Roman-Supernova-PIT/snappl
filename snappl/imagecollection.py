@@ -419,9 +419,9 @@ class ImageCollectionDB:
                                   data=simplejson.dumps( data, cls=SNPITJsonEncoder ),
                                   headers={'Content-Type': 'application/json'} )
             if len(rows) == 0:
-                raise RuntimeError( "Image not found for provenance {self.provenance.id} and {data}" )
+                raise RuntimeError( f"Image not found for provenance {self.provenance.id} and {data}" )
             elif len(rows) > 1:
-                raise RuntimeError( "Multiple images found for provenance {self.provenance.id} and {data}" )
+                raise RuntimeError( f"Multiple images found for provenance {self.provenance.id} and {data}" )
 
             row = rows[0]
 

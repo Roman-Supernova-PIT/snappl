@@ -8,7 +8,6 @@ from rkwebutil import rkauth_flask
 from snappl.config import Config
 from snappl.db import db
 from snappl.db.baseview import BaseView
-# from snappl.logger import SNLogger
 
 
 # ======================================================================
