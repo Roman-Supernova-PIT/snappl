@@ -1,3 +1,5 @@
+__all__ = [ 'Provenance' ]
+
 import base64
 import hashlib
 import json

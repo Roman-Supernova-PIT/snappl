@@ -1,4 +1,4 @@
-__all__ = [ 'ImageCollection', 'ImageCollectionOU2024', 'ImageCollectionManualFITS' ]
+__all__ = [ 'ImageCollection', 'ImageCollectionOU2024', 'ImageCollectionManualFITS', 'ImageCollectionDB' ]
 
 import pathlib
 
@@ -331,19 +331,22 @@ class ImageCollectionManualFITS:
 
     One version of this (constructed with threefile=True) assumes that
     there are three files associated with an image whose path is given
-    as {path}:
+    as {path}::
+
        {path}_image.fits
        {path}_noise.fits
        {path}_flags.fits
 
     In addition, the threefile version assumes that the following header
-    keywords all exist in the header of the _image.fits file:
+    keywords all exist in the header of the _image.fits file::
+
       BAND
       EXPTIME
       MJD
       POINTING
       SCA
       ZPT
+
     (in addition to a WCS in the _image.fits header).
 
     """

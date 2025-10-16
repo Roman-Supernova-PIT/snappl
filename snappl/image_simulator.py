@@ -1,3 +1,6 @@
+__all__ = [ 'ImageSimulatorPointSource', 'ImageSimulatorStarCollection', 'ImageSimulatorTransient',
+            'ImageSimulatorStaticSource', 'ImageSimulatorImage', 'ImageSimulator' ]
+
 import re
 import argparse
 import functools

@@ -1,4 +1,4 @@
-__all__ = [ 'isSequence', 'parse_bool', 'env_as_bool', 'SNPITJsonEncoder' ]
+__all__ = [ 'isSequence', 'parse_bool', 'env_as_bool', 'asUUID', 'SNPITJsonEncoder' ]
 
 import pathlib
 
