@@ -16,12 +16,14 @@ Image
       ~Image.data_array_list
       ~Image.exptime
       ~Image.flags
+      ~Image.id
       ~Image.image_shape
       ~Image.mjd
       ~Image.name
       ~Image.noise
       ~Image.pointing
       ~Image.position_angle
+      ~Image.provenance_id
       ~Image.sca
       ~Image.sky_level
       ~Image.zeropoint
@@ -50,12 +52,14 @@ Image
    .. autoattribute:: data_array_list
    .. autoattribute:: exptime
    .. autoattribute:: flags
+   .. autoattribute:: id
    .. autoattribute:: image_shape
    .. autoattribute:: mjd
    .. autoattribute:: name
    .. autoattribute:: noise
    .. autoattribute:: pointing
    .. autoattribute:: position_angle
+   .. autoattribute:: provenance_id
    .. autoattribute:: sca
    .. autoattribute:: sky_level
    .. autoattribute:: zeropoint

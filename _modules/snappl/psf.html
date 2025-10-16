@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g9586b5ca3 documentation</title>
+    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+gde6e5cc0b documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=ae26a276"></script>
+    <script src="../../_static/documentation_options.js?v=68147e70"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -1324,7 +1324,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_warn_unknown_kwargs</span><span class="p">(</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="n">_parent_class</span> <span class="p">)</span>
 
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-        <span class="n">basepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;photometry.snappl.A25ePSF_path&#39;</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="n">basepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.paths.snappl.A25ePSF_path&#39;</span> <span class="p">)</span> <span class="p">)</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The array size is the size of one image (nx, ny). The grid size</span>
@@ -1402,7 +1402,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">sed</span> <span class="o">=</span> <span class="n">sed</span>
 
         <span class="k">if</span> <span class="n">config_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">config_file</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;ou24.config_file&#39;</span> <span class="p">)</span>
+            <span class="n">config_file</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.ou24.config_file&#39;</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config_file</span> <span class="o">=</span> <span class="n">config_file</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sca_size</span> <span class="o">=</span> <span class="mi">4088</span>
@@ -1767,7 +1767,7 @@
 <span class="c1">#             self.sed = sed</span>
 
 <span class="c1">#         if config_file is None:</span>
-<span class="c1">#             config_file = Config.get().value( &#39;ou24psf.config_file&#39; )</span>
+<span class="c1">#             config_file = Config.get().value( &#39;system.ou24.config_file&#39; )</span>
 <span class="c1">#         self.config_file = config_file</span>
 <span class="c1">#         self.pointing = pointing</span>
 <span class="c1">#         self.sca = sca</span>
