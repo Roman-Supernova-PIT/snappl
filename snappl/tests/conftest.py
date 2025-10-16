@@ -208,6 +208,11 @@ def make_provenance_and_tag( process, major, minor, params={}, tag=None, dbcon=N
         return prov
 
 
+@pytest.fixture( scope="session" )
+def test_object_provenance():
+    return make_provenance_and_tag( "test_diaobject", 0, 1, tag="test_diaobject_tag" )
+
+
 @pytest.fixture( scope="module" )
 def loaded_ou2024_test_diaobjects():
     prov = None

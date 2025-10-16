@@ -1,17 +1,22 @@
 __all__ = [ 'DiaObject', 'DiaObjectOU2024', 'DiaObjectManual' ]
 
 import inspect
+import simplejson
 
 from snappl.config import Config
 from snappl.http import retry_post
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
+from snappl.utils import SNPITJsonEncoder, asUUID
 
 
 class DiaObject:
     """Encapsulate a single supernova (or other transient).
 
     Standard properties:
+
+    id : UUID; the id of the object if it is in the SNPIT Internal database (or intended to be)
+    provenance_id : UUID; the provenance of the object if it is in the SNPIT Internal database (or intended to be)
 
     ra : ra in degrees (ICRS)
     dec : dec in degrees (ICRS)
@@ -45,13 +50,64 @@ class DiaObject:
 
     def __init__( self, id=None, provenance_id=None, ra=None, dec=None, name=None, iauname=None,
                   mjd_discovery=None, mjd_peak=None, mjd_start=None, mjd_end=None,
-                  properties={}, _called_from_find_objects=False ):
-        """Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects."""
-        if not _called_from_find_objects:
-            raise RuntimeError( "Don't call a DiaObject or subclass constructor.  "
-                                "Use DiaObject.find_objects or DiaObject.get_object." )
-        self.id = id
-        self.provenance_id = provenance_id
+                  properties={} ):
+        """Only call this constructor if you're making a brand new object.
+
+        If you want to get an existing object, call either DiaObject.get_object or
+        DiaObject.find_objects.
+
+        Properties
+        ----------
+          id : UUID or str
+            The id of the diaobject.  Required if you're going to save
+            this to the database later.
+
+          provenance_id : UUID or str
+            The provenance of the object. Required if you're going to save
+            this to the database later.
+
+          ra : float
+            Decimal degrees.
+
+          dec : float
+            Decimal degrees.
+
+          name : str
+            A name for the object.  These aren't strictly required to be
+            unique, but you should strive to make them unique.
+            Normally, saving them will raise an error if you end up with
+            more than one object in the same provenance with the same
+            name.  Ideally, this is something digestable for humans, but
+            if you're lazy, you can make this a string version of id and
+            then you can be sure it will be unique.
+
+          iauname : str, default None
+            The IAU / TNS name for the object.  If given, this must be
+            unique within a given provenance, though it's OK if it's
+            None.
+
+          mjd_discovery : float
+            MJD when the object was found.  Required.
+
+          mjd_peak : float, default None
+            MJD when the object is at peak.  Optional
+
+          mjd_start : float, default None
+            MJD when the transient starts.  This means that any images
+            from an earlier MJD are suitable for use as a template.  Optional.
+
+          mjd_end : float, default None
+            MJD when the tranient "ends".  Physically, this is
+            meaningless, but practically, it means that any images from
+            a later MJD are suitable for use as a template.  Optional.
+
+          properties : dict, default {}
+            Any optional properties you want to save with the object.
+
+
+        """
+        self.id = asUUID(id) if id is not None else None
+        self.provenance_id = asUUID(provenance_id) if provenance_id is not None else None
         self.ra = float( ra ) if ra is not None else None
         self.dec = float( dec ) if dec is not None else None
         self.name = str( name ) if name is not None else None
@@ -61,6 +117,42 @@ class DiaObject:
         self.mjd_start = float( mjd_start ) if mjd_start is not None else None
         self.mjd_end = float( mjd_end ) if mjd_end is not None else None
         self.properties = properties
+
+
+    def save_object( self, dbclient=None ):
+        """Save an object to the database.
+
+        Properties
+        ----------
+          dbclient : SNPITDBClient, default None
+            The connection to the database web server.  If None, a new
+            one will be made that logs you in using the information in
+            Config.  If you're going to be saving multiple objects, it's
+            more efficient to make one of these once and pass it to each
+            call to save_object than it is to let save_object make a new
+            one each time.
+
+        Returns
+        -------
+          dict
+
+          The row inserted into the database diaobject table of the database.
+
+        """
+        data = {}
+        for prop in [ 'id', 'provenance_id', 'ra', 'dec', 'name', 'iauname', 'mjd_discovery',
+                      'mjd_peak', 'mjd_start', 'mjd_end', 'properties' ]:
+            if getattr( self, prop ) is not None:
+                data[prop] = getattr( self, prop )
+
+        # Make sure the dict is encoded the way we want
+        if 'properties' in data:
+            data['properties'] = simplejson.dumps( data['properties'], cls=SNPITJsonEncoder, sort_keys=True )
+
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        senddata = simplejson.dumps( data, cls=SNPITJsonEncoder )
+        return dbclient.send( "savediaobject", data=senddata, headers={'Content-Type': 'application/json'} )
+
 
     @classmethod
     def _parse_tag_and_process( cls, collection='snpitdb', provenance_tag=None, process=None, provenance=None,
@@ -262,7 +354,7 @@ class DiaObject:
                                       f"{prov.id}, but that object is actually in provenance "
                                       f"{kwargs['provenance_id']}" )
 
-                return DiaObject( _called_from_find_objects=True, **kwargs )
+                return DiaObject( **kwargs )
 
         else:
             if ( name is None ) and ( iauname is None ):
@@ -280,14 +372,14 @@ class DiaObject:
                 raise RuntimeError( "Found no objects that match your criteria." )
 
             if ( name is not None ) and multiple_ok:
-                return [ DiaObject( _called_from_find_objects=True, **r ) for r in res ]
+                return [ DiaObject( **r ) for r in res ]
 
             elif len(res) > 1:
                 # Another error message that needs to be made more informative
                 raise RuntimeError( "More than one object matched your criteria." )
 
             else:
-                return DiaObject( _called_from_find_objects=True, **(res[0]) )
+                return DiaObject( **(res[0]) )
 
 
 
@@ -389,7 +481,7 @@ class DiaObject:
 
         dbclient = SNPITDBClient() if dbclient is None else dbclient
         res = dbclient.send( f"finddiaobjects/{prov.id}", kwargs )
-        return [ DiaObject( **r, _called_from_find_objects=True ) for r in res ]
+        return [ DiaObject( **r ) for r in res ]
 
 
     @classmethod
@@ -410,7 +502,7 @@ class DiaObjectOU2024( DiaObject ):
     """A transient from the OpenUniverse 2024 sims."""
 
     def __init__( self, *args, **kwargs ):
-        """Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects."""
+        """Don't call this constructor directly.  Use DiaObject.find_objects."""
         super().__init__( *args, **kwargs )
 
         # Non-standard fields
@@ -501,8 +593,7 @@ class DiaObjectOU2024( DiaObject ):
                                       mjd_peak=objinfo['peak_mjd'][i],
                                       mjd_start=objinfo['start_mjd'][i],
                                       mjd_end=objinfo['end_mjd'][i],
-                                      properties=props,
-                                      _called_from_find_objects=True )
+                                      properties=props )
             diaobjects.append( diaobj )
 
         return diaobjects
@@ -514,7 +605,6 @@ class DiaObjectManual( DiaObject ):
     """A manually-specified object that's not saved anywhere."""
 
     def __init__( self, *args, **kwargs ):
-        """Don't call a DiaObject or subclass constructor.  Use DiaObject.find_objects."""
         super().__init__( *args, **kwargs )
 
 
@@ -523,5 +613,4 @@ class DiaObjectManual( DiaObject ):
         if any( ( i not in kwargs ) or ( kwargs[i] is None ) for i in ('name', 'ra', 'dec') ):
             raise ValueError( "finding a manual DiaObject requires all of name, ra, and dec" )
 
-        return [ DiaObjectManual( _called_from_find_objects=True, ra=kwargs["ra"], dec=kwargs["dec"],
-                                  name=kwargs["name"] ) ]
+        return [ DiaObjectManual( ra=kwargs["ra"], dec=kwargs["dec"], name=kwargs["name"] ) ]

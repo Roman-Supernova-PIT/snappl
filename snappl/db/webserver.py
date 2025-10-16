@@ -1,4 +1,5 @@
 __all__ = [ 'setup_flask_app' ]
+import uuid
 import flask
 import flask_session
 
@@ -280,6 +281,60 @@ class FindDiaObjects( BaseView ):
 
 # ======================================================================
 
+class SaveDiaObject( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected diaobject data in json POST data, didn't get any.", 500
+
+        data = flask.request.json
+        needed_keys = { 'provenance_id', 'name', 'ra', 'dec', 'mjd_discovery' }
+        allowed_keys = { 'id', 'iauname', 'mjd_peak', 'mjd_start', 'mjd_end', 'properties' }.union( needed_keys )
+        passed_keys = set( data.keys() )
+        if not passed_keys.issubset( allowed_keys ):
+            return f"Unknown keys: {passed_keys - allowed_keys}", 500
+        if not needed_keys.issubset( passed_keys ):
+            return f"Missing required keys: {passed_keys - needed_keys}", 500
+        if any( data[i] is None for i in needed_keys ):
+            return f"None of the necessary keys can be None: {needed_keys}"
+
+        if 'id' not in data:
+            data['id'] = uuid.uuid4()
+
+        duplicate_ok = False
+        if 'dupliate_ok' in data:
+            duplicate_ok = data['duplicate_ok']
+            del data['duplicate_ok']
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
+            if len(rows) != 0:
+                return f"diaobject {data['id']} already exists!", 500
+            if not duplicate_ok:
+                rows = dbcon.execute( "SELECT * FROM diaobject WHERE name=%(name)s AND provenance_id=%(prov)s",
+                                      { 'name': data['name'], 'prov': data['provenance_id'] } )
+                if len(rows) != 0:
+                    return ( f"diaobject with name {data['name']} in provenance {data['provenance_id']} "
+                             f"already exists!", 500 )
+
+            # Although this looks potentially Bobby Tablesish, the fact that we made
+            #   sure that data only included allowed keys above makes this not subject
+            #   to SQL injection attacks.
+            varnames = ','.join( str(k) for k in data.keys() )
+            varvals = ','.join( f'%({k})s' for k in data.keys() )
+            q = f"INSERT INTO diaobject({varnames}) VALUES ({varvals})"
+            dbcon.execute( q, data )
+            rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
+            if len(rows) == 0:
+                return f"Error, saved diaobject {data['id']}, but it's not showing up in the database", 500
+            elif len(rows) > 1:
+                return f"Database corruption, more than one diaobject with id={data['id']}", 500
+            else:
+                dbcon.commit()
+                return rows[0]
+
+
+# ======================================================================
+
 class GetL2Image( BaseView ):
     def do_the_things( self, imageid ):
         with db.DBCon( dictcursor=True ) as dbcon:
@@ -370,6 +425,7 @@ urls = {
 
     "/getdiaobject/<diaobjectid>": GetDiaObject,
     "/finddiaobjects/<provid>": FindDiaObjects,
+    "/savediaobject": SaveDiaObject,
 
     "/getl2image/<imageid>": GetL2Image,
     "/findl2images/<provid>": FindL2Images,

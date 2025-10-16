@@ -1,6 +1,9 @@
 import pytest
+import uuid
+
 from snappl.diaobject import DiaObject, DiaObjectOU2024, DiaObjectManual
 from snappl.provenance import Provenance
+from snappl.db.db import DBCon
 
 
 def test_no_construct_directly():
@@ -125,3 +128,67 @@ def test_find_dbou2024_object( dbclient, loaded_ou2024_test_diaobjects ):
     assert len(dobjs) == 19
 
     # TODO : test start, end, discovery, peak
+
+
+def test_save_diaobject( test_object_provenance, dbclient ):
+    objids = [ uuid.uuid4() ]
+    try:
+        kwargs = { 'id': objids[0],
+                   'provenance_id': test_object_provenance.id,
+                   'name': "Fred",
+                   'ra': 128.,
+                   'dec': -13.,
+                   'mjd_discovery': 60000.,
+                   'properties': { 'answer': 42 }
+                  }
+        diaobj = DiaObject( **kwargs )
+        res = diaobj.save_object( dbclient=dbclient )
+        assert res['id'] == str( diaobj.id )
+        assert res['provenance_id'] == str( diaobj.provenance_id )
+        assert res['name'] == diaobj.name
+        assert res['ra'] == pytest.approx( diaobj.ra, abs=1e-6 )
+        assert res['dec'] == pytest.approx( diaobj.dec, abs=1e-6 )
+        assert res['mjd_discovery'] == pytest.approx( diaobj.mjd_discovery, abs=1e-5 )
+        assert res['properties'] == { "answer": 42 }
+        assert all( res[i] is None for i in [ 'iauname', 'mjd_peak', 'mjd_start', 'mjd_end' ] )
+
+        foundobj = DiaObject.get_object( provenance=test_object_provenance, diaobject_id=diaobj.id, dbclient=dbclient )
+        assert all( getattr(foundobj, prop) == getattr(diaobj, prop) for prop in kwargs.keys() )
+
+        foundobj = DiaObject.get_object( provenance=test_object_provenance, name=diaobj.name, dbclient=dbclient )
+        assert all( getattr(foundobj, prop) == getattr(diaobj, prop) for prop in kwargs.keys() )
+
+        # Make sure we can't save the same object twice
+        with pytest.raises( RuntimeError, match=( f"Failed to connect.*Got response 500.*diaobject "
+                                                  f"{diaobj.id} already exists!" ) ):
+            diaobj.name = 'George'
+            diaobj.save_object( dbclient=dbclient )
+
+        # Make sure we can't save the same name/provenance twice
+        with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500.*diaobject with name Fred" ):
+            objids.append( uuid.uuid4() )
+            diaobj.id = objids[-1]
+            diaobj.name = 'Fred'
+            diaobj.save_object( dbclient=dbclient )
+
+        # Make sure it yells at us if things are missing
+        for omit in [ 'provenance_id', 'name', 'ra', 'dec', 'mjd_discovery' ]:
+            objids.append( uuid.uuid4() )
+            tmp = kwargs.copy()
+            tmp['id'] = objids[-1]
+            tmp[omit] = None
+            diaobj = DiaObject( **tmp )
+            with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500: Missing required keys" ):
+                diaobj.save_object( dbclient=dbclient )
+
+            tmp = kwargs.copy()
+            objids.append( uuid.uuid4() )
+            tmp['id'] = objids[-1]
+            del tmp[omit]
+            with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500: Missing required keys" ):
+                diaobj.save_object( dbclient=dbclient )
+
+    finally:
+        with DBCon() as dbcon:
+            dbcon.execute( "DELETE FROM diaobject WHERE id=ANY(%(ids)s)", { 'ids': objids } )
+            dbcon.commit()

@@ -300,6 +300,8 @@ class DBCon:
         """
         self.execute_nofetch( q, subdict, silent=silent )
         if self.curcursorisdict:
+            if self.cursor.description is None:
+                return None
             return self.cursor.fetchall()
         else:
             if self.cursor.description is None:
