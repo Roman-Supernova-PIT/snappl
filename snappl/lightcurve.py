@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from pathlib import Path
 import uuid
 
@@ -13,7 +14,8 @@ class lightcurve:
 
     def __init__(self, data, meta):
 
-        assert isinstance(data, dict) or isinstance(data, Table), "LC Data must be a dict or an astropy Table"
+        assert isinstance(data, dict) or isinstance(data, Table) or isinstance(data, QTable) \
+             or isinstance(data, pd.DataFrame), "LC Data must be a dict, astropy Table, or pandas DataFrame"
         assert isinstance(meta, dict), "LC Metadata must be a dict"
 
         self.data = data.copy()
@@ -52,8 +54,9 @@ class lightcurve:
         for col, col_type in zip(required_meta_cols, required_meta_col_types):
             assert col in meta_cols[:len(required_meta_cols)+1], "Missing required metadata column" + \
             f" {col} in the first {len(required_meta_cols)} columns."
-            assert isinstance(self.meta[col], col_type), f"Metadata column {col} must be of type {col_type} but it's" + \
-                 f"actually {type(meta[col])}."
+            assert isinstance(self.meta[col], col_type), (
+                f"Metadata column {col} must be of type {col_type} but" + f" it's actually {type(meta[col])}."
+            )
             if col_type is uuid.UUID:
                 self.meta[col] = str(self.meta[col]) # UUIDs can't be saved in this form, they must be strings.
 

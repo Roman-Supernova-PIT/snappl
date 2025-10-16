@@ -1,7 +1,6 @@
 # Standard Library
 import pandas as pd
 import pathlib
-import pyarrow.parquet as pq
 import pytest
 import uuid
 
@@ -10,7 +9,6 @@ from astropy.table import Table
 
 # SNPIT
 from snappl.lightcurve import lightcurve
-from snpit_utils.logger import SNLogger
 
 
 def test_init_lightcurve():
@@ -36,18 +34,21 @@ def test_init_lightcurve():
         "sky_background": [200.0, 210.0],
     }
 
-    # You can pass data_dict as either a dict...
+    # You can pass data_dict as a dict...
     lightcurve(data_dict, meta_dict)
-    # ... or an astropy table.
 
+    # ... or an astropy table...
     data_table = Table(data_dict)
     lightcurve(data_table, meta_dict)
+
+    # ... or a pandas DataFrame.
+    data_df = pd.DataFrame(data_dict)
+    lightcurve(data_df, meta_dict)
 
     # If anything is missing it should fail.
     for col in meta_dict.keys():
         bad_meta = meta_dict.copy()
         bad_meta.pop(col)
-        SNLogger.debug(f"popping {col}")
         with pytest.raises(AssertionError) as e:
             lightcurve(data_dict, bad_meta)
         assert e
@@ -130,15 +131,19 @@ def test_write_lightcurve():
     }
 
     lc = lightcurve(data_dict, meta_dict)
-    lc.write(pathlib.Path(__file__).parent / "testdata")
-    read_df = pd.read_parquet(pathlib.Path(__file__).parent / "testdata" / f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet")
-    metadata = pq.read_metadata(pathlib.Path(__file__).parent / "testdata" /\
-         f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").metadata
-    SNLogger.debug(metadata)
-    for col in data_dict.keys():
-        assert all(read_df[col] == data_dict[col])
-    for col in meta_dict.keys():
-        if isinstance(meta_dict[col], uuid.UUID):
-            assert all(metadata[col] == str(meta_dict[col]))
-        else:
-            assert all(metadata[col] == meta_dict[col])
+    try:
+        lc.write(pathlib.Path(__file__).parent / "testdata")
+        read_table = Table.read(pathlib.Path(__file__).parent / "testdata" /
+        f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet", format="parquet")
+        metadata = read_table.meta
+        for col in data_dict.keys():
+            assert all(read_table[col] == data_dict[col])
+        for col in meta_dict.keys():
+            if isinstance(meta_dict[col], uuid.UUID):
+                assert metadata[col] == str(meta_dict[col])
+            else:
+                assert metadata[col] == meta_dict[col]
+    finally:
+        # Clean up test file
+        (pathlib.Path(__file__).parent / "testdata" /
+         f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").unlink()
