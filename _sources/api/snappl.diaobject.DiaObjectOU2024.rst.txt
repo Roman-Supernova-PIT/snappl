@@ -1,0 +1,7 @@
+DiaObjectOU2024
+===============
+
+.. currentmodule:: snappl.diaobject
+
+.. autoclass:: DiaObjectOU2024
+   :show-inheritance:

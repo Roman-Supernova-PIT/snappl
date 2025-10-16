@@ -1,0 +1,7 @@
+NoValue
+=======
+
+.. currentmodule:: snappl.config
+
+.. autoclass:: NoValue
+   :show-inheritance:

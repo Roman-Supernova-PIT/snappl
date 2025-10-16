@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Usage &#8212; roman_snpit_snappl 0.1.dev1+gde6e5cc0b documentation</title>
+    <title>Usage &#8212; roman_snpit_snappl 0.1.dev1+gc1ce411ec documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
-    <script src="_static/documentation_options.js?v=68147e70"></script>
+    <script src="_static/documentation_options.js?v=07c74686"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -97,11 +97,207 @@
           <div class="body" role="main">
             
   <section id="usage">
-<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h1>
-<p>To use snappl in a project:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">snappl</span>
+<h1><a class="toc-backref" href="#id6" role="doc-backlink">Usage</a><a class="headerlink" href="#usage" title="Link to this heading">¶</a></h1>
+<nav class="contents" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#usage" id="id6">Usage</a></p>
+<ul>
+<li><p><a class="reference internal" href="#overview" id="id7">Overview</a></p></li>
+<li><p><a class="reference internal" href="#connecting-to-the-database" id="id8">Connecting to the Database</a></p></li>
+<li><p><a class="reference internal" href="#config" id="id9">Config</a></p>
+<ul>
+<li><p><a class="reference internal" href="#the-default-confg" id="id10">The Default Confg</a></p></li>
+<li><p><a class="reference internal" href="#using-config" id="id11">Using Config</a></p>
+<ul>
+<li><p><a class="reference internal" href="#overriding-parameters-on-the-command-line" id="id12">Overriding Parameters on the Command Line</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#provenance" id="id13">Provenance</a></p>
+<ul>
+<li><p><a class="reference internal" href="#provenance-tags" id="id14">Provenance Tags</a></p></li>
+<li><p><a class="reference internal" href="#getting-provenances-from-the-database" id="id15">Getting Provenances from the Database</a></p></li>
+<li><p><a class="reference internal" href="#parameters" id="id16">Parameters</a></p></li>
+<li><p><a class="reference internal" href="#upstreams" id="id17">Upstreams</a></p></li>
+<li><p><a class="reference internal" href="#creating-a-provenance" id="id18">Creating a Provenance</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#the-roman-snpit-test-environment" id="id19">The Roman SNPIT Test Environment</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="overview">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Overview</a><a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">snappl</span></code> has a set of utilities for the Roman SNPIT, including all the classes and functions necessary for communicating with the internal snpit database.</p>
+<dl class="simple">
+<dt>Things you need to understand:</dt><dd><ul class="simple">
+<li><p><a class="reference internal" href="#connecting-to-the-database"><span class="std std-ref">Connecting to the Database</span></a></p></li>
+<li><p><a class="reference internal" href="#config"><span class="std std-ref">Config</span></a></p></li>
+<li><p><a class="reference internal" href="#provenance"><span class="std std-ref">Provenance</span></a></p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="connecting-to-the-database">
+<span id="id1"></span><h2><a class="toc-backref" href="#id8" role="doc-backlink">Connecting to the Database</a><a class="headerlink" href="#connecting-to-the-database" title="Link to this heading">¶</a></h2>
+<p>To connect to the database, you need three things.  First, you have to know the url of the web API front-end to the database.  You must also have a username and a password for that web API.  (NOTE: the config system is likely to change in the future, so exactly how this works may change.)  If you’re using <a class="reference internal" href="#test-env"><span class="std std-ref">The Roman SNPIT Test Environment</span></a>, then the test fixture <code class="docutils literal notranslate"><span class="pre">dbclient</span></code> configures a user with username <code class="docutils literal notranslate"><span class="pre">test</span></code> and password <code class="docutils literal notranslate"><span class="pre">test_password</span></code>, and in that environment the url of the web API is <code class="docutils literal notranslate"><span class="pre">https://webserver:8080/</span></code>.</p>
+<p>You configure all of these things by setting the <code class="docutils literal notranslate"><span class="pre">system.db.url</span></code>, <code class="docutils literal notranslate"><span class="pre">system.db.username</span></code>, and either <code class="docutils literal notranslate"><span class="pre">system.db.password</span></code> or <code class="docutils literal notranslate"><span class="pre">system.db.password_file</span></code> in the configuration yaml files.  (See <a class="reference internal" href="#config"><span class="std std-ref">Config</span></a> below.)  For example, see the default <a class="reference external" href="https://github.com/Roman-Supernova-PIT/environment/blob/main/snpit_system_config.yaml">snpit_system_config.yaml</a> in the Roman SNPIT environment.  <em>Do not save passwords to any git archive, and do not leave them sitting about in insecure places.</em>  Of course, having to type it all the time is a pain.  A reasonable compromise is to have a <code class="docutils literal notranslate"><span class="pre">secrets</span></code> directory under your home directory <strong>that is not world-readable</strong> (<code class="docutils literal notranslate"><span class="pre">chown</span> <span class="pre">700</span> <span class="pre">secrets</span></code>).  Then you can create files in there.  Put your password in a file, and set the location of that file in the <code class="docutils literal notranslate"><span class="pre">system.db.password_file</span></code> config.  (Make <code class="docutils literal notranslate"><span class="pre">system.db.password</span></code> to be <code class="docutils literal notranslate"><span class="pre">null</span></code> so the password file will be used.)  If you’re using a docker container, of course you’ll need to bind-mount your secrets directory.</p>
+<p>Once you’ve configured these things, you should be able to connect to the database.  You can get a connection object with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">snappl.dbclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITDBClient</span>
+
+<span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span>
 </pre></div>
 </div>
+<p>Thereafter, you can pass this <code class="docutils literal notranslate"><span class="pre">dbclient</span></code> as an optional argument to any <code class="docutils literal notranslate"><span class="pre">snappl</span></code> function that accesses the database.  (Lots of the examples below do not explicitly include this argument, but you could add it to them.)  Most of the functions will create their own <code class="docutils literal notranslate"><span class="pre">dbclient</span></code> using the config info as necessary.  However, you are logged in when you first create the object, so it’s inefficient if every time you call a function it has to log you in (or, at least, verify that you’re logged in).  If you make a <code class="docutils literal notranslate"><span class="pre">dbclient</span></code> and then are careful to pass as a keyword argument to any function that accepts it, you avoid this inefficiency.</p>
+</section>
+<section id="config">
+<span id="id2"></span><h2><a class="toc-backref" href="#id9" role="doc-backlink">Config</a><a class="headerlink" href="#config" title="Link to this heading">¶</a></h2>
+<p><code class="xref py py-obj docutils literal notranslate"><span class="pre">snappl</span></code> includes a config system whereby configuration files can be stored in yaml files.  It has the ability to include other yaml files, and to override any of the config values on the command line, if properly used.</p>
+<section id="the-default-confg">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink">The Default Confg</a><a class="headerlink" href="#the-default-confg" title="Link to this heading">¶</a></h3>
+<p>You can find an example/default config for the Roman SNPIT in two files in the <code class="xref py py-obj docutils literal notranslate"><span class="pre">environment</span></code> github repo:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://github.com/Roman-Supernova-PIT/environment/blob/main/default_snpit_config.yaml">default_snpit_config.yaml</a></p></li>
+<li><p><a class="reference external" href="https://github.com/Roman-Supernova-PIT/environment/blob/main/snpit_system_config.yaml">snpit_system_config.yaml</a></p></li>
+</ul>
+</div></blockquote>
+<p>Notice that the first one includes the second one.  In the standard Roman SNPIT docker image, these two files are present in the root directory (<code class="docutils literal notranslate"><span class="pre">/</span></code>).</p>
+<p>Ideally, all config for every SNPIT application will be in this default config file, so we can all use the same config and be sure we know what we’re doing.  Of course, that’s far too cumbersome for development, so during development you will want to make your own config file with just the things you need in it.</p>
+<p>By convention, everything underneath the <code class="docutils literal notranslate"><span class="pre">system</span></code> top level key are the things that you might have to change when moving from one cluster to another cluster, but that don’t change the behavior of the code.  This includes paths for where to find things, configurations as to where the database is, login credentials, and the like.  Everything that is _not_ under <code class="docutils literal notranslate"><span class="pre">system</span></code> should be things that define the behavior of your code.  These are the things that are the same every you run on different inputs.  It should _not_ include things like the specific images or diaobjects you’re currently working on.  Ideally, everything that’s _not_ in system, if it stays the same, will give the same outputs on the same inputs when run anywhere.</p>
+</section>
+<section id="using-config">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink">Using Config</a><a class="headerlink" href="#using-config" title="Link to this heading">¶</a></h3>
+<p>To use config, you first have to set the environment variable <code class="docutils literal notranslate"><span class="pre">SNIPIT_CONFIG</span></code> to the location of the top-level config file.  If you’re using the default config and working in the roman snpit docker image, you can do this with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">SNPIT_CONFIG</span><span class="o">=/</span><span class="n">default_snpit_config</span><span class="o">.</span><span class="n">yaml</span>
+</pre></div>
+</div>
+<p>Then, in your code, to get access to the config, you can just run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">snappl.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+
+<span class="o">...</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">tmpdir</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.paths.temp_dir` )</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Config.get()</span></code> gets you a config object.  Then, just call that object’s <code class="docutils literal notranslate"><span class="pre">value</span></code> method to get the actual config values.  Separate different levels of dictionaries in the config with periods, as in the example.  (Look at <code class="docutils literal notranslate"><span class="pre">default_snpit_config.yaml</span></code> to see how the config file corresponds to the value in the example above.)</p>
+<p>There are more complicated uses of Config (including reading different, custom config files, modifying the config at runtime, understanding how the config files and all the possible modes of including other files are composed).  Read the docstring on <code class="docutils literal notranslate"><span class="pre">snappl.config.Config</span></code> for more information.</p>
+<section id="overriding-parameters-on-the-command-line">
+<h4><a class="toc-backref" href="#id12" role="doc-backlink">Overriding Parameters on the Command Line</a><a class="headerlink" href="#overriding-parameters-on-the-command-line" title="Link to this heading">¶</a></h4>
+<p>At runtime, if you set things up properly, you can override some of the parameters from the config file with command-line arguments.  To accomplish this, you must be using python’s <code class="docutils literal notranslate"><span class="pre">argparse</span></code> package.  When you’re ready to parse your arguments, write the following code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">configparser</span> <span class="o">=</span> <span class="n">argarse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span> <span class="n">add_help</span><span class="o">=</span><span class="kc">False</span> <span class="p">)</span>
+<span class="n">configparser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span> <span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;--config-file&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">help</span><span class="o">=</span><span class="p">(</span> <span class="s2">&quot;Location of the .yaml config file; defaults to the value of the &quot;</span>
+                                  <span class="s2">&quot;SNPIT_CONFIG environment varaible.&quot;</span> <span class="p">)</span> <span class="p">)</span>
+<span class="n">args</span><span class="p">,</span> <span class="n">leftovers</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">()</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="n">setdefault</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+<span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;No default config defined yet; run Config.init(configfile)&#39;</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span> <span class="s2">&quot;Error, no configuration file defined.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                          <span class="s2">&quot;Either run &lt;your application name&gt; with -c &lt;configfile&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                          <span class="s2">&quot;or set the SNPIT_CONFIG environment variable.</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+<span class="c1"># Put in the config_file argument, even though it will never be found, so it shows up in help</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span> <span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;--config-file&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Location of the .yaml config file&quot;</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>After that, put all of the <code class="docutils literal notranslate"><span class="pre">parser.add_argument</span></code> lines that you need for the command-line arguments to your code.  Then, at the bottom, after you’re done with all of your <code class="docutils literal notranslate"><span class="pre">parser.add_argument</span></code> calls, put in the code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cfg</span><span class="o">.</span><span class="n">augment_argparse</span><span class="p">(</span> <span class="n">parser</span> <span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span> <span class="n">leftovers</span> <span class="p">)</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span> <span class="n">args</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>At this point in your code, you can get access to the command line arguments you specified with the <code class="docutils literal notranslate"><span class="pre">args</span></code> variable as usual.  However, the running config (that you get with <code class="docutils literal notranslate"><span class="pre">Config.get()</span></code>) will _also_ have been updated with any changes made on the command line.</p>
+<p>If you’ve set your code up like this, run it with <code class="docutils literal notranslate"><span class="pre">--help</span></code>.  You will see the help on the arguments you defined, but you will also see optional arguments for everything that is in the config file.</p>
+<p>TODO : make it so you can only include some of the top-level keys from the config file in what gets overridden on the command line, to avoid things getting far too cluttered with irrelevant options.</p>
+</section>
+</section>
+</section>
+<section id="provenance">
+<span id="id4"></span><h2><a class="toc-backref" href="#id13" role="doc-backlink">Provenance</a><a class="headerlink" href="#provenance" title="Link to this heading">¶</a></h2>
+<p>Everything stored in the internal Roman SNPIT database has a <em>Provenance</em> associated with it.  The purpose of Provenance is twofold:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>It allows us to store multiple versions of the same thing in the database.  (E.g., suppose you wanted to build a lightcurve for an object using two different configurations of your photometry software.  If the database just stored “the lightcurve for this object”, it wouldn’t be possible to store both.  However, in this case, the two lightcurves would have different provenances, so both can be stored.)</p></li>
+<li><p>It keeps track of the code and the configuration used to create the thing stored in the database.  Ideally, this includes all of the parameters (see below) for the code, in addition to the code and code version, as well as (optionally) information about the environment in which the code should be run, such that we could reproduce the output files by running the same code with the same configuration again.</p></li>
+</ul>
+</div></blockquote>
+<p>A provenance is defined by:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">process</span></code> : this is usually the name of the code that produced the thing saved to the database.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">major</span></code> and <code class="docutils literal notranslate"><span class="pre">minor</span></code> version of the process; Roman SNPIT code should use <a class="reference external" href="https://semver.org">semantic versioning</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params</span></code>, The parameters of the process (see below)</p></li>
+<li><p>Optionally: the <code class="docutils literal notranslate"><span class="pre">environment</span></code>, and <code class="docutils literal notranslate"><span class="pre">env_major</span></code> and <code class="docutils literal notranslate"><span class="pre">env_minor</span></code>, the major and minor versions of the environment.  (By default, these three are all None.)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">upstreams</span></code>, the immediate upstream provenances (see below).</p></li>
+</ul>
+</div></blockquote>
+<p>An id is generated from the provenance based on a hash of all the information in the provenance, available in the <code class="docutils literal notranslate"><span class="pre">id</span></code> property of a Provenance object.  This id is a <code class="docutils literal notranslate"><span class="pre">UUID</span></code> (sort of), and will be something ugly like <code class="docutils literal notranslate"><span class="pre">f76f39a2-edcf-4e31-ba6b-e3d4335cc972</span></code>.  Crucially, every time you create a provenance with all the same information, you will always get exactly the same id.</p>
+<section id="provenance-tags">
+<span id="id5"></span><h3><a class="toc-backref" href="#id14" role="doc-backlink">Provenance Tags</a><a class="headerlink" href="#provenance-tags" title="Link to this heading">¶</a></h3>
+<p>Provenances hold all the necessary information, and as such are cumbersome.  Provenance IDs are 128-bit numbers, and are not very human readable.  For this reason, we have <em>provenance tags</em>, which are human readable, and also allow us to collect together the provenances of a bunch of different processes into a coherent set of data products.</p>
+<p>A provenance tag is defined by a human-readable string <code class="docutils literal notranslate"><span class="pre">tag</span></code>, and by the <code class="docutils literal notranslate"><span class="pre">process</span></code> (which is the same as the <code class="docutils literal notranslate"><span class="pre">process</span></code> of a Provenance.)  For a given (<code class="docutils literal notranslate"><span class="pre">tag</span></code>, <code class="docutils literal notranslate"><span class="pre">process</span></code>) pair, there can only be one Provenance.  That means that you can uniquely define a Provenance by its tag and its process.</p>
+<p>We should be careful not to create tags willy-nilly.  Ideally, we will have a small number of provenance tags in the database that correspond to sets of runs through the entire pipeline.</p>
+</section>
+<section id="getting-provenances-from-the-database">
+<h3><a class="toc-backref" href="#id15" role="doc-backlink">Getting Provenances from the Database</a><a class="headerlink" href="#getting-provenances-from-the-database" title="Link to this heading">¶</a></h3>
+<p>If, somehow, you got your hands on a <code class="docutils literal notranslate"><span class="pre">provenance_id</span></code> (the ugly 128-bit number), and you want to get the full <code class="docutils literal notranslate"><span class="pre">Provenance</span></code> object for it, you can accomplish that with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">snappl.provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provenance</span>
+
+<span class="n">prov</span> <span class="o">=</span> <span class="n">Provenance</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span> <span class="n">provenance_id</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>You will find provenance ids in the <code class="docutils literal notranslate"><span class="pre">provenance_id</span></code> field of things you pulled out of the database.  For example, if you have a <code class="docutils literal notranslate"><span class="pre">DiaObject</span></code> object (call it <code class="docutils literal notranslate"><span class="pre">obj</span></code>) that you got with <code class="docutils literal notranslate"><span class="pre">DiaObject.get_object</span></code> or <code class="docutils literal notranslate"><span class="pre">DiaObject.find_objects</span></code>, then you can find the id of the provenance of that DiaObject in <code class="docutils literal notranslate"><span class="pre">obj.provenance_id</span></code>.</p>
+<p>If, instead, you know (e.g. because the user passed this on the command line) that you want to work on the objects that we have chosen to tag with the provenance tag <code class="docutils literal notranslate"><span class="pre">realtime</span></code>, and the process <code class="docutils literal notranslate"><span class="pre">rapid_alerts</span></code> (for instance, these may be objects we learned about from the RAPID alert stream), then you could get the provenance with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">prov</span> <span class="o">=</span> <span class="n">Provenance</span><span class="o">.</span><span class="n">get_provs_for_tag</span><span class="p">(</span> <span class="s1">&#39;realtime&#39;</span><span class="p">,</span> <span class="s1">&#39;rapid_alerts&#39;</span> <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="parameters">
+<span id="provenance-parameters"></span><h3><a class="toc-backref" href="#id16" role="doc-backlink">Parameters</a><a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">params</span></code> field of a Provenance should include everything necessary for the specified version of your code to produce the same output on the same input.  It should _not_ include things like input filenames.  The idea is that the _same_ Provenance will apply to everything that is part of a given run.  Only when you are changing the configuration, or when you are getting input files from an earlier part of the pipeline, should the Provenance change.</p>
+<p>If you are using the <a class="reference internal" href="#config"><span class="std std-ref">Config</span></a> system, and you’ve put all of these parameters (but no system-specific, like base paths, and no input files) in the config <code class="docutils literal notranslate"><span class="pre">yaml</span></code> file, then you can get a suitable <code class="docutils literal notranslate"><span class="pre">params</span></code> with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">params</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">dump_to_dict_for_params</span><span class="p">(</span> <span class="n">keepkeys</span><span class="o">=</span><span class="p">[</span> <span class="s1">&#39;photometry.phrosty&#39;</span> <span class="p">],</span> <span class="n">omitkeys</span><span class="o">=</span><span class="kc">None</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>The list in <code class="docutils literal notranslate"><span class="pre">keepkeys</span></code> are the keys (including the full substructure below that key) from the config that you want to include in the dictionary.  This allows you to select out the parts of the config that are relevant to your code.  <code class="docutils literal notranslate"><span class="pre">system</span></code> and anything starting with <code class="docutils literal notranslate"><span class="pre">system.</span></code> should never be in <code class="docutils literal notranslate"><span class="pre">keepkeys</span></code>.</p>
+</section>
+<section id="upstreams">
+<span id="provenance-upstreams"></span><h3><a class="toc-backref" href="#id17" role="doc-backlink">Upstreams</a><a class="headerlink" href="#upstreams" title="Link to this heading">¶</a></h3>
+<p>The upstream provenances are the ones that created the input files you use.  For example, campari has three basic types of inputs: a <em>diaobject</em>, the supernova it’s running on; a <em>diaobject_position</em>, an updated position of the object; and <em>images</em>, the images it’s fitting its model to.  Thus, it would have three upstream provenances, one for each of these things.</p>
+<p>It can figure out these upstreams by just looking at the <code class="docutils literal notranslate"><span class="pre">provenance_id</span></code> field of the objects its using.  Again, for example, campari will have (somehow) obtained a <code class="docutils literal notranslate"><span class="pre">snappl.diaobject.DiaObject</span></code> object; call that <code class="docutils literal notranslate"><span class="pre">diaobj</span></code>.  It can get the diaobject provenance by just looking at <code class="docutils literal notranslate"><span class="pre">diaobj.provenance_id</span></code>.  (To actually get the full Provenance object from the id, run <code class="docutils literal notranslate"><span class="pre">snappl.provenance.Provenance.get_by_id(</span> <span class="pre">provenance_id</span> <span class="pre">)</span></code>.)</p>
+</section>
+<section id="creating-a-provenance">
+<h3><a class="toc-backref" href="#id18" role="doc-backlink">Creating a Provenance</a><a class="headerlink" href="#creating-a-provenance" title="Link to this heading">¶</a></h3>
+<p>Just create a provenance with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">snappl.provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provenance</span>
+
+<span class="n">prov</span> <span class="o">=</span> <span class="n">Provenance</span><span class="p">(</span> <span class="n">process</span><span class="p">,</span> <span class="n">major</span><span class="p">,</span> <span class="n">minor</span><span class="p">,</span> <span class="n">params</span><span class="o">=&lt;</span><span class="n">params</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">upstreams</span><span class="o">=&lt;</span><span class="n">upstreams</span><span class="o">&gt;</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>In this call, <code class="docutils literal notranslate"><span class="pre">process</span></code> is a string, <code class="docutils literal notranslate"><span class="pre">major</span></code> and <code class="docutils literal notranslate"><span class="pre">minor</span></code> are integers, <code class="docutils literal notranslate"><span class="pre">params</span></code> is a dictionary (see <a class="reference internal" href="#provenance-parameters"><span class="std std-ref">Parameters</span></a>), and <code class="docutils literal notranslate"><span class="pre">upstreams</span></code> is a list of <code class="docutils literal notranslate"><span class="pre">Provenance</span></code> objects (see <a class="reference internal" href="#provenance-upstreams"><span class="std std-ref">Upstreams</span></a>).</p>
+<p>If this is a totally new Provenance— you’ve never made it before— then save it to the database with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">prov</span><span class="o">.</span><span class="n">save_to_db</span><span class="p">(</span> <span class="n">tag</span><span class="o">=&lt;</span><span class="n">tag</span><span class="o">&gt;</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, <code class="docutils literal notranslate"><span class="pre">&lt;tag&gt;</span></code> is the <a class="reference internal" href="#provenance-tags"><span class="std std-ref">provenance tag</span></a> that you want to tag this provenance with.  If the provenance already exists in the database, or if another provenance from the same process is already tagged with this tag, you will get an error.  If the provenance you’re trying to save already exists, that’s fine; it won’t resave it, it will just notice that it’s there.  So, this is safe to call even if you aren’t sure if you’ve saved it before or not.  If, for some reason, you really want this to be a new provenance, add <code class="docutils literal notranslate"><span class="pre">exists=False</span></code> to the call.  In that case, if the provenance already exists, an exception will be raised.</p>
+</section>
+</section>
+<section id="the-roman-snpit-test-environment">
+<span id="test-env"></span><h2><a class="toc-backref" href="#id19" role="doc-backlink">The Roman SNPIT Test Environment</a><a class="headerlink" href="#the-roman-snpit-test-environment" title="Link to this heading">¶</a></h2>
+<p>(This is currently a bit of a mess, and I haven’t figured out how to get this to work on Perlmutter.  However, if you’re on a desktop or laptop with an <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> architecture, then you should be able to get this running on your machine using Docker.  Read all the comments at the top of <a class="reference external" href="https://github.com/Roman-Supernova-PIT/environment/blob/main/test-docker-environment/default_test_config.yaml">this file in the environment repo</a>.)</p>
+</section>
 </section>
 
 

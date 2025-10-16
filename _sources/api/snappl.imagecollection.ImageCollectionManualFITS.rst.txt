@@ -1,0 +1,21 @@
+ImageCollectionManualFITS
+=========================
+
+.. currentmodule:: snappl.imagecollection
+
+.. autoclass:: ImageCollectionManualFITS
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ImageCollectionManualFITS.find_images
+      ~ImageCollectionManualFITS.get_image
+      ~ImageCollectionManualFITS.get_image_path
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: find_images
+   .. automethod:: get_image
+   .. automethod:: get_image_path

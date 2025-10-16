@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>snappl.logger &#8212; roman_snpit_snappl 0.1.dev1+gc1ce411ec documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../_static/documentation_options.js?v=07c74686"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for snappl.logger</h1><div class="highlight"><pre>
+<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;SNLogger&#39;</span> <span class="p">]</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="c1"># _default_log_level = logging.INFO</span>
+<span class="n">_default_log_level</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span>
+
+<span class="c1"># NOTE : tests/test_logger.py assumes this default date format.</span>
+<span class="n">_default_datefmt</span> <span class="o">=</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span>
+
+<span class="c1"># Normally you don&#39;t want to show milliseconds, because it&#39;s additional gratuitous information</span>
+<span class="c1">#  that makes log output lines longer.  But, if you&#39;re debugging timing stuff, you might want</span>
+<span class="c1">#  temporarily to set this to True.</span>
+<span class="c1"># NOTE: tests/test_logger.py assumes that _show_millisec is False</span>
+<span class="c1"># _show_millisec = True</span>
+<span class="n">_show_millisec</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="SNLogger">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SNLogger</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Holds a unified logging instance that can be used throughout SNPIT code.</span>
+
+<span class="sd">    Normal use: just call one of</span>
+
+<span class="sd">       SNLogger.exception( message )</span>
+<span class="sd">       SNLogger.critical( message )</span>
+<span class="sd">       SNLogger.error( message )</span>
+<span class="sd">       SNLogger.warning( message )</span>
+<span class="sd">       SNLogger.info( message )</span>
+<span class="sd">       SNLogger.debug( message )</span>
+
+<span class="sd">    and the message will be printed, with a header, to standard error.</span>
+
+<span class="sd">    If you&#39;re using the logger in a case where you have many processes</span>
+<span class="sd">    going via python&#39;s mutiprocessing module, at the beginning of a</span>
+<span class="sd">    subprocess you might want to call</span>
+
+<span class="sd">       SNLogger.multiprocessing_replace()</span>
+
+<span class="sd">    That will add something to the header of each logging line that</span>
+<span class="sd">    includes a process number, making it easier to track down which log</span>
+<span class="sd">    messages came from the same process.  That process number is parsed</span>
+<span class="sd">    from the process&#39; name, if it has one and there&#39;s a number in it;</span>
+<span class="sd">    otherwise, it&#39;s the PID of the process.  (Often with something like</span>
+<span class="sd">    a multiprocessing pool, processes are named something like</span>
+<span class="sd">    ForkPoolWorker-1, where the 1 increments.)</span>
+
+<span class="sd">    If you want access to the underlying logging.Logger object, call</span>
+<span class="sd">    SNLogger.get().  The underlying object is instantiated the first</span>
+<span class="sd">    time it&#39;s used.  If you want to manually instantiate it, call</span>
+<span class="sd">    instance(), with arguments defined in __init__.</span>
+
+<span class="sd">    The single instance is held inside a SNLogger singleton.  (Sort</span>
+<span class="sd">    of. The actual singleton changes sometimes.)  In principle, you</span>
+<span class="sd">    could also make other SNLogger objects, but that&#39;s not the standard</span>
+<span class="sd">    way to use it.  (In principle, this could be a memory leak, as</span>
+<span class="sd">    python logging will remember all of the previously existing loggers.</span>
+<span class="sd">    As long as SNLogger.replace() is not called frequently, this should</span>
+<span class="sd">    not be a big deal.)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_instance</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_ordinal</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="SNLogger.instance">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.instance">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instance</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the singleton instance of SNLogger.</span>
+
+<span class="sd">        The first time this is called, it will create the object.</span>
+<span class="sd">        Normally, you never need to call this class method explicitly,</span>
+<span class="sd">        as all the various other class methods call it.  If you want any</span>
+<span class="sd">        of the defaults to be different from the defaults set in</span>
+<span class="sd">        __init__ below, you will need to call this class method *before*</span>
+<span class="sd">        the first time you use SNLogger for anything else.  (However,</span>
+<span class="sd">        you can also call SNLogger.replace() to change the options</span>
+<span class="sd">        used.)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.get">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.get">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span> <span class="bp">cls</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the logging.Logger object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">_logger</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.replace">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.replace">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">replace</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">midformat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_millisec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace the logging.Logger object with a new one.</span>
+
+<span class="sd">        Subsequent calls to SNLogger.get(), .info(), etc. will now</span>
+<span class="sd">        return the new one.  Will inherit the various arguments from the</span>
+<span class="sd">        current logger if they aren&#39;t specified here.</span>
+
+<span class="sd">        See __init__ for parameters.</span>
+
+<span class="sd">        Returns the logging.Logger object you&#39;d get from get().</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;midformat&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">_midformat</span> <span class="k">if</span> <span class="n">midformat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">midformat</span><span class="p">,</span>
+                <span class="s1">&#39;datefmt&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">_datefmt</span> <span class="k">if</span> <span class="n">datefmt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">datefmt</span><span class="p">,</span>
+                <span class="s1">&#39;show_millisec&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">_show_millisec</span> <span class="k">if</span> <span class="n">show_millisec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">show_millisec</span><span class="p">,</span>
+                <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">level</span> <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">level</span><span class="p">,</span>
+                <span class="s1">&#39;handler&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">_handler</span> <span class="k">if</span> <span class="n">handler</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">handler</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;midformat&#39;</span><span class="p">:</span> <span class="n">midformat</span><span class="p">,</span>
+                <span class="s1">&#39;datefmt&#39;</span><span class="p">:</span> <span class="n">_default_datefmt</span> <span class="k">if</span> <span class="n">datefmt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">datefmt</span><span class="p">,</span>
+                <span class="s1">&#39;show_millisec&#39;</span><span class="p">:</span> <span class="n">_show_millisec</span> <span class="k">if</span> <span class="n">show_millisec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">show_millisec</span><span class="p">,</span>
+                <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="n">_default_log_level</span> <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">level</span><span class="p">,</span>
+                <span class="s1">&#39;handler&#39;</span><span class="p">:</span> <span class="n">handler</span>
+            <span class="p">}</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.multiprocessing_replace">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.multiprocessing_replace">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">multiprocessing_replace</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shorthand for replace with midformat parsed from the current multiprocessing process.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="p">(</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="o">.</span><span class="n">_using_default_handler</span> <span class="p">)</span> <span class="ow">and</span>
+             <span class="p">(</span> <span class="s2">&quot;handler&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="p">)</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;If you use multiprocessing_replace and you aren&#39;t using the &quot;</span>
+                                <span class="s2">&quot;default handler, you need to pass a handler created in the subprocess.&quot;</span> <span class="p">)</span>
+
+        <span class="n">me</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">current_process</span><span class="p">()</span>
+        <span class="c1"># Usually processes are named things like ForkPoolWorker-{number}, or something</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="s1">&#39;([0-9]+)&#39;</span><span class="p">,</span> <span class="n">me</span><span class="o">.</span><span class="n">name</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="si">:</span><span class="s1">3d</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">me</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">midformat</span><span class="o">=</span><span class="n">num</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.set_level">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.set_level">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_level</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">_default_log_level</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the log level of the logging.Logger object.&quot;&quot;&quot;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span> <span class="n">level</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.setLevel">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.setLevel">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setLevel</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">_default_log_level</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the log level of the logging.Logger object.&quot;&quot;&quot;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span> <span class="n">level</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.getEffectiveLevel">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.getEffectiveLevel">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">getEffectiveLevel</span><span class="p">(</span> <span class="bp">cls</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">getEffectiveLevel</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.debug">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.debug">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">debug</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.info">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.info">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">info</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.warning">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.warning">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">warning</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.error">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.error">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">error</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">error</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.critical">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.critical">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">critical</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SNLogger.exception">
+<a class="viewcode-back" href="../../api/snappl.logger.SNLogger.html#snappl.logger.SNLogger.exception">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exception</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">midformat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="n">_default_datefmt</span><span class="p">,</span>
+                  <span class="n">show_millisec</span><span class="o">=</span><span class="n">_show_millisec</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">_default_log_level</span><span class="p">,</span>
+                  <span class="n">handler</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">propagate</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a SNLogger object, and the logging.Logger object it holds.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        midformat : string, default None</span>
+<span class="sd">            The standard formatter emits log messages like &quot;[yyyy-mm-dd</span>
+<span class="sd">            HH:MM:SS - INFO] Message&quot;.  If given, this adds something between the</span>
+<span class="sd">            date and the log level (&quot;[yyyy-mm-dd HH:MM:SS - {midformat}</span>
+<span class="sd">            - INFO]...&quot;).  Useful, for instance, in multiprocessing to</span>
+<span class="sd">            keep track of which process the message came from.</span>
+
+<span class="sd">        datefmt : string, default &#39;%Y-%m-%d %H:%M:%S&#39;</span>
+<span class="sd">            The date format to use, using standard logging.Formatter</span>
+<span class="sd">            datefmt syntax.</span>
+
+<span class="sd">        show_millisec: bool, default False</span>
+<span class="sd">            Add millseconds after a . following the date formatted by datefmt.</span>
+
+<span class="sd">        level : logging level constant, default logging.WARNING</span>
+<span class="sd">            This can be changed later with set_level().</span>
+
+<span class="sd">        handler : a logging Handler or None</span>
+<span class="sd">            Normally, SCLogger will send all log messages to sys.stderr.</span>
+<span class="sd">            If you want it to go somewhere else, create an approprite</span>
+<span class="sd">            logging.Handler subclass and pass it here.</span>
+
+<span class="sd">        propagate : book, default False</span>
+<span class="sd">            cf: python logging.Logger.propagate</span>
+
+<span class="sd">            We default to False to avoid replication of logging messages</span>
+<span class="sd">            if, somehow, there&#39;s another logger above the one we create</span>
+<span class="sd">            here.  (TODO: understand how python logging ancestors work.</span>
+<span class="sd">            I&#39;ve never expicitly set a parent logger, and yet somehow in</span>
+<span class="sd">            code loggers often seem to have ancestors.)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_midformat</span> <span class="o">=</span> <span class="n">midformat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_datefmt</span> <span class="o">=</span> <span class="n">datefmt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_show_millisec</span> <span class="o">=</span> <span class="n">show_millisec</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_using_default_handler</span> <span class="o">=</span> <span class="n">handler</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span> <span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_using_default_handler</span> <span class="k">else</span> <span class="n">handler</span>
+
+        <span class="n">SNLogger</span><span class="o">.</span><span class="n">_ordinal</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;SeeChange_</span><span class="si">{</span><span class="n">SNLogger</span><span class="o">.</span><span class="n">_ordinal</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="n">propagate</span>
+
+        <span class="n">fmtstr</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">%(asctime)s</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_show_millisec</span><span class="p">:</span>
+            <span class="n">fmtstr</span> <span class="o">+=</span> <span class="s2">&quot;.</span><span class="si">%(msecs)03d</span><span class="s2">&quot;</span>
+        <span class="n">fmtstr</span> <span class="o">+=</span> <span class="s2">&quot; - &quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_midformat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fmtstr</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_midformat</span><span class="si">}</span><span class="s2"> - &quot;</span>
+        <span class="n">fmtstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%(levelname)s</span><span class="s2">] - </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+        <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span> <span class="n">fmtstr</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_datefmt</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span> <span class="n">formatter</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span> <span class="n">level</span> <span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

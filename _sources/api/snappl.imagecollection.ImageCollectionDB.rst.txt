@@ -1,0 +1,33 @@
+ImageCollectionDB
+=================
+
+.. currentmodule:: snappl.imagecollection
+
+.. autoclass:: ImageCollectionDB
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~ImageCollectionDB.base_path_dict
+      ~ImageCollectionDB.image_class_dict
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ImageCollectionDB.find_images
+      ~ImageCollectionDB.get_image
+      ~ImageCollectionDB.get_image_path
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: base_path_dict
+   .. autoattribute:: image_class_dict
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: find_images
+   .. automethod:: get_image
+   .. automethod:: get_image_path

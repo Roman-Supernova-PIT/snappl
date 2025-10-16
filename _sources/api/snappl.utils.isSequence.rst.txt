@@ -1,0 +1,6 @@
+isSequence
+==========
+
+.. currentmodule:: snappl.utils
+
+.. autofunction:: isSequence

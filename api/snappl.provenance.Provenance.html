@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Provenance &#8212; roman_snpit_snappl 0.1.dev1+gc1ce411ec documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <script src="../_static/documentation_options.js?v=07c74686"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="retry_post" href="snappl.http.retry_post.html" />
+    <link rel="prev" title="SNPITDBClient" href="snappl.dbclient.SNPITDBClient.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changes.html">Change Log</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">snappl API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">snappl API</a><ul>
+      <li>Previous: <a href="snappl.dbclient.SNPITDBClient.html" title="previous chapter">SNPITDBClient</a></li>
+      <li>Next: <a href="snappl.http.retry_post.html" title="next chapter">retry_post</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.dbclient.SNPITDBClient.html" title="Previous document">SNPITDBClient</a>
+        </li>
+        <li>
+          <a href="snappl.http.retry_post.html" title="Next document">retry_post</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="provenance">
+<h1>Provenance<a class="headerlink" href="#provenance" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="snappl.provenance.Provenance">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.provenance.</span></span><span class="sig-name descname"><span class="pre">Provenance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">process</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">major</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">environment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_major</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_minor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omitkeys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['system']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepkeys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upstreams</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/provenance.html#Provenance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.provenance.Provenance" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Instantiate a Provenance</p>
+<p>Once instantiated, will have a property id that holds the UUID
+for this provenance.  This UUID is defined from a md5 hash of
+all the arguments, so will be the same every time you pass the
+same arguments.  (It’s convenient that md5sums and UUIDs are
+both 128-bit numbers.)</p>
+<section id="parmaeters">
+<h2>Parmaeters<a class="headerlink" href="#parmaeters" title="Link to this heading">¶</a></h2>
+<blockquote>
+<div><dl>
+<dt>process<span class="classifier">str</span></dt><dd><p>The name of the process, e.g. “phrosty”, “campari”, “import_rapid_alert”, etc.</p>
+</dd>
+<dt>major<span class="classifier">int</span></dt><dd><p>Semantic major version of the code described by process.</p>
+</dd>
+<dt>minor<span class="classifier">int</span></dt><dd><p>Semantic minor version of the code described by process.</p>
+</dd>
+<dt>params<span class="classifier">Config or dict, default {}</span></dt><dd><p>Parameters that uniquely define process. This should include
+all parameters that would be the same for all runs on one
+set of data.  So, for instance, for difference imaging
+transient detection software, you would <em>not</em> include the
+name of the science image or the name of the transient.
+However, you would include things like configuration
+parameters to SFFT, detection thresholds, and the name and
+parameters of however you decided to figure out which
+template image to use.</p>
+<p>You can also pass a snappl.config.Config object, in which
+case the parameters will be extracted from that.  This
+assumes that the “system” top level key of that Config has
+all, but only, the system-specific stuff.</p>
+</dd>
+<dt>environment<span class="classifier">int, default None</span></dt><dd><p>Which SNPIT environment did the process use?  TODO: this
+still need to be defined.</p>
+</dd>
+<dt>env_major<span class="classifier">int, default None</span></dt><dd><p>Semantic major version of environment.</p>
+</dd>
+<dt>env_minor<span class="classifier">int, default None</span></dt><dd><p>Semantic minor version of environment.</p>
+</dd>
+<dt>upstreams<span class="classifier">list of Provenance</span></dt><dd><p>Upstream provenances to this provenance.  Only include immediate upstreams;
+no need for upstreams of upstreams, as those will be tracked by the immedaite
+upstreams.  Can also send a single Provenance.</p>
+</dd>
+<dt>omitkeys<span class="classifier">list of str, default [‘system’]</span></dt><dd><p>Ignored unless params is a Config object.  In this case,
+these are the keys from the Config to omit and not include
+in the parameters dictionary.  Only one of omitkeys or
+keepkeys can be non-None.</p>
+</dd>
+<dt>keepkeys<span class="classifier">list of str, default None</span></dt><dd><p>Ignored unless params is a Config object.  In this case,
+only include the specified keys from the Config.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.provenance.Provenance.get" title="snappl.provenance.Provenance.get"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code></a>(process, major, minor[, params, ...])</p></td>
+<td><p>Get a Provenance based on properties.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.provenance.Provenance.get_by_id" title="snappl.provenance.Provenance.get_by_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_by_id</span></code></a>(provid[, dbclient])</p></td>
+<td><p>Return a Provenance pulled from the database.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.provenance.Provenance.get_provs_for_tag" title="snappl.provenance.Provenance.get_provs_for_tag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_provs_for_tag</span></code></a>(tag[, process, dbclient])</p></td>
+<td><p>Get the Provenances for a given provenance tag.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.provenance.Provenance.parse_provenance" title="snappl.provenance.Provenance.parse_provenance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_provenance</span></code></a>(provdict)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.provenance.Provenance.save_to_db" title="snappl.provenance.Provenance.save_to_db"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_to_db</span></code></a>([tag, replace_tag, exists, dbclient])</p></td>
+<td><p>Save this provenance to the database.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.provenance.Provenance.spec_dict" title="snappl.provenance.Provenance.spec_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spec_dict</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.provenance.Provenance.update_id" title="snappl.provenance.Provenance.update_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_id</span></code></a>()</p></td>
+<td><p>Update self.id based on stored properties.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.provenance.Provenance.get">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">process</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">major</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">environment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_major</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_minor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upstreams</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exists</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savetodb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/provenance.html#Provenance.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.provenance.Provenance.get" title="Link to this definition">¶</a></dt>
+<dd><p>Get a Provenance based on properties.</p>
+<p>Arguments are the same as are passed to the Provenance constructor, plus:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>process</strong> (<em>varied</em>) – These are the same as what’s passed to the Provenance constructor</p></li>
+<li><p><strong>major</strong> (<em>varied</em>) – These are the same as what’s passed to the Provenance constructor</p></li>
+<li><p><strong>minor</strong> (<em>varied</em>) – These are the same as what’s passed to the Provenance constructor</p></li>
+<li><p><strong>params</strong> (<em>varied</em>) – These are the same as what’s passed to the Provenance constructor</p></li>
+<li><p><strong>environment</strong> (<em>varied</em>) – These are the same as what’s passed to the Provenance constructor</p></li>
+<li><p><strong>env_major</strong> (<em>varied</em>) – These are the same as what’s passed to the Provenance constructor</p></li>
+<li><p><strong>env_minor</strong> (<em>varied</em>) – These are the same as what’s passed to the Provenance constructor</p></li>
+<li><p><strong>exists</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default None</em>) – Normally, you get back the provenance you ask for.  (This
+is, depending on savetodb, just the same as instantiating a
+Provenance object.)  However, if exists is True, then it
+will raise an exception if the provenance isn’t already
+saved to the database.  If exists is False, then it will
+raise an exception if the provenance <em>is</em> already saved to
+the database.  (Setting exists=False mostly only makes sense
+when setting savetodb to True.)</p></li>
+<li><p><strong>savetodb</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – By default, you get the Provenance you ask for, but
+thedatabse is not changed.  Set this to True to save the
+provenance to the database.  If savetodb is True and exists
+is True, then nothing is saved, because either the
+provenance already exists, or an exception was raised.  If
+savetodb is True and exists is None, then the provenance
+will be saved to the database if it doesn’t already exist.
+If savetodb is True and exists is False, an exception will
+be raised if the provenance is already in the database,
+otherwise the new provenance will be saved.</p></li>
+<li><p><strong>dbclient</strong> (<a class="reference internal" href="snappl.dbclient.SNPITDBClient.html#snappl.dbclient.SNPITDBClient" title="snappl.dbclient.SNPITDBClient"><em>snappl.dbclient.SNPITDBClient</em></a>) – This is needed to talk to the Roman SNPIT database web
+server.  If not given, will construct one based on config.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.provenance.Provenance.get_by_id">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_by_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">provid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/provenance.html#Provenance.get_by_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.provenance.Provenance.get_by_id" title="Link to this definition">¶</a></dt>
+<dd><p>Return a Provenance pulled from the database.</p>
+<p>Raises an exception if it does not exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>provid</strong> (<em>UUID</em>) – The ID to fetch</p></li>
+<li><p><strong>dbclient</strong> (<a class="reference internal" href="snappl.dbclient.SNPITDBClient.html#snappl.dbclient.SNPITDBClient" title="snappl.dbclient.SNPITDBClient"><em>snappl.dbclient.SNPITDBClient</em></a>) – This is needed to talk to the Roman SNPIT database web
+server.  If not given, will construct one based on config.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.provenance.Provenance.get_provs_for_tag">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_provs_for_tag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/provenance.html#Provenance.get_provs_for_tag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.provenance.Provenance.get_provs_for_tag" title="Link to this definition">¶</a></dt>
+<dd><p>Get the Provenances for a given provenance tag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tag</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The provenance tag to search</p></li>
+<li><p><strong>process</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The process to get provenances for.  If None, will get all
+provenances associated with the tag.</p></li>
+<li><p><strong>dbclient</strong> (<a class="reference internal" href="snappl.dbclient.SNPITDBClient.html#snappl.dbclient.SNPITDBClient" title="snappl.dbclient.SNPITDBClient"><em>snappl.dbclient.SNPITDBClient</em></a>) – This is needed to talk to the Roman SNPIT database web
+server.  If not given, will construct one based on config.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>Provenance or list of Provenance</em></p></li>
+<li><p><em>If process is not None, you get back a Provenance (or an</em></p></li>
+<li><p><em>exception is raised if the provenance wasn’t found).  If</em></p></li>
+<li><p><em>process is None, you get back a list of Provenance.</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.provenance.Provenance.parse_provenance">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse_provenance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">provdict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/provenance.html#Provenance.parse_provenance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.provenance.Provenance.parse_provenance" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.provenance.Provenance.save_to_db">
+<span class="sig-name descname"><span class="pre">save_to_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replace_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exists</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/provenance.html#Provenance.save_to_db"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.provenance.Provenance.save_to_db" title="Link to this definition">¶</a></dt>
+<dd><p>Save this provenance to the database.</p>
+<p>Will call self.update_id() as a side effect, just to make sure
+the right ID is saved to the database.</p>
+<p>If you save a provenance with upstreams, those upstreams must
+have previously been saved themselves.  (So, you can’t create
+a whole provenance tree and have the whole thing saved in
+one call; it doesn’t recurse.)</p>
+<section id="id1">
+<h3>Parmaeters<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<blockquote>
+<div><dl class="simple">
+<dt>tag<span class="classifier">str, default None</span></dt><dd><p>Add this provenance to this provenance tag for this process.</p>
+</dd>
+<dt>replace_tag<span class="classifier">bool, default False</span></dt><dd><p>Ignored if tag is None.  If tag is set, but a provenance
+already exists for this process and tag, then normally
+that’s an error.  If replace_tag is True, delete the old
+provenance associated with the tag and set the new
+provenance.</p>
+</dd>
+<dt>exists<span class="classifier">bool, default None</span></dt><dd><p>If None, and the provenance already exists in the database,
+do nothing.  If False, and the provenance already exists in
+the database, raise an exception.  If True, and the
+provenance doesn’t already exist in the database, raise an
+exception.  It doesn’t make a lot of sense, usually, to call
+this method with exists=True.</p>
+</dd>
+<dt>dbclient: snappl.dbclient.SNPITDBClient</dt><dd><p>This is needed to talk to the Roman SNPIT database web
+server.  If not given, will construct one based on config.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.provenance.Provenance.spec_dict">
+<span class="sig-name descname"><span class="pre">spec_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/provenance.html#Provenance.spec_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.provenance.Provenance.spec_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.provenance.Provenance.update_id">
+<span class="sig-name descname"><span class="pre">update_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/provenance.html#Provenance.update_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.provenance.Provenance.update_id" title="Link to this definition">¶</a></dt>
+<dd><p>Update self.id based on stored properties.</p>
+<p>If you change any of the properties of the object that define
+the Provenance, you must call this to make the id property
+correct.  Probably this is a bad idea; you should view
+Provenance objects as immutable and not change them after you
+make them.</p>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.dbclient.SNPITDBClient.html" title="Previous document">SNPITDBClient</a>
+        </li>
+        <li>
+          <a href="snappl.http.retry_post.html" title="Next document">retry_post</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/snappl.provenance.Provenance.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

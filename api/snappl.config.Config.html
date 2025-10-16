@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Config &#8212; roman_snpit_snappl 0.1.dev1+gc1ce411ec documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <script src="../_static/documentation_options.js?v=07c74686"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="NoValue" href="snappl.config.NoValue.html" />
+    <link rel="prev" title="snappl API" href="../api.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changes.html">Change Log</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">snappl API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">snappl API</a><ul>
+      <li>Previous: <a href="../api.html" title="previous chapter">snappl API</a></li>
+      <li>Next: <a href="snappl.config.NoValue.html" title="next chapter">NoValue</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="../api.html" title="Previous document">snappl API</a>
+        </li>
+        <li>
+          <a href="snappl.config.NoValue.html" title="Next document">NoValue</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="config">
+<h1>Config<a class="headerlink" href="#config" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="snappl.config.Config">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.config.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files_read</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ok_to_call</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Interface for yaml config file.</p>
+<blockquote>
+<div><p>Read a yaml file that might include other yaml files, and provide an
+interface. The top level of the yaml must be a dict. Only supports
+dicts, lists, and scalars.</p>
+<p>USAGE</p>
+<ol class="arabic">
+<li><p>Instantiate a config object with</p>
+<blockquote>
+<div><p>confobj = Config.get()</p>
+</div></blockquote>
+<p>or</p>
+<blockquote>
+<div><p>confobj = Config.get(filename)</p>
+</div></blockquote>
+<p>in the former case, it will get the default file (see below).
+IMPORTANT : Do NOT instantiate a config item with “config=Config()”.</p>
+<p>The default file: normally, the default file is specified in the
+environment variable SNPIT_CONFIG.  The first time you call
+Config.get() without any arguments, it will set the default
+config to be what it read from the file pointed to by
+$SNPIT_CONFIG, and return that config.  You can subvert this by
+calling Config.get(filename,setdefault=True).  In that case, it
+will read the file in filename, and set the config there to be
+the default config that you’ll thereafter get when calling
+Config.get() without any arguments.</p>
+</li>
+<li><p>(Optional.)  You can set things up so that (almost) anything in
+the config can be overridden on the command line.  You must be
+using argparse for this to work.  First, instantiate your
+argparse.ArgumentParser object and add your own arguments.  Next,
+call the augment_argparse() method of your config object.  Run
+the parse_args() method of your ArgumentParser, and then pass the
+return value to the parse_args() method of your config object.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">snappl.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span> <span class="s1">&#39;test.py&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Do things&#39;</span> <span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span> <span class="s2">&quot;-m&quot;</span><span class="p">,</span> <span class="s2">&quot;--my-argument&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;My argument; there may be more&quot;</span> <span class="p">)</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">augment_argparse</span><span class="p">(</span> <span class="n">parser</span> <span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span> <span class="n">args</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>Config.augment_argparse will add all of the “leaf node” config
+options as config arguments, using the fieldspec (see (3) below),
+replacing “.” with “-”.  Exception: if there is a list, it will
+not work down into the list, but will replace the whole list with
+as single multi-valued argument.  For example, if your config is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">scalar</span><span class="p">:</span> <span class="n">val</span>
+
+<span class="nb">dict</span><span class="p">:</span>
+  <span class="n">key1</span><span class="p">:</span> <span class="n">val</span>
+  <span class="n">key2</span><span class="p">:</span>
+    <span class="n">subkey1</span><span class="p">:</span> <span class="n">val</span>
+    <span class="n">subkey2</span><span class="p">:</span> <span class="n">val</span>
+  <span class="nb">list</span><span class="p">:</span>
+    <span class="o">-</span> <span class="n">val</span>
+    <span class="o">-</span> <span class="n">val2</span>
+</pre></div>
+</div>
+<p>Then you when you call Config.augment_argparse, you will have new arguments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">scalar</span>
+<span class="o">--</span><span class="nb">dict</span><span class="o">-</span><span class="n">key1</span>
+<span class="o">--</span><span class="nb">dict</span><span class="o">-</span><span class="n">key2</span><span class="o">-</span><span class="n">subkey1</span>
+<span class="o">--</span><span class="nb">dict</span><span class="o">-</span><span class="n">key2</span><span class="o">-</span><span class="n">subkey2</span>
+<span class="o">--</span><span class="nb">dict</span><span class="o">-</span><span class="nb">list</span>   <span class="p">(</span> <span class="k">with</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>You should ignore these; when you call Config.parse_args, it will
+look for all of them.</p>
+</li>
+<li><p>Get the value of something in your config with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">configval</span> <span class="o">=</span> <span class="n">confobj</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">fieldspec</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>where fieldspec is just the field for a scalar, or .-separated
+fields for lists and dicts.  For lists, it must be a (0-offset)
+integer index.  For example, if the yaml files includes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">storage</span><span class="p">:</span>
+  <span class="n">images</span><span class="p">:</span>
+    <span class="nb">format</span><span class="p">:</span> <span class="n">fits</span>
+    <span class="n">single_file</span><span class="p">:</span> <span class="n">false</span>
+    <span class="n">name_convention</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{inst_name}</span><span class="s2">_</span><span class="si">{date}</span><span class="s2">_</span><span class="si">{time}</span><span class="s2">_</span><span class="si">{section_id}</span><span class="s2">_</span><span class="si">{filter}</span><span class="s2">_</span><span class="si">{im_type}</span><span class="s2">_</span><span class="si">{prov_hash:.6s}</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<p>then confobj.value(“storage.images.format”) will return
+“fits”. You can also ask configobj.value for higher levels.  For
+example, config.value(“storage.images”) will return a dictionary:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;fits&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;single_file&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+  <span class="s2">&quot;name_convention&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{inst_name}</span><span class="s2">_</span><span class="si">{date}</span><span class="s2">_</span><span class="si">{time}</span><span class="s2">_</span><span class="si">{section_id}</span><span class="s2">_</span><span class="si">{filter}</span><span class="s2">_</span><span class="si">{im_type}</span><span class="s2">_</span><span class="si">{prov_hash:.6s}</span><span class="s2">&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Change a config value with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">confobj</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span> <span class="n">fieldspec</span><span class="p">,</span> <span class="n">value</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>This only changes it for the running session, it does <em>not</em>
+affect the YAML files in storage.  This will usually not work.
+To use this, you must have set static to False when calling
+Config.get.  You should use this with great care, and if you’re
+using it outside of tests, make sure to carefully evaluate your
+life choices.  The whole point of this config system is that it’s
+an interface to config files, so if you’re making runtime
+changes, then things are scary.</p>
+</li>
+</ol>
+<p>CONFIG FILES</p>
+<p>This class reads yaml files (which can have other included yaml
+file).  The top level structure of a config file must be a
+dictionary.</p>
+<p>When reading a config file, it is processed as follows:</p>
+<p>The “current working config” starts as an empty dictionary ({}).
+When everything is done, it can be a big messy hierarchy.  Each key
+of the top level dictionary can have a value that is a scalar, a
+list, or a dictionary.  The structure is recursive; each element of
+each list can be a scalar, a list, or a dictionary, and the value
+associated with each key in each dictionary can itself be a scalar,
+a list, or a dictionary.</p>
+<p>A config file can have several special keys:</p>
+<blockquote>
+<div><p>preloads
+replaceable_preloads
+augments
+overrides
+destructive_appends
+appends</p>
+</div></blockquote>
+<p>The value associated with each key is a list of file paths relative
+to the directory where this file is found.  All of this can get
+quite complicated, so use a lot of caution when using it.  The
+safest thing to do is to only use preloads and augments.</p>
+<p>HOW PARSING THE CONFIGS WORK</p>
+<p>To really understand the following, you have to read “DEFINITION OF
+TERMS” below.  Repeating what is said above, and will be said again,
+all of this is very complicated, so to be safe you may wish to never
+use any of the special keys other than “preloads” and “augments”.</p>
+<dl class="simple">
+<dt>preloads is a list of files which are read first, in order, to make</dt><dd><p>a config dictionary (called the “preload config dictionary”).
+Files later in the list <em>augment</em> the config info from files
+earlier in the list.  This config dictionary is set aside for the
+time being.</p>
+</dd>
+<dt>replaceable_preloads is list of files read next, in order, to make</dt><dd><p>a new config dictionary (called the “working config dictionary”).
+Files later in the list <em>destructive_append</em> files earlier in
+the list.</p>
+</dd>
+<dt>The current file is parsed next.  It does a <em>destructive_append</em> on</dt><dd><p>the working config dictionary (which will just be {} if there
+aren’t any replaceable_prelaods).  Then, the working config
+dictionary <em>augments</em> the preload config dictionary, and the
+result is the new working config dictionary.</p>
+</dd>
+<dt>augments is a list of files read next, in order.  Each one</dt><dd><p><em>augments</em> the current working dictionary.</p>
+</dd>
+<dt>overrides is a list of files read next, in order.  Each one</dt><dd><p><em>overrides</em> the current working dictionary.</p>
+</dd>
+<dt>destructive_appends is a list of files read next, in order.  Each</dt><dd><p>one does a <em>destructive_append</em> on the current working dictionary.</p>
+</dd>
+<dt>appends is a list of files read last.  Each one <em>appends</em> to the</dt><dd><p>current working dictionary.</p>
+</dd>
+</dl>
+<p>Any file that’s read can itself have the special keys indicating
+other files to include.  If there is any circular inclusion – or,
+really, if any file is referred to more than once when the whole
+thing is being parsed – that is an error and will raise an
+exception.  (This isn’t a perfect protection.  You can do things
+with symbolic links to get around this and effectively have one file
+include another which then includes the first one again.  Just don’t
+do that.)</p>
+<p>DEFINITION OF TERMS</p>
+<p>Above, the words “destructive_augment”, “augment”, “override”, and
+“append” were used to describe how to combine information from two
+different files.  Exactly what happens is complicated; if you
+<em>really</em> want to know, see</p>
+<blockquote>
+<div><p>util/config.py::Config._merge_trees()</p>
+</div></blockquote>
+<p>Here’s an attempt to define it.  For all the operations below, we
+are trying to combine two values– call them the “left” value and
+“right” value.  Initially, that’s the two dictionaries that are the
+top level things being combined, but later it might be something
+else.  To compare two values:</p>
+<dl class="simple">
+<dt>augment</dt><dd><p>This is the safest one.  If you try to set a config option that
+is already set, it will raise an exception.  This is what you use
+if you want to protect yourself against accidentally setting the
+same option in more than one file and not realizing it, which can
+lead to all kinds of confusion.  Indeed, if you’re worried about
+this, <em>never</em> use anything other than preloads and augments.</p>
+<ul class="simple">
+<li><p>If the left and right values have different types, types (scalar
+vs. list vs. dict), this is an error.  This will never happen
+at the very top level, because both left and right are
+dictionaries at the top level.</p></li>
+<li><p>If the current item being compared is a list or a scalar, then
+this is an error; you’re not allowed to replace an
+already-existing list or scalar config option.</p></li>
+<li><p>If the current item being compared is a dictionary, then merge
+the two dictionaries.  Any keys in the right dictionary that
+aren’t in the left dictionary are added to the left dictionary
+with the value from the right dictionary.  If a key is already
+in both dictionaries, then it recurses using the augment
+method.</p></li>
+</ul>
+</dd>
+<dt>append</dt><dd><p>Generally speaking, stuff in the right value is added to stuff in
+the left value, but nothing from the left value will be replaced.</p>
+<ul class="simple">
+<li><p>If the current item being compared have different types (scalar
+vs. list vs. dict), this is an error.  This will never happen
+at the very top level, because both left and right are
+dictionaries at the top level.</p></li>
+<li><p>If the item being compared is a list, then then the right list
+extends the left list.  (Literally using list.extend().)</p></li>
+<li><p>If the item being compared is a scalar, then this is an error.</p></li>
+<li><p>If the current item being compared is a dictionary, then merge
+the two dictionaries.  Any keys in the right dictionary that
+aren’t in the left dictionary are added to the left dictionary
+with the value from the right dictionary.  If a key is already
+in both dictionaries, then it recurses using the append
+method.</p></li>
+</ul>
+</dd>
+<dt>destructive_append</dt><dd><p>Works much like augment with the exception that if the item
+being compared is a scalar, then the right value replaces the
+left value.</p>
+</dd>
+<dt>override</dt><dd><p>Generally speaking, when overriding, the right value replaces the
+left value, but there are wrinkles.</p>
+<ul class="simple">
+<li><p>If the current item being compared have different types (scalar
+vs. list vs. dict), the new (right) value <em>replaces</em> the old
+(left) value.  This will never happen at the very top level,
+because both left and right are dictionaries at the top level.
+Be warned: you can wipe out entire trees of config options
+here!  (Imagine if the left tree had a dictionary and the right
+tree had a scalar.)</p></li>
+<li><p>If the current item being compared is a dictionary, then
+the dictionaries are merged in exactly the same manner
+as “append”, with the modification that recursing down
+into the dictionary passes along the fact that we’re
+overriding rather than append.</p></li>
+<li><p>If the current item being compared is a list, then the
+right list <em>replaces</em> the left list.  (This could
+potentially throw away a gigantic hierarchy if lists
+and dicts and scalars from the left wide, which is as
+designed.)</p></li>
+<li><p>If the item being compared is a scalar, then the right value
+replaces the left value.</p></li>
+</ul>
+</dd>
+</dl>
+<p>This can be very confusing, so keeping your config files simple.</p>
+</div></blockquote>
+<p>WARNINGS</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Won’t work with any old yaml file.  Top level must be a dictionary.
+Don’t name your dictionary fields as numbers, as the code will then
+detect it as a list rather than a dict.</p></li>
+<li><p>The yaml parser seems to be parsing “yyyy-mm-dd” strings as a
+datetime.date; beware.</p></li>
+<li><p>python’s yaml reading of floats is broken.  It will read 1e10 as a
+string, not a float.  Write 1.0e+10 to make it work right.  There
+are two things here: the first is the + after e (which, I think
+<em>is</em> part of the yaml spec, even though we can freely omit that +
+in Python and C).  The second is the decimal point; the YAML spec
+says it’s not necessary, but python won’t recognize it as a float
+without it.</p></li>
+</ul>
+</div></blockquote>
+<p>Don’t directly instantiate a Config object, call static method Config.get().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>configfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, or </em><em>None</em>)</p></li>
+<li><p><strong>clone</strong> (<em>Config object</em><em>, </em><em>default None</em>) – <p>If clone is not None, then build the current object as a copy of
+the config object passed in clone.  In this case, the returned
+config object is modifiable.</p>
+<p>Otherwise, read the configfile and build the object based on
+that; in this case, the returned config object is not supposed
+to be modified, and set_value won’t work.  (Of course, you can
+always go and muck about directly with the _data property, but
+don’t do that!)</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.config.Config.augment_argparse" title="snappl.config.Config.augment_argparse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">augment_argparse</span></code></a>(parser[, path, _dict])</p></td>
+<td><p>Add arguments to an ArgumentParser for all config values.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.config.Config.delete_field" title="snappl.config.Config.delete_field"><code class="xref py py-obj docutils literal notranslate"><span class="pre">delete_field</span></code></a>(field[, missing_ok])</p></td>
+<td><p>Remove a field from the config.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.config.Config.dump_to_dict_for_params" title="snappl.config.Config.dump_to_dict_for_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dump_to_dict_for_params</span></code></a>([omitkeys, keepkeys])</p></td>
+<td><p>Dump the config to a dictionary suitable for use in a Provenance params field.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.config.Config.get" title="snappl.config.Config.get"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code></a>([configfile, setdefault, static, clone])</p></td>
+<td><p>Returns a Config object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.config.Config.init" title="snappl.config.Config.init"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init</span></code></a>([configfile, setdefault])</p></td>
+<td><p>Initialize configuration globally for process.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.config.Config.parse_args" title="snappl.config.Config.parse_args"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_args</span></code></a>(args[, path, _dict])</p></td>
+<td><p>Update config options from argparse arguments.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.config.Config.set_value" title="snappl.config.Config.set_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_value</span></code></a>(field, value[, structpass, ...])</p></td>
+<td><p>Set a value in the config object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.config.Config.value" title="snappl.config.Config.value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">value</span></code></a>(field[, default, struct])</p></td>
+<td><p>Get a value from the config structure.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.config.Config.augment_argparse">
+<span class="sig-name descname"><span class="pre">augment_argparse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.augment_argparse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.augment_argparse" title="Link to this definition">¶</a></dt>
+<dd><p>Add arguments to an ArgumentParser for all config values.</p>
+<p>See the Config docstring for instructions on use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parser</strong> (<em>ArgumentParser</em>) – The ArgumentParser to which additional arguments should be added.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Used internally for recursion.</p></li>
+<li><p><strong>_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Used internally for recursion.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.config.Config.delete_field">
+<span class="sig-name descname"><span class="pre">delete_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing_ok</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.delete_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.delete_field" title="Link to this definition">¶</a></dt>
+<dd><p>Remove a field from the config.</p>
+<p>Use this this with great care.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.config.Config.dump_to_dict_for_params">
+<span class="sig-name descname"><span class="pre">dump_to_dict_for_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">omitkeys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['system']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepkeys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.dump_to_dict_for_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.dump_to_dict_for_params" title="Link to this definition">¶</a></dt>
+<dd><p>Dump the config to a dictionary suitable for use in a Provenance params field.</p>
+<p>Specify one of omitkeys or keepkeys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>omitkeys</strong> (<em>None</em><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <p>This is a list of keys to delete from the config before
+exporting it.  (The internal state of the config will not be
+affected, only what is exported.)  Be careful not to list a
+subkey of a key that’s already earlier in the list, or
+you’ll get errors.</p>
+<p>By default, the top-level key “system” is deleted, as per
+the Roman SNPIT standard that this holds all of the (but
+only the) system-specific config needed to run at a
+particular place.  (system should not include anything that
+changes the behavior of the code.)</p>
+<p>However, this default is a bit profligate, as it will keep
+all of the config options for all codes, not just the code
+you’re running right now.  Use with thought.</p>
+</p></li>
+<li><p><strong>keepkeys</strong> (<em>None</em><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – This is a list of keeps to keep in the export.  Currently,
+only top-level keys are supported.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>This is a deep copy of the internal dictionary, so ideally
+you should be able to do anything you want to it without
+screwing up the internal config state.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.config.Config.get">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">setdefault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.get" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a Config object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>configfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Pathlib.Path</em><em>, </em><em>default None</em>) – The config file to read (if it hasn’t been read before, or
+if reread is True).  If None, will return the default config
+context for the current session (which is normally the one
+in the file pointed to by environment variable
+SNPIT_CONFIG, but see “setdefault” below.  If that env
+var is needed but not set, then an exception will be
+raised).</p></li>
+<li><p><strong>setdefault</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default None</em>) – <p>Avoid use of this, as it is mucking about with global
+variables and as such can cause confusion.  If True, set the
+Config object read by this method to be the session default
+config.  If False, never set the Config object read by this
+method to be the session default config.  If not specified,
+which is usually what you want, then if configfile is None,
+the configfile in SNPIT_CONFIG will be read and set to the
+be the session default Config; if configfile is not None,
+read that config file, but don’t make it the session default
+config.</p>
+<p>Normal usage of Config is to make a call early on to either
+Config.init() or Config.get() without parameters.  That will
+read the config file in SNPIT_CONFIG and make that the
+default config for the process.  If, for some reason, you
+want to read a different config file and make that the
+default config file for the process, then pass a configfile
+here and make setdefault True.  If, for some truly perverse
+reason, you want to the config in SNPIT_CONFIG but not
+set it to the session default, then call
+Config.get(setdefault=False), and question your life
+choices.</p>
+</p></li>
+<li><p><strong>static</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default True</em>) – If True (the default), then you get one of the config object
+singletons described below.  In this case, it is not
+permitted to modify the config.  If False, you get back a
+clone of the config singleton, and that clone is not stored
+anywhere other than the return value.  In this case, you may
+modify the config.  Call Config.get(static=False) to get a
+modifiable version of the default config.</p></li>
+<li><p><strong>clone</strong> (<a class="reference internal" href="#snappl.config.Config" title="snappl.config.Config"><em>Config</em></a><em>, </em><em>default None</em>) – If given, return a clone of this Config object.  The
+returned object, if all is working properly, is a deep copy,
+so it should be safe to mangle it.  It’s not possibe to set
+a cloned config object as default, nor is the cloned object
+ever set as a singleton, so setdefault and static are both
+ignored and treated as False when making a clone.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Config object</p>
+</dd>
+</dl>
+<p>Config objects are stored as an array of singletons (as class
+variables of the Config class).  That is, if you pass a config
+file that has been passed before in the current execution
+context, you’ll get back exactly the same object each time
+(unless static is True).  If you pass a config file that hasn’t
+been passed before, it will read the indicated configuration
+file, cache an object associated with it for future calls, and
+return that object (unless static is False, in which case the
+the object is still cached, but you get a copy of that object
+rather than the object itself).</p>
+<p>If you don’t pass a config file, then you will get back the
+default config object.  If there is no default config object
+(because neither Config.get() nor Config.init() have been called
+previously), and if the class is not configured with a “default
+default”, then an exception will be raised.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.config.Config.init">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">setdefault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.init" title="Link to this definition">¶</a></dt>
+<dd><p>Initialize configuration globally for process.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>configfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – See documentation of the configfile parameter in Config.get</p></li>
+<li><p><strong>setdefault</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default None</em>) – See documentation of the setdefault parameter in Config.get</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.config.Config.parse_args">
+<span class="sig-name descname"><span class="pre">parse_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.parse_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.parse_args" title="Link to this definition">¶</a></dt>
+<dd><p>Update config options from argparse arguments.</p>
+<p>See the docstring for the Config class for instructions on using this.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> (<em>Namespace</em>) – Something returned by argparser.ArgumentParser.parse_args()</p></li>
+<li><p><strong>path</strong> (<em>string</em>) – Used internally for recursion</p></li>
+<li><p><strong>_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Used internally for recursion</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.config.Config.set_value">
+<span class="sig-name descname"><span class="pre">set_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structpass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">appendlists</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.set_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.set_value" title="Link to this definition">¶</a></dt>
+<dd><p>Set a value in the config object.</p>
+<p>If the config object was created with static=True (which is the
+case for all the singleton objects stored in the Config class),
+use of this method raises an exception.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – See value() for more information</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>)</p></li>
+<li><p><strong>structpass</strong> (<em>some object with a &quot;.struct&quot; field</em>) – Used internally when the Config object is building it’s own
+_data field; don’t use externally</p></li>
+<li><p><strong>appendlists</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – If true and if field is a pre-existing list, then value is
+appended to the list.  Otherwise, value replaces the
+pre-existing field if there is one.</p></li>
+<li><p><strong>in</strong> (<em>Does not save to disk.  Follows the standard rules docuemnted</em>)</p></li>
+<li><p><strong>True</strong> (<em>&quot;augment&quot; and &quot;override&quot;; if appendlists is</em>)</p></li>
+<li><p><strong>uses</strong></p></li>
+<li><p><strong>&quot;augment&quot;</strong></p></li>
+<li><p><strong>if</strong> (<em>else &quot;override&quot;.  Will create the whole hierarchy</em>)</p></li>
+<li><p><strong>necessary.</strong></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.config.Config.value">
+<span class="sig-name descname"><span class="pre">value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default=&lt;snappl.config.NoValue</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">struct=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.value" title="Link to this definition">¶</a></dt>
+<dd><p>Get a value from the config structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <p>The field specification, relative to the top level of the
+config.  So, to get the value of a keyword aligned to column 0
+of the config file, the field is just that keyword.  For
+trees, separate fields by periods.  If there is an array
+somewhere in the tree, then the array index as a number is the
+field for that branch.</p>
+<blockquote>
+<div><p>For example, if the config yaml file is;</p>
+<p>scalar: value</p>
+<dl class="simple">
+<dt>dict1:</dt><dd><dl class="simple">
+<dt>dict2:</dt><dd><p>sub1: 2level1
+sub2: 2level2</p>
+</dd>
+</dl>
+</dd>
+<dt>dict3:</dt><dd><dl class="simple">
+<dt>list:</dt><dd><ul>
+<li><p>list0</p></li>
+<li><p>list1</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>then you could get values with:</p>
+<p>configobj.value( “scalar” ) –&gt; returns “value”
+configobj.value( “dict1.dict2.sub2” ) –&gt; returns “2level2”
+configobj.value( “dict3.list.1” ) –&gt; returns “list1”</p>
+<p>You can also specify a branch to get back the rest of the
+subtree; for instance configobj.value( “dict1.dict2” ) would
+return the dictionary { “sub1”: “2level1”, “sub2”: “2level2” }.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><em>object</em></a><em>, </em><em>default NoValue instance</em>) – Used internally, don’t muck with this.</p></li>
+<li><p><strong>struct</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>default None</em>) – If passed, use this dictionary in place of the object’s own
+config dictionary.  Avoid use.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>If a list or dict, you get a deep copy of the original list or
+dict.  As such, it’s safe to modify the return value without
+worrying about changing the internal config.  (If you want to
+change the internal config, use set_value().)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>, or <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="../api.html" title="Previous document">snappl API</a>
+        </li>
+        <li>
+          <a href="snappl.config.NoValue.html" title="Next document">NoValue</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/snappl.config.Config.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

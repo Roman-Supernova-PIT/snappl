@@ -1,0 +1,7 @@
+SNPITDBClient
+=============
+
+.. currentmodule:: snappl.dbclient
+
+.. autoclass:: SNPITDBClient
+   :show-inheritance:

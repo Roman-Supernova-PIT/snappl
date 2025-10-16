@@ -1,0 +1,31 @@
+Config
+======
+
+.. currentmodule:: snappl.config
+
+.. autoclass:: Config
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~Config.augment_argparse
+      ~Config.delete_field
+      ~Config.dump_to_dict_for_params
+      ~Config.get
+      ~Config.init
+      ~Config.parse_args
+      ~Config.set_value
+      ~Config.value
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: augment_argparse
+   .. automethod:: delete_field
+   .. automethod:: dump_to_dict_for_params
+   .. automethod:: get
+   .. automethod:: init
+   .. automethod:: parse_args
+   .. automethod:: set_value
+   .. automethod:: value

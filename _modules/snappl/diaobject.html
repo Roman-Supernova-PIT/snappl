@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>snappl.diaobject &#8212; roman_snpit_snappl 0.1.dev1+gc1ce411ec documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../_static/documentation_options.js?v=07c74686"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for snappl.diaobject</h1><div class="highlight"><pre>
+<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;DiaObject&#39;</span><span class="p">,</span> <span class="s1">&#39;DiaObjectOU2024&#39;</span><span class="p">,</span> <span class="s1">&#39;DiaObjectManual&#39;</span> <span class="p">]</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">simplejson</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.http</span><span class="w"> </span><span class="kn">import</span> <span class="n">retry_post</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provenance</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.dbclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITDBClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITJsonEncoder</span><span class="p">,</span> <span class="n">asUUID</span>
+
+
+<div class="viewcode-block" id="DiaObject">
+<a class="viewcode-back" href="../../api/snappl.diaobject.DiaObject.html#snappl.diaobject.DiaObject">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiaObject</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Encapsulate a single supernova (or other transient).</span>
+
+<span class="sd">    Standard properties:</span>
+
+<span class="sd">    id : UUID; the id of the object if it is in the SNPIT Internal database (or intended to be)</span>
+<span class="sd">    provenance_id : UUID; the provenance of the object if it is in the SNPIT Internal database (or intended to be)</span>
+
+<span class="sd">    ra : ra in degrees (ICRS)</span>
+<span class="sd">    dec : dec in degrees (ICRS)</span>
+
+<span class="sd">    mjd_discovery : when the object was first discovered; may be None if unknown (float MJD)</span>
+<span class="sd">    mjd_peak : peak of the object&#39;s lightcurve; may be None if unknown (float MJD)</span>
+
+<span class="sd">    mjd_start : MJD when the lightcurve first exists.  Definition of this</span>
+<span class="sd">                is class-dependent; it may be when it was actively</span>
+<span class="sd">                simulated, but it may be when the lightcurve is above some</span>
+<span class="sd">                cutoff.  May be None if unknown.</span>
+
+<span class="sd">    mjd_end : MJD when the lightcurve stops existing.  Definition like</span>
+<span class="sd">              mjd_start.  May be None if unknown.</span>
+
+<span class="sd">    properties : dictionary of additional properties.  DO NOT RELY ON</span>
+<span class="sd">                 THIS HAVING ANY PARTICULAR KEYS.  Different</span>
+<span class="sd">                 provenances, and maybe even different objects within</span>
+<span class="sd">                 the same provenance, may have different keys in this</span>
+<span class="sd">                 dictionary.  This is more to be used for debugging</span>
+<span class="sd">                 purposes.  (If there is an additional key that every</span>
+<span class="sd">                 object should have, we should add it as a top-level</span>
+<span class="sd">                 property, and add that column to the database.)</span>
+
+<span class="sd">    Don&#39;t instantiate one of these directly.  Instead, use</span>
+<span class="sd">    DiaObject.get_object or DiaObject.find_objects.  If you&#39;re trying to</span>
+<span class="sd">    get a manual object, use provenance_tag &#39;manual&#39; with</span>
+<span class="sd">    DiaObject.get_object.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">iauname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">mjd_discovery</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd_peak</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd_start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd_end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">properties</span><span class="o">=</span><span class="p">{}</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Only call this constructor if you&#39;re making a brand new object.</span>
+
+<span class="sd">        If you want to get an existing object, call either DiaObject.get_object or</span>
+<span class="sd">        DiaObject.find_objects.</span>
+
+<span class="sd">        Properties</span>
+<span class="sd">        ----------</span>
+<span class="sd">          id : UUID or str</span>
+<span class="sd">            The id of the diaobject.  Required if you&#39;re going to save</span>
+<span class="sd">            this to the database later.</span>
+
+<span class="sd">          provenance_id : UUID or str</span>
+<span class="sd">            The provenance of the object. Required if you&#39;re going to save</span>
+<span class="sd">            this to the database later.</span>
+
+<span class="sd">          ra : float</span>
+<span class="sd">            Decimal degrees.</span>
+
+<span class="sd">          dec : float</span>
+<span class="sd">            Decimal degrees.</span>
+
+<span class="sd">          name : str</span>
+<span class="sd">            A name for the object.  These aren&#39;t strictly required to be</span>
+<span class="sd">            unique, but you should strive to make them unique.</span>
+<span class="sd">            Normally, saving them will raise an error if you end up with</span>
+<span class="sd">            more than one object in the same provenance with the same</span>
+<span class="sd">            name.  Ideally, this is something digestable for humans, but</span>
+<span class="sd">            if you&#39;re lazy, you can make this a string version of id and</span>
+<span class="sd">            then you can be sure it will be unique.</span>
+
+<span class="sd">          iauname : str, default None</span>
+<span class="sd">            The IAU / TNS name for the object.  If given, this must be</span>
+<span class="sd">            unique within a given provenance, though it&#39;s OK if it&#39;s</span>
+<span class="sd">            None.</span>
+
+<span class="sd">          mjd_discovery : float</span>
+<span class="sd">            MJD when the object was found.  Required.</span>
+
+<span class="sd">          mjd_peak : float, default None</span>
+<span class="sd">            MJD when the object is at peak.  Optional</span>
+
+<span class="sd">          mjd_start : float, default None</span>
+<span class="sd">            MJD when the transient starts.  This means that any images</span>
+<span class="sd">            from an earlier MJD are suitable for use as a template.  Optional.</span>
+
+<span class="sd">          mjd_end : float, default None</span>
+<span class="sd">            MJD when the tranient &quot;ends&quot;.  Physically, this is</span>
+<span class="sd">            meaningless, but practically, it means that any images from</span>
+<span class="sd">            a later MJD are suitable for use as a template.  Optional.</span>
+
+<span class="sd">          properties : dict, default {}</span>
+<span class="sd">            Any optional properties you want to save with the object.</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span> <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">provenance_id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span><span class="n">provenance_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">provenance_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">ra</span> <span class="p">)</span> <span class="k">if</span> <span class="n">ra</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">dec</span> <span class="p">)</span> <span class="k">if</span> <span class="n">dec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">name</span> <span class="p">)</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iauname</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">iauname</span> <span class="p">)</span> <span class="k">if</span> <span class="n">iauname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mjd_discovery</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_discovery</span> <span class="p">)</span> <span class="k">if</span> <span class="n">mjd_discovery</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mjd_peak</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_peak</span> <span class="p">)</span> <span class="k">if</span> <span class="n">mjd_peak</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mjd_start</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_start</span> <span class="p">)</span> <span class="k">if</span> <span class="n">mjd_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mjd_end</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_end</span> <span class="p">)</span> <span class="k">if</span> <span class="n">mjd_end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">properties</span>
+
+
+<div class="viewcode-block" id="DiaObject.save_object">
+<a class="viewcode-back" href="../../api/snappl.diaobject.DiaObject.html#snappl.diaobject.DiaObject.save_object">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_object</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save an object to the database.</span>
+
+<span class="sd">        Properties</span>
+<span class="sd">        ----------</span>
+<span class="sd">          dbclient : SNPITDBClient, default None</span>
+<span class="sd">            The connection to the database web server.  If None, a new</span>
+<span class="sd">            one will be made that logs you in using the information in</span>
+<span class="sd">            Config.  If you&#39;re going to be saving multiple objects, it&#39;s</span>
+<span class="sd">            more efficient to make one of these once and pass it to each</span>
+<span class="sd">            call to save_object than it is to let save_object make a new</span>
+<span class="sd">            one each time.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          dict</span>
+
+<span class="sd">          The row inserted into the database diaobject table of the database.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="p">[</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;provenance_id&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;iauname&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd_discovery&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;mjd_peak&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd_start&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd_end&#39;</span><span class="p">,</span> <span class="s1">&#39;properties&#39;</span> <span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">prop</span> <span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">prop</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">prop</span> <span class="p">)</span>
+
+        <span class="c1"># Make sure the dict is encoded the way we want</span>
+        <span class="k">if</span> <span class="s1">&#39;properties&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">],</span> <span class="bp">cls</span><span class="o">=</span><span class="n">SNPITJsonEncoder</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">senddata</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="n">data</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">SNPITJsonEncoder</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="s2">&quot;savediaobject&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">senddata</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">}</span> <span class="p">)</span></div>
+
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_tag_and_process</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="s1">&#39;snpitdb&#39;</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Figure out either the DiaObject subclass, or the Provenance, as appropraite.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          collection : str, default &#39;snpitdb&#39;</span>
+<span class="sd">            Which collection of objects to search.  Options are:</span>
+<span class="sd">              * snpitdb : use the Roman SNPIT Internal DB as defined in Config</span>
+<span class="sd">              * ou2024 : use OpenUniverse2024 truth tables</span>
+<span class="sd">              * manual : manually create objects</span>
+
+<span class="sd">          provenance_tag: str</span>
+<span class="sd">            The provenance tag to use for objects if collection is</span>
+<span class="sd">            &#39;snpitdb&#39;.  Invalid if collection is not &#39;snpitdb&#39;.</span>
+
+<span class="sd">          process: str, default None</span>
+<span class="sd">            The process to use for objects if collection is &#39;snpitdb&#39;.</span>
+<span class="sd">            Required if provenance_tag is not None.  Invalid if</span>
+<span class="sd">            collecton is not &#39;snpitdb&#39;.</span>
+
+<span class="sd">          provenanced: Provenance or UUID or str, default None</span>
+<span class="sd">            The provenance to use for objects if collection is</span>
+<span class="sd">            &#39;snpitdb&#39;.  If you specify both provenance_tag and process,</span>
+<span class="sd">            you don&#39;t need to specify this.  You can pass either</span>
+<span class="sd">            a Provenance object, or just the id.</span>
+
+<span class="sd">          dbclient: SNPITDBClient</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          If collection is &#39;snpit&#39;, you get back a Provenance if you</span>
+<span class="sd">          gave one of (provenance_id) or (provenanace_tag and process),</span>
+<span class="sd">          or None if you didn&#39;t.</span>
+
+<span class="sd">          Otherwise, you get back a DiaObject subclass.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">subclassmap</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;ou2024&#39;</span><span class="p">:</span> <span class="n">DiaObjectOU2024</span><span class="p">,</span>
+                        <span class="s1">&#39;manual&#39;</span><span class="p">:</span> <span class="n">DiaObjectManual</span> <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">collection</span> <span class="ow">in</span> <span class="n">subclassmap</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span> <span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">provenance_tag</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">provenance</span> <span class="p">]</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;provenance_tag, process, and provenance are all invalid for &quot;</span>
+                                  <span class="sa">f</span><span class="s2">&quot;collection </span><span class="si">{</span><span class="n">collection</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+            <span class="k">return</span> <span class="n">subclassmap</span><span class="p">[</span> <span class="n">collection</span> <span class="p">]</span>
+        <span class="k">elif</span> <span class="n">collection</span> <span class="o">!=</span> <span class="s1">&#39;snpitdb&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Unknown DiaObject collection </span><span class="si">{</span><span class="n">collection</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+
+        <span class="c1"># If we get here, we know we&#39;re searching the database</span>
+
+        <span class="n">provid</span> <span class="o">=</span> <span class="n">provenance</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">Provenance</span> <span class="p">)</span> <span class="k">else</span> <span class="n">provenance</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">provenance_tag</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="o">!=</span> <span class="p">(</span> <span class="n">process</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Either both or neither of provenance_tag and process must be given with &quot;</span>
+                              <span class="s2">&quot;collection=&#39;snpitdb&#39;.&quot;</span> <span class="p">)</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+
+        <span class="k">if</span> <span class="n">provenance_tag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">prov</span> <span class="o">=</span> <span class="n">Provenance</span><span class="o">.</span><span class="n">get_provs_for_tag</span><span class="p">(</span> <span class="n">provenance_tag</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="n">provid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="nb">str</span><span class="p">(</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">provid</span><span class="p">)</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Provenance tag </span><span class="si">{</span><span class="n">provenance_tag</span><span class="si">}</span><span class="s2"> and process </span><span class="si">{</span><span class="n">process</span><span class="si">}</span><span class="s2"> returned &quot;</span>
+                                  <span class="sa">f</span><span class="s2">&quot;provenance </span><span class="si">{</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">, but you specified </span><span class="si">{</span><span class="n">provid</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">Provenance</span> <span class="p">):</span>
+            <span class="n">prov</span> <span class="o">=</span> <span class="n">provenance</span>
+        <span class="k">elif</span> <span class="n">provenance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">prov</span> <span class="o">=</span> <span class="n">Provenance</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span> <span class="n">provid</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prov</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">prov</span>
+
+
+<div class="viewcode-block" id="DiaObject.get_object">
+<a class="viewcode-back" href="../../api/snappl.diaobject.DiaObject.html#snappl.diaobject.DiaObject.get_object">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_object</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="s1">&#39;snpitdb&#39;</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">iauname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">diaobject_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">multiple_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a DiaObject. from the database.</span>
+
+<span class="sd">        Specify the object with exactly one of:</span>
+<span class="sd">          * diaobject_id</span>
+<span class="sd">          * name</span>
+<span class="sd">          * iauname</span>
+
+<span class="sd">        If you pass diaobject_id, then it&#39;s optional to pass one either</span>
+<span class="sd">        provenance_id or (provenance_tag and process).  If you do pass</span>
+<span class="sd">        one of those, then you will get an error of the diaobject_id</span>
+<span class="sd">        you asked for isn&#39;t in the set you asked for.</span>
+
+<span class="sd">        Note that if you ask for &quot;name&quot;, there might be multiple objects</span>
+<span class="sd">        in the database with the same name for a given provenance,</span>
+<span class="sd">        because the database does not enforce uniqueness.  (It does for</span>
+<span class="sd">        iauname.)  &quot;name&quot; is really more of an advisory field.  If</span>
+<span class="sd">        multiple_ok is False (the default), this is an error; if</span>
+<span class="sd">        multiple_ok is True, you&#39;ll get a list back.</span>
+
+<span class="sd">        NOTE : in the future we will add the concept of &quot;root diaobject&quot;</span>
+<span class="sd">        so that we can identify when the same objects show up in</span>
+<span class="sd">        different provenances.  This method will change when that</span>
+<span class="sd">        happens.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">         collection : str, default &#39;snpitdb&#39;</span>
+<span class="sd">            Which collection of objects to search.  Options are:</span>
+<span class="sd">              * snpitdb : use the Roman SNPIT Internal DB as defined in Config</span>
+<span class="sd">                          This requires either provenance_id, or provenance_tag and process</span>
+<span class="sd">              * ou2024 : use OpenUniverse2024 truth tables</span>
+<span class="sd">              * manual : manually create objects</span>
+
+<span class="sd">         provenance: Provenance, UUID, or UUIDifiable str, default None</span>
+<span class="sd">            The provenance of the object you&#39;re looking for.  You don&#39;t</span>
+<span class="sd">            need this if you pass provenance_tag and process, or if you</span>
+<span class="sd">            pass diaobject_id.  Invalid if collection is not &#39;snpitdb&#39;.</span>
+
+<span class="sd">         provenance_tag : str, default None</span>
+<span class="sd">           The human-readable provenance tag for the provenance of objects</span>
+<span class="sd">           you want to dig through.  Requires &#39;process&#39;.  You must</span>
+<span class="sd">           specify at least one of provenance_Tag or provenance.</span>
+<span class="sd">           Invalid if collection is not &#39;snpitdb&#39;.</span>
+
+<span class="sd">         process : str, default None</span>
+<span class="sd">           The process associated with the provenance_tag (needed to</span>
+<span class="sd">           determine a unique provenance id).  Needed if provenance_tag</span>
+<span class="sd">           is not None.</span>
+
+<span class="sd">         diaobject_id : UUID or str, default None</span>
+<span class="sd">           The diaobject_id of the object to get.  Invalid if collection</span>
+<span class="sd">           is not &#39;snpitdb&#39;.</span>
+
+<span class="sd">         name : str (usually; might be an int for some provenance_tags)</span>
+<span class="sd">           The name of the object as determined by whoever it was that</span>
+<span class="sd">           was making the mess when loading objects into the database.</span>
+<span class="sd">           This is not guaranteed to be unique.  However, if you know</span>
+<span class="sd">           what you&#39;re doing, it may be useful.  If you are happy</span>
+<span class="sd">           receiving all the objects for a given provenance with the</span>
+<span class="sd">           same name, set multiple_ok to True; otherwise, it&#39;ll be an</span>
+<span class="sd">           error if more than one object has the same name.</span>
+
+<span class="sd">         iauname : str</span>
+<span class="sd">           The iau/tns name of the object you want to find.  These are</span>
+<span class="sd">           guaranteed to be unique within a given provenance.</span>
+
+<span class="sd">         diaobject_id : UUID or str or maybe something else</span>
+<span class="sd">           The Romamn SNPIT internal database id of the object you want.</span>
+<span class="sd">           If you specify this, you don&#39;t need anything else.  If you</span>
+<span class="sd">           also give one of (provenance_id, provenance_tag and process,</span>
+<span class="sd">           collection and subset), then this method will verify that the</span>
+<span class="sd">           object_id you&#39;re looking for is within the right provenance.</span>
+
+<span class="sd">         multiple_ok : bool, default False</span>
+<span class="sd">           Only matters if you specify name instead of object_id or</span>
+<span class="sd">           iauname.  Ignored if you don&#39;t specify name.  See Returns.</span>
+
+<span class="sd">         dbclient : SNPITDBClient, default None</span>
+<span class="sd">           The database web api connection object to use.  If you don&#39;t</span>
+<span class="sd">           specify one, a new one will be made based on what&#39;s in your</span>
+<span class="sd">           configuration.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          DiaObject or list of DiaObject</span>
+
+<span class="sd">          If you specify name and you set multiple_ok=True, then you get</span>
+<span class="sd">          a list of DiaObject back.  Otherwise, you get a single one.</span>
+<span class="sd">          If no object is found with your criteria, a RuntimeError</span>
+<span class="sd">          exception will be raised.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">prov</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_parse_tag_and_process</span><span class="p">(</span> <span class="n">collection</span><span class="o">=</span><span class="n">collection</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="o">=</span><span class="n">provenance_tag</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="n">process</span><span class="p">,</span>
+                                           <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+
+        <span class="c1"># First see if we&#39;re dealing with a subclass</span>
+        <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span> <span class="n">prov</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="nb">issubclass</span><span class="p">(</span> <span class="n">prov</span><span class="p">,</span> <span class="n">DiaObject</span> <span class="p">)</span> <span class="p">):</span>
+            <span class="k">if</span> <span class="n">diaobject_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;diaobject_id is invalid for collection </span><span class="si">{</span><span class="n">collection</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+            <span class="k">return</span> <span class="n">prov</span><span class="o">.</span><span class="n">_get_object</span><span class="p">(</span> <span class="n">diaobject_id</span><span class="o">=</span><span class="n">diaobject_id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">iauname</span><span class="o">=</span><span class="n">iauname</span><span class="p">,</span>
+                                     <span class="n">multiple_ok</span><span class="o">=</span><span class="n">multiple_ok</span> <span class="p">)</span>
+
+        <span class="c1"># If not, then we know we&#39;re dealing with the database</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">prov</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">diaobject_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must give one of diaobject_id, provenance_id, or (provenance_tag and process)&quot;</span> <span class="p">)</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+
+        <span class="k">if</span> <span class="n">diaobject_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;getdiaobject/</span><span class="si">{</span><span class="n">diaobject_id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;COuld not find diaobject </span><span class="si">{</span><span class="n">diaobject_id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span> <span class="n">prov</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">prov</span><span class="o">.</span><span class="n">id</span> <span class="p">)</span> <span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Error, you asked for object </span><span class="si">{</span><span class="n">diaobject_id</span><span class="si">}</span><span class="s2"> in provenance &quot;</span>
+                                      <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">, but that object is actually in provenance &quot;</span>
+                                      <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">DiaObject</span><span class="p">(</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">iauname</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must give one of diaobject_id, name, or iauname&quot;</span> <span class="p">)</span>
+            <span class="n">subdict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">subdict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="k">if</span> <span class="n">iauname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">subdict</span><span class="p">[</span><span class="s1">&#39;iauname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iauname</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;/finddiaobjects/</span><span class="si">{</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">subdict</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># TODO : make this error message more informative.  (Needs lots of logic</span>
+                <span class="c1">#   based on what was passed... should probably construct the string</span>
+                <span class="c1">#   at the top of the function.)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Found no objects that match your criteria.&quot;</span> <span class="p">)</span>
+
+            <span class="k">if</span> <span class="p">(</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="n">multiple_ok</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span> <span class="n">DiaObject</span><span class="p">(</span> <span class="o">**</span><span class="n">r</span> <span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">res</span> <span class="p">]</span>
+
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Another error message that needs to be made more informative</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;More than one object matched your criteria.&quot;</span> <span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">DiaObject</span><span class="p">(</span> <span class="o">**</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="p">)</span></div>
+
+
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_object</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">iauname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">multiple_ok</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> isn&#39;t able to do _get_object&quot;</span> <span class="p">)</span>
+
+
+<div class="viewcode-block" id="DiaObject.find_objects">
+<a class="viewcode-back" href="../../api/snappl.diaobject.DiaObject.html#snappl.diaobject.DiaObject.find_objects">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_objects</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="s1">&#39;snpitdb&#39;</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find objects.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">         collection : str, default &#39;snpitdb&#39;</span>
+<span class="sd">            Which collection of objects to search.  Options are:</span>
+<span class="sd">              * snpitdb : use the Roman SNPIT Internal DB as defined in Config</span>
+<span class="sd">                          This requires either provenance_id, or provenance_tag and process</span>
+<span class="sd">              * ou2024 : use OpenUniverse2024 truth tables</span>
+<span class="sd">              * manual : manually create objects</span>
+
+<span class="sd">          provenance : Provenance, UUID, or UUIDifiable str</span>
+<span class="sd">            The provenance to search.  Must specify either this or</span>
+<span class="sd">            provenance_tag.  If you specify both, it will verify</span>
+<span class="sd">            consistency.  Invalid if collection is not &#39;snpitdb&#39;.</span>
+
+<span class="sd">          provenance_tag : str</span>
+<span class="sd">            The provenance tag to search.  For some provenance tags,</span>
+<span class="sd">            this goes to a specific subclass (and in that case,</span>
+<span class="sd">            provenance_id must be None), but for most, it queries the</span>
+<span class="sd">            Roman SNPIT itnernal database.  Optional if you specify</span>
+<span class="sd">            provenance.  Invalid if collection is not &#39;snpitdb&#39;.</span>
+
+<span class="sd">          process : str, default None</span>
+<span class="sd">            The process associated with the provenacne_tag that allows</span>
+<span class="sd">            the code to determine a unique provenance.  Needed if</span>
+<span class="sd">            provenance_tag is not None.</span>
+
+<span class="sd">          dbclient : SNPITDBClient, default None</span>
+<span class="sd">            The database web api connection object to use.  If you don&#39;t</span>
+<span class="sd">            specify one, a new one will be made based on what&#39;s in your</span>
+<span class="sd">            configuration.</span>
+
+<span class="sd">          diaobject_id : &lt;something&gt;, default None</span>
+<span class="sd">            The diaobject_id of the object to find.  Only valid if</span>
+<span class="sd">            collection is &#39;snpitdb&#39;.</span>
+
+<span class="sd">          name : str</span>
+<span class="sd">            The optional name of the object.  May not be implemented for</span>
+<span class="sd">            all collections.</span>
+
+<span class="sd">          iauname : str</span>
+<span class="sd">            The TNS/IAU name of the object.  May not be implemented for</span>
+<span class="sd">            all collections.</span>
+
+<span class="sd">          ra: float</span>
+<span class="sd">            RA in degrees to search.</span>
+
+<span class="sd">          dec: float</span>
+<span class="sd">            Dec in degrees to search.</span>
+
+<span class="sd">          radius: float, default 1.0</span>
+<span class="sd">            Radius in arcseconds to search.  Ignored unless ra and dec are given.</span>
+
+<span class="sd">          mjd_peak_min, mjd_peak_max: float</span>
+<span class="sd">            Only return objects whose mjd_peak is between these limits.</span>
+<span class="sd">            Specify as MJD.  Will not return any objects with unknown</span>
+<span class="sd">            mjd_peak.</span>
+
+<span class="sd">          mjd_discovery_min, mjd_discovery_max: float</span>
+<span class="sd">            Only return objects whose mjd_discovery is between these</span>
+<span class="sd">            limits.  Specify as MJD.  Wil not return any objects with</span>
+<span class="sd">            unknown mjd_discovery.</span>
+
+<span class="sd">          mjd_start_min, mjd_start_max: float</span>
+
+<span class="sd">          mjd_end_min, mjd_end_max: float</span>
+
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          list of DiaObject</span>
+
+<span class="sd">          In reality, it may be a list of objects of a subclass of</span>
+<span class="sd">          DiaObject, but the calling code should not know or depend on</span>
+<span class="sd">          that, it should treat them all as just DiaObject objects.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">prov</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_parse_tag_and_process</span><span class="p">(</span> <span class="n">collection</span><span class="o">=</span><span class="n">collection</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="o">=</span><span class="n">provenance_tag</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="n">process</span><span class="p">,</span>
+                                           <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+
+        <span class="c1"># First see if we&#39;re dealing with a subclass</span>
+        <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span> <span class="n">prov</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="nb">issubclass</span><span class="p">(</span> <span class="n">prov</span><span class="p">,</span> <span class="n">DiaObject</span> <span class="p">)</span> <span class="p">):</span>
+            <span class="k">return</span> <span class="n">prov</span><span class="o">.</span><span class="n">_find_objects</span><span class="p">(</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+        <span class="c1"># Otherwise, we know we&#39;re dealing with the database</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;finddiaobjects/</span><span class="si">{</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">kwargs</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="n">DiaObject</span><span class="p">(</span> <span class="o">**</span><span class="n">r</span> <span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">res</span> <span class="p">]</span></div>
+
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_objects</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class-specific implementation of find_object.</span>
+
+<span class="sd">        The implementation here assumes it&#39;s a collection that&#39;s in the</span>
+<span class="sd">        Roman SNPIT database.  Other classes might want to implement</span>
+<span class="sd">        their own version (e.g. DiaObjectOU2024 and DiaObjectManual).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement _find_objects&quot;</span> <span class="p">)</span></div>
+
+
+
+<span class="c1"># ======================================================================</span>
+
+<div class="viewcode-block" id="DiaObjectOU2024">
+<a class="viewcode-back" href="../../api/snappl.diaobject.DiaObjectOU2024.html#snappl.diaobject.DiaObjectOU2024">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiaObjectOU2024</span><span class="p">(</span> <span class="n">DiaObject</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A transient from the OpenUniverse 2024 sims.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Don&#39;t call this constructor directly.  Use DiaObject.find_objects.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+        <span class="c1"># Non-standard fields</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gentype</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_mjd</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_mjd</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_cmb</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mw_ebv</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mw_extinction_applied</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">av</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rv</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_pec</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_ra</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_dec</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_mag_g</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_mag_i</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_mag_f</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_sn_sep</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_mag_g</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_mag_i</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_mag_f</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lens_dmu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lens_dmu_applied</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_params</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_objects</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">ra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">dec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                       <span class="n">mjd_peak_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mjd_peak_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mjd_discovery_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mjd_discovery_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mjd_start_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mjd_start_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mjd_end_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mjd_end_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="p">):</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span> <span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">mjd_peak_min</span><span class="p">,</span> <span class="n">mjd_peak_max</span><span class="p">,</span> <span class="n">mjd_discovery_min</span><span class="p">,</span> <span class="n">mjd_discovery_max</span> <span class="p">]</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;DiaObjectOU2024 doesn&#39;t support searching on mjd_peak or mjd_discovery&quot;</span> <span class="p">)</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">ra</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="o">!=</span> <span class="p">(</span> <span class="n">dec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Pass both or neither of ra/dec, not just one.&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ra</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">radius</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;ra/dec requires a radius&quot;</span> <span class="p">)</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">ra</span> <span class="p">)</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">dec</span> <span class="p">)</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">radius</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">name</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mjd_start_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;mjd_start_min&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_start_min</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mjd_start_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;mjd_start_max&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_start_max</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mjd_end_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;mjd_end_min&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_end_min</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mjd_end_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;mjd_end_max&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_end_max</span> <span class="p">)</span>
+
+        <span class="n">simdex</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.ou24.simdex_server&#39;</span> <span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">retry_post</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">simdex</span><span class="si">}</span><span class="s1">/findtransients&#39;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">params</span> <span class="p">)</span>
+        <span class="n">objinfo</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+        <span class="n">diaobjects</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span> <span class="n">objinfo</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="p">)</span> <span class="p">):</span>
+            <span class="n">props</span> <span class="o">=</span> <span class="p">{</span> <span class="n">prop</span><span class="p">:</span> <span class="n">objinfo</span><span class="p">[</span><span class="n">prop</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span>
+                      <span class="p">[</span> <span class="s1">&#39;healpix&#39;</span><span class="p">,</span> <span class="s1">&#39;host_id&#39;</span><span class="p">,</span> <span class="s1">&#39;gentype&#39;</span><span class="p">,</span> <span class="s1">&#39;model_name&#39;</span><span class="p">,</span> <span class="s1">&#39;z_cmb&#39;</span><span class="p">,</span> <span class="s1">&#39;mw_ebv&#39;</span><span class="p">,</span> <span class="s1">&#39;mw_extinction_applied&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;av&#39;</span><span class="p">,</span> <span class="s1">&#39;rv&#39;</span><span class="p">,</span> <span class="s1">&#39;v_pec&#39;</span><span class="p">,</span> <span class="s1">&#39;host_ra&#39;</span><span class="p">,</span> <span class="s1">&#39;host_dec&#39;</span><span class="p">,</span> <span class="s1">&#39;host_mag_g&#39;</span><span class="p">,</span> <span class="s1">&#39;host_mag_i&#39;</span><span class="p">,</span> <span class="s1">&#39;host_mag_f&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;host_sn_sep&#39;</span><span class="p">,</span> <span class="s1">&#39;peak_mag_g&#39;</span><span class="p">,</span> <span class="s1">&#39;peak_mag_i&#39;</span><span class="p">,</span> <span class="s1">&#39;peak_mag_f&#39;</span><span class="p">,</span> <span class="s1">&#39;lens_dmu&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;lens_dmu_applied&#39;</span><span class="p">,</span> <span class="s1">&#39;model_params&#39;</span> <span class="p">]</span> <span class="p">}</span>
+
+            <span class="n">diaobj</span> <span class="o">=</span> <span class="n">DiaObjectOU2024</span><span class="p">(</span> <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span> <span class="n">objinfo</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="p">),</span>
+                                      <span class="n">ra</span><span class="o">=</span><span class="n">objinfo</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                      <span class="n">dec</span><span class="o">=</span><span class="n">objinfo</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                      <span class="n">mjd_peak</span><span class="o">=</span><span class="n">objinfo</span><span class="p">[</span><span class="s1">&#39;peak_mjd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                      <span class="n">mjd_start</span><span class="o">=</span><span class="n">objinfo</span><span class="p">[</span><span class="s1">&#39;start_mjd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                      <span class="n">mjd_end</span><span class="o">=</span><span class="n">objinfo</span><span class="p">[</span><span class="s1">&#39;end_mjd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                      <span class="n">properties</span><span class="o">=</span><span class="n">props</span> <span class="p">)</span>
+            <span class="n">diaobjects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">diaobj</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">diaobjects</span></div>
+
+
+
+<span class="c1"># ======================================================================</span>
+
+<div class="viewcode-block" id="DiaObjectManual">
+<a class="viewcode-back" href="../../api/snappl.diaobject.DiaObjectManual.html#snappl.diaobject.DiaObjectManual">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiaObjectManual</span><span class="p">(</span> <span class="n">DiaObject</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A manually-specified object that&#39;s not saved anywhere.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_objects</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span> <span class="p">(</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">)</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;finding a manual DiaObject requires all of name, ra, and dec&quot;</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[</span> <span class="n">DiaObjectManual</span><span class="p">(</span> <span class="n">ra</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;ra&quot;</span><span class="p">],</span> <span class="n">dec</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;dec&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="p">)</span> <span class="p">]</span></div>
+
+</pre></div>
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

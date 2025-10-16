@@ -1,0 +1,21 @@
+DiaObject
+=========
+
+.. currentmodule:: snappl.diaobject
+
+.. autoclass:: DiaObject
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~DiaObject.find_objects
+      ~DiaObject.get_object
+      ~DiaObject.save_object
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: find_objects
+   .. automethod:: get_object
+   .. automethod:: save_object

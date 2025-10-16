@@ -1,0 +1,7 @@
+NotFoundValue
+=============
+
+.. currentmodule:: snappl.config
+
+.. autoclass:: NotFoundValue
+   :show-inheritance:

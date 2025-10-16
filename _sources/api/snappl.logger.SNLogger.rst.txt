@@ -1,0 +1,41 @@
+SNLogger
+========
+
+.. currentmodule:: snappl.logger
+
+.. autoclass:: SNLogger
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~SNLogger.critical
+      ~SNLogger.debug
+      ~SNLogger.error
+      ~SNLogger.exception
+      ~SNLogger.get
+      ~SNLogger.getEffectiveLevel
+      ~SNLogger.info
+      ~SNLogger.instance
+      ~SNLogger.multiprocessing_replace
+      ~SNLogger.replace
+      ~SNLogger.setLevel
+      ~SNLogger.set_level
+      ~SNLogger.warning
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: critical
+   .. automethod:: debug
+   .. automethod:: error
+   .. automethod:: exception
+   .. automethod:: get
+   .. automethod:: getEffectiveLevel
+   .. automethod:: info
+   .. automethod:: instance
+   .. automethod:: multiprocessing_replace
+   .. automethod:: replace
+   .. automethod:: setLevel
+   .. automethod:: set_level
+   .. automethod:: warning

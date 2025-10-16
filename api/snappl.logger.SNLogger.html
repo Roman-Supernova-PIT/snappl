@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>SNLogger &#8212; roman_snpit_snappl 0.1.dev1+gc1ce411ec documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <script src="../_static/documentation_options.js?v=07c74686"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="isSequence" href="snappl.utils.isSequence.html" />
+    <link rel="prev" title="NotFoundValue" href="snappl.config.NotFoundValue.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changes.html">Change Log</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">snappl API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">snappl API</a><ul>
+      <li>Previous: <a href="snappl.config.NotFoundValue.html" title="previous chapter">NotFoundValue</a></li>
+      <li>Next: <a href="snappl.utils.isSequence.html" title="next chapter">isSequence</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.config.NotFoundValue.html" title="Previous document">NotFoundValue</a>
+        </li>
+        <li>
+          <a href="snappl.utils.isSequence.html" title="Next document">isSequence</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="snlogger">
+<h1>SNLogger<a class="headerlink" href="#snlogger" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.logger.</span></span><span class="sig-name descname"><span class="pre">SNLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">midformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datefmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'%Y-%m-%d</span> <span class="pre">%H:%M:%S'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_millisec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">handler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">propagate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Holds a unified logging instance that can be used throughout SNPIT code.</p>
+<p>Normal use: just call one of</p>
+<blockquote>
+<div><p>SNLogger.exception( message )
+SNLogger.critical( message )
+SNLogger.error( message )
+SNLogger.warning( message )
+SNLogger.info( message )
+SNLogger.debug( message )</p>
+</div></blockquote>
+<p>and the message will be printed, with a header, to standard error.</p>
+<p>If you’re using the logger in a case where you have many processes
+going via python’s mutiprocessing module, at the beginning of a
+subprocess you might want to call</p>
+<blockquote>
+<div><p>SNLogger.multiprocessing_replace()</p>
+</div></blockquote>
+<p>That will add something to the header of each logging line that
+includes a process number, making it easier to track down which log
+messages came from the same process.  That process number is parsed
+from the process’ name, if it has one and there’s a number in it;
+otherwise, it’s the PID of the process.  (Often with something like
+a multiprocessing pool, processes are named something like
+ForkPoolWorker-1, where the 1 increments.)</p>
+<p>If you want access to the underlying logging.Logger object, call
+SNLogger.get().  The underlying object is instantiated the first
+time it’s used.  If you want to manually instantiate it, call
+instance(), with arguments defined in __init__.</p>
+<p>The single instance is held inside a SNLogger singleton.  (Sort
+of. The actual singleton changes sometimes.)  In principle, you
+could also make other SNLogger objects, but that’s not the standard
+way to use it.  (In principle, this could be a memory leak, as
+python logging will remember all of the previously existing loggers.
+As long as SNLogger.replace() is not called frequently, this should
+not be a big deal.)</p>
+<p>Initialize a SNLogger object, and the logging.Logger object it holds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>midformat</strong> (<em>string</em><em>, </em><em>default None</em>) – The standard formatter emits log messages like “[yyyy-mm-dd
+HH:MM:SS - INFO] Message”.  If given, this adds something between the
+date and the log level (“[yyyy-mm-dd HH:MM:SS - {midformat}
+- INFO]…”).  Useful, for instance, in multiprocessing to
+keep track of which process the message came from.</p></li>
+<li><p><strong>datefmt</strong> (<em>string</em><em>, </em><em>default '%Y-%m-%d %H:%M:%S'</em>) – The date format to use, using standard logging.Formatter
+datefmt syntax.</p></li>
+<li><p><strong>show_millisec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – Add millseconds after a . following the date formatted by datefmt.</p></li>
+<li><p><strong>level</strong> (<em>logging level constant</em><em>, </em><em>default logging.WARNING</em>) – This can be changed later with set_level().</p></li>
+<li><p><strong>handler</strong> (<em>a logging Handler</em><em> or </em><em>None</em>) – Normally, SCLogger will send all log messages to sys.stderr.
+If you want it to go somewhere else, create an approprite
+logging.Handler subclass and pass it here.</p></li>
+<li><p><strong>propagate</strong> (<em>book</em><em>, </em><em>default False</em>) – <p>cf: python logging.Logger.propagate</p>
+<p>We default to False to avoid replication of logging messages
+if, somehow, there’s another logger above the one we create
+here.  (TODO: understand how python logging ancestors work.
+I’ve never expicitly set a parent logger, and yet somehow in
+code loggers often seem to have ancestors.)</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.critical" title="snappl.logger.SNLogger.critical"><code class="xref py py-obj docutils literal notranslate"><span class="pre">critical</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.debug" title="snappl.logger.SNLogger.debug"><code class="xref py py-obj docutils literal notranslate"><span class="pre">debug</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.error" title="snappl.logger.SNLogger.error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">error</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.exception" title="snappl.logger.SNLogger.exception"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exception</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.get" title="snappl.logger.SNLogger.get"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code></a>()</p></td>
+<td><p>Return the logging.Logger object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.getEffectiveLevel" title="snappl.logger.SNLogger.getEffectiveLevel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getEffectiveLevel</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.info" title="snappl.logger.SNLogger.info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">info</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.instance" title="snappl.logger.SNLogger.instance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instance</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Return the singleton instance of SNLogger.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.multiprocessing_replace" title="snappl.logger.SNLogger.multiprocessing_replace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multiprocessing_replace</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Shorthand for replace with midformat parsed from the current multiprocessing process.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.replace" title="snappl.logger.SNLogger.replace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">replace</span></code></a>([midformat, datefmt, show_millisec, ...])</p></td>
+<td><p>Replace the logging.Logger object with a new one.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.setLevel" title="snappl.logger.SNLogger.setLevel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setLevel</span></code></a>([level])</p></td>
+<td><p>Set the log level of the logging.Logger object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.set_level" title="snappl.logger.SNLogger.set_level"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_level</span></code></a>([level])</p></td>
+<td><p>Set the log level of the logging.Logger object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.logger.SNLogger.warning" title="snappl.logger.SNLogger.warning"><code class="xref py py-obj docutils literal notranslate"><span class="pre">warning</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.critical">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">critical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.critical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.critical" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.debug">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">debug</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.debug"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.debug" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.error">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.error" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.exception">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">exception</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.exception"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.exception" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.get">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.get" title="Link to this definition">¶</a></dt>
+<dd><p>Return the logging.Logger object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.getEffectiveLevel">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getEffectiveLevel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.getEffectiveLevel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.getEffectiveLevel" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.info">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.info" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.instance">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.instance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.instance" title="Link to this definition">¶</a></dt>
+<dd><p>Return the singleton instance of SNLogger.</p>
+<p>The first time this is called, it will create the object.
+Normally, you never need to call this class method explicitly,
+as all the various other class methods call it.  If you want any
+of the defaults to be different from the defaults set in
+__init__ below, you will need to call this class method <em>before</em>
+the first time you use SNLogger for anything else.  (However,
+you can also call SNLogger.replace() to change the options
+used.)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.multiprocessing_replace">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">multiprocessing_replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.multiprocessing_replace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.multiprocessing_replace" title="Link to this definition">¶</a></dt>
+<dd><p>Shorthand for replace with midformat parsed from the current multiprocessing process.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.replace">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">midformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datefmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_millisec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">handler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.replace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.replace" title="Link to this definition">¶</a></dt>
+<dd><p>Replace the logging.Logger object with a new one.</p>
+<p>Subsequent calls to SNLogger.get(), .info(), etc. will now
+return the new one.  Will inherit the various arguments from the
+current logger if they aren’t specified here.</p>
+<p>See __init__ for parameters.</p>
+<p>Returns the logging.Logger object you’d get from get().</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.setLevel">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">setLevel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.setLevel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.setLevel" title="Link to this definition">¶</a></dt>
+<dd><p>Set the log level of the logging.Logger object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.set_level">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.set_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.set_level" title="Link to this definition">¶</a></dt>
+<dd><p>Set the log level of the logging.Logger object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.logger.SNLogger.warning">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">warning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/logger.html#SNLogger.warning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.logger.SNLogger.warning" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.config.NotFoundValue.html" title="Previous document">NotFoundValue</a>
+        </li>
+        <li>
+          <a href="snappl.utils.isSequence.html" title="Next document">isSequence</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/snappl.logger.SNLogger.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

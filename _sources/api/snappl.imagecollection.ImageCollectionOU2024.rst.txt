@@ -1,0 +1,31 @@
+ImageCollectionOU2024
+=====================
+
+.. currentmodule:: snappl.imagecollection
+
+.. autoclass:: ImageCollectionOU2024
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~ImageCollectionOU2024.base_path
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ImageCollectionOU2024.find_images
+      ~ImageCollectionOU2024.get_image
+      ~ImageCollectionOU2024.get_image_path
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: base_path
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: find_images
+   .. automethod:: get_image
+   .. automethod:: get_image_path

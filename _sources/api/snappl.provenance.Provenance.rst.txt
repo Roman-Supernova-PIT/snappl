@@ -1,0 +1,29 @@
+Provenance
+==========
+
+.. currentmodule:: snappl.provenance
+
+.. autoclass:: Provenance
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~Provenance.get
+      ~Provenance.get_by_id
+      ~Provenance.get_provs_for_tag
+      ~Provenance.parse_provenance
+      ~Provenance.save_to_db
+      ~Provenance.spec_dict
+      ~Provenance.update_id
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get
+   .. automethod:: get_by_id
+   .. automethod:: get_provs_for_tag
+   .. automethod:: parse_provenance
+   .. automethod:: save_to_db
+   .. automethod:: spec_dict
+   .. automethod:: update_id

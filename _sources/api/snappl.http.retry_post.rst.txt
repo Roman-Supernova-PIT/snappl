@@ -1,0 +1,6 @@
+retry_post
+==========
+
+.. currentmodule:: snappl.http
+
+.. autofunction:: retry_post

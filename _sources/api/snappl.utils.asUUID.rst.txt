@@ -1,0 +1,6 @@
+asUUID
+======
+
+.. currentmodule:: snappl.utils
+
+.. autofunction:: asUUID

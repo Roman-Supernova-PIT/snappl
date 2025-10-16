@@ -1,0 +1,17 @@
+SNPITJsonEncoder
+================
+
+.. currentmodule:: snappl.utils
+
+.. autoclass:: SNPITJsonEncoder
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~SNPITJsonEncoder.default
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: default

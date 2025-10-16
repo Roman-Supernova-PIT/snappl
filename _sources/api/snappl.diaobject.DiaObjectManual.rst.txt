@@ -1,0 +1,7 @@
+DiaObjectManual
+===============
+
+.. currentmodule:: snappl.diaobject
+
+.. autoclass:: DiaObjectManual
+   :show-inheritance:

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>snappl.provenance &#8212; roman_snpit_snappl 0.1.dev1+gc1ce411ec documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../_static/documentation_options.js?v=07c74686"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for snappl.provenance</h1><div class="highlight"><pre>
+<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;Provenance&#39;</span> <span class="p">]</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITJsonEncoder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.dbclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITDBClient</span>
+
+
+<div class="viewcode-block" id="Provenance">
+<a class="viewcode-back" href="../../api/snappl.provenance.Provenance.html#snappl.provenance.Provenance">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Provenance</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">major</span><span class="p">,</span> <span class="n">minor</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{},</span> <span class="n">environment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">env_major</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">env_minor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">omitkeys</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;system&#39;</span><span class="p">],</span> <span class="n">keepkeys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">upstreams</span><span class="o">=</span><span class="p">[]</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate a Provenance</span>
+
+<span class="sd">        Once instantiated, will have a property id that holds the UUID</span>
+<span class="sd">        for this provenance.  This UUID is defined from a md5 hash of</span>
+<span class="sd">        all the arguments, so will be the same every time you pass the</span>
+<span class="sd">        same arguments.  (It&#39;s convenient that md5sums and UUIDs are</span>
+<span class="sd">        both 128-bit numbers.)</span>
+
+<span class="sd">        Parmaeters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          process : str</span>
+<span class="sd">            The name of the process, e.g. &quot;phrosty&quot;, &quot;campari&quot;, &quot;import_rapid_alert&quot;, etc.</span>
+
+<span class="sd">          major : int</span>
+<span class="sd">            Semantic major version of the code described by process.</span>
+
+<span class="sd">          minor : int</span>
+<span class="sd">            Semantic minor version of the code described by process.</span>
+
+<span class="sd">          params : Config or dict, default {}</span>
+<span class="sd">            Parameters that uniquely define process. This should include</span>
+<span class="sd">            all parameters that would be the same for all runs on one</span>
+<span class="sd">            set of data.  So, for instance, for difference imaging</span>
+<span class="sd">            transient detection software, you would *not* include the</span>
+<span class="sd">            name of the science image or the name of the transient.</span>
+<span class="sd">            However, you would include things like configuration</span>
+<span class="sd">            parameters to SFFT, detection thresholds, and the name and</span>
+<span class="sd">            parameters of however you decided to figure out which</span>
+<span class="sd">            template image to use.</span>
+
+<span class="sd">            You can also pass a snappl.config.Config object, in which</span>
+<span class="sd">            case the parameters will be extracted from that.  This</span>
+<span class="sd">            assumes that the &quot;system&quot; top level key of that Config has</span>
+<span class="sd">            all, but only, the system-specific stuff.</span>
+
+<span class="sd">          environment : int, default None</span>
+<span class="sd">            Which SNPIT environment did the process use?  TODO: this</span>
+<span class="sd">            still need to be defined.</span>
+
+<span class="sd">          env_major : int, default None</span>
+<span class="sd">            Semantic major version of environment.</span>
+
+<span class="sd">          env_minor : int, default None</span>
+<span class="sd">            Semantic minor version of environment.</span>
+
+<span class="sd">          upstreams : list of Provenance</span>
+<span class="sd">            Upstream provenances to this provenance.  Only include immediate upstreams;</span>
+<span class="sd">            no need for upstreams of upstreams, as those will be tracked by the immedaite</span>
+<span class="sd">            upstreams.  Can also send a single Provenance.</span>
+
+<span class="sd">          omitkeys : list of str, default [&#39;system&#39;]</span>
+<span class="sd">            Ignored unless params is a Config object.  In this case,</span>
+<span class="sd">            these are the keys from the Config to omit and not include</span>
+<span class="sd">            in the parameters dictionary.  Only one of omitkeys or</span>
+<span class="sd">            keepkeys can be non-None.</span>
+
+<span class="sd">          keepkeys : list of str, default None</span>
+<span class="sd">            Ignored unless params is a Config object.  In this case,</span>
+<span class="sd">            only include the specified keys from the Config.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process</span> <span class="o">=</span> <span class="n">process</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">major</span> <span class="o">=</span> <span class="n">major</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minor</span> <span class="o">=</span> <span class="n">minor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">=</span> <span class="n">environment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">env_major</span> <span class="o">=</span> <span class="n">env_major</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">env_minor</span> <span class="o">=</span> <span class="n">env_minor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upstreams</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="n">upstreams</span> <span class="p">)</span> <span class="k">if</span> <span class="n">upstreams</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">u</span><span class="p">,</span> <span class="n">Provenance</span> <span class="p">)</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">upstreams</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;upstream must be a list of Provenance&quot;</span> <span class="p">)</span>
+        <span class="c1"># Sort upstreams by id so they are in a reproducible order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upstreams</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">id</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">params</span><span class="p">,</span> <span class="n">Config</span> <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">dump_to_dict_for_params</span><span class="p">(</span> <span class="n">omitkeys</span><span class="o">=</span><span class="n">omitkeys</span><span class="p">,</span> <span class="n">keepkeys</span><span class="o">=</span><span class="n">keepkeys</span> <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">params</span><span class="p">,</span> <span class="nb">dict</span> <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;params must be a Config or a dict, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_id</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Provenance.spec_dict">
+<a class="viewcode-back" href="../../api/snappl.provenance.Provenance.html#snappl.provenance.Provenance.spec_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">spec_dict</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span> <span class="s1">&#39;process&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">,</span>
+                 <span class="s1">&#39;major&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">major</span><span class="p">,</span>
+                 <span class="s1">&#39;minor&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">minor</span><span class="p">,</span>
+                 <span class="s1">&#39;environment&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">,</span>
+                 <span class="s1">&#39;env_major&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">env_major</span><span class="p">,</span>
+                 <span class="s1">&#39;env_minor&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">env_minor</span><span class="p">,</span>
+                 <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span>
+                 <span class="s1">&#39;upstream_ids&#39;</span><span class="p">:</span> <span class="p">[</span> <span class="nb">str</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">upstreams</span> <span class="p">]</span>
+                <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="Provenance.update_id">
+<a class="viewcode-back" href="../../api/snappl.provenance.Provenance.html#snappl.provenance.Provenance.update_id">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_id</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update self.id based on stored properties.</span>
+
+<span class="sd">        If you change any of the properties of the object that define</span>
+<span class="sd">        the Provenance, you must call this to make the id property</span>
+<span class="sd">        correct.  Probably this is a bad idea; you should view</span>
+<span class="sd">        Provenance objects as immutable and not change them after you</span>
+<span class="sd">        make them.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Note : we need the sort_keys here, because while python dictionaries are</span>
+        <span class="c1">#   ordered, json dictionaries are NOT.  This means that the key order is</span>
+        <span class="c1">#   going to get munged somewhere along the line.  (If not in our string</span>
+        <span class="c1">#   encoding, then when saved to PostgreSQL JSONB objects.)  So that the id</span>
+        <span class="c1">#   is reproducible, we have to punt on the ordering of the params, and</span>
+        <span class="c1">#   sort the keys when writing out the JSON string so that they always come</span>
+        <span class="c1">#   in the same order regardless of whether it came from an initial python</span>
+        <span class="c1">#   dict, or if it came through JSON with unordered dictionaries.</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_dict</span><span class="p">(),</span> <span class="bp">cls</span><span class="o">=</span><span class="n">SNPITJsonEncoder</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span> <span class="s2">&quot;utf-8&quot;</span> <span class="p">)</span>
+        <span class="n">barf</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">standard_b64encode</span><span class="p">(</span> <span class="n">spec</span> <span class="p">)</span>
+        <span class="n">md5sum</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span> <span class="n">barf</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span> <span class="n">md5sum</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span> <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Provenance.save_to_db">
+<a class="viewcode-back" href="../../api/snappl.provenance.Provenance.html#snappl.provenance.Provenance.save_to_db">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_to_db</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">replace_tag</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">exists</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save this provenance to the database.</span>
+
+<span class="sd">        Will call self.update_id() as a side effect, just to make sure</span>
+<span class="sd">        the right ID is saved to the database.</span>
+
+<span class="sd">        If you save a provenance with upstreams, those upstreams must</span>
+<span class="sd">        have previously been saved themselves.  (So, you can&#39;t create</span>
+<span class="sd">        a whole provenance tree and have the whole thing saved in</span>
+<span class="sd">        one call; it doesn&#39;t recurse.)</span>
+
+<span class="sd">        Parmaeters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          tag : str, default None</span>
+<span class="sd">            Add this provenance to this provenance tag for this process.</span>
+
+<span class="sd">          replace_tag : bool, default False</span>
+<span class="sd">            Ignored if tag is None.  If tag is set, but a provenance</span>
+<span class="sd">            already exists for this process and tag, then normally</span>
+<span class="sd">            that&#39;s an error.  If replace_tag is True, delete the old</span>
+<span class="sd">            provenance associated with the tag and set the new</span>
+<span class="sd">            provenance.</span>
+
+<span class="sd">          exists : bool, default None</span>
+<span class="sd">            If None, and the provenance already exists in the database,</span>
+<span class="sd">            do nothing.  If False, and the provenance already exists in</span>
+<span class="sd">            the database, raise an exception.  If True, and the</span>
+<span class="sd">            provenance doesn&#39;t already exist in the database, raise an</span>
+<span class="sd">            exception.  It doesn&#39;t make a lot of sense, usually, to call</span>
+<span class="sd">            this method with exists=True.</span>
+
+<span class="sd">          dbclient: snappl.dbclient.SNPITDBClient</span>
+<span class="sd">            This is needed to talk to the Roman SNPIT database web</span>
+<span class="sd">            server.  If not given, will construct one based on config.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_id</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">savedprov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">savedprov</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">savedprov</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">exists</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="n">exists</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Provenance </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> doesn&#39;t exist in the database, and exists is True; &quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;why are you calling save_to_db???&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="n">savedprov</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">exists</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="ow">not</span> <span class="n">exists</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Error saving provenance </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">; it already exists in the database.&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">savedprov</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="s2">&quot;createprovenance&quot;</span><span class="p">,</span>
+                                 <span class="p">{</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+                                   <span class="s1">&#39;process&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">,</span>
+                                   <span class="s1">&#39;major&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">major</span><span class="p">,</span>
+                                   <span class="s1">&#39;minor&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">minor</span><span class="p">,</span>
+                                   <span class="s1">&#39;environment&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">,</span>
+                                   <span class="s1">&#39;env_major&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">env_major</span><span class="p">,</span>
+                                   <span class="s1">&#39;env_minor&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">env_minor</span><span class="p">,</span>
+                                   <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span>
+                                   <span class="s1">&#39;upstream_ids&#39;</span><span class="p">:</span> <span class="p">[</span> <span class="nb">str</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">upstreams</span> <span class="p">],</span>
+                                   <span class="s1">&#39;tag&#39;</span><span class="p">:</span> <span class="n">tag</span><span class="p">,</span>
+                                   <span class="s1">&#39;replace_tag&#39;</span><span class="p">:</span> <span class="n">replace_tag</span> <span class="p">}</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;ok&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Something went wrong saving provenance </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> to the databse.&quot;</span> <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Provenance.get">
+<a class="viewcode-back" href="../../api/snappl.provenance.Provenance.html#snappl.provenance.Provenance.get">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">major</span><span class="p">,</span> <span class="n">minor</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{},</span> <span class="n">environment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">env_major</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">env_minor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+             <span class="n">upstreams</span><span class="o">=</span><span class="p">[],</span> <span class="n">exists</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">savetodb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a Provenance based on properties.</span>
+
+<span class="sd">        Arguments are the same as are passed to the Provenance constructor, plus:</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          process, major, minor, params, environment, env_major, env_minor : varied</span>
+<span class="sd">            These are the same as what&#39;s passed to the Provenance constructor</span>
+
+<span class="sd">          exists : bool, default None</span>
+<span class="sd">            Normally, you get back the provenance you ask for.  (This</span>
+<span class="sd">            is, depending on savetodb, just the same as instantiating a</span>
+<span class="sd">            Provenance object.)  However, if exists is True, then it</span>
+<span class="sd">            will raise an exception if the provenance isn&#39;t already</span>
+<span class="sd">            saved to the database.  If exists is False, then it will</span>
+<span class="sd">            raise an exception if the provenance *is* already saved to</span>
+<span class="sd">            the database.  (Setting exists=False mostly only makes sense</span>
+<span class="sd">            when setting savetodb to True.)</span>
+
+<span class="sd">          savetodb : bool, default False</span>
+<span class="sd">            By default, you get the Provenance you ask for, but</span>
+<span class="sd">            thedatabse is not changed.  Set this to True to save the</span>
+<span class="sd">            provenance to the database.  If savetodb is True and exists</span>
+<span class="sd">            is True, then nothing is saved, because either the</span>
+<span class="sd">            provenance already exists, or an exception was raised.  If</span>
+<span class="sd">            savetodb is True and exists is None, then the provenance</span>
+<span class="sd">            will be saved to the database if it doesn&#39;t already exist.</span>
+<span class="sd">            If savetodb is True and exists is False, an exception will</span>
+<span class="sd">            be raised if the provenance is already in the database,</span>
+<span class="sd">            otherwise the new provenance will be saved.</span>
+
+<span class="sd">          dbclient: snappl.dbclient.SNPITDBClient</span>
+<span class="sd">            This is needed to talk to the Roman SNPIT database web</span>
+<span class="sd">            server.  If not given, will construct one based on config.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">prov</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span> <span class="n">process</span><span class="p">,</span> <span class="n">major</span><span class="p">,</span> <span class="n">minor</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="n">environment</span><span class="p">,</span>
+                    <span class="n">env_major</span><span class="o">=</span><span class="n">env_major</span><span class="p">,</span> <span class="n">env_minor</span><span class="o">=</span><span class="n">env_minor</span><span class="p">,</span> <span class="n">upstreams</span><span class="o">=</span><span class="n">upstreams</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">exists</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">existing</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span> <span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Requested provenance </span><span class="si">{</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> does not exist in the database.&quot;</span> <span class="p">)</span>
+
+            <span class="n">existing</span><span class="o">.</span><span class="n">update_id</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">existing</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Existing provenance id is wrong in the database!  This should not happen!&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">savetodb</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">prov</span><span class="o">.</span><span class="n">save_to_db</span><span class="p">(</span> <span class="n">exists</span><span class="o">=</span><span class="n">exists</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span> <span class="n">exists</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="ow">not</span> <span class="n">exists</span> <span class="p">):</span>
+                    <span class="k">raise</span>
+                <span class="c1"># Otherwise, the exception just means it was already there, so we don&#39;t care</span>
+
+        <span class="k">return</span> <span class="n">prov</span></div>
+
+
+<div class="viewcode-block" id="Provenance.parse_provenance">
+<a class="viewcode-back" href="../../api/snappl.provenance.Provenance.html#snappl.provenance.Provenance.parse_provenance">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_provenance</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">provdict</span> <span class="p">):</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span> <span class="n">k</span><span class="p">:</span> <span class="n">provdict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span> <span class="s1">&#39;process&#39;</span><span class="p">,</span> <span class="s1">&#39;major&#39;</span><span class="p">,</span> <span class="s1">&#39;minor&#39;</span><span class="p">,</span> <span class="s1">&#39;params&#39;</span><span class="p">,</span>
+                                             <span class="s1">&#39;environment&#39;</span><span class="p">,</span> <span class="s1">&#39;env_major&#39;</span><span class="p">,</span> <span class="s1">&#39;env_minor&#39;</span> <span class="p">]</span>
+                  <span class="p">}</span>
+        <span class="n">kwargs</span><span class="p">[</span> <span class="s1">&#39;upstreams&#39;</span> <span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_provenance</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">provdict</span><span class="p">[</span><span class="s1">&#39;upstreams&#39;</span><span class="p">]</span> <span class="p">]</span>
+        <span class="n">prov</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">!=</span> <span class="n">provdict</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Got provenance </span><span class="si">{</span><span class="n">provdict</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> back from the database, but when I rebuilt it, &quot;</span>
+                              <span class="sa">f</span><span class="s2">&quot;I got </span><span class="si">{</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">.  This is bad.&quot;</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="n">prov</span></div>
+
+
+
+<div class="viewcode-block" id="Provenance.get_by_id">
+<a class="viewcode-back" href="../../api/snappl.provenance.Provenance.html#snappl.provenance.Provenance.get_by_id">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_by_id</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">provid</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a Provenance pulled from the database.</span>
+
+<span class="sd">        Raises an exception if it does not exist.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          provid: UUID</span>
+<span class="sd">             The ID to fetch</span>
+
+<span class="sd">          dbclient: snappl.dbclient.SNPITDBClient</span>
+<span class="sd">            This is needed to talk to the Roman SNPIT database web</span>
+<span class="sd">            server.  If not given, will construct one based on config.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_provenance</span><span class="p">(</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;getprovenance/</span><span class="si">{</span><span class="n">provid</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span> <span class="p">)</span></div>
+
+
+
+
+<div class="viewcode-block" id="Provenance.get_provs_for_tag">
+<a class="viewcode-back" href="../../api/snappl.provenance.Provenance.html#snappl.provenance.Provenance.get_provs_for_tag">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_provs_for_tag</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Provenances for a given provenance tag.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          tag : str</span>
+<span class="sd">            The provenance tag to search</span>
+
+<span class="sd">          process : str, default None</span>
+<span class="sd">            The process to get provenances for.  If None, will get all</span>
+<span class="sd">            provenances associated with the tag.</span>
+
+<span class="sd">          dbclient: snappl.dbclient.SNPITDBClient</span>
+<span class="sd">            This is needed to talk to the Roman SNPIT database web</span>
+<span class="sd">            server.  If not given, will construct one based on config.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          Provenance or list of Provenance</span>
+
+<span class="sd">          If process is not None, you get back a Provenance (or an</span>
+<span class="sd">          exception is raised if the provenance wasn&#39;t found).  If</span>
+<span class="sd">          process is None, you get back a list of Provenance.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="k">if</span> <span class="n">process</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_provenance</span><span class="p">(</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;/getprovenance/</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">process</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse_provenance</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;/provenancesfortag/</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span> <span class="p">]</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

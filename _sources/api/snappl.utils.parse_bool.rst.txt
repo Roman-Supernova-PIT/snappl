@@ -1,0 +1,6 @@
+parse_bool
+==========
+
+.. currentmodule:: snappl.utils
+
+.. autofunction:: parse_bool
