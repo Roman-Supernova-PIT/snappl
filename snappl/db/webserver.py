@@ -7,6 +7,7 @@ from rkwebutil import rkauth_flask
 from snappl.config import Config
 from snappl.db import db
 from snappl.db.baseview import BaseView
+# from snappl.logger import SNLogger
 
 
 # ======================================================================
@@ -305,11 +306,21 @@ class FindL2Images( BaseView ):
 
             if ( 'ra' in data ) or ( 'dec' in data ):
                 # 'ra' and 'dec' are supposed to be "includes this".
+                #
+                # THINKING AHEAD : this poly query doesn't use the q3c index
+                # As the number of images get large, we should look at performance.
+                # We many need to do this in two steps, which would mean using
+                # a temp table.  First step would use regular indexes on the
+                # eight corner variables and use LEAST and GREATEST with ra and dec.
+                # Then, a second query would use the poly query on the temp table
+                # resulting from that first query.  (Or maybe you can do it all
+                # with clever nested queries.)
+                #
                 if not ( ( 'ra' in data ) and ( 'dec' in data ) ):
                     return "Error, if you specify ra or dec, you must specify both"
-                conditions.append( "q3c_poly_query( %(ra), %(dec), "
+                conditions.append( "q3c_poly_query( %(ra)s, %(dec)s, "
                                    "ARRAY[ ra_corner_00, dec_corner_00, ra_corner_01, dec_corner_01, "
-                                   "       ra_corner_11, dec_corner_11, ra_corner_10, dec_corner_10 ]" )
+                                   "       ra_corner_11, dec_corner_11, ra_corner_10, dec_corner_10 ] )" )
                 subdict.update( { 'ra': data['ra'], 'dec': data['dec'] } )
                 del data['ra']
                 del data['dec']
@@ -360,6 +371,6 @@ urls = {
     "/getdiaobject/<diaobjectid>": GetDiaObject,
     "/finddiaobjects/<provid>": FindDiaObjects,
 
-    "/getl2image/<l2imageid>": GetL2Image,
+    "/getl2image/<imageid>": GetL2Image,
     "/findl2images/<provid>": FindL2Images,
 }

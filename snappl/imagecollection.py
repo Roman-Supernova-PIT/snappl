@@ -2,11 +2,14 @@ __all__ = [ 'ImageCollection', 'ImageCollectionOU2024', 'ImageCollectionManualFI
 
 import pathlib
 
+import simplejson
+
 from snappl.config import Config
 from snappl.http import retry_post
 from snappl.image import OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
+from snappl.utils import asUUID, SNPITJsonEncoder
 
 
 class ImageCollection:
@@ -400,7 +403,7 @@ class ImageCollectionDB:
 
         if image_id is not None:
             row = dbclient.send( f"/getl2image/{image_id}" )
-            if row['provenance_id'] != self.provenance.id:
+            if asUUID(row['provenance_id']) != self.provenance.id:
                 raise ValueError( f"Asked for image {image_id} in provenance {self.provenance.id}, but that image "
                                   f"actually has provenance {row['provenance_id']}" )
 
@@ -412,7 +415,9 @@ class ImageCollectionDB:
             data = { k: v for k, v in zip( ['filepath', 'pointing', 'filter', 'sca' ],
                                            [path, pointing, band, sca ] )
                      if v is not None }
-            rows = dbclient.send( f"/findl2images/{self.provenance.id}", data )
+            rows = dbclient.send( f"/findl2images/{self.provenance.id}",
+                                  data=simplejson.dumps( data, cls=SNPITJsonEncoder ),
+                                  headers={'Content-Type': 'application/json'} )
             if len(rows) == 0:
                 raise RuntimeError( "Image not found for provenance {self.provenance.id} and {data}" )
             elif len(rows) > 1:
@@ -431,7 +436,9 @@ class ImageCollectionDB:
 
     def find_images( self, dbclient=None, **kwargs ):
         dbclient = SNPITDBClient() if dbclient is None else dbclient
-        rows = dbclient.send( f'findl2images/{self.provenance.id}', kwargs )
+        rows = dbclient.send( f'findl2images/{self.provenance.id}',
+                              data=simplejson.dumps( kwargs, cls=SNPITJsonEncoder ),
+                              headers={'Content-Type': 'application/json'} )
 
         images = []
         for row in rows:

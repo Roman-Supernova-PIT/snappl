@@ -58,6 +58,33 @@ RUN source /venv/bin/activate && \
        "pytest>=8.4.2,<9.0.0" \
        "remote-pdb==2.1.0"
 
+# TEMPORARY
+# This installs the preqreqs of snappl.  Really, we should
+#   just let that be installed when we do pip install .
+#   below.  However, during development, when editing
+#   the package a lot, it's faster to build the docker
+#   image if there's a previous step that already has the prereqs.
+#   In the mean time, KEEP THIS SYNCED WITH pyproject.toml
+RUN source /venv/bin/activate && \
+    pip --no-cache install \
+        "astropy>=7.1.0,<8.0.0" \
+        "fitsio>=1.2.5,<2.0.0" \
+        "galsim>=2.7.2,<3.0.0" \
+        "gwcs>=0.26.0,<0.27.0" \
+        "h5py>=3.14.0,<4.0.0" \
+        "numpy>=2.2.6,<3.0.0" \
+        "pandas>=2.3.3,<3.0.0" \
+        "photutils>=2.3.0,<3.0.0" \
+        "pycryptodome>=3.23.0,<4.0.0" \
+        "python-dateutil>=2.9.0.post0,<3.0.0" \
+        "pytz>=2025.2" \
+        "pyyaml>=6.0.3,<7.0.0" \
+        "rkwebutil>=2.3.0,<3.0.0" \
+        "roman-datamodels>=0.27.0,<0.28.0" \
+        "scipy>=1.16.2,<2.0.0" \
+        "simplejson>=3.20.2,<4.0.0"
+# END TEMPORARY
+
 RUN mkdir -p /usr/src/snappl_install
 WORKDIR /usr/src/snappl_install
 COPY . /usr/src/snappl_install
