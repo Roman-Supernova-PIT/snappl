@@ -16,6 +16,11 @@ class NoValue:
     pass
 
 
+class NotFoundValue:
+    """Used internally by Config, ignore."""
+    pass
+
+
 class Config:
     """Interface for yaml config file.
 
@@ -349,7 +354,7 @@ class Config:
 
 
     @staticmethod
-    def get( configfile=None, setdefault=None, static=True ):
+    def get( configfile=None, setdefault=None, static=True, clone=None ):
         """Returns a Config object.
 
         Parameters
@@ -396,6 +401,15 @@ class Config:
             modify the config.  Call Config.get(static=False) to get a
             modifiable version of the default config.
 
+        clone : Config, default None
+            If given, return a clone of this Config object.  The
+            returned object, if all is working properly, is a deep copy,
+            so it should be safe to mangle it.  It's not possibe to set
+            a cloned config object as default, nor is the cloned object
+            ever set as a singleton, so setdefault and static are both
+            ignored and treated as False when making a clone.
+
+
         Returns
         -------
             Config object
@@ -418,6 +432,12 @@ class Config:
         default", then an exception will be raised.
 
         """
+
+        if clone is not None:
+            if configfile is not None:
+                raise ValueError( "Only specify one of clone or configfile." )
+            return Config( clone=clone, _ok_to_call=True )
+
         if configfile is None:
             if Config._default is not None:
                 configfile = Config._default
@@ -540,6 +560,7 @@ class Config:
             SNLogger.exception( f'Exception trying to load config from {configfile}' )
             raise e
 
+
     def value( self, field, default=NoValue(), struct=None ):
         """Get a value from the config structure.
 
@@ -596,49 +617,8 @@ class Config:
 
         """
 
-        if struct is None:
-            struct = self._data
-        fields, isleaf, curfield, ifield = self._fieldsep( field )
-
-        if isinstance( struct, list ):
-            if ifield is None:
-                raise ValueError( f'Failed to parse {curfield} as an integer index' )
-            if ifield >= len(struct):
-                raise ValueError( f'{ifield} >= {len(struct)}, the length of the list' )
-            if isleaf:
-                return_value = struct[ifield]
-            else:
-                try:
-                    return_value = self.value( ".".join(fields[1:]), default, struct[ifield] )
-                except Exception as e:
-                    if isinstance(default, NoValue):
-                        raise ValueError( f'Error getting list element {ifield}' ) from e
-                    else:
-                        return_value = default
-        elif isinstance( struct, dict ):
-            if curfield not in struct:
-                if isinstance(default, NoValue):
-                    raise ValueError( f'Field {curfield} doesn\'t exist' )
-                else:
-                    return_value = default
-            elif isleaf:
-                return_value = struct[curfield]
-            else:
-                try:
-                    return_value = self.value( ".".join(fields[1:]), default, struct[curfield] )
-                except Exception as e:
-                    if isinstance(default, NoValue):
-                        raise ValueError( f'Error getting field {field} from {curfield}' ) from e
-                    else:
-                        return_value = default
-        else:
-            if not isleaf:
-                raise ValueError( f'Tried to get field {field} of scalar {curfield}!' )
-            return_value = struct
-
-        if isinstance(return_value, (dict, list)):
-            return_value = copy.deepcopy( return_value )
-        return return_value
+        _, _, value = self._parent_key_and_value( field, parent=None, struct=struct, default=default )
+        return value
 
 
     def set_value( self, field, value, structpass=None, appendlists=False ):
@@ -736,6 +716,97 @@ class Config:
                     structpass.struct = [ structchuck.struct ]
 
 
+    def _parent_key_and_value( self, field, parent=None, struct=None, fullfield=None, default=NoValue ):
+        fullfield = fullfield if fullfield is not None else field
+        if struct is None:
+            struct = self._data
+        fields, isleaf, curfield, ifield = self._fieldsep( field )
+
+        if isinstance( struct, list ):
+            if ifield is None:
+                raise ValueError( f'Failed to parse {curfield} of {fullfield} as an integer index' )
+            elif ifield < 0:
+                if isinstance( default, NoValue ):
+                    raise ValueError( f'Array index {ifield} is negative for {fullfield}' )
+                else:
+                    return_parent = struct
+                    return_key = ifield
+                    return_value = default
+            elif ifield >= len(struct):
+                if isinstance( default, NoValue ):
+                    raise ValueError( f'{ifield} >= {len(struct)}, the length of the list for {fullfield}' )
+                else:
+                    return_parent = struct
+                    return_key = ifield
+                    return_value = default
+            elif isleaf:
+                return_parent = struct
+                return_key = ifield
+                return_value = struct[ifield]
+            else:
+                return_parent, return_key, return_value = self._parent_key_and_value( ".".join(fields[1:]),
+                                                                                      parent=struct,
+                                                                                      struct=struct[ifield],
+                                                                                      fullfield=fullfield,
+                                                                                      default=default )
+
+        elif isinstance( struct, dict ):
+            if curfield not in struct:
+                if isinstance( default, NoValue ):
+                    raise ValueError( f"Can't find field {fullfield}" )
+                else:
+                    return_parent = struct
+                    return_key = curfield
+                    return_value = default
+            elif isleaf:
+                return_parent = struct
+                return_key = curfield
+                return_value = struct[curfield]
+            else:
+                return_parent, return_key, return_value = self._parent_key_and_value( ".".join(fields[1:]),
+                                                                                      parent=struct,
+                                                                                      struct=struct[curfield],
+                                                                                      fullfield=fullfield,
+                                                                                      default=default )
+
+        else:
+            if not isleaf:
+                raise ValueError( f'Tried to get field {field} of scalar {curfield} in {fullfield}!' )
+            return_parent = parent
+            return_key = curfield
+            return_value = struct
+
+        if isinstance(return_value, (dict, list)):
+            return_value = copy.deepcopy( return_value )
+
+        return return_parent, return_key, return_value
+
+
+    def delete_field( self, field, missing_ok=False ):
+        """Remove a field from the config.
+
+        Use this this with great care.
+
+        """
+        if self._static:
+            raise RuntimeError( "Not permitted to modify static Config object." )
+
+        parent, key, value = self._parent_key_and_value( field, default=NotFoundValue() )
+        if isinstance( value, NotFoundValue ):
+            if missing_ok:
+                return
+            else:
+                raise ValueError( f"Can't find config field {field} to delete it." )
+
+        if isinstance( parent, list ):
+            parent.pop( key )
+        elif isinstance( parent, dict ):
+            del parent[key]
+        else:
+            # ... I think this shouldn't ever actually happen
+            raise RuntimeError( "Rob, figure out how to cope with this." )
+
+
     @classmethod
     def _fieldsep( cls, field ):
         """Parses a period-separated config specifier string.  Internal use only.
@@ -762,6 +833,33 @@ class Config:
         except ValueError:
             ifield = None
         return fields, isleaf, curfield, ifield
+
+
+    @classmethod
+    def _is_parent_field( cls, parent, child ):
+        parent = parent.split( "." )
+        child = child.split( "." )
+        if len(parent) >= len(child):
+            return False
+        return child[ 0 : len(parent) ] == parent
+
+
+    @classmethod
+    def _allkeys( cls, struct, base="" ):
+        keys = []
+
+        if isinstance( struct, dict ):
+            for key, val in struct.items():
+                keys.append( f"{base}{key}" )
+                keys.extend( cls._allkeys( val, base=f'{base}{key}.' ) )
+        elif isinstance( struct, list ):
+            for i, val in enumerate( struct ):
+                keys.append( f"{base}{i}" )
+                keys.extend( cls._allkeys( val, base=f'{base}{i}.' ) )
+        else:
+            return []
+
+        return keys
 
 
     def _pathify( self, fname ):
@@ -886,6 +984,68 @@ class Config:
                 self.parse_args( args, path=f'{arg}_', _dict=val )
             elif getattr( args, arg ) is not None:
                 _dict[key] = getattr( args, arg )
+
+
+    def dump_to_dict_for_params( self, omitkeys=['system'], keepkeys=None ):
+        """Dump the config to a dictionary suitable for use in a Provenance params field.
+
+        Specify one of omitkeys or keepkeys.
+
+        Parameters
+        ----------
+          omitkeys: None, or list of str
+            This is a list of keys to delete from the config before
+            exporting it.  (The internal state of the config will not be
+            affected, only what is exported.)  Be careful not to list a
+            subkey of a key that's already earlier in the list, or
+            you'll get errors.
+
+            By default, the top-level key "system" is deleted, as per
+            the Roman SNPIT standard that this holds all of the (but
+            only the) system-specific config needed to run at a
+            particular place.  (system should not include anything that
+            changes the behavior of the code.)
+
+            However, this default is a bit profligate, as it will keep
+            all of the config options for all codes, not just the code
+            you're running right now.  Use with thought.
+
+          keepkeys: None, or list of str
+            This is a list of keeps to keep in the export.  Currently,
+            only top-level keys are supported.
+
+        Returns
+        -------
+          dict
+            This is a deep copy of the internal dictionary, so ideally
+            you should be able to do anything you want to it without
+            screwing up the internal config state.
+
+        """
+
+        if ( omitkeys is not None ) and ( keepkeys is not None ):
+            raise ValueError( "Only specify one of omitkeys or keepkeys." )
+
+        cfg = Config.get( clone=self )
+
+        if omitkeys is not None:
+            for kw in omitkeys:
+                cfg.delete_field( kw )
+
+        elif keepkeys is not None:
+            allkeys = Config._allkeys( cfg._data )
+            allkeys.reverse()
+            for kw in allkeys:
+                if not ( ( kw in keepkeys )
+                         or any( [ Config._is_parent_field( i, kw ) for i in keepkeys ] )
+                         or any( [ Config._is_parent_field( kw, i ) for i in keepkeys ] )
+                        ):
+                    cfg.delete_field( kw )
+
+        else:
+            raise ValueError( "Must specify either omitkeys or keepkeys." )
+
+        return cfg._data
 
 
 if __name__ == "__main__":

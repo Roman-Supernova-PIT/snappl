@@ -159,10 +159,10 @@ CREATE TABLE l2image(
     extension text[],
     width smallint,
     height smallint,
-    format smallint NOT NULL,
+    format smallint NOT NULL DEFAULT 0,
     mjd_start double precision NOT NULL,
     exptime real NOT NULL,
-    properties JSONB
+    properties JSONB DEFAULT '{}'::JSONB
 );
 CREATE INDEX ix_l2image_pointing ON l2image(pointing);
 CREATE INDEX ix_l2image_sca ON l2image(sca);
@@ -193,6 +193,7 @@ COMMENT ON COLUMN l2image.dec_corner_00 IS 'Dec of pixel (0,0)';
 COMMENT ON COLUMN l2image.dec_corner_01 IS 'Dec of pixel (0,height-1)';
 COMMENT ON COLUMN l2image.dec_corner_10 IS 'Dec of pixel (width-1,0)';
 COMMENT ON COLUMN l2image.dec_corner_11 IS 'Dec of pixel (width-1,height-1)';
+COMMENT ON COLUMN l2image.format IS '0=Unknown, 1=FITS, 2=Roman Datamodel';
 
 
 CREATE TABLE summed_image(

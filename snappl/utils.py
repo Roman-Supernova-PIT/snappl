@@ -1,4 +1,6 @@
-__all__ = [ 'isSequence', 'parse_bool', 'env_as_bool' ]
+__all__ = [ 'isSequence', 'parse_bool', 'env_as_bool', 'SNPITJsonEncoder' ]
+
+import pathlib
 
 import os
 import numbers
@@ -63,19 +65,30 @@ def env_as_bool( varname ):
     return parse_bool( os.getenv(varname) )
 
 
+def asUUID( id ):
+    """Pass either a UUID or a string representation of one, get a UUID back."""
+    if isinstance( id, uuid.UUID ):
+        return id
+    if not isinstance( id, str ):
+        raise TypeError( f"asUUID requires a UUID or a str, not a {type(id)}" )
+    return uuid.UUID( id )
+
+
 class SNPITJsonEncoder( simplejson.JSONEncoder ):
     """Some specific encodings we need for the JSON use.
 
-    We want to know how to encode UUIDs to strings.
+    UUIDs and Path objects to strings.
 
-    We want to be able to encoded numpy stuff.
+    numpy scalars to regular python floats and ints.
 
-    Encode datetime to isoformat strings.
+    numpy arrays to lists.  (May only work for 1d?)
+
+    datetime to iso-encoded strings
 
     """
 
     def default( self, obj ):
-        if isinstance( obj, uuid.UUID ):
+        if isinstance( obj, uuid.UUID ) or isinstance( obj, pathlib.Path ):
             return str( obj )
         if isinstance( obj, np.floating ):
             return float( obj )

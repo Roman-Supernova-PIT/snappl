@@ -16,7 +16,7 @@ def test_imagecollectionou2024_base_path():
     cfg = Config.get()
     col = ImageCollection.get_collection( "ou2024" )
     assert isinstance( col, ImageCollectionOU2024 )
-    assert col.base_path == pathlib.Path( cfg.value('ou24.images') )
+    assert col.base_path == pathlib.Path( cfg.value('system.ou24.images') )
 
 
 def test_imagecollectionou2024_get_image_path():
@@ -24,14 +24,16 @@ def test_imagecollectionou2024_get_image_path():
     col = ImageCollection.get_collection( "ou2024" )
 
     path = col.get_image_path( 13205, 'Y106', 1 )
-    assert path == pathlib.Path( cfg.value('ou24.images') ) / 'Y106/13205/Roman_TDS_simple_model_Y106_13205_1.fits.gz'
+    assert path == ( pathlib.Path( cfg.value('system.ou24.images') )
+                     / 'Y106/13205/Roman_TDS_simple_model_Y106_13205_1.fits.gz' )
 
 
 def test_imagecollectionou2024_get_image():
     cfg = Config.get()
     col = ImageCollection.get_collection( "ou2024" )
 
-    expectedpath = pathlib.Path( cfg.value('ou24.images') ) / 'Y106/13205/Roman_TDS_simple_model_Y106_13205_1.fits.gz'
+    expectedpath = ( pathlib.Path( cfg.value('system.ou24.images') )
+                     / 'Y106/13205/Roman_TDS_simple_model_Y106_13205_1.fits.gz' )
     img1 = col.get_image( path=expectedpath )
     assert isinstance( img1, snappl.image.OpenUniverse2024FITSImage )
     hdr = img1.get_fits_header()

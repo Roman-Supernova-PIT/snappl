@@ -1,4 +1,5 @@
 __all__ = [ 'setup_flask_app' ]
+import uuid
 import flask
 import flask_session
 
@@ -15,12 +16,12 @@ def setup_flask_app( application ):
     global urls
 
     application.config.from_mapping(
-        SECRET_KEY=Config.get().value( 'webserver.flask_secret_key' ),
+        SECRET_KEY=Config.get().value( 'system.webserver.flask_secret_key' ),
         SESSION_COOKIE_PATH='/',
         SESSION_TYPE='filesystem',
         SESSION_PERMANENT=True,
         SESSION_USE_SIGNER=True,
-        SESSION_FILE_DIR=Config.get().value( 'webserver.sessionstore' ),
+        SESSION_FILE_DIR=Config.get().value( 'system.webserver.sessionstore' ),
         SESSION_FILE_THRESHOLD=1000,
     )
 
@@ -33,14 +34,14 @@ def setup_flask_app( application ):
         db_name=dbname,
         db_user=dbuser,
         db_password=dbpasswd,
-        email_from = Config.get().value( 'webserver.emailfrom' ),
+        email_from = Config.get().value( 'system.webserver.emailfrom' ),
         email_subject = 'roman-snpit-db password reset',
         email_system_name = 'roman-snpit-db',
-        smtp_server = Config.get().value( 'webserver.smtpserver' ),
-        smtp_port = Config.get().value( 'webserver.smtpport' ),
-        smtp_use_ssl = Config.get().value( 'webserver.smtpusessl' ),
-        smtp_username = Config.get().value( 'webserver.smtpusername' ),
-        smtp_password = Config.get().value( 'webserver.smtppassword' )
+        smtp_server = Config.get().value( 'system.webserver.smtpserver' ),
+        smtp_port = Config.get().value( 'system.webserver.smtpport' ),
+        smtp_use_ssl = Config.get().value( 'system.webserver.smtpusessl' ),
+        smtp_username = Config.get().value( 'system.webserver.smtpusername' ),
+        smtp_password = Config.get().value( 'system.webserver.smtppassword' )
     )
     application.register_blueprint( rkauth_flask.bp )
 
@@ -279,6 +280,137 @@ class FindDiaObjects( BaseView ):
 
 # ======================================================================
 
+class SaveDiaObject( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected diaobject data in json POST data, didn't get any.", 500
+
+        data = flask.request.json
+        needed_keys = { 'provenance_id', 'name', 'ra', 'dec', 'mjd_discovery' }
+        allowed_keys = { 'id', 'iauname', 'mjd_peak', 'mjd_start', 'mjd_end', 'properties' }.union( needed_keys )
+        passed_keys = set( data.keys() )
+        if not passed_keys.issubset( allowed_keys ):
+            return f"Unknown keys: {passed_keys - allowed_keys}", 500
+        if not needed_keys.issubset( passed_keys ):
+            return f"Missing required keys: {passed_keys - needed_keys}", 500
+        if any( data[i] is None for i in needed_keys ):
+            return f"None of the necessary keys can be None: {needed_keys}"
+
+        if 'id' not in data:
+            data['id'] = uuid.uuid4()
+
+        duplicate_ok = False
+        if 'dupliate_ok' in data:
+            duplicate_ok = data['duplicate_ok']
+            del data['duplicate_ok']
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
+            if len(rows) != 0:
+                return f"diaobject {data['id']} already exists!", 500
+            if not duplicate_ok:
+                rows = dbcon.execute( "SELECT * FROM diaobject WHERE name=%(name)s AND provenance_id=%(prov)s",
+                                      { 'name': data['name'], 'prov': data['provenance_id'] } )
+                if len(rows) != 0:
+                    return ( f"diaobject with name {data['name']} in provenance {data['provenance_id']} "
+                             f"already exists!", 500 )
+
+            # Although this looks potentially Bobby Tablesish, the fact that we made
+            #   sure that data only included allowed keys above makes this not subject
+            #   to SQL injection attacks.
+            varnames = ','.join( str(k) for k in data.keys() )
+            varvals = ','.join( f'%({k})s' for k in data.keys() )
+            q = f"INSERT INTO diaobject({varnames}) VALUES ({varvals})"
+            dbcon.execute( q, data )
+            rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
+            if len(rows) == 0:
+                return f"Error, saved diaobject {data['id']}, but it's not showing up in the database", 500
+            elif len(rows) > 1:
+                return f"Database corruption, more than one diaobject with id={data['id']}", 500
+            else:
+                dbcon.commit()
+                return rows[0]
+
+
+# ======================================================================
+
+class GetL2Image( BaseView ):
+    def do_the_things( self, imageid ):
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM l2image WHERE id=%(id)s", { 'id': imageid } )
+
+        if len( rows ) > 1:
+            return f"Database corruption: multiple l2image with id {imageid}", 500
+        elif len( rows ) == 0:
+            return f"L2image not found: {imageid}", 500
+        else:
+            return rows[0]
+
+
+# ======================================================================
+
+class FindL2Images( BaseView ):
+    def do_the_things( self, provid ):
+        q = "SELECT * FROM l2image WHERE "
+        conditions = [ 'provenance_id=%(provid)s' ]
+        subdict = { 'provid': provid }
+
+        if flask.request.is_json:
+            data = flask.request.json
+
+            if ( 'ra' in data ) or ( 'dec' in data ):
+                # 'ra' and 'dec' are supposed to be "includes this".
+                #
+                # THINKING AHEAD : this poly query doesn't use the q3c index
+                # As the number of images get large, we should look at performance.
+                # We many need to do this in two steps, which would mean using
+                # a temp table.  First step would use regular indexes on the
+                # eight corner variables and use LEAST and GREATEST with ra and dec.
+                # Then, a second query would use the poly query on the temp table
+                # resulting from that first query.  (Or maybe you can do it all
+                # with clever nested queries.)
+                #
+                if not ( ( 'ra' in data ) and ( 'dec' in data ) ):
+                    return "Error, if you specify ra or dec, you must specify both"
+                conditions.append( "q3c_poly_query( %(ra)s, %(dec)s, "
+                                   "ARRAY[ ra_corner_00, dec_corner_00, ra_corner_01, dec_corner_01, "
+                                   "       ra_corner_11, dec_corner_11, ra_corner_10, dec_corner_10 ] )" )
+                subdict.update( { 'ra': data['ra'], 'dec': data['dec'] } )
+                del data['ra']
+                del data['dec']
+
+            for kw in [ 'pointing', 'sca', 'filter', 'filepath' ]:
+                if kw in data:
+                    conditions.append( f"{kw}=%({kw})s" )
+                    subdict[kw] = data[kw] if data[kw] is not None else None
+                    del data[kw]
+
+            for kw in [ 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
+                        'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
+                        'width', 'height', 'mjd_start', 'exptime' ]:
+                if kw in data:
+                    conditions.append( f"{kw}=%({kw})s" )
+                    subdict[kw] = data[kw] if data[kw] is not None else None
+                    del data[kw]
+                for edge, op in zip( [ 'min', 'max' ], [ '>=', '<=' ] ):
+                    if f'{kw}_{edge}' in data and data[f'{kw}_{edge}'] is not None:
+                        conditions.append( f"{kw} {op} %({kw}_{edge})s" )
+                        subdict[f'{kw}_{edge}'] = data[f'{kw}_{edge}']
+                        del data[f'{kw}_{edge}']
+
+            if len(data) != 0:
+                return f"Error, unknown parameters: {data.keys()}", 500
+
+        q += ' AND '.join( conditions )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( q, subdict )
+
+        return rows
+
+
+# ======================================================================
+
 urls = {
     "/": MainPage,
     "/test/<param>": TestEndpoint,
@@ -292,4 +424,8 @@ urls = {
 
     "/getdiaobject/<diaobjectid>": GetDiaObject,
     "/finddiaobjects/<provid>": FindDiaObjects,
+    "/savediaobject": SaveDiaObject,
+
+    "/getl2image/<imageid>": GetL2Image,
+    "/findl2images/<provid>": FindL2Images,
 }

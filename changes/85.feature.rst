@@ -1,0 +1,2 @@
+Add database connection to l2image, go back to using collection in
+DiaObject, some other small changes.

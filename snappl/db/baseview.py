@@ -71,7 +71,7 @@ class BaseView( flask.views.View ):
             #   writes out NaN which is not standard JSON and which
             #   the javascript JSON parser chokes on.  Sigh.
             if isinstance( retval, dict ) or isinstance( retval, list ):
-                SNLogger.warning( f"Dumping to json: {retval}" )
+                # SNLogger.warning( f"Dumping to json: {retval}" )
                 return ( simplejson.dumps( retval, ignore_nan=True, cls=SNPITJsonEncoder ),
                          200, { 'Content-Type': 'application/json' } )
             elif isinstance( retval, str ):
