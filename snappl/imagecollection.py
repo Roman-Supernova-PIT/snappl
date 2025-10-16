@@ -23,8 +23,9 @@ class ImageCollection:
     """
 
     @classmethod
-    def get_collection( cls, collection='snpitdb', subset=None, provenance_tag=None, process=None, provenance=None,
-                        **kwargs ):
+    def get_collection( cls, collection='snpitdb', subset=None,
+                        provenance_tag=None, process=None, provenance=None,
+                        dbclient=None, **kwargs ):
         """Get an ImageCollection object.
 
         Parameters
@@ -42,32 +43,42 @@ class ImageCollection:
                  * "threefile" - follows the convention of snappl.image.FITSImageStdHeaders
                                  and std_imagenames=True passed to the constructor
 
-          provenance_tag : str
+          provenance_tag : str, defanot None
             The Roman SNPIT internal database provenance tag for the
             provenance of the images.  Either provenance_tag or
             provenance is required when collection is 'snpitdb'.
             Invalid if collection is not 'snpitdb'.
 
-          process : str
+          process : str, default None
             The process to go with provenance_tag; required when
             provenance_tag is not None.
 
-          provenance : Provenance or UUID or str
+          provenance : Provenance or UUID or str, default None
             The Roman SNPIT internal database Provenance or provenance
             id for the images.  Either provenance_tag or provenance is
             required when collection is 'snpitdb'.  Invalid if
             collection is not 'snpitdb'.
 
+          dbclient : SNPITDBClient, default None
+            Only needed if collection is 'snpit'.  If None, a new one
+            will be made when needed.
+
           **kwargs : Some collections types require additional arguments.
 
         """
         if collection == 'snpitdb':
+            dbclient = SNPITDBClient() if dbclient is None else dbclient
             if ( provenance is None ) and ( provenance_tag is None ):
                 raise ValueError( 'Collection snpitdb requires either provenance_tag or provenance' )
             if ( provenance_tag is None ) != ( process is None ):
                 raise ValueError( 'Must specify either both or neither or provenance_tag and process' )
-            return ImageCollectionDB.get_collection( provenance_tag=provenance_tag, process=process,
-                                                     provenance=provenance, **kwargs )
+
+            if provenance is None:
+                provenance = Provenance.get_provs_for_tag( provenance_tag, process=process, dbclient=dbclient )
+            if not isinstance( provenance, Provenance ):
+                provenance = Provenance.get_by_id( provenance, dbclient=dbclient )
+
+            return ImageCollectionDB( provenance=provenance, **kwargs )
 
         # If we get here, we know collection isn't 'snpitdb'
 
@@ -76,6 +87,7 @@ class ImageCollection:
 
         if collection == 'ou2024':
             return ImageCollectionOU2024( **kwargs )
+
         elif collection == 'manual_fits':
             if subset is None:
                 return ImageCollectionManualFITS( **kwargs )
@@ -83,17 +95,26 @@ class ImageCollection:
                 return ImageCollectionManualFITS( threefile=True, **kwargs )
             else:
                 raise ValueError( f"Unknown subset {subset} of manual_fits" )
+
         else:
             raise ValueError( f"Unknown image collection {collection} (subset {subset})" )
 
-    def get_image( self, path=None, pointing=None, band=None, sca=None, base_path=None ):
+    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, dbclient=None ):
         """Return an object of a subclass of Image based on input parameters.
 
-        Often you will just specify a relative path in path.  However,
-        you might instead specify pointing, band, and sca.
+        You can specify an image by:
+          * image_id  (for collections that point to the internal Roman SNPIT database)
+          * path
+          * pointing, band, and sca
 
         Parameters
         ----------
+          image_id : UUID or str, default None
+            The id of the image you want to get.  This is only relevant
+            for image collections that refer to images in the internal
+            Roman SNPIT database, otherwise it is invalid.  If image_id
+            is given, then path, pointing, band, and sca are all ignored.
+
           path: Path or str, default None
             The path to the relative to base_path.  For some subclasses,
             this must be consistent wiht pointing, band, and sca if passed.
@@ -111,6 +132,11 @@ class ImageCollection:
             The base path for the image collection.  If not given, use
             the default for the collection from when the collection
             object was instantiated.
+
+          dbclient : SNPITDBClient, default None
+            Only relevant for image collections that refer to the
+            internal SNPIT database.  If None, a new connection will be
+            made if needed.
 
         Returns
         -------
@@ -205,7 +231,7 @@ class ImageCollectionOU2024:
             self._base_path = pathlib.Path( Config.get().value( 'system.ou24.images' ) )
         return self._base_path
 
-    def get_image( self, path=None, pointing=None, band=None, sca=None, base_path=None ):
+    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, base_path=None, dbclient=None ):
         """Return a OpenUniverse2024FITSImage based on specifications.
 
         If you specify all of path, pointing, band, and sca, they must
@@ -218,6 +244,9 @@ class ImageCollectionOU2024:
         get_image_path to find the image.
 
         """
+
+        if image_id is not None:
+            raise ValueError( "image_id is invalid for ImageCollectionOU2024" )
 
         base_path = self.base_path if base_path is None else pathlib.Path( base_path )
         if path is not None:
@@ -328,7 +357,10 @@ class ImageCollectionManualFITS:
     def find_images( self, **kwargs ):
         raise NotImplementedError( "find_images is not defined for ImageCollectionManualFITS" )
 
-    def get_image( self, path=None, pointing=None, band=None, sca=None, base_path=None ):
+    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, base_path=None, dbclient=None ):
+        if image_id is not None:
+            raise ValueError( "image_id is invalid for ImageCollectionManualFITS" )
+
         if path is None:
             raise ValueError( "ImageCollectionManualFITS.get_image requires a path, it can't "
                               "handle pointing/band/sca." )
@@ -342,77 +374,69 @@ class ImageCollectionManualFITS:
 
 
 # ======================================================================
-# There are multiple different database image collections, based on
-#   different image formats and base paths.
+# Images that are in the Roman SNPIT Database
 
 class ImageCollectionDB:
-    def __init__( self, provenance=None, base_path=None, base_path_config_value=None, _from_subclass=False ):
-        if not _from_subclass:
-            raise RuntimeError( "Don't instantiate ImageCollectionDB directly, make a subclass." )
+    image_class_dict = { 'ou2024': OpenUniverse2024FITSImage }
+    base_path_dict = { 'ou2024': 'system.ou24.images' }
 
+    def __init__( self, provenance=None, base_path=None ):
         if provenance is None:
             raise ValueError( "provenance is required" )
         self.provenance = provenance
 
+        prov_imclass = self.provenance.params['image_class']
+        if prov_imclass not in self.image_class_dict:
+            raise RuntimeError( "Unknown image_class {image_class}" )
+        self.image_class = self.image_class_dict[ prov_imclass ]
+
         if base_path is None:
-            if base_path_config_value is None:
-                raise ValueError( "At least one of base_path and base_path_config_value is required." )
-            base_path = Config.get().value( base_path_config_value )
+            base_path = Config.get().value( self.base_path_dict[ prov_imclass ] )
         self.base_path = pathlib.Path( base_path )
 
 
-    @classmethod
-    def get_collection( cls, provenance_tag=None, process=None, provenance=None, base_path=None, dbclient=None ):
-        classdict = { 'ou2024': ImageCollectionDBOU2024 }
-
+    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, dbclient=None ):
         dbclient = SNPITDBClient() if dbclient is None else dbclient
-        if provenance is None:
-            provenance = Provenance.get_provs_for_tag( provenance_tag, process=process, dbclient=dbclient )
-        if not isinstance( provenance, Provenance ):
-            provenance = Provenance.get_by_id( provenance, dbclient=dbclient )
 
-        if 'image_class' not in provenance.params:
-            raise ValueError( f"Invalid image provenance for provenance {provenance.id}, "
-                              f"image_class is not in params" )
-        if provenance.params[ 'image_class' ] not in classdict:
-            raise ValueError( f"Unknown image_class {provenance.params['image_class']}" )
+        if image_id is not None:
+            row = dbclient.send( f"/getl2image/{image_id}" )
+            if row['provenance_id'] != self.provenance.id:
+                raise ValueError( f"Asked for image {image_id} in provenance {self.provenance.id}, but that image "
+                                  f"actually has provenance {row['provenance_id']}" )
 
-        return classdict[provenance.params['image_class']]( provenance=provenance, base_path=base_path )
+        else:
+            if not ( ( path is not None ) or
+                     ( all( i is not None for i in [ pointing, band, sca ] ) ) ):
+                raise ValueError( "Must specify one of image_id, path, or (pointing, band, and sca)." )
 
+            data = { k: v for k, v in zip( ['filepath', 'pointing', 'filter', 'sca' ],
+                                           [path, pointing, band, sca ] )
+                     if v is not None }
+            rows = dbclient.send( f"/findl2images/{self.provenance.id}", data )
+            if len(rows) == 0:
+                raise RuntimeError( "Image not found for provenance {self.provenance.id} and {data}" )
+            elif len(rows) > 1:
+                raise RuntimeError( "Multiple images found for provenance {self.provenance.id} and {data}" )
 
-    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, base_path=None ):
-        if sum( [ image_id is not None ],
-                [ path is not None ],
-                [ ( pointing is not None ) and ( band is not None ) and ( sca is not None ) ]
-               ) != 1:
-            raise ValueError( "Must specify exactly one of image_id, path, or (pointing, band, and sca)." )
+            row = rows[0]
 
-        raise NotImplementedError( "Not implemented yet." )
+        row['path'] = self.base_path / row['filepath']
+        row['band'] = row['filter']
+        return self.image_class( **row )
 
 
     def get_image_path( self, pointing, band, sca, base_path=None, image_id=None ):
-        raise NotImplementedError( "Not implemented yet." )
+        raise NotImplementedError( "Not implemented yet, may not be..." )
 
 
-    def find_images( self, **kwargs ):
-        raise NotImplementedError( "Not implemented yet." )
-
-
-
-class ImageCollectionDBOU2024( ImageCollectionDB ):
-    def __init__( self, **kwargs ):
-        super().__init__( _from_subclass=True, base_path_config_value='system.ou24.images', **kwargs )
-
-
-    def find_images( self, dbclient=None, base_path=None, **kwargs ):
-        base_path = pathlib.Path( Config.get().value( 'system.ou24.images' ) if base_path is None else base_path )
-
+    def find_images( self, dbclient=None, **kwargs ):
         dbclient = SNPITDBClient() if dbclient is None else dbclient
         rows = dbclient.send( f'findl2images/{self.provenance.id}', kwargs )
 
         images = []
         for row in rows:
-            path = base_path / row['filepath']
-            images.append( OpenUniverse2024FITSImage( path ) )
+            row['path'] = self.base_path / row['filepath']
+            row['band'] = row['filter']
+            images.append( self.image_class( **row ) )
 
         return images

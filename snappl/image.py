@@ -61,7 +61,7 @@ class Image:
 
     data_array_list = [ 'all', 'data', 'noise', 'flags' ]
 
-    def __init__( self, path, pointing=None, sca=None, id=None ):
+    def __init__( self, path, pointing=None, sca=None, id=None, provenance_id=None, **kwargs ):
         """Instantiate an image.  You probably don't want to do that.
 
         This is an abstract base class that has limited functionality.
@@ -105,7 +105,12 @@ class Image:
           id : UUID or str that can be converted to UUID, default None
             Database ID of the image.  This is only relevant if the
             image is in the l2image table of the Roman SNPIT internal
-            database.
+            database (but is required in that case).
+
+          provenance_id : UUID or str that can be converted to UUID, default NOne
+            The id of the provenance of the image.  Only relevant if the
+            image is in the l2image table of the Roman SNPIT internal
+            database (but is required in that case).
 
         """
         if path is None:
@@ -119,6 +124,7 @@ class Image:
         self._is_cutout = False
         self._zeropoint = None
         self._id = asUUID( id ) if id is not None else None
+        self._provenance_id = asUUID( provenance_id ) if provenance_id is not None else None
 
     @property
     def id( self ):
@@ -129,6 +135,16 @@ class Image:
     def id( self, new_value ):
         """USE THIS WITH CARE.  It doesn't change the database, only the object in memory.  You may become confused."""
         self._id = asUUID( new_value ) if new_value is not None else None
+
+    @property
+    def provenance_id( self ):
+        """The database provenance uuid of the image in the l2image table."""
+        return self._provenance_id
+
+    @provenance_id.setter
+    def provenance_id( self, new_value ):
+        """USE THIS WITH CARE.  It doesn't change the database, only the object in memory.  You may become confused."""
+        self._provenance_id = asUUID( new_value ) if new_value is not None else None
 
     @property
     def data( self ):

@@ -1,10 +1,14 @@
+import pytest
 import pathlib
 
 from snappl.imagecollection import ImageCollection
 from snappl.image import OpenUniverse2024FITSImage
 from snappl.config import Config
+from snappl.utils import env_as_bool
 
 
+# This test is kinda slow, so give users the option to skip it
+@pytest.mark.skipif( env_as_bool('SKIP_SLOW_TESTS'), reason='SKIP_SLOW_TESTS is set' )
 def test_load_ou2024_l2images_1proc( loaded_ou2024_test_l2images_1proc, dbclient ):
     imcol = ImageCollection.get_collection( provenance_tag='dbou2024_test', process='import_ou2024_l2images_1proc',
                                             dbclient=dbclient )
