@@ -1,4 +1,4 @@
-__all__ = [ 'Config', 'NoValue' ]
+__all__ = [ 'Config', 'NoValue', 'NotFoundValue' ]
 
 import argparse
 import copy
@@ -59,7 +59,7 @@ class Config:
        call the augment_argparse() method of your config object.  Run
        the parse_args() method of your ArgumentParser, and then pass the
        return value to the parse_args() method of your config object.
-       For example:
+       For example::
 
          from snappl.config import Config
          import argparse
@@ -76,7 +76,7 @@ class Config:
        options as config arguments, using the fieldspec (see (3) below),
        replacing "." with "-".  Exception: if there is a list, it will
        not work down into the list, but will replace the whole list with
-       as single multi-valued argument.  For example, if your config is:
+       as single multi-valued argument.  For example, if your config is::
 
           scalar: val
 
@@ -89,7 +89,7 @@ class Config:
               - val
               - val2
 
-       Then you when you call Config.augment_argparse, you will have new arguments:
+       Then you when you call Config.augment_argparse, you will have new arguments::
 
            --scalar
            --dict-key1
@@ -100,13 +100,13 @@ class Config:
        You should ignore these; when you call Config.parse_args, it will
        look for all of them.
 
-    3. Get the value of something in your config with:
+    3. Get the value of something in your config with::
 
            configval = confobj.value( fieldspec )
 
        where fieldspec is just the field for a scalar, or .-separated
        fields for lists and dicts.  For lists, it must be a (0-offset)
-       integer index.  For example, if the yaml files includes:
+       integer index.  For example, if the yaml files includes::
 
          storage:
            images:
@@ -116,14 +116,14 @@ class Config:
 
        then confobj.value("storage.images.format") will return
        "fits". You can also ask configobj.value for higher levels.  For
-       example, config.value("storage.images") will return a dictionary:
+       example, config.value("storage.images") will return a dictionary::
 
           { "format": "fits",
             "single_file": False,
             "name_convention": "{inst_name}_{date}_{time}_{section_id}_{filter}_{im_type}_{prov_hash:.6s}"
           }
 
-    4. Change a config value with
+    4. Change a config value with::
 
            confobj.set_value( fieldspec, value )
 

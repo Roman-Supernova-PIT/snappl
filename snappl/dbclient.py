@@ -1,3 +1,5 @@
+__all__ = [ 'SNPITDBClient' ]
+
 from rkwebutil.rkauth_client import rkAuthClient
 
 from snappl.config import Config
