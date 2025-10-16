@@ -215,4 +215,4 @@ Here, ``<tag>`` is the :ref:`provenance tag <provenance_tags>` that you want to 
 The Roman SNPIT Test Environment
 --------------------------------
 
-(This is currently a bit of a mess, and I haven't figured out how to get this to work on Perlmutter.  However, if you're on a desktop or laptop with an ``x86_64`` architecture, then you should be able to get this running on your machine using Docker.  Read all the comments at the top of `this file in the environment repo <https://github.com/Roman-Supernova-PIT/environment/blob/main/test-docker-environment/default_test_config.yaml>`_.)
+(This is currently a bit of a mess, and I haven't figured out how to get this to work on Perlmutter.  However, if you're on a desktop or laptop with an ``x86_64`` architecture, then you should be able to get this running on your machine using Docker.  Read all the comments at the top of `this file in the environment repo <https://github.com/Roman-Supernova-PIT/environment/blob/main/test-docker-environment/docker-compose.yaml>`_.)
