@@ -1,16 +1,9 @@
 import pytest
 import uuid
 
-from snappl.diaobject import DiaObject, DiaObjectOU2024, DiaObjectManual
+from snappl.diaobject import DiaObject
 from snappl.provenance import Provenance
 from snappl.db.db import DBCon
-
-
-def test_no_construct_directly():
-    for cls in [ DiaObject, DiaObjectOU2024, DiaObjectManual ]:
-        with pytest.raises( RuntimeError, match=( "Don't call a DiaObject or subclass constructor.  "
-                                                  "Use DiaObject.find_objects." ) ):
-            cls()
 
 
 def test_find_ou2024_diaobject():

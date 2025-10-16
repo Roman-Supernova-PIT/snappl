@@ -159,11 +159,20 @@ class DBCon:
 
         if con is not None:
             self.con_is_mine = False
-            self.con = con.con
-            self.echoqueries = con.echoqueries
-            self.alwaysexplain = con.alwaysexplain
-            self.dictcursor = con.dictcursor
-            self.cursorisdict = con.cursorisdict
+            if isinstance( con, DBCon ):
+                self.con = con.con
+                self.echoqueries = con.echoqueries
+                self.alwaysexplain = con.alwaysexplain
+                self.dictcursor = con.dictcursor
+                self.cursorisdict = con.cursorisdict
+            elif isinstance( con, psycopg.Connection ):
+                self.con = con
+                self.echoqueries = cfg.value( 'system.db.echoqueries' )
+                self.alwaysexplain = cfg.value( 'system.db.alwaysexplain' )
+                self.dictcursor = dictcursor
+                self.cursorisdict = dictcursor
+            else:
+                raise TypeError( f"con must be a DBCon or psycopg.Connection, not a {type(con)}" )
 
         else:
             self.con_is_mine = True
