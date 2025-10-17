@@ -159,6 +159,7 @@ def test_save_diaobject( test_object_provenance, dbclient ):
         assert res['ra'] == pytest.approx( diaobj.ra, abs=1e-6 )
         assert res['dec'] == pytest.approx( diaobj.dec, abs=1e-6 )
         assert res['mjd_discovery'] == pytest.approx( diaobj.mjd_discovery, abs=1e-5 )
+        assert res['ndetected'] == 1
         assert res['properties'] == { "answer": 42 }
         assert all( res[i] is None for i in [ 'iauname', 'mjd_peak', 'mjd_start', 'mjd_end' ] )
 
@@ -179,9 +180,13 @@ def test_save_diaobject( test_object_provenance, dbclient ):
         assert not retval['dec'] == pytest.approx( diaobj2.dec, abs=1e-6 )
         assert retval['properties'] == diaobj.properties
         assert retval['properties'] != diaobj2.properties
+        assert retval['ndetected'] == 2
         # Make sure that an object of the given id wasn't saved
         with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500.*Object not found" ):
             DiaObject.get_object( diaobject_id=diaobj2.id, dbclient=dbclient )
+        # Make sure if we get the object back it has ndetected=2
+        foundobj = DiaObject.get_object( provenance=test_object_provenance, diaobject_id=diaobj.id, dbclient=dbclient )
+        assert foundobj.ndetected == 2
 
         # Make sure we can't save the same name/provenance twice
         with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500.*diaobject with name Fred" ):
