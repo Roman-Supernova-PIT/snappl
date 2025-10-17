@@ -25,7 +25,8 @@ class TestDiaObject( BaseTestDB ):
                                mjd_discovery=60015.,
                                mjd_peak=60030.,
                                mjd_start=60010.,
-                               mjd_end=60060. )
+                               mjd_end=60060.,
+                               ndetected=1 )
         self.dict1 = { k: getattr( self.obj1, k ) for k in self.columns }
         self.obj2 = DiaObject( id=uuid.uuid4(),
                                provenance_id=stupid_provenance,
@@ -35,7 +36,8 @@ class TestDiaObject( BaseTestDB ):
                                mjd_discovery=60016.,
                                mjd_peak=60031.,
                                mjd_start=60011.,
-                               mjd_end=60061. )
+                               mjd_end=60061.,
+                               ndetected=1 )
         self.dict2 = { k: getattr( self.obj2, k ) for k in self.columns }
         self.dict3 = { 'id': uuid.uuid4(),
                        'provenance_id': stupid_provenance,
