@@ -49,7 +49,7 @@ class DiaObject:
     """
 
     def __init__( self, id=None, provenance_id=None, ra=None, dec=None, name=None, iauname=None,
-                  mjd_discovery=None, mjd_peak=None, mjd_start=None, mjd_end=None,
+                  mjd_discovery=None, mjd_peak=None, mjd_start=None, mjd_end=None, ndetected=1,
                   properties={} ):
         """Only call this constructor if you're making a brand new object.
 
@@ -101,9 +101,15 @@ class DiaObject:
             meaningless, but practically, it means that any images from
             a later MJD are suitable for use as a template.  Optional.
 
+          ndetected : int, default 1
+            The number of times this object has been detected.  When
+            creating a new DiaObject, you usually want this to be 1 (the
+            default) unless you really know what you're doing.  When a
+            DiaObject has been loaded from the database, this will have
+            the number in the corresponding database column.
+
           properties : dict, default {}
             Any optional properties you want to save with the object.
-
 
         """
         self.id = asUUID(id) if id is not None else None
@@ -116,14 +122,22 @@ class DiaObject:
         self.mjd_peak = float( mjd_peak ) if mjd_peak is not None else None
         self.mjd_start = float( mjd_start ) if mjd_start is not None else None
         self.mjd_end = float( mjd_end ) if mjd_end is not None else None
+        self.ndetected = int( ndetected ) if ndetected is not None else None
         self.properties = properties
 
 
-    def save_object( self, dbclient=None ):
+    def save_object( self, association_radius=1.0, dbclient=None ):
         """Save an object to the database.
 
         Properties
         ----------
+          association_radius : float, default 1.0
+            If an object of the right provenance already exists in the
+            database within this many arcseconds of the object being
+            saved, then the new object is not saved.  Make this None
+            to never associate, but always save new objects.  (This
+            is probably a bad idea.)
+
           dbclient : SNPITDBClient, default None
             The connection to the database web server.  If None, a new
             one will be made that logs you in using the information in
@@ -136,10 +150,12 @@ class DiaObject:
         -------
           dict
 
-          The row inserted into the database diaobject table of the database.
+          Either the row from the database of the pre-existing object
+          (if there was one within association_radius), or the row
+          inserted into the database.
 
         """
-        data = {}
+        data = { 'association_radius': association_radius }
         for prop in [ 'id', 'provenance_id', 'ra', 'dec', 'name', 'iauname', 'mjd_discovery',
                       'mjd_peak', 'mjd_start', 'mjd_end', 'properties' ]:
             if getattr( self, prop ) is not None:

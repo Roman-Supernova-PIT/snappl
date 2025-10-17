@@ -63,7 +63,7 @@ def test_find_manual_diaobject():
 def _check_objects( obj1, obj2 ):
     for prop in [ 'id', 'provenance_id', 'name', 'iauname', 'ra', 'dec',
                 'mjd_discovery', 'mjd_peak', 'mjd_start', 'mjd_end',
-                'properties' ]:
+                'ndetected', 'properties' ]:
         assert getattr( obj1, prop ) == getattr( obj2, prop )
 
 
@@ -124,7 +124,7 @@ def test_find_dbou2024_object( dbclient, loaded_ou2024_test_diaobjects ):
 
 
 def test_save_diaobject( test_object_provenance, dbclient ):
-    objids = [ uuid.uuid4() ]
+    objids = [ uuid.uuid4(), uuid.uuid4(), uuid.uuid4() ]
     try:
         kwargs = { 'id': objids[0],
                    'provenance_id': test_object_provenance.id,
@@ -134,6 +134,23 @@ def test_save_diaobject( test_object_provenance, dbclient ):
                    'mjd_discovery': 60000.,
                    'properties': { 'answer': 42 }
                   }
+        kwargs2 = { 'id': objids[1],
+                    'provenance_id': test_object_provenance.id,
+                    'name': "George",
+                    'ra': 128.0001,
+                    'dec': -13.0001,
+                    'mjd_discovery': 60010.,
+                    'properties': { 'bad_luck': 13 }
+                   }
+        kwargs3 = { 'id': objids[2],
+                    'provenance_id': test_object_provenance.id,
+                    'name': "Ron",
+                    'ra': 128.0003,
+                    'dec': -13.0003,
+                    'mjd_discovery': 60020.,
+                    'properties': { 'reboot': 64738 }
+                   }
+
         diaobj = DiaObject( **kwargs )
         res = diaobj.save_object( dbclient=dbclient )
         assert res['id'] == str( diaobj.id )
@@ -142,6 +159,7 @@ def test_save_diaobject( test_object_provenance, dbclient ):
         assert res['ra'] == pytest.approx( diaobj.ra, abs=1e-6 )
         assert res['dec'] == pytest.approx( diaobj.dec, abs=1e-6 )
         assert res['mjd_discovery'] == pytest.approx( diaobj.mjd_discovery, abs=1e-5 )
+        assert res['ndetected'] == 1
         assert res['properties'] == { "answer": 42 }
         assert all( res[i] is None for i in [ 'iauname', 'mjd_peak', 'mjd_start', 'mjd_end' ] )
 
@@ -151,18 +169,36 @@ def test_save_diaobject( test_object_provenance, dbclient ):
         foundobj = DiaObject.get_object( provenance=test_object_provenance, name=diaobj.name, dbclient=dbclient )
         assert all( getattr(foundobj, prop) == getattr(diaobj, prop) for prop in kwargs.keys() )
 
-        # Make sure we can't save the same object twice
-        with pytest.raises( RuntimeError, match=( f"Failed to connect.*Got response 500.*diaobject "
-                                                  f"{diaobj.id} already exists!" ) ):
-            diaobj.name = 'George'
-            diaobj.save_object( dbclient=dbclient )
+        # Test association
+        diaobj2 = DiaObject( **kwargs2 )
+        retval = diaobj2.save_object( dbclient=dbclient )
+        assert retval['id'] == str( diaobj.id )
+        assert retval['id'] != str( diaobj2.id )
+        assert retval['ra'] == pytest.approx( diaobj.ra, abs=1e-6 )
+        assert retval['dec'] == pytest.approx( diaobj.dec, abs=1e-6 )
+        assert not retval['ra'] == pytest.approx( diaobj2.ra, abs=1e-6 )
+        assert not retval['dec'] == pytest.approx( diaobj2.dec, abs=1e-6 )
+        assert retval['properties'] == diaobj.properties
+        assert retval['properties'] != diaobj2.properties
+        assert retval['ndetected'] == 2
+        # Make sure that an object of the given id wasn't saved
+        with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500.*Object not found" ):
+            DiaObject.get_object( diaobject_id=diaobj2.id, dbclient=dbclient )
+        # Make sure if we get the object back it has ndetected=2
+        foundobj = DiaObject.get_object( provenance=test_object_provenance, diaobject_id=diaobj.id, dbclient=dbclient )
+        assert foundobj.ndetected == 2
 
         # Make sure we can't save the same name/provenance twice
         with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500.*diaobject with name Fred" ):
-            objids.append( uuid.uuid4() )
-            diaobj.id = objids[-1]
-            diaobj.name = 'Fred'
-            diaobj.save_object( dbclient=dbclient )
+            diaobj3 = DiaObject( **kwargs3 )
+            diaobj3.name = diaobj.name
+            diaobj3.save_object( dbclient=dbclient )
+
+        # Test lack of association
+        diaobj3 = DiaObject( **kwargs3 )
+        retval = diaobj3.save_object( dbclient=dbclient )
+        assert retval['id'] == str( diaobj3.id )
+        assert retval['name'] == diaobj3.name
 
         # Make sure it yells at us if things are missing
         for omit in [ 'provenance_id', 'name', 'ra', 'dec', 'mjd_discovery' ]:

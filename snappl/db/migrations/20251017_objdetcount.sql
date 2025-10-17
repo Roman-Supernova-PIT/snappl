@@ -1,0 +1,1 @@
+ALTER TABLE diaobject ADD COLUMN ndetected int NOT NULL DEFAULT 1;
