@@ -1,8 +1,8 @@
 import pytest
-import psycopg
 
 from snappl.config import Config
 from snappl.provenance import Provenance
+from snappl.db.db import DBCon
 
 
 def test_provenance( dbclient ):
@@ -122,14 +122,11 @@ def test_provenance( dbclient ):
         assert set( prov.params['system'].keys() ) == { 'db' }
 
     finally:
-        with open( '/secrets/pgpasswd' ) as ifp:
-            pw = ifp.readline().strip()
-        with psycopg.connect( dbname="roman_snpit", user="postgres", password=pw, host="postgres", port=5432 ) as con:
-            cursor = con.cursor()
-            cursor.execute( "DELETE FROM provenance_tag WHERE tag=ANY(%(tag)s)",
-                            { 'tag': [ 'kitten', 'foo', 'bar', 'kaglorky' ] } )
-            cursor.execute( "DELETE FROM provenance_upstream "
-                            "WHERE upstream_id=ANY(%(provs)s) OR downstream_id=ANY(%(provs)s)",
-                            provstodel )
-            cursor.execute( "DELETE FROM provenance WHERE id=ANY(%(provs)s)", provstodel )
-            con.commit()
+        with DBCon() as dbcon:
+            dbcon.execute( "DELETE FROM provenance_tag WHERE tag=ANY(%(tag)s)",
+                           { 'tag': [ 'kitten', 'foo', 'bar', 'kaglorky' ] } )
+            dbcon.execute( "DELETE FROM provenance_upstream "
+                           "WHERE upstream_id=ANY(%(provs)s) OR downstream_id=ANY(%(provs)s)",
+                           provstodel )
+            dbcon.execute( "DELETE FROM provenance WHERE id=ANY(%(provs)s)", provstodel )
+            dbcon.commit()
