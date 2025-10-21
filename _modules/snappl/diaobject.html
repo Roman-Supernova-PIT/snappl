@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.diaobject &#8212; roman_snpit_snappl 0.1.dev1+g832972ae1 documentation</title>
+    <title>snappl.diaobject &#8212; roman_snpit_snappl 0.1.dev1+g675ec9728 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=2fae87f5"></script>
+    <script src="../../_static/documentation_options.js?v=d3b66162"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -49,6 +49,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../database_schema.html">Database Schema</a></li>
 </ul>
 
 <div class="relations">
@@ -139,7 +140,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">iauname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                  <span class="n">mjd_discovery</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd_peak</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd_start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd_end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">mjd_discovery</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd_peak</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd_start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd_end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ndetected</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                   <span class="n">properties</span><span class="o">=</span><span class="p">{}</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Only call this constructor if you&#39;re making a brand new object.</span>
 
@@ -191,9 +192,15 @@
 <span class="sd">            meaningless, but practically, it means that any images from</span>
 <span class="sd">            a later MJD are suitable for use as a template.  Optional.</span>
 
+<span class="sd">          ndetected : int, default 1</span>
+<span class="sd">            The number of times this object has been detected.  When</span>
+<span class="sd">            creating a new DiaObject, you usually want this to be 1 (the</span>
+<span class="sd">            default) unless you really know what you&#39;re doing.  When a</span>
+<span class="sd">            DiaObject has been loaded from the database, this will have</span>
+<span class="sd">            the number in the corresponding database column.</span>
+
 <span class="sd">          properties : dict, default {}</span>
 <span class="sd">            Any optional properties you want to save with the object.</span>
-
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span> <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
@@ -206,16 +213,24 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">mjd_peak</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_peak</span> <span class="p">)</span> <span class="k">if</span> <span class="n">mjd_peak</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mjd_start</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_start</span> <span class="p">)</span> <span class="k">if</span> <span class="n">mjd_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mjd_end</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">mjd_end</span> <span class="p">)</span> <span class="k">if</span> <span class="n">mjd_end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ndetected</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">ndetected</span> <span class="p">)</span> <span class="k">if</span> <span class="n">ndetected</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">properties</span>
 
 
 <div class="viewcode-block" id="DiaObject.save_object">
 <a class="viewcode-back" href="../../api/snappl.diaobject.DiaObject.html#snappl.diaobject.DiaObject.save_object">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">save_object</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_object</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">association_radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Save an object to the database.</span>
 
 <span class="sd">        Properties</span>
 <span class="sd">        ----------</span>
+<span class="sd">          association_radius : float, default 1.0</span>
+<span class="sd">            If an object of the right provenance already exists in the</span>
+<span class="sd">            database within this many arcseconds of the object being</span>
+<span class="sd">            saved, then the new object is not saved.  Make this None</span>
+<span class="sd">            to never associate, but always save new objects.  (This</span>
+<span class="sd">            is probably a bad idea.)</span>
+
 <span class="sd">          dbclient : SNPITDBClient, default None</span>
 <span class="sd">            The connection to the database web server.  If None, a new</span>
 <span class="sd">            one will be made that logs you in using the information in</span>
@@ -228,10 +243,12 @@
 <span class="sd">        -------</span>
 <span class="sd">          dict</span>
 
-<span class="sd">          The row inserted into the database diaobject table of the database.</span>
+<span class="sd">          Either the row from the database of the pre-existing object</span>
+<span class="sd">          (if there was one within association_radius), or the row</span>
+<span class="sd">          inserted into the database.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;association_radius&#39;</span><span class="p">:</span> <span class="n">association_radius</span> <span class="p">}</span>
         <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="p">[</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;provenance_id&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;iauname&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd_discovery&#39;</span><span class="p">,</span>
                       <span class="s1">&#39;mjd_peak&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd_start&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd_end&#39;</span><span class="p">,</span> <span class="s1">&#39;properties&#39;</span> <span class="p">]:</span>
             <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">prop</span> <span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

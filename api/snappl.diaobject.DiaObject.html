@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>DiaObject &#8212; roman_snpit_snappl 0.1.dev1+g832972ae1 documentation</title>
+    <title>DiaObject &#8212; roman_snpit_snappl 0.1.dev1+g675ec9728 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=2fae87f5"></script>
+    <script src="../_static/documentation_options.js?v=d3b66162"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -52,6 +52,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../changes.html">Change Log</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">snappl API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../database_schema.html">Database Schema</a></li>
 </ul>
 
 <div class="relations">
@@ -102,7 +103,7 @@
 <h1>DiaObject<a class="headerlink" href="#diaobject" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.diaobject.DiaObject">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.diaobject.</span></span><span class="sig-name descname"><span class="pre">DiaObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iauname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd_discovery</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd_peak</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/diaobject.html#DiaObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.diaobject.DiaObject" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">snappl.diaobject.</span></span><span class="sig-name descname"><span class="pre">DiaObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iauname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd_discovery</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd_peak</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mjd_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ndetected</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/diaobject.html#DiaObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.diaobject.DiaObject" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Encapsulate a single supernova (or other transient).</p>
 <p>Standard properties:</p>
@@ -172,6 +173,12 @@ from an earlier MJD are suitable for use as a template.  Optional.</p>
 meaningless, but practically, it means that any images from
 a later MJD are suitable for use as a template.  Optional.</p>
 </dd>
+<dt>ndetected<span class="classifier">int, default 1</span></dt><dd><p>The number of times this object has been detected.  When
+creating a new DiaObject, you usually want this to be 1 (the
+default) unless you really know what you’re doing.  When a
+DiaObject has been loaded from the database, this will have
+the number in the corresponding database column.</p>
+</dd>
 <dt>properties<span class="classifier">dict, default {}</span></dt><dd><p>Any optional properties you want to save with the object.</p>
 </dd>
 </dl>
@@ -185,7 +192,7 @@ a later MJD are suitable for use as a template.  Optional.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.diaobject.DiaObject.get_object" title="snappl.diaobject.DiaObject.get_object"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_object</span></code></a>([collection, provenance, ...])</p></td>
 <td><p>Get a DiaObject.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.diaobject.DiaObject.save_object" title="snappl.diaobject.DiaObject.save_object"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_object</span></code></a>([dbclient])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.diaobject.DiaObject.save_object" title="snappl.diaobject.DiaObject.save_object"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_object</span></code></a>([association_radius, dbclient])</p></td>
 <td><p>Save an object to the database.</p></td>
 </tr>
 </tbody>
@@ -360,12 +367,18 @@ configuration.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.diaobject.DiaObject.save_object">
-<span class="sig-name descname"><span class="pre">save_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/diaobject.html#DiaObject.save_object"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.diaobject.DiaObject.save_object" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">association_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/diaobject.html#DiaObject.save_object"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.diaobject.DiaObject.save_object" title="Link to this definition">¶</a></dt>
 <dd><p>Save an object to the database.</p>
 <section id="id1">
 <h3>Properties<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
 <blockquote>
 <div><dl class="simple">
+<dt>association_radius<span class="classifier">float, default 1.0</span></dt><dd><p>If an object of the right provenance already exists in the
+database within this many arcseconds of the object being
+saved, then the new object is not saved.  Make this None
+to never associate, but always save new objects.  (This
+is probably a bad idea.)</p>
+</dd>
 <dt>dbclient<span class="classifier">SNPITDBClient, default None</span></dt><dd><p>The connection to the database web server.  If None, a new
 one will be made that logs you in using the information in
 Config.  If you’re going to be saving multiple objects, it’s
@@ -379,7 +392,9 @@ one each time.</p>
 <dt class="field-odd">returns<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><em>dict</em></p></li>
-<li><p><em>The row inserted into the database diaobject table of the database.</em></p></li>
+<li><p><em>Either the row from the database of the pre-existing object</em></p></li>
+<li><p><em>(if there was one within association_radius), or the row</em></p></li>
+<li><p><em>inserted into the database.</em></p></li>
 </ul>
 </dd>
 </dl>
