@@ -287,7 +287,8 @@ class SaveDiaObject( BaseView ):
 
         data = flask.request.json
         needed_keys = { 'provenance_id', 'name', 'ra', 'dec', 'mjd_discovery' }
-        allowed_keys = { 'id', 'iauname', 'mjd_peak', 'mjd_start', 'mjd_end', 'properties' }.union( needed_keys )
+        allowed_keys = { 'id', 'iauname', 'mjd_peak', 'mjd_start',
+                         'mjd_end', 'properties', 'association_radius' }.union( needed_keys )
         passed_keys = set( data.keys() )
         if not passed_keys.issubset( allowed_keys ):
             return f"Unknown keys: {passed_keys - allowed_keys}", 500
@@ -299,6 +300,11 @@ class SaveDiaObject( BaseView ):
         if 'id' not in data:
             data['id'] = uuid.uuid4()
 
+        association_radius = None
+        if 'association_radius' in data:
+            association_radius = data['association_radius']
+            del data['association_radius']
+
         duplicate_ok = False
         if 'dupliate_ok' in data:
             duplicate_ok = data['duplicate_ok']
@@ -307,29 +313,63 @@ class SaveDiaObject( BaseView ):
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
             if len(rows) != 0:
-                return f"diaobject {data['id']} already exists!", 500
-            if not duplicate_ok:
+                return f"diaobject id {data['id']} already exists!", 500
+
+            dbcon.execute( "LOCK TABLE diaobject" )
+
+            # Check to see if there's an existing object (oldobj) within
+            #   association_radius of this new object.  If so,
+            #   dont' make a new object, just return the old object.
+            oldobj = None
+            if association_radius is not None:
+                rows = dbcon.execute( "SELECT * FROM ("
+                                      "  SELECT o.*,q3c_dist(%(ra)s,%(dec)s,o.ra,o.dec) AS dist "
+                                      "  FROM diaobject o "
+                                      "  WHERE o.provenance_id=%(prov)s "
+                                      "  AND q3c_radial_query(o.ra,o.dec,%(ra)s,%(dec)s,%(rad)s) "
+                                      ") subq "
+                                      "ORDER BY dist LIMIT 1",
+                                      { 'prov': data['provenance_id'], 'ra': data['ra'], 'dec': data['dec'],
+                                        'rad': association_radius / 3600. } )
+                if len(rows) > 0:
+                    oldobj = rows[0]
+                    del oldobj['dist']
+
+            if ( oldobj is None ) and ( not duplicate_ok ):
                 rows = dbcon.execute( "SELECT * FROM diaobject WHERE name=%(name)s AND provenance_id=%(prov)s",
                                       { 'name': data['name'], 'prov': data['provenance_id'] } )
-                if len(rows) != 0:
+                if len(rows) > 0:
                     return ( f"diaobject with name {data['name']} in provenance {data['provenance_id']} "
                              f"already exists!", 500 )
 
-            # Although this looks potentially Bobby Tablesish, the fact that we made
-            #   sure that data only included allowed keys above makes this not subject
-            #   to SQL injection attacks.
-            varnames = ','.join( str(k) for k in data.keys() )
-            varvals = ','.join( f'%({k})s' for k in data.keys() )
-            q = f"INSERT INTO diaobject({varnames}) VALUES ({varvals})"
-            dbcon.execute( q, data )
-            rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
-            if len(rows) == 0:
-                return f"Error, saved diaobject {data['id']}, but it's not showing up in the database", 500
-            elif len(rows) > 1:
-                return f"Database corruption, more than one diaobject with id={data['id']}", 500
-            else:
+            if oldobj is not None:
+                # TODO THIS IS TERRIBLE RIGHT NOW!
+                # We need more database structure to do this right.  We want
+                #   to make sure that this isn't a detection from the same image
+                #   that was one of the previous detections.  For now, though,
+                #   just do this as the simplest stupid thing to do.
+                oldobj['ndetected'] += 1
+                dbcon.execute( "UPDATE diaobject SET ndetected=%(ndet)s WHERE id=%(id)s",
+                               { 'id': oldobj['id'], 'ndet': oldobj['ndetected'] } )
                 dbcon.commit()
-                return rows[0]
+                return oldobj
+
+            else:
+                # Although this looks potentially Bobby Tablesish, the fact that we made
+                #   sure that data only included allowed keys above makes this not subject
+                #   to SQL injection attacks.
+                varnames = ','.join( str(k) for k in data.keys() )
+                varvals = ','.join( f'%({k})s' for k in data.keys() )
+                q = f"INSERT INTO diaobject({varnames}) VALUES ({varvals})"
+                dbcon.execute( q, data )
+                rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
+                if len(rows) == 0:
+                    return f"Error, saved diaobject {data['id']}, but it's not showing up in the database", 500
+                elif len(rows) > 1:
+                    return f"Database corruption, more than one diaobject with id={data['id']}", 500
+                else:
+                    dbcon.commit()
+                    return rows[0]
 
 
 # ======================================================================
