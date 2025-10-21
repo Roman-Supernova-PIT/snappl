@@ -404,6 +404,7 @@ class ImageSimulator:
         sky_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
         star_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
         transient_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
+        static_source_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
 
         unpack = re.compile( r"^([a-zA-Z0-9_]+)\s*=\s*(.*[^\s])\s*$" )
         kwargs = {}
@@ -445,7 +446,7 @@ class ImageSimulator:
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
             image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise )
             image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise )
-            image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise)
+            image.add_static_source(static_source, rng=static_source_rng, noisy=not self.no_static_source_noise)
             image.image.noise = np.sqrt( image.image.noise )
             SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
             image.image.save( overwrite=self.overwrite )
