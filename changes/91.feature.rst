@@ -1,0 +1,3 @@
+Allow loading and saving of diaobject positions from the database
+
+Also cleans up some database interface issues (race conditions, parameter mismatches) in db.py
