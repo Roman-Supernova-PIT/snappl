@@ -6,7 +6,7 @@ import json
 import uuid
 
 from snappl.config import Config
-from snappl.utils import SNPITJsonEncoder
+from snappl.utils import SNPITJsonEncoder, asUUID
 from snappl.dbclient import SNPITDBClient
 
 
@@ -327,3 +327,41 @@ class Provenance:
             return cls.parse_provenance( dbclient.send( f"/getprovenance/{tag}/{process}" ) )
         else:
             return [ cls.parse_provenance(p) for p in dbclient.send( f"/provenancesfortag/{tag}" ) ]
+
+
+    @classmethod
+    def get_provenance_id( cls, provenance, provenance_tag, process, dbclient=None ):
+        """Return a Provenance ID from either a provenance, or a provenance_tag and process.
+
+        Parameters
+        ----------
+          provenance: Provenance, str, or None
+            If a Provenance, then this provenance's ID is returned.
+            Otherwise, if this is not None, return this.  If None, then
+            fall back to looking at provenance_tag and process.
+
+          provenance_tag : str or None
+
+          process: str or None
+
+        Returns
+        -------
+          UUID
+
+        """
+
+        if isinstance( provenance, Provenance ):
+            return provenance.id
+
+        if provenance is not None:
+            return asUUID( provenance )
+
+        if provenance_tag is None:
+            raise ValueError( "Must pass either provenacne or provenance_tag" )
+
+        if process is None:
+            raise ValueError( "provenance_tag requires process" )
+
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        prov = Provenance.get_provs_for_tag( provenance_tag, process, dbclient=dbclient )
+        return prov.id

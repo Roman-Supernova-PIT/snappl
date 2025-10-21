@@ -216,6 +216,7 @@ def test_object_provenance():
 @pytest.fixture( scope="module" )
 def loaded_ou2024_test_diaobjects():
     prov = None
+    posprov= None
     try:
         with DBCon() as dbcon:
             prov = make_provenance_and_tag( 'import_ou2024_diaobjects', 0, 1, tag='dbou2024_test', dbcon=dbcon )
@@ -226,14 +227,24 @@ def loaded_ou2024_test_diaobjects():
             for pqf in pqfiles:
                 load_snana_ou2024_diaobject( prov.id, pqf, dbcon=dbcon )
 
+            posprov = make_provenance_and_tag( 'ou2024_diaobjects_truth_copy', 0, 1, tag='dbou2024_test', dbcon=dbcon )
+            dbcon.execute( "INSERT INTO diaobject_position(id, diaobject_id, provenance_id, ra, dec) "
+                           "SELECT gen_random_uuid(), o.id, %(provid)s, o.ra, o.dec FROM diaobject o "
+                           "WHERE o.provenance_id=%(objprovid)s",
+                           { 'provid': posprov.id, 'objprovid': prov.id } )
+            dbcon.commit()
+
         yield True
 
     finally:
         with DBCon() as dbcon:
+            if posprov is not None:
+                dbcon.execute( "DELETE FROM diaobject_position WHERE provenance_id=%(id)s", { 'id': posprov.id } )
             if prov is not None:
                 dbcon.execute( "DELETE FROM diaobject WHERE provenance_id=%(id)s", { 'id': prov.id } )
             dbcon.execute( "DELETE FROM provenance_tag WHERE tag='dbou2024_test'" )
             dbcon.execute( "DELETE FROM provenance WHERE process='import_ou2024_diaobjects'" )
+            dbcon.execute( "DELETE FROM provenance WHERE process='ou2024_diaobjects_truth_copy'" )
             dbcon.commit()
 
 

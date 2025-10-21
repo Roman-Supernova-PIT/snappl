@@ -170,9 +170,120 @@ class DiaObject:
         return dbclient.send( "savediaobject", data=senddata, headers={'Content-Type': 'application/json'} )
 
 
+    def get_position( self, position_provenance=None, provenance_tag=None, process=None, dbclient=None ):
+        """Get updated diaobject position.
+
+        Parameters
+        ----------
+          position_provenance : UUID or str, default None
+            The Provenance of the position (*not* of the object).  Must
+            specify either this, or provenance_tag and process, not
+            both.
+
+          provenance_tag : str, default None
+            The provenance tag for the *position* (not the object).
+            Must specify either this or position_provenance.
+            provenance_tag requires process.  (If you specify
+            position_provenance, this is ignored.)
+
+          process : str, default None
+            The process to go with provenance_tag to get the position
+            provenance.
+
+          dbclient : SNPITDBClient, default None.
+            The connection to the database web server.  If None, a new
+            one will be made that logs you in using the information in
+            Config.
+
+        Returns
+        -------
+          dict
+
+          Keys are : id, diaobject_id, provenance_id, ra, ra_err, dec, dec_err, ra_dec_covar, calcualted_at
+
+          Note that ra_err, dec_err, and ra_dec_covar might be None.
+
+        """
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        provid = Provenance.get_provenance_id( position_provenance, provenance_tag, process, dbclient=dbclient )
+        return dbclient.send( f"getdiaobjectposition/{provid}/{self.id}" )
+
+
+    @classmethod
+    def get_diaobject_positions( cls, diaobject_ids=[], position_provenance=None, provenance_tag=None, process=None,
+                                 dbclient=None ):
+        """Get updated positions for a list of diaobjects.
+
+        Parameters
+        ----------
+          diaobject_ids : list of DiaObject, UUID, or str
+            The DiaObject (or the ids of same) of the objects whose positions you want.
+
+          position_provenance : UUID or str, default None
+            The Provenance of the position (*not* of the object).  Must
+            specify either this, or provenance_tag and process, not
+            both.
+
+          provenance_tag : str, default None
+            The provenance tag for the *position* (not the object).
+            Must specify either this or position_provenance.
+            provenance_tag requires process.  (If you specify
+            position_provenance, this is ignored.)
+
+          process : str, default None
+            The process to go with provenance_tag to get the position
+            provenance.
+
+          dbclient : SNPITDBClient, default None.
+            The connection to the database web server.  If None, a new
+            one will be made that logs you in using the information in
+            Config.
+
+        Returns
+        -------
+          dict of diaobjectid: dict
+
+          Each sub-dict has keys id, diaobject_id, provenance_id, ra, ra_err, dec, dec_err, ra_dec_covar, calcualted_at
+
+          Note that ra_err, dec_err, and ra_dec_covar might be None.
+
+        """
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        provid = Provenance.get_provenance_id( position_provenance, provenance_tag, process, dbclient=dbclient )
+
+        objlist = [ o.id if isinstance( o, DiaObject ) else o for o in diaobject_ids ]
+        senddata = simplejson.dumps( { 'diaobject_ids': objlist }, cls=SNPITJsonEncoder )
+        result = dbclient.send( f"getdiaobjectposition/{provid}", data=senddata,
+                                headers={'Content-Type': 'application/json'} )
+
+        return { r['diaobject_id']: r for r in result }
+
+
+    def save_updated_position( self, position_provenance=None, provenance_tag=None, process=None,
+                               ra=None, dec=None, ra_err=None, dec_err=None, ra_dec_covar=None,
+                               dbclient=None ):
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        provid = Provenance.get_provenance_id( position_provenance, provenance_tag, process, dbclient=dbclient )
+
+        if ( ra is None ) or ( dec is None ):
+            raise ValueError( "ra and dec are required" )
+
+        data = { 'provenance_id': provid,
+                 'diaobject_id': self.id,
+                 'ra': float(ra),
+                 'dec': float(dec),
+                 'ra_err': float(ra_err) if ra_err is not None else None,
+                 'dec_err': float(dec_err) if dec_err is not None else None,
+                 'ra_dec_covar': float(ra_dec_covar) if ra_dec_covar is not None else None
+                }
+        senddata = simplejson.dumps( data, cls=SNPITJsonEncoder )
+        return dbclient.send( "savediaobjectposition", data=senddata, headers={'Content-Type': 'application/json'} )
+
+
     @classmethod
     def _parse_tag_and_process( cls, collection='snpitdb', provenance_tag=None, process=None, provenance=None,
                                 dbclient=None ):
+
         """Figure out either the DiaObject subclass, or the Provenance, as appropraite.
 
         Parameters
@@ -475,6 +586,23 @@ class DiaObject:
 
           mjd_end_min, mjd_end_max: float
 
+          order_by: str, default None
+            By default, the returned objects are not sorted in any
+            particular way.  Put a keyword here to sort by that value.
+            Options include 'id', 'provenance_id', 'name', 'iauname',
+            'ra', 'dec', 'mjd_discovery', 'mjd_peak', 'mjd_start',
+            'mjd_end'.  Not all of these are necessarily useful, and
+            some of them may be null for many objects in the database.
+
+          limit : int, default None
+            Only return this many objects at most.
+
+          offset : int, default None
+            Useful with limit and order_by ; offset the returned value
+            by this many entries.  You can make repeated calls to
+            find_objects to get subsets of objects by passing the same
+            order_by and limit, but different offsets each time, to
+            slowly build up a list.
 
         Returns
         -------

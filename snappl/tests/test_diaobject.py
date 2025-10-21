@@ -120,7 +120,81 @@ def test_find_dbou2024_object( dbclient, loaded_ou2024_test_diaobjects ):
                                     ra=7.5510934, dec=-44.8071811, radius=60.0, dbclient=dbclient )
     assert len(dobjs) == 19
 
+    dobjs = DiaObject.find_objects( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
+                                    ra=7.5510934, dec=-44.8071811, radius=60.0,
+                                    order_by='ra', limit=10, dbclient=dbclient )
+    assert len(dobjs) == 10
+    ras = [ o.ra for o in dobjs ]
+    sortedras = ras.copy()
+    sortedras.sort()
+    assert ras == sortedras
+    assert dobjs[0].ra == pytest.approx( 7.529642270069371, abs=1e-6 )
+    assert dobjs[9].ra == pytest.approx( 7.5552501571352515, abs=1e-6 )
+
+    dobjs2 = DiaObject.find_objects( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
+                                     ra=7.5510934, dec=-44.8071811, radius=60.0,
+                                     order_by='ra', offset=10, limit=5, dbclient=dbclient )
+    assert len(dobjs2) == 5
+    assert set( d.id for d in dobjs ).intersection( set( d.id for d in dobjs2 ) ) == set()
+    ras = [ o.ra for o in dobjs2 ]
+    sortedras = ras.copy()
+    sortedras.sort()
+    assert ras == sortedras
+    assert dobjs2[0].ra == pytest.approx( 7.556117018768477,abs=1e-6 )
+    assert dobjs2[4].ra == pytest.approx( 7.5643485108524455, abs=1e-6 )
+
     # TODO : test start, end, discovery, peak
+
+
+def test_get_dbou2024_object_position( dbclient, loaded_ou2024_test_diaobjects ):
+    dobj = DiaObject.get_object( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
+                                 name=20172782, dbclient=dbclient )
+    pos = dobj.get_position( provenance_tag='dbou2024_test', process='ou2024_diaobjects_truth_copy', dbclient=dbclient )
+    assert pos['diaobject_id'] == str( dobj.id )
+    # RA and Dec should be the same because both the object and the position were loaded from the truth tables
+    assert pos['ra'] == pytest.approx( dobj.ra, abs=1e-6 )
+    assert pos['dec'] == pytest.approx( dobj.dec, abs=1e-6 )
+
+    dobjs = DiaObject.find_objects( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
+                                    ra=7.5510934, dec=-44.8071811, radius=60.0,
+                                    order_by='ra', limit=5, dbclient=dbclient )
+    poses = DiaObject.get_diaobject_positions( dobjs, provenance_tag='dbou2024_test',
+                                               process='ou2024_diaobjects_truth_copy', dbclient=dbclient )
+    assert len(poses) == 5
+    assert set( poses.keys() ) == set( str(d.id) for d in dobjs )
+    for d in dobjs:
+        # RA and Dec should be the same because both the object and the position were loaded from the truth tables
+        assert poses[str(d.id)]['ra'] == pytest.approx( d.ra, abs=1e-6 )
+        assert poses[str(d.id)]['dec'] == pytest.approx( d.dec, abs=1e-6 )
+
+
+def test_save_dbou2024_object_position( dbclient, loaded_ou2024_test_diaobjects ):
+    prov = None
+    try:
+        dobj = DiaObject.get_object( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
+                                     name=20172782, dbclient=dbclient )
+        objprov = Provenance.get_by_id( dobj.provenance_id, dbclient=dbclient )
+        prov = Provenance( 'test_update_position', 0, 1, upstreams=[objprov] )
+        prov.save_to_db( tag='dbou2024_test', dbclient=dbclient )
+
+        dobj.save_updated_position( prov, ra=dobj.ra+0.01, dec=dobj.dec+0.01, ra_err=0.01, dec_err=0.01,
+                                    ra_dec_covar=0.0001, dbclient=dbclient )
+
+        pos = dobj.get_position( position_provenance=prov, dbclient=dbclient )
+        assert pos['ra'] == pytest.approx( dobj.ra + 0.01, abs=1e-6 )
+        assert pos['dec'] == pytest.approx( dobj.dec + 0.01, abs=1e-6 )
+        assert pos['ra_err'] == pytest.approx( 0.01, abs=1e-6 )
+        assert pos['dec_err'] == pytest.approx( 0.01, abs=1e-6 )
+        assert pos['ra_dec_covar'] == pytest.approx( 0.0001, abs=1e-10 )
+
+    finally:
+        if prov is not None:
+            with DBCon() as dbcon:
+                dbcon.execute( "DELETE FROM diaobject_position WHERE provenance_id=%(id)s", {'id': prov.id} )
+                dbcon.execute( "DELETE FROM provenance_tag WHERE tag=%(tag)s AND process=%(proc)s",
+                               {'tag': 'dbou2024_test', 'proc': 'test_update_position'} )
+                dbcon.execute( "DELETE FROM provenance WHERE id=%(id)s", {'id': prov.id} )
+                dbcon.commit()
 
 
 def test_save_diaobject( test_object_provenance, dbclient ):
