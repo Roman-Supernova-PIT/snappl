@@ -1,7 +1,10 @@
 __all__ = [ 'setup_flask_app' ]
+
 import uuid
+
 import flask
 import flask_session
+from psycopg import sql
 
 from rkwebutil import rkauth_flask
 
@@ -238,7 +241,8 @@ class GetDiaObject( BaseView ):
 
 class FindDiaObjects( BaseView ):
     def do_the_things( self, provid ):
-        q = "SELECT * FROM diaobject WHERE "
+        q = sql.SQL( "SELECT * FROM diaobject WHERE " )
+
         conditions = [ 'provenance_id=%(provid)s' ]
         subdict = { 'provid': provid }
         if flask.request.is_json:
@@ -256,6 +260,19 @@ class FindDiaObjects( BaseView ):
                 del data['ra']
                 del data['dec']
 
+            orderby = None
+            limit = None
+            offset = None
+            if 'order_by' in data:
+                orderby = data['order_by']
+                del data['order_by']
+            if 'limit' in data:
+                limit = int( data['limit'] )
+                del data['limit']
+            if 'offset' in data:
+                offset = int( data['offset'] )
+                del data['offset']
+
             for kw in [ 'name', 'iauname' ]:
                 if kw in data:
                     conditions.append( f"{kw}=%({kw})s" )
@@ -270,7 +287,16 @@ class FindDiaObjects( BaseView ):
             if len(data) != 0:
                 return f"Error, unknown parameters: {data.keys()}", 500
 
-        q += ' AND '.join( conditions )
+        q += sql.SQL( ' AND '.join( conditions ) )
+
+        if orderby is not None:
+            q += sql.SQL( " ORDER BY {orderby}" ).format( orderby=sql.Identifier(orderby) )
+        if limit is not None:
+            q += sql.SQL( " LIMIT %(limit)s" )
+            subdict['limit'] = limit
+        if offset is not None:
+            q += sql.SQL( " OFFSET %(offset)s" )
+            subdict['offset'] = offset
 
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( q, subdict )
@@ -287,7 +313,8 @@ class SaveDiaObject( BaseView ):
 
         data = flask.request.json
         needed_keys = { 'provenance_id', 'name', 'ra', 'dec', 'mjd_discovery' }
-        allowed_keys = { 'id', 'iauname', 'mjd_peak', 'mjd_start', 'mjd_end', 'properties' }.union( needed_keys )
+        allowed_keys = { 'id', 'iauname', 'mjd_peak', 'mjd_start',
+                         'mjd_end', 'properties', 'association_radius' }.union( needed_keys )
         passed_keys = set( data.keys() )
         if not passed_keys.issubset( allowed_keys ):
             return f"Unknown keys: {passed_keys - allowed_keys}", 500
@@ -299,6 +326,11 @@ class SaveDiaObject( BaseView ):
         if 'id' not in data:
             data['id'] = uuid.uuid4()
 
+        association_radius = None
+        if 'association_radius' in data:
+            association_radius = data['association_radius']
+            del data['association_radius']
+
         duplicate_ok = False
         if 'dupliate_ok' in data:
             duplicate_ok = data['duplicate_ok']
@@ -307,29 +339,130 @@ class SaveDiaObject( BaseView ):
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
             if len(rows) != 0:
-                return f"diaobject {data['id']} already exists!", 500
-            if not duplicate_ok:
+                return f"diaobject id {data['id']} already exists!", 500
+
+            dbcon.execute( "LOCK TABLE diaobject" )
+
+            # Check to see if there's an existing object (oldobj) within
+            #   association_radius of this new object.  If so,
+            #   dont' make a new object, just return the old object.
+            oldobj = None
+            if association_radius is not None:
+                rows = dbcon.execute( "SELECT * FROM ("
+                                      "  SELECT o.*,q3c_dist(%(ra)s,%(dec)s,o.ra,o.dec) AS dist "
+                                      "  FROM diaobject o "
+                                      "  WHERE o.provenance_id=%(prov)s "
+                                      "  AND q3c_radial_query(o.ra,o.dec,%(ra)s,%(dec)s,%(rad)s) "
+                                      ") subq "
+                                      "ORDER BY dist LIMIT 1",
+                                      { 'prov': data['provenance_id'], 'ra': data['ra'], 'dec': data['dec'],
+                                        'rad': association_radius / 3600. } )
+                if len(rows) > 0:
+                    oldobj = rows[0]
+                    del oldobj['dist']
+
+            if ( oldobj is None ) and ( not duplicate_ok ):
                 rows = dbcon.execute( "SELECT * FROM diaobject WHERE name=%(name)s AND provenance_id=%(prov)s",
                                       { 'name': data['name'], 'prov': data['provenance_id'] } )
-                if len(rows) != 0:
+                if len(rows) > 0:
                     return ( f"diaobject with name {data['name']} in provenance {data['provenance_id']} "
                              f"already exists!", 500 )
 
-            # Although this looks potentially Bobby Tablesish, the fact that we made
-            #   sure that data only included allowed keys above makes this not subject
-            #   to SQL injection attacks.
-            varnames = ','.join( str(k) for k in data.keys() )
-            varvals = ','.join( f'%({k})s' for k in data.keys() )
-            q = f"INSERT INTO diaobject({varnames}) VALUES ({varvals})"
-            dbcon.execute( q, data )
-            rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
-            if len(rows) == 0:
-                return f"Error, saved diaobject {data['id']}, but it's not showing up in the database", 500
-            elif len(rows) > 1:
-                return f"Database corruption, more than one diaobject with id={data['id']}", 500
-            else:
+            if oldobj is not None:
+                # TODO THIS IS TERRIBLE RIGHT NOW!
+                # We need more database structure to do this right.  We want
+                #   to make sure that this isn't a detection from the same image
+                #   that was one of the previous detections.  For now, though,
+                #   just do this as the simplest stupid thing to do.
+                oldobj['ndetected'] += 1
+                dbcon.execute( "UPDATE diaobject SET ndetected=%(ndet)s WHERE id=%(id)s",
+                               { 'id': oldobj['id'], 'ndet': oldobj['ndetected'] } )
                 dbcon.commit()
+                return oldobj
+
+            else:
+                # Although this looks potentially Bobby Tablesish, the fact that we made
+                #   sure that data only included allowed keys above makes this not subject
+                #   to SQL injection attacks.
+                varnames = ','.join( str(k) for k in data.keys() )
+                varvals = ','.join( f'%({k})s' for k in data.keys() )
+                q = f"INSERT INTO diaobject({varnames}) VALUES ({varvals})"
+                dbcon.execute( q, data )
+                rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
+                if len(rows) == 0:
+                    return f"Error, saved diaobject {data['id']}, but it's not showing up in the database", 500
+                elif len(rows) > 1:
+                    return f"Database corruption, more than one diaobject with id={data['id']}", 500
+                else:
+                    dbcon.commit()
+                    return rows[0]
+
+
+# ======================================================================
+
+class GetDiaObjectPosition( BaseView ):
+    def do_the_things( self, provid, diaobjectid=None ):
+        with db.DBCon( dictcursor=True ) as dbcon:
+            if diaobjectid is not None:
+                rows = dbcon.execute( "SELECT * FROM diaobject_position "
+                                      "WHERE provenance_id=%(provid)s AND diaobject_id=%(objid)s",
+                                      { 'provid': provid, 'objid': diaobjectid } )
+                if len(rows) == 0:
+                    return "No postion for diaobject {diaobjectid} in with position provenance {provid}", 500
                 return rows[0]
+
+            if not flask.request.is_json:
+                return "getdiaobjectposition/<provid> requires JSON POST data", 500
+            data = flask.request.json
+            if 'diaobject_ids' not in data:
+                return "getdiaobjectposition/<provid> requres diaobject_ids in POST JSON dict", 500
+
+            rows = dbcon.execute( "SELECT * FROM diaobject_position "
+                                  "WHERE provenance_id=%(provid)s AND diaobject_id=ANY(%(objids)s)",
+                                  { 'provid': provid, 'objids': data['diaobject_ids'] } )
+            return rows
+
+
+# ======================================================================
+
+class SaveDiaObjectPosition( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected diaobject position data in json POST data, didn't get any.", 500
+
+        data = flask.request.json
+        needed_keys = { 'provenance_id', 'diaobject_id', 'ra', 'dec' }
+        allowed_keys = { 'id', 'ra_err', 'dec_err', 'ra_dec_covar' }.union( needed_keys )
+        passed_keys = set( data.keys() )
+        if not passed_keys.issubset( allowed_keys ):
+            return f"Unknown keys: {passed_keys - allowed_keys}", 500
+        if not needed_keys.issubset( passed_keys ):
+            return f"Missing required keys: {passed_keys - needed_keys}", 500
+        if any( data[i] is None for i in needed_keys ):
+            return f"None of the necessary keys can be None: {needed_keys}"
+
+        if ( 'id' not in data ) or ( data['id'] is None ):
+            data['id'] = uuid.uuid4()
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': data['provenance_id'] } )
+            if len(rows) == 0:
+                return f"Unknown provenance {data['provenance_id']}", 500
+
+            dbcon.execute( "LOCK TABLE diaobject_position" )
+
+            rows = dbcon.execute( "SELECT * FROM diaobject_position "
+                                  "WHERE diaobject_id=%(objid)s AND provenance_id=%(provid)s",
+                                  { 'objid': data['diaobject_id'], 'provid': data['provenance_id'] } )
+            if len(rows) != 0:
+                return ( f"Object {data['diaobject_id']} already has a position "
+                         f"with provenance {data['provenance_id']}" ), 500
+
+            pos = db.DiaObjectPosition( dbcon=dbcon, **data )
+            # This insert will commit, which will end the transaction
+            pos.insert( dbcon=dbcon )
+
+            return pos.to_dict( dbcon=dbcon )
 
 
 # ======================================================================
@@ -425,6 +558,9 @@ urls = {
     "/getdiaobject/<diaobjectid>": GetDiaObject,
     "/finddiaobjects/<provid>": FindDiaObjects,
     "/savediaobject": SaveDiaObject,
+    "/getdiaobjectposition/<provid>": GetDiaObjectPosition,
+    "/getdiaobjectposition/<provid>/<diaobjectid>": GetDiaObjectPosition,
+    "/savediaobjectposition": SaveDiaObjectPosition,
 
     "/getl2image/<imageid>": GetL2Image,
     "/findl2images/<provid>": FindL2Images,

@@ -1,0 +1,2 @@
+DiaObject.save_object will now associate with existing objects when
+saving objects, and not save new ones if there already is one close enough.

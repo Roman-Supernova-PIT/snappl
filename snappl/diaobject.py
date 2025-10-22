@@ -49,7 +49,7 @@ class DiaObject:
     """
 
     def __init__( self, id=None, provenance_id=None, ra=None, dec=None, name=None, iauname=None,
-                  mjd_discovery=None, mjd_peak=None, mjd_start=None, mjd_end=None,
+                  mjd_discovery=None, mjd_peak=None, mjd_start=None, mjd_end=None, ndetected=1,
                   properties={} ):
         """Only call this constructor if you're making a brand new object.
 
@@ -101,9 +101,15 @@ class DiaObject:
             meaningless, but practically, it means that any images from
             a later MJD are suitable for use as a template.  Optional.
 
+          ndetected : int, default 1
+            The number of times this object has been detected.  When
+            creating a new DiaObject, you usually want this to be 1 (the
+            default) unless you really know what you're doing.  When a
+            DiaObject has been loaded from the database, this will have
+            the number in the corresponding database column.
+
           properties : dict, default {}
             Any optional properties you want to save with the object.
-
 
         """
         self.id = asUUID(id) if id is not None else None
@@ -116,14 +122,22 @@ class DiaObject:
         self.mjd_peak = float( mjd_peak ) if mjd_peak is not None else None
         self.mjd_start = float( mjd_start ) if mjd_start is not None else None
         self.mjd_end = float( mjd_end ) if mjd_end is not None else None
+        self.ndetected = int( ndetected ) if ndetected is not None else None
         self.properties = properties
 
 
-    def save_object( self, dbclient=None ):
+    def save_object( self, association_radius=1.0, dbclient=None ):
         """Save an object to the database.
 
         Properties
         ----------
+          association_radius : float, default 1.0
+            If an object of the right provenance already exists in the
+            database within this many arcseconds of the object being
+            saved, then the new object is not saved.  Make this None
+            to never associate, but always save new objects.  (This
+            is probably a bad idea.)
+
           dbclient : SNPITDBClient, default None
             The connection to the database web server.  If None, a new
             one will be made that logs you in using the information in
@@ -136,10 +150,12 @@ class DiaObject:
         -------
           dict
 
-          The row inserted into the database diaobject table of the database.
+          Either the row from the database of the pre-existing object
+          (if there was one within association_radius), or the row
+          inserted into the database.
 
         """
-        data = {}
+        data = { 'association_radius': association_radius }
         for prop in [ 'id', 'provenance_id', 'ra', 'dec', 'name', 'iauname', 'mjd_discovery',
                       'mjd_peak', 'mjd_start', 'mjd_end', 'properties' ]:
             if getattr( self, prop ) is not None:
@@ -154,9 +170,120 @@ class DiaObject:
         return dbclient.send( "savediaobject", data=senddata, headers={'Content-Type': 'application/json'} )
 
 
+    def get_position( self, position_provenance=None, provenance_tag=None, process=None, dbclient=None ):
+        """Get updated diaobject position.
+
+        Parameters
+        ----------
+          position_provenance : UUID or str, default None
+            The Provenance of the position (*not* of the object).  Must
+            specify either this, or provenance_tag and process, not
+            both.
+
+          provenance_tag : str, default None
+            The provenance tag for the *position* (not the object).
+            Must specify either this or position_provenance.
+            provenance_tag requires process.  (If you specify
+            position_provenance, this is ignored.)
+
+          process : str, default None
+            The process to go with provenance_tag to get the position
+            provenance.
+
+          dbclient : SNPITDBClient, default None.
+            The connection to the database web server.  If None, a new
+            one will be made that logs you in using the information in
+            Config.
+
+        Returns
+        -------
+          dict
+
+          Keys are : id, diaobject_id, provenance_id, ra, ra_err, dec, dec_err, ra_dec_covar, calcualted_at
+
+          Note that ra_err, dec_err, and ra_dec_covar might be None.
+
+        """
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        provid = Provenance.get_provenance_id( position_provenance, provenance_tag, process, dbclient=dbclient )
+        return dbclient.send( f"getdiaobjectposition/{provid}/{self.id}" )
+
+
+    @classmethod
+    def get_diaobject_positions( cls, diaobject_ids=[], position_provenance=None, provenance_tag=None, process=None,
+                                 dbclient=None ):
+        """Get updated positions for a list of diaobjects.
+
+        Parameters
+        ----------
+          diaobject_ids : list of DiaObject, UUID, or str
+            The DiaObject (or the ids of same) of the objects whose positions you want.
+
+          position_provenance : UUID or str, default None
+            The Provenance of the position (*not* of the object).  Must
+            specify either this, or provenance_tag and process, not
+            both.
+
+          provenance_tag : str, default None
+            The provenance tag for the *position* (not the object).
+            Must specify either this or position_provenance.
+            provenance_tag requires process.  (If you specify
+            position_provenance, this is ignored.)
+
+          process : str, default None
+            The process to go with provenance_tag to get the position
+            provenance.
+
+          dbclient : SNPITDBClient, default None.
+            The connection to the database web server.  If None, a new
+            one will be made that logs you in using the information in
+            Config.
+
+        Returns
+        -------
+          dict of diaobjectid: dict
+
+          Each sub-dict has keys id, diaobject_id, provenance_id, ra, ra_err, dec, dec_err, ra_dec_covar, calcualted_at
+
+          Note that ra_err, dec_err, and ra_dec_covar might be None.
+
+        """
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        provid = Provenance.get_provenance_id( position_provenance, provenance_tag, process, dbclient=dbclient )
+
+        objlist = [ o.id if isinstance( o, DiaObject ) else o for o in diaobject_ids ]
+        senddata = simplejson.dumps( { 'diaobject_ids': objlist }, cls=SNPITJsonEncoder )
+        result = dbclient.send( f"getdiaobjectposition/{provid}", data=senddata,
+                                headers={'Content-Type': 'application/json'} )
+
+        return { r['diaobject_id']: r for r in result }
+
+
+    def save_updated_position( self, position_provenance=None, provenance_tag=None, process=None,
+                               ra=None, dec=None, ra_err=None, dec_err=None, ra_dec_covar=None,
+                               dbclient=None ):
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        provid = Provenance.get_provenance_id( position_provenance, provenance_tag, process, dbclient=dbclient )
+
+        if ( ra is None ) or ( dec is None ):
+            raise ValueError( "ra and dec are required" )
+
+        data = { 'provenance_id': provid,
+                 'diaobject_id': self.id,
+                 'ra': float(ra),
+                 'dec': float(dec),
+                 'ra_err': float(ra_err) if ra_err is not None else None,
+                 'dec_err': float(dec_err) if dec_err is not None else None,
+                 'ra_dec_covar': float(ra_dec_covar) if ra_dec_covar is not None else None
+                }
+        senddata = simplejson.dumps( data, cls=SNPITJsonEncoder )
+        return dbclient.send( "savediaobjectposition", data=senddata, headers={'Content-Type': 'application/json'} )
+
+
     @classmethod
     def _parse_tag_and_process( cls, collection='snpitdb', provenance_tag=None, process=None, provenance=None,
                                 dbclient=None ):
+
         """Figure out either the DiaObject subclass, or the Provenance, as appropraite.
 
         Parameters
@@ -459,6 +586,23 @@ class DiaObject:
 
           mjd_end_min, mjd_end_max: float
 
+          order_by: str, default None
+            By default, the returned objects are not sorted in any
+            particular way.  Put a keyword here to sort by that value.
+            Options include 'id', 'provenance_id', 'name', 'iauname',
+            'ra', 'dec', 'mjd_discovery', 'mjd_peak', 'mjd_start',
+            'mjd_end'.  Not all of these are necessarily useful, and
+            some of them may be null for many objects in the database.
+
+          limit : int, default None
+            Only return this many objects at most.
+
+          offset : int, default None
+            Useful with limit and order_by ; offset the returned value
+            by this many entries.  You can make repeated calls to
+            find_objects to get subsets of objects by passing the same
+            order_by and limit, but different offsets each time, to
+            slowly build up a list.
 
         Returns
         -------
