@@ -12,6 +12,7 @@ Provenance
 
       ~Provenance.get
       ~Provenance.get_by_id
+      ~Provenance.get_provenance_id
       ~Provenance.get_provs_for_tag
       ~Provenance.parse_provenance
       ~Provenance.save_to_db
@@ -22,6 +23,7 @@ Provenance
 
    .. automethod:: get
    .. automethod:: get_by_id
+   .. automethod:: get_provenance_id
    .. automethod:: get_provs_for_tag
    .. automethod:: parse_provenance
    .. automethod:: save_to_db

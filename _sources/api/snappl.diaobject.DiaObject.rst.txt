@@ -11,11 +11,17 @@ DiaObject
    .. autosummary::
 
       ~DiaObject.find_objects
+      ~DiaObject.get_diaobject_positions
       ~DiaObject.get_object
+      ~DiaObject.get_position
       ~DiaObject.save_object
+      ~DiaObject.save_updated_position
 
    .. rubric:: Methods Documentation
 
    .. automethod:: find_objects
+   .. automethod:: get_diaobject_positions
    .. automethod:: get_object
+   .. automethod:: get_position
    .. automethod:: save_object
+   .. automethod:: save_updated_position
