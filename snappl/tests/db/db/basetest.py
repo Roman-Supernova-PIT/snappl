@@ -60,6 +60,7 @@ class BaseTestDB:
         assert obj2._tablemeta is not None
         assert obj2._tablemeta == obj1.tablemeta
 
+
     def test_instantiate( self, basetest_setup ):
         # Test basic instantiation
         obj = self.cls( **self.dict1 )
@@ -70,6 +71,11 @@ class BaseTestDB:
         # Test missing column
         with pytest.raises( RuntimeError, match="Unknown columns" ):
             _ = self.cls( this_column_will_never_exist_in_any_table=42 )
+
+    def test_to_dict( self, basetest_setup ):
+        d = self.obj1.to_dict()
+        assert set( d.keys() ) == set( self.columns )
+        assert all( d[k] == getattr( self.obj1, k ) for k in d.keys() )
 
 
     def test_insert( self, obj1_inserted ):
