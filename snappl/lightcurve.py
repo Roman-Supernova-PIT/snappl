@@ -6,7 +6,7 @@ import uuid
 from astropy.table import Table, QTable
 import astropy.units as u
 
-from snpit_utils.logger import SNLogger
+from snappl.logger import SNLogger
 
 
 class lightcurve:
