@@ -1,3 +1,6 @@
+__all__ = [ 'ImageSimulatorPointSource', 'ImageSimulatorStarCollection', 'ImageSimulatorTransient',
+            'ImageSimulatorStaticSource', 'ImageSimulatorImage', 'ImageSimulator' ]
+
 import re
 import argparse
 import functools
@@ -145,6 +148,22 @@ class ImageSimulatorTransient( ImageSimulatorPointSource ):
                                   noisy=noisy, rng=rng )
 
 
+class ImageSimulatorStaticSource(ImageSimulatorPointSource):
+    """ A class for static sources (galaxies) that don't vary with time."""
+    def __init__(self, mag, **kwargs):
+        super().__init__(**kwargs)
+        if mag is None:
+            raise ValueError("ImageSimulatorStaticSource requires a magnitude")
+        self.mag = mag
+
+    def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None):
+
+        flux = 10 ** ((self.mag - zeropoint) / -2.5)
+        SNLogger.debug(f"Adding transient with mag {self.mag:.2f} (flux {flux:.0f}) on mjd {mjd}")
+
+        # To start, we are hardcoding that static sources are just point sources.
+        return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng)
+
 
 class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""
@@ -250,6 +269,25 @@ class ImageSimulatorImage:
             self.image.data[ iy0:iy1, ix0:ix1 ] += stamp[ sy0:sy1, sx0:sx1 ]
             self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
 
+    def add_static_source( self, static_source, rng=None, noisy = False ):
+        if static_source is not None:
+            if rng is None:
+                rng = np.random.default_rng()
+
+            x, y = self.image.get_wcs().world_to_pixel( static_source.ra, static_source.dec )
+            SNLogger.debug( f"...adding static source to image at ({x:.2f}, {y:.2f})..." )
+            ( stamp, var,
+            imcoords, stampcoords ) = static_source.render_static_source( self.image.data.shape[1],
+                                                                            self.image.data.shape[0],
+                                                                        x, y, self.image.mjd,
+                                                                        zeropoint=self.image.zeropoint,
+                                                                        rng=rng, noisy=noisy)
+            if stamp is not None:
+                ix0, ix1, iy0, iy1 = imcoords
+                sx0, sx1, sy0, sy1 = stampcoords
+                self.image.data[ iy0:iy1, ix0:ix1 ] += stamp[ sy0:sy1, sx0:sx1 ]
+                self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
+
 
 class ImageSimulator:
     def __init__( self,
@@ -284,6 +322,10 @@ class ImageSimulator:
                   transient_end_mjd=60060.,
                   no_transient_noise=False,
                   overwrite=False,
+                  static_source_ra=None,
+                  static_source_dec=None,
+                  static_source_mag=None,
+                  no_static_source_noise=False,
                   numprocs=12 ):
 
         self.mjds = mjds if mjds is not None else np.arange( 60000., 60065., 5. )
@@ -352,6 +394,11 @@ class ImageSimulator:
         self.transient_start_mjd = transient_start_mjd
         self.transient_end_mjd = transient_end_mjd
         self.no_transient_noise = no_transient_noise
+        self.static_source_ra = static_source_ra
+        self.static_source_dec = static_source_dec
+        self.static_source_mag = static_source_mag
+        self.no_static_source_noise = no_static_source_noise
+
         self.overwrite = overwrite
         self.numprocs = numprocs
 
@@ -385,6 +432,11 @@ class ImageSimulator:
                                              psf=psf, peak_mag=self.transient_peak_mag,
                                              peak_mjd=self.transient_peak_mjd, start_mjd=self.transient_start_mjd,
                                              end_mjd=self.transient_end_mjd )
+        if all ( i is not None for i in [ self.static_source_ra, self.static_source_dec, self.static_source_mag ] ):
+            static_source = ImageSimulatorStaticSource( ra=self.static_source_ra, dec=self.static_source_dec,
+                                                    psf=psf, mag=self.static_source_mag )
+        else:
+            static_source = None
 
         for i in range( len( self.imdata['mjds'] ) ):
             SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
@@ -396,6 +448,7 @@ class ImageSimulator:
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
             image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise )
             image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise )
+            image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise)
             image.image.noise = np.sqrt( image.image.noise )
             SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
             image.image.save( overwrite=self.overwrite )
@@ -467,6 +520,15 @@ def main():
                          help="End MJD of transient linear decay (default: 60060.)" )
     parser.add_argument( '--no-transient-noise', action='store_true', default=False,
                          help="Set this to not add poisson noise to transients." )
+
+    parser.add_argument( '--static-source-ra', type=float, default=None,
+                         help="RA of optional static source (decimal degrees); if None, render no static source" )
+    parser.add_argument( '--static-source-dec', type=float, default=None,
+                         help="Dec of optional static source (decimal degrees)" )
+    parser.add_argument( '--static-source-mag', type=float, default=22.,
+                         help="Magnitude of static source (default: 22)" )
+    parser.add_argument( '--no-static-source-noise', action='store_true', default=False,
+                         help="Set this to not add poisson noise to static sources." )
 
     parser.add_argument( '--numprocs', type=int, default=12, help="Number of star rendering processes (default 12)" )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,

@@ -1,15 +1,18 @@
+__all__ = [ 'Provenance' ]
+
 import base64
 import hashlib
 import json
 import uuid
 
-from snappl.utils import SNPITJsonEncoder
+from snappl.config import Config
+from snappl.utils import SNPITJsonEncoder, asUUID
 from snappl.dbclient import SNPITDBClient
 
 
 class Provenance:
     def __init__( self, process, major, minor, params={}, environment=None, env_major=None, env_minor=None,
-                  upstreams=[] ):
+                  omitkeys=['system'], keepkeys=None, upstreams=[] ):
         """Instantiate a Provenance
 
         Once instantiated, will have a property id that holds the UUID
@@ -29,7 +32,7 @@ class Provenance:
           minor : int
             Semantic minor version of the code described by process.
 
-          params : dict, default {}
+          params : Config or dict, default {}
             Parameters that uniquely define process. This should include
             all parameters that would be the same for all runs on one
             set of data.  So, for instance, for difference imaging
@@ -39,6 +42,11 @@ class Provenance:
             parameters to SFFT, detection thresholds, and the name and
             parameters of however you decided to figure out which
             template image to use.
+
+            You can also pass a snappl.config.Config object, in which
+            case the parameters will be extracted from that.  This
+            assumes that the "system" top level key of that Config has
+            all, but only, the system-specific stuff.
 
           environment : int, default None
             Which SNPIT environment did the process use?  TODO: this
@@ -55,11 +63,20 @@ class Provenance:
             no need for upstreams of upstreams, as those will be tracked by the immedaite
             upstreams.  Can also send a single Provenance.
 
+          omitkeys : list of str, default ['system']
+            Ignored unless params is a Config object.  In this case,
+            these are the keys from the Config to omit and not include
+            in the parameters dictionary.  Only one of omitkeys or
+            keepkeys can be non-None.
+
+          keepkeys : list of str, default None
+            Ignored unless params is a Config object.  In this case,
+            only include the specified keys from the Config.
+
         """
         self.process = process
         self.major = major
         self.minor = minor
-        self.params = params
         self.environment = environment
         self.env_major = env_major
         self.env_minor = env_minor
@@ -68,6 +85,14 @@ class Provenance:
             raise TypeError( "upstream must be a list of Provenance" )
         # Sort upstreams by id so they are in a reproducible order
         self.upstreams.sort( key=lambda x: x.id )
+
+        if isinstance( params, Config ):
+            self.params = params.dump_to_dict_for_params( omitkeys=omitkeys, keepkeys=keepkeys )
+        elif isinstance( params, dict ):
+            self.params = params
+        else:
+            raise TypeError( f"params must be a Config or a dict, not a {type(params)}" )
+
         self.update_id()
 
     def spec_dict( self ):
@@ -250,7 +275,7 @@ class Provenance:
 
 
     @classmethod
-    def get_by_id( cls, provid, dbclient ):
+    def get_by_id( cls, provid, dbclient=None ):
         """Return a Provenance pulled from the database.
 
         Raises an exception if it does not exist.
@@ -302,3 +327,41 @@ class Provenance:
             return cls.parse_provenance( dbclient.send( f"/getprovenance/{tag}/{process}" ) )
         else:
             return [ cls.parse_provenance(p) for p in dbclient.send( f"/provenancesfortag/{tag}" ) ]
+
+
+    @classmethod
+    def get_provenance_id( cls, provenance, provenance_tag, process, dbclient=None ):
+        """Return a Provenance ID from either a provenance, or a provenance_tag and process.
+
+        Parameters
+        ----------
+          provenance: Provenance, str, or None
+            If a Provenance, then this provenance's ID is returned.
+            Otherwise, if this is not None, return this.  If None, then
+            fall back to looking at provenance_tag and process.
+
+          provenance_tag : str or None
+
+          process: str or None
+
+        Returns
+        -------
+          UUID
+
+        """
+
+        if isinstance( provenance, Provenance ):
+            return provenance.id
+
+        if provenance is not None:
+            return asUUID( provenance )
+
+        if provenance_tag is None:
+            raise ValueError( "Must pass either provenacne or provenance_tag" )
+
+        if process is None:
+            raise ValueError( "provenance_tag requires process" )
+
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        prov = Provenance.get_provs_for_tag( provenance_tag, process, dbclient=dbclient )
+        return prov.id

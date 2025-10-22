@@ -1195,7 +1195,7 @@ class A25ePSF( YamlSerialized_OversampledImagePSF ):
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         cfg = Config.get()
-        basepath = pathlib.Path( cfg.value( 'photometry.snappl.A25ePSF_path' ) )
+        basepath = pathlib.Path( cfg.value( 'system.paths.snappl.A25ePSF_path' ) )
 
         """
         The array size is the size of one image (nx, ny). The grid size
@@ -1270,7 +1270,7 @@ class ou24PSF_slow( PSF ):
             self.sed = sed
 
         if config_file is None:
-            config_file = Config.get().value( 'ou24.config_file' )
+            config_file = Config.get().value( 'system.ou24.config_file' )
         self.config_file = config_file
         self.size = size
         self.sca_size = 4088
@@ -1625,7 +1625,7 @@ class ou24PSF( ou24PSF_slow ):
 #             self.sed = sed
 
 #         if config_file is None:
-#             config_file = Config.get().value( 'ou24psf.config_file' )
+#             config_file = Config.get().value( 'system.ou24.config_file' )
 #         self.config_file = config_file
 #         self.pointing = pointing
 #         self.sca = sca

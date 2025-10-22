@@ -26,6 +26,7 @@ import roman_datamodels as rdm
 from snappl.logger import SNLogger
 from snappl.config import Config
 from snappl.wcs import AstropyWCS, GalsimWCS, GWCS
+from snappl.utils import asUUID
 
 
 # ======================================================================
@@ -60,7 +61,7 @@ class Image:
 
     data_array_list = [ 'all', 'data', 'noise', 'flags' ]
 
-    def __init__( self, path, pointing=None, sca=None ):
+    def __init__( self, path, pointing=None, sca=None, id=None, provenance_id=None, **kwargs ):
         """Instantiate an image.  You probably don't want to do that.
 
         This is an abstract base class that has limited functionality.
@@ -101,6 +102,16 @@ class Image:
             chip number for any other telescope but is called SCA for
             Roman.
 
+          id : UUID or str that can be converted to UUID, default None
+            Database ID of the image.  This is only relevant if the
+            image is in the l2image table of the Roman SNPIT internal
+            database (but is required in that case).
+
+          provenance_id : UUID or str that can be converted to UUID, default NOne
+            The id of the provenance of the image.  Only relevant if the
+            image is in the l2image table of the Roman SNPIT internal
+            database (but is required in that case).
+
         """
         if path is None:
             self.path = None
@@ -112,6 +123,28 @@ class Image:
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
         self._zeropoint = None
+        self._id = asUUID( id ) if id is not None else None
+        self._provenance_id = asUUID( provenance_id ) if provenance_id is not None else None
+
+    @property
+    def id( self ):
+        """The database image uuid in the l2image table."""
+        return self._id
+
+    @id.setter
+    def id( self, new_value ):
+        """USE THIS WITH CARE.  It doesn't change the database, only the object in memory.  You may become confused."""
+        self._id = asUUID( new_value ) if new_value is not None else None
+
+    @property
+    def provenance_id( self ):
+        """The database provenance uuid of the image in the l2image table."""
+        return self._provenance_id
+
+    @provenance_id.setter
+    def provenance_id( self, new_value ):
+        """USE THIS WITH CARE.  It doesn't change the database, only the object in memory.  You may become confused."""
+        self._provenance_id = asUUID( new_value ) if new_value is not None else None
 
     @property
     def data( self ):
@@ -1238,7 +1271,7 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
     @property
     def truthpath( self ):
         """Path to truth catalog.  WARNING: this is OpenUniverse2024FITSImage-specific, use with care."""
-        tds_base = pathlib.Path( Config.get().value( 'ou24.tds_base' ) )
+        tds_base = pathlib.Path( Config.get().value( 'system.ou24.tds_base' ) )
         return ( tds_base / f'truth/{self.band}/{self.pointing}/'
                  f'Roman_TDS_index_{self.band}_{self.pointing}_{self.sca}.txt' )
 

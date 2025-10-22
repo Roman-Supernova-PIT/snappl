@@ -33,6 +33,7 @@ def load_snana_ou2024_diaobject( provid, pqf, dbcon=None ):
                     'mjd_peak': float(row.peak_mjd),
                     'mjd_start': float(row.start_mjd),
                     'mjd_end': float(row.end_mjd),
+                    'ndetected': 2,
                     'properties': simplejson.dumps(
                         { 'healpix': healpix,
                           'host_id': int(row.host_id),

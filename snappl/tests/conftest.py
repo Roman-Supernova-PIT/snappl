@@ -14,6 +14,7 @@ from tox.pytest import init_fixture # noqa: F401
 from snappl.imagecollection import ImageCollection
 from snappl.image import FITSImage, RomanDatamodelImage
 from snappl.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
+from snappl.admin.load_ou2024_l2images import OU2024_L2image_loader
 from snappl.config import Config
 from snappl.dbclient import SNPITDBClient
 from snappl.provenance import Provenance
@@ -179,50 +180,122 @@ def check_wcs():
     return wcs_checker
 
 
-@pytest.fixture( scope="module" )
-def loaded_ou2024_test_diaobjects():
-    prov = None
-    try:
-        with DBCon() as dbcon:
-            # Load up the necessary provenance
+def make_provenance_and_tag( process, major, minor, params={}, tag=None, dbcon=None ):
+    with DBCon( dbcon ) as dbcon:
+        prov = Provenance( process, major, minor, params=params )
+        rows, _cols = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
+        if len(rows) == 0:
+            dbcon.execute( "INSERT INTO provenance(id,process,major,minor,params) "
+                           "VALUES (%(id)s,%(proc)s,%(maj)s,%(min)s,%(params)s)",
+                           { 'id': prov.id, 'proc': prov.process, 'maj': prov.major, 'min': prov.minor,
+                             'params': psycopg.types.json.Jsonb(prov.params) } )
 
-            prov = Provenance( 'import_ou2024_diaobjects', 0, 1 )
-            rows, cols = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
-            if len(rows) == 0:
-                dbcon.execute( "INSERT INTO provenance(id,process,major,minor,params) "
-                               "VALUES (%(id)s,%(proc)s,%(maj)s,%(min)s,%(params)s)",
-                               { 'id': prov.id, 'proc': prov.process, 'maj': prov.major, 'min': prov.minor,
-                                 'params': psycopg.types.json.Jsonb({}) } )
-            rows, cols = dbcon.execute( "SELECT tag,process,provenance_id FROM provenance_tag "
-                                        "WHERE tag=%(tag)s AND process=%(proc)s",
-                                        { 'tag': 'dbou2024_test', 'proc': prov.process } )
+        if tag is not None:
+            rows, _cols = dbcon.execute( "SELECT tag,process,provenance_id FROM provenance_tag "
+                                         "WHERE tag=%(tag)s AND process=%(proc)s",
+                                         { 'tag': tag, 'proc': prov.process } )
             if len(rows) > 1:
                 raise RuntimeError( "This should never happen." )
             elif len(rows) == 1:
                 if rows[0][2] != prov.id:
-                    raise ValueError( f"Provenance tag dbou2024_test process {prov.process} is in the database with "
+                    raise ValueError( f"Provenance tag {tag} process {prov.process} is in the database with "
                                       f"provenance{rows[0][2]}, but we wanted {prov.id}" )
             else:
                 dbcon.execute( "INSERT INTO provenance_tag(tag,process,provenance_id) VALUES (%(tag)s,%(proc)s,%(id)s)",
-                               { 'tag': 'dbou2024_test', 'proc': 'import_ou2024_diaobjects', 'id': prov.id } )
-            dbcon.commit()
+                               { 'tag': tag, 'proc': prov.process, 'id': prov.id } )
+        dbcon.commit()
+
+        return prov
+
+
+@pytest.fixture( scope="session" )
+def test_object_provenance():
+    return make_provenance_and_tag( "test_diaobject", 0, 1, tag="test_diaobject_tag" )
+
+
+@pytest.fixture( scope="module" )
+def loaded_ou2024_test_diaobjects():
+    prov = None
+    posprov= None
+    try:
+        with DBCon() as dbcon:
+            prov = make_provenance_and_tag( 'import_ou2024_diaobjects', 0, 1, tag='dbou2024_test', dbcon=dbcon )
 
             # Load whatever parquet files are in the ou2024 truth direictory of photometry_test_data
-
             pqdir = pathlib.Path( "/photometry_test_data/ou2024/snana_truth" )
             pqfiles = pqdir.glob( "snana*.parquet" )
             for pqf in pqfiles:
                 load_snana_ou2024_diaobject( prov.id, pqf, dbcon=dbcon )
 
+            posprov = make_provenance_and_tag( 'ou2024_diaobjects_truth_copy', 0, 1, tag='dbou2024_test', dbcon=dbcon )
+            dbcon.execute( "INSERT INTO diaobject_position(id, diaobject_id, provenance_id, ra, dec) "
+                           "SELECT gen_random_uuid(), o.id, %(provid)s, o.ra, o.dec FROM diaobject o "
+                           "WHERE o.provenance_id=%(objprovid)s",
+                           { 'provid': posprov.id, 'objprovid': prov.id } )
+            dbcon.commit()
+
         yield True
 
     finally:
         with DBCon() as dbcon:
+            if posprov is not None:
+                dbcon.execute( "DELETE FROM diaobject_position WHERE provenance_id=%(id)s", { 'id': posprov.id } )
             if prov is not None:
                 dbcon.execute( "DELETE FROM diaobject WHERE provenance_id=%(id)s", { 'id': prov.id } )
             dbcon.execute( "DELETE FROM provenance_tag WHERE tag='dbou2024_test'" )
             dbcon.execute( "DELETE FROM provenance WHERE process='import_ou2024_diaobjects'" )
+            dbcon.execute( "DELETE FROM provenance WHERE process='ou2024_diaobjects_truth_copy'" )
             dbcon.commit()
+
+
+@pytest.fixture( scope="module" )
+def loaded_ou2024_test_l2images():
+    prov = None
+    try:
+        with DBCon() as dbcon:
+            prov = make_provenance_and_tag( 'import_ou2024_l2images', 0, 1, params={ 'image_class': 'ou2024' },
+                                            tag='dbou2024_test', dbcon=dbcon )
+            base_path = pathlib.Path( Config.get().value( 'system.ou24.images' ) )
+            loader = OU2024_L2image_loader( prov.id, base_path )
+            loader( nprocs=4 )
+
+        yield True
+
+    finally:
+        if prov is not None:
+            with DBCon() as dbcon:
+                dbcon.execute( "DELETE FROM l2image WHERE provenance_id=%(id)s", { 'id': prov.id } )
+                dbcon.execute( "DELETE FROM provenance_tag WHERE provenance_id=%(id)s", { 'id': prov.id } )
+                dbcon.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
+                dbcon.commit()
+
+
+# IMPORTANT : if you use this fixture, use it *before* the previous one.
+#   Otherwise, there will be databsae conflicts.  (This fixture should
+#   ideally only be used in
+#   test_dbimagecollection.py::test_load_ou2024_l2images_1proc ;
+#   otherwise, just use the previous fixture.)
+@pytest.fixture
+def loaded_ou2024_test_l2images_1proc():
+    prov = None
+    try:
+        with DBCon() as dbcon:
+            prov = make_provenance_and_tag( 'import_ou2024_l2images_1proc', 0, 1, params={ 'image_class': 'ou2024' },
+                                            tag='dbou2024_test', dbcon=dbcon )
+            base_path = pathlib.Path( Config.get().value( 'system.ou24.images' ) )
+            loader = OU2024_L2image_loader( prov.id, base_path )
+            loader( nprocs=1 )
+
+        yield True
+
+    finally:
+        if prov is not None:
+            with DBCon() as dbcon:
+                dbcon.execute( "DELETE FROM l2image WHERE provenance_id=%(id)s", { 'id': prov.id } )
+                dbcon.execute( "DELETE FROM provenance_tag WHERE provenance_id=%(id)s", { 'id': prov.id } )
+                dbcon.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
+                dbcon.commit()
+
 
 
 @pytest.fixture( scope='session' )

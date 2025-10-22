@@ -44,13 +44,13 @@ all_table_names = [ 'lightcurve', 'summed_image', 'summed_image_component',
 
 def get_connect_info():
     cfg = Config.get()
-    dbhost = cfg.value( 'db.postgres_host' )
-    dbport = cfg.value( 'db.postgres_port' )
-    dbname = cfg.value( 'db.postgres_database' )
-    dbuser = cfg.value( 'db.postgres_username' )
-    dbpasswd = cfg.value( 'db.postgres_password' )
+    dbhost = cfg.value( 'system.db.postgres_host' )
+    dbport = cfg.value( 'system.db.postgres_port' )
+    dbname = cfg.value( 'system.db.postgres_database' )
+    dbuser = cfg.value( 'system.db.postgres_username' )
+    dbpasswd = cfg.value( 'system.db.postgres_password' )
     if dbpasswd is None:
-        with open( cfg.value( 'db.postgres_password_file' ) ) as ifp:
+        with open( cfg.value( 'system.db.postgres_password_file' ) ) as ifp:
             dbpasswd = ifp.readline().strip()
 
     return dbhost, dbport, dbname, dbuser, dbpasswd
@@ -124,7 +124,7 @@ class DBCon:
 
     """
 
-    def __init__( self, con=None, dictcursor=False ):
+    def __init__( self, con=None, dictcursor=None ):
         """Instantiate.
 
         If you use this, you should also use close(), and soon.
@@ -146,12 +146,16 @@ class DBCon:
             outer context that originally created the DBCon that will do
             that.
 
-          dictcursor : bool, default False
+          dictcursor : bool, default None
             If True, then the cursor uses psycopg.rows.dict_row as its
-            row factory.  execite() will return a list of dictionaries,
+            row factory.  execute() will return a list of dictionaries,
             with each element of the list being one row of the result.
             If False, then execute returns two lists: a list of tuples
             (the rows) and a list of strings (the column names).
+
+            If None, then will inherit dictcursor from con, unless con
+            is not a DBCon, in which case dictcursor will be treated as
+            False.
 
         """
 
@@ -159,21 +163,28 @@ class DBCon:
 
         if con is not None:
             self.con_is_mine = False
-            self.con = con.con
-            self.echoqueries = con.echoqueries
-            self.alwaysexplain = con.alwaysexplain
-            self.dictcursor = con.dictcursor
-            self.cursorisdict = con.cursorisdict
+            if isinstance( con, DBCon ):
+                self.con = con.con
+                self.echoqueries = con.echoqueries
+                self.alwaysexplain = con.alwaysexplain
+                self.dictcursor = con.dictcursor if dictcursor is None else dictcursor
+                self.cursorisdict = con.cursorisdict if dictcursor is None else dictcursor
+            elif isinstance( con, psycopg.Connection ):
+                self.con = con
+                self.echoqueries = cfg.value( 'system.db.echoqueries' )
+                self.alwaysexplain = cfg.value( 'system.db.alwaysexplain' )
+                self.dictcursor = bool( dictcursor )
+                self.cursorisdict = bool( dictcursor )
+            else:
+                raise TypeError( f"con must be a DBCon or psycopg.Connection, not a {type(con)}" )
 
         else:
             self.con_is_mine = True
             self.con = get_dbcon()
-            # TODO : make these next two configurable rather than hardcoded
-            # These are useful for debugging, but are profligate for production
-            self.echoqueries = cfg.value( 'db.echoqueries' )
-            self.alwaysexplain = cfg.value( 'db.alwaysexplain' )
-            self.dictcursor = dictcursor
-            self.cursorisdict = dictcursor
+            self.echoqueries = cfg.value( 'system.db.echoqueries' )
+            self.alwaysexplain = cfg.value( 'system.db.alwaysexplain' )
+            self.dictcursor = bool( dictcursor )
+            self.cursorisdict = bool( dictcursor )
 
         self.remake_cursor()
 
@@ -300,6 +311,8 @@ class DBCon:
         """
         self.execute_nofetch( q, subdict, silent=silent )
         if self.curcursorisdict:
+            if self.cursor.description is None:
+                return None
             return self.cursor.fetchall()
         else:
             if self.cursor.description is None:
@@ -615,6 +628,27 @@ class DBBase:
         self._set_self_from_fetch_cols_row( cols, vals, noconvert=noconvert )
 
 
+    def to_dict( self, columns=None, dbcon=None ):
+        """Return a dictionary with the database fields."""
+
+        self._load_table_meta( dbcon=dbcon )
+
+        retval = {}
+        if columns is not None:
+            if any( c not in self.tablemeta for c in columns ):
+                raise ValueError( f"Not all of the columns in {columns} are in the table" )
+        else:
+            columns = self.tablemeta.keys()
+
+        for col in columns:
+            if hasattr( self, col ):
+                retval[col] = getattr( self, col )
+            else:
+                retval[col] = None
+
+        return retval
+
+
     def _set_self_from_fetch_cols_row( self, cols, fetchrow, noconvert=False, dbcon=None ):
         if self._tablemeta is None:
             self._load_table_meta( dbcon=dbcon )
@@ -627,7 +661,7 @@ class DBBase:
                 setattr( self, col, self._tablemeta[col].pg_to_py( val ) )
 
 
-    def _build_subdict( self, columns=None ):
+    def _build_subdict( self, columns=None, dbcon=None ):
         """Create a substitution dictionary that could go into a cursor.execute() statement.
 
         The columns that are included in the dictionary interacts with default
@@ -661,6 +695,8 @@ class DBBase:
           dict of { column_name: value }
 
         """
+
+        self._load_table_meta( dbcon=dbcon )
 
         subdict = {}
         if columns is not None:
@@ -718,11 +754,8 @@ class DBBase:
 
         q, subdict = cls._construct_pk_query_where( *args )
         q = f"SELECT * FROM {cls.__tablename__} {q}"
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
-            cols = [ desc[0] for desc in cursor.description ]
-            rows = cursor.fetchall()
+        with DBCon( dbcon, dictcursor=False ) as con:
+            rows, cols = con.execute( q, subdict )
 
         if len(rows) > 1:
             raise RuntimeError( f"Found multiple rows of {cls.__tablename__} with primary keys {args}; "
@@ -782,12 +815,9 @@ class DBBase:
             _and = "AND"
             comma = ","
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
+        with DBCon( dbcon, dictcursor=False ) as con:
             q = f"SELECT * FROM {cls.__tablename__} JOIN (VALUES {mess}) AS t({collist}) ON {onlist} "
-            cursor.execute( q, subdict )
-            cols = [ desc[0] for desc in cursor.description ]
-            rows = cursor.fetchall()
+            rows, cols = con.execute( q, subdict )
 
         objs = []
         for row in rows:
@@ -811,11 +841,8 @@ class DBBase:
             q += f"{_and} {k}=%({k})s "
             _and = "AND"
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, attrs )
-            cols = [ desc[0] for desc in cursor.description ]
-            rows = cursor.fetchall()
+        with DBCon( dbcon, dictcursor=False ) as con:
+            rows, cols = con.execute( q, attrs )
 
         objs = []
         for row in rows:
@@ -829,11 +856,8 @@ class DBBase:
         q, subdict = self._construct_pk_query_where( *self.pks )
         q = f"SELECT * FROM {self.__tablename__} {q}"
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
-            cols = [ desc[0] for desc in cursor.description ]
-            rows = cursor.fetchall()
+        with DBCon( dbcon, dictcursor=False ) as con:
+            rows, cols = con.execute( q, subdict )
 
         if len(rows) > 1:
             raise RuntimeError( f"Found more than one row in {self.__tablename__} with primary keys "
@@ -848,14 +872,13 @@ class DBBase:
         if refresh and nocommit:
             raise RuntimeError( "Can't refresh with nocommit" )
 
-        subdict = self._build_subdict()
+        subdict = self._build_subdict( dbcon=dbcon )
 
         q = ( f"INSERT INTO {self.__tablename__}({','.join(subdict.keys())}) "
               f"VALUES ({','.join( [ f'%({c})s' for c in subdict.keys() ] )})" )
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
+        with DBCon( dbcon, dictcursor=False ) as con:
+            con.execute( q, subdict )
             if not nocommit:
                 con.commit()
                 if refresh:
@@ -864,9 +887,8 @@ class DBBase:
     def delete_from_db( self, dbcon=None, nocommit=False ):
         where, subdict = self._construct_pk_query_where( me=self )
         q = f"DELETE FROM {self.__tablename__} {where}"
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
+        with DBCon( dbcon, dictcursor=False ) as con:
+            con.execute( q, subdict )
             con.commit()
 
 
@@ -874,16 +896,15 @@ class DBBase:
         if refresh and nocommit:
             raise RuntimeError( "Can't refresh with nocommit" )
 
-        subdict = self._build_subdict()
+        subdict = self._build_subdict( dbcon=dbcon )
         q = ( f"UPDATE {self.__tablename__} SET "
               f"{','.join( [ f'{c}=%({c})s' for c in subdict.keys() if c not in self._pk ] )} " )
         where, wheresubdict = self._construct_pk_query_where( me=self )
         subdict.update( wheresubdict )
         q += where
 
-        with DB( dbcon) as con:
-            cursor = con.cursor()
-            cursor.execute( q, subdict )
+        with DBCon( dbcon, dictcursor=False ) as con:
+            con.execute( q, subdict )
             if not nocommit:
                 con.commit()
                 if refresh:
@@ -957,20 +978,19 @@ class DBBase:
             #   to assume that things that are None because they
             #   want to use database defaults are going to be
             #   the same in every object.
-            sd0 = data[0]._build_subdict()
+            sd0 = data[0]._build_subdict( dbcon=dbcon )
             columns = sd0.keys()
-            data = [ d._build_subdict( columns=columns ) for d in data ]
+            data = [ d._build_subdict( columns=columns, dbcon=dbcon ) for d in data ]
             # Alas, psycopg's copy seems to index the thing it's passed,
             #   so we can't just pass it d.values()
             values = [ list( d.values() ) for d in data ]
         else:
             raise TypeError( f"data must be something other than a {cls.__name__}" )
 
-        with DB( dbcon ) as con:
-            cursor = con.cursor()
-            cursor.execute( "DROP TABLE IF EXISTS temp_bulk_upsert" )
-            cursor.execute( f"CREATE TEMP TABLE temp_bulk_upsert (LIKE {cls.__tablename__})" )
-            with cursor.copy( f"COPY temp_bulk_upsert({','.join(columns)}) FROM STDIN" ) as copier:
+        with DBCon( dbcon, dictcursor=False ) as con:
+            con.execute( "DROP TABLE IF EXISTS temp_bulk_upsert" )
+            con.execute( f"CREATE TEMP TABLE temp_bulk_upsert (LIKE {cls.__tablename__})" )
+            with con.cursor.copy( f"COPY temp_bulk_upsert({','.join(columns)}) FROM STDIN" ) as copier:
                 for v in values:
                     copier.write_row( v )
 
@@ -988,9 +1008,9 @@ class DBBase:
             if nocommit:
                 return q
             else:
-                cursor.execute( q )
-                ninserted = cursor.rowcount
-                cursor.execute( "DROP TABLE temp_bulk_upsert" )
+                con.cursor.execute( q )
+                ninserted = con.cursor.rowcount
+                con.execute( "DROP TABLE temp_bulk_upsert" )
                 con.commit()
                 return ninserted
 
