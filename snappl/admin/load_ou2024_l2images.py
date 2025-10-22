@@ -1,3 +1,4 @@
+import re
 import uuid
 import pathlib
 import multiprocessing
@@ -6,6 +7,7 @@ import argparse
 
 import psycopg
 
+from snappl.config import Config
 from snappl.image import OpenUniverse2024FITSImage
 from snappl.logger import SNLogger
 from snappl.utils import asUUID
@@ -85,6 +87,34 @@ class OU2024_L2image_loader:
 
         return imagefiles
 
+    def get_ou2024_l2image_paths_from_list( self, listfile ):
+        imagefiles = []
+        with open( listfile ) as ifp:
+            header = None
+            for line in ifp:
+                line = line.strip()
+                if ( line[0] == '#' ) or ( len(line) == 0 ):
+                    continue
+                words = line.split(',')
+                if len(words) != 3:
+                    raise ValueError( f'Failed to parse line: "{line}"' )
+                if ( ( words[0].strip() == 'filter' ) and
+                     ( words[1].strip() == 'pointing' ) and
+                     ( words[2].strip() == 'sca' )
+                    ):
+                    header = True
+                elif not header:
+                    raise ValueError( f'First line was "{line}", not "filter,pointing,sca"' )
+                else:
+                    filter, pointing, sca = words
+                    fpath = pathlib.Path( f'{filter}/{pointing}/'
+                                          f'Roman_TDS_simple_model_{filter}_{pointing}_{sca}.fits.gz' )
+                    if ( self.base_path / fpath ).is_file():
+                        imagefiles.append( fpath )
+                    else:
+                        SNLogger.error( f"Couldn't find file {fpath}, skipping it" )
+        return imagefiles
+                    
 
     def save_to_db( self ):
         if len( self.copydata ) > 0:
@@ -161,6 +191,8 @@ def main():
                          help="Number of processes to run at once [default: 20]" )
     parser.add_argument( '-b', '--basedir', default='/ou2024/RomanTDS/images/simple_model',
                          help='Base directory.' )
+    parser.add_argument( '-f', '--filelist', default=None,
+                         help="File with list of filter,pointing,sca" )
     parser.add_argument( '-j', '--just-get-filenames', default=False, action='store_true',
                          help="Don't actually load files to the database, just generate a file list." )
     parser.add_argument( '-s', '--save-file-list', default=None,
