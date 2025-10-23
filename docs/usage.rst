@@ -19,7 +19,7 @@ Things you need to understand:
   * :ref:`provenance`
 
 .. _nov2025:
-    
+
 ----------------------------------------
 November 2025 SNPIT Pipeline Test Primer
 ----------------------------------------
@@ -94,7 +94,7 @@ This is the minimal config file to connect to the database for November 2025; sa
 
   destructive_appends:
     - snpit_ou2024_nersc.yaml
-  
+
   system:
     db:
       url: https://c3-sn.lbl.gov/roman_snpit_nov2025
@@ -126,7 +126,7 @@ See :ref:`provenance` below to understand what ``provenance_tag`` and ``process`
 With your image collection in hand, you can find images.  If, for instance, you wanted to find all images that included the coordinates RA=7.5510934°, dec=-44.8071811°, you could run::
 
   images = imcol.find_images( ra=7.5510934, dec=-44.8071811, dbclient=dbclient )
-  
+
 That will return a list of ``snappl.image.Image`` objects.  You can read the docstring for that class, but most important is probably the ``path`` attribute that tells you where to find the FITS file.  (For this test, we are still using OpenUniverse 2024 FITS Images.  Eventually we'll be working with ASDF images.)  However, instead of reading the FITS file directly, we recommend working working with the Image class, as it has interfaces that will remain the same whether you're reading FITS or ASDF files.  For example, if you've used a good enough config file that snappl knows where to look for data, you can get access to the data array with::
 
   first_image = images[0]
@@ -208,7 +208,7 @@ We recommend that phrosty put in its output files, somewhere, in addition to wha
   * The configuration parameters for phrosty (obtained from ``phrostprov.params`` — a dictionary).
 
 (If you're very anal, you may want to save a gigantic dictionary structure including everything from ``phrostyprov`` and everything from all of the upstream provenances, and the upstreams of the upstreams, etc.)
-    
+
 **NOTE**: provenance can also store environment and environment version, but we don't have that fully defined yet.
 
 Before saving anything to the database, you will need to make sure that the provenance has been saved to the database.  If you are sure that you've saved this same Provenance before, you can skip this step, but at some point you will need to::
