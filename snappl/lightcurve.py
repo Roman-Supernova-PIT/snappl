@@ -211,7 +211,6 @@ class Lightcurve:
                 SNLogger.error( sio.getvalue() )
             raise ValueError( "Incorrect metadata." )
 
-
         data_cols = list(data.keys()) if type(data) is dict else list(data.columns)
         missing_data = []
         bad_data_types = []
