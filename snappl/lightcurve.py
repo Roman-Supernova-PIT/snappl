@@ -23,37 +23,40 @@ class lightcurve:
 
         # These should match the wiki: https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve
         # This is a bit of a moving target, so it's possible the list below is out of date when you are reading this.
-        self.required_meta_cols = [
-            "provenance_id",
-            "diaobject_id",
-            "iau_name",
-            "ra",
-            "ra_err",
-            "dec",
-            "dec_err"
-        ]
 
-        self.required_data_cols = [
-            "mjd",
-            "band",
-            "flux",
-            "flux_err",
-            "zpt",
-            "NEA",
-            "sky_background",
-        ]
+        meta_type_dict = {
+            "provenance_id": [uuid.UUID, None],
+            "diaobject_id": [uuid.UUID, None],
+            "iau_name": str,
+            "ra": float,
+            "ra_err": float,
+            "dec": float,
+            "dec_err": float
+        }
 
-        required_data_col_types = [float, str, float, float, float, float, float]
-        required_meta_col_types = [uuid.UUID, uuid.UUID, str, float, float, float, float]
+        data_unit_dict = {
+            "mjd": float,
+            "band": str,
+            "flux": float,
+            "flux_err": float,
+            "zpt": float,
+            "NEA": float,
+            "sky_background": float,
+        }
+
+        self.required_data_cols = data_unit_dict.keys()
+        self.required_meta_cols = meta_type_dict.keys()
+
         unique_bands = np.unique(self._data["band"])
         for b in unique_bands:
             self.required_meta_cols.append(f"local_surface_brightness_{b}")
             required_meta_col_types.append(float)
 
         meta_cols = list(self._meta.keys())
-        for col, col_type in zip(self.required_meta_cols, required_meta_col_types):
+        for col in self.required_meta_cols:
             assert col in meta_cols, f"Missing required metadata column {col}"
-            assert isinstance(self._meta[col], col_type), (
+            col_type = meta_type_dict.get(col)
+            assert isinstance(self._meta[col], any(col_type)), (
                 f"Metadata column {col} must be of type {col_type} but" + f" it's actually {type(meta[col])}."
             )
             if col_type is uuid.UUID:
@@ -61,9 +64,10 @@ class lightcurve:
 
 
         data_cols = list(self._data.keys()) if type(self._data) is dict else list(self._data.columns)
-        for col, col_type in zip(self.required_data_cols, required_data_col_types):
+        for col in self.required_data_cols:
             assert col in data_cols, f"Missing required data column {col}"
-            assert all([isinstance(item, col_type) for item in data[col]]), \
+            col_type = data_unit_dict.get(col)
+            assert all([isinstance(item, any(col_type)) for item in data[col]]), \
                 f"Data column {col} must be of type {col_type}"
 
     def write(self, output_dir, filename=None, filetype="parquet", overwrite=False):
