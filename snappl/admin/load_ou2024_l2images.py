@@ -1,4 +1,3 @@
-import re
 import uuid
 import pathlib
 import multiprocessing
@@ -7,7 +6,6 @@ import argparse
 
 import psycopg
 
-from snappl.config import Config
 from snappl.image import OpenUniverse2024FITSImage
 from snappl.logger import SNLogger
 from snappl.utils import asUUID
@@ -114,7 +112,7 @@ class OU2024_L2image_loader:
                     else:
                         SNLogger.error( f"Couldn't find file {fpath}, skipping it" )
         return imagefiles
-                    
+
 
     def save_to_db( self ):
         if len( self.copydata ) > 0:
