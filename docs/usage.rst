@@ -11,11 +11,255 @@ Overview
 
 ``snappl`` has a set of utilities for the Roman SNPIT, including all the classes and functions necessary for communicating with the internal snpit database.
 
+If you're here for the SNPIT November 2025 pipeline test, see :ref:`nov2025`.
+
 Things you need to understand:
   * :ref:`connecting-to-the-database`
   * :ref:`config`
   * :ref:`provenance`
 
+.. _nov2025:
+
+----------------------------------------
+November 2025 SNPIT Pipeline Test Primer
+----------------------------------------
+
+The database connection is under heavy development, and more things are showing up every day.  Right now, the following is available:
+
+* Find image L2 images in the database
+* Saving newly discovered DiaObjects to the database
+* Finding DiaObjects
+* Saving updated positions for DiaObjects
+
+I *hope* that we will have saving lightcurves and finding lightcurves also available by the November test.  How much spectrum saving, and how much characterization saving, is implemented will depend on my time and what we get from those working groups.
+
+This section describes what you need to do in order to connect to the database.
+
+**WARNING**: because everything is under heavy development, it's possible that interfaces will change.  We will try to avoid doing this, because it's a pain when everybody has to adapt, but we're still building this, so it may be inevitable.
+
+
+Choose a working environment
+============================
+
+Whatever it is, you will need to ``pip install roman-snpit-snappl``.  *This package is under heavy development, so you will want to update your install often*.  This provides the ``snappl`` modules that you are currently reading the documentation for.
+
+**We strongly recommend you develop your code to run in a container.  The SNPIT will eventually need to run everything it does in containers.**  On your desktop or laptop, you can use Docker.  On NERSC, you can use ``podman-hpc``.  On many other HPC clusters, you can use Singularity.
+
+**WARNING:** The snpit environment does not currently work on ARM architecture machines (because of issues with Galsim and fftw).  This means that if you're on a Mac, you're SOL.  If you're on a Linux machine, do ``uname -a`` and look towards the end of the output to see if you're on ``x86_64`` or ARM.  We hope to resolve this eventually.  For now, as much as possible run on ``x86_64`` machines.
+
+The SN PIT provides a containerized environment which includes the latest version of snappl at https://github.com/Roman-Supernova-PIT/environment .  You can pull the docker image for this environment from one of:
+
+  * ``registry.nersc.gov/m4385/rknop/roman-snpit-env:cpu``
+  * ``registry.nersc.gov/m4385/rknop/roman-snpit-env:cpu-dev``
+  * ``registry.nersc.gov/m4385/rknop/roman-snpit-env:cuda``
+  * ``registry.nersc.gov/m4385/rknop/roman-snpit-env:cuda-dev``
+  * ``rknop/roman-snpit-env:cpu``
+  * ``rknop/roman-snpit-env:cpu-dev``
+  * ``rknop/roman-snpit-env:cuda``
+  * ``rknop/roman-snpit-env:cuda-dev``
+
+We recommend you use the ``cpu`` version, unless you need CUDA, in which case try the ``cuda`` version, but you may need the ``cuda-dev`` version (which is terribly bloated).
+
+You can, of course, create your own containerized environment for your code to run in, but you will need to support it, and eventually you will need to deliver it for the PIT to run in production.  For that reason, we strongly recommend you start trying to use the standard SNPIT environment.  Ideally, your code should be pip installable from PyPI, and eventually your code will be included in the environment just like ``snappl`` currently is.
+
+Creating a Config
+=================
+
+Snappl includes a :ref:`config` system, that we strongly recommend you adapt your code to use, as it interacts with some other systems you will need.  In any event, to connect to the database, you are going to need a config file.
+
+.. _password-file:
+
+Setting up a secure password file
+---------------------------------
+
+You will eventually need a password for connecting to the database.  **Make sure never to commit passwords to github archives.**  You also don't want them sitting around in world-readable files.  While there are better solutions, a decent compromise between usability and security is to do the following on any system you run:
+
+  * Under your home directory, create a secrets directory::
+
+      cd
+      mkdir secrets
+
+  * Make sure the secrets directory is not world-readable::
+
+      chmod 710 secrets
+
+  * Create a file in that secrets directory named ``roman_snpit_ou2024_nov_ou2024nov`` that has one line holding the password for database access.  (We will give you this password if you need it.)
+
+You will then either point directly from this file (if you are working on the host system) in a configuration variable, or you will bind-mount your secrets directory to ``/secrets`` (if you're working in a container).
+
+The minimal config file
+-----------------------
+
+You will need to set an environment variable ``SNPIT_CONFIG`` that points to a yaml configuration file.
+
+This is the minimal config file to connect to the database for November 2025; save it to a file named ``roman_snpit_ou2024_nov_config.yaml`` (or anything else, but remember what you save it to)::
+
+  destructive_appends:
+    - snpit_ou2024_nersc.yaml
+
+  system:
+    db:
+      url: https://c3-sn.lbl.gov/roman_snpit_nov2025
+      username: ou2024nov
+      password: null
+      passwordfile: /secrets/roman_snpit_ou2024_nov_ou2024nov
+
+Please resist the temptation to put the password in the ``password:`` field, even though it's hanging out there enticing you.  Once somebody commits that password to a git archive, our database can now be accessed by anybody.  Once we realize a password has been leaked to a git archive, we'll need to change the password, which will be a hassle for everybody.  (We do use this field sometimes in our test suite, where the user is ``test`` and the password is ``test_password``, and because it's never a live accessible database, we don't care.)  The value of ``passwordfile`` assumes that you're working inside a container; if not, replace it with the full path to where you created the password file (see :ref:`password-file`).
+
+This config file includes the file `snpit_ou2024_nersc.yaml <https://github.com/Roman-Supernova-PIT/environment/blob/main/snpit_ou2024_nersc.yaml>`_.  Save that file in the same directory as where you are writing your config file.  This assumes you're *not* working in a container, but are working directly on NERSC in a python venv where you've ``pip`` installed ``snappl``.  If you're working in a container, then edit the line after ``destructive_appends:`` to read ``- snpit_ou2024_container.yaml``; download that file from `here <https://github.com/Roman-Supernova-PIT/environment/blob/main/snpit_ou2024_container.yaml>`_.  You will then need to make sure you bind-mount the right directories to the right places in the container.  Ask Rob for help if you're trying to figure out how to do this.  Exactly what the directories are will depend on what system you're on.
+
+You may well want to include other things in the config; please see :ref:`config` below.
+
+
+Finding Images
+==============
+
+The images we will be using for the test run are all available in the database.  See the docstring on ``snappl.imagecollection.ImageCollection`` and ``snappl.imagecollection.ImageCollection.find_images`` for detailed documentation.  Briefly, you first need to get yourself an image collection::
+
+  from snappl.dbclient import SNPITDBClient
+  from snappl.imagecollection import ImageCollection
+
+  dbclient = SNPITDBClient()
+  imcol = ImageCollection.get_collection( provenance_tag='ou2024', process='load_ou2024_image',
+                                          dbclient=dbclient )
+
+See :ref:`provenance` below to understand what ``provenance_tag`` and ``process`` is.  We will try to keep this documentation updated with a list of :ref:`nov2025-provtags`.
+
+With your image collection in hand, you can find images.  If, for instance, you wanted to find all images that included the coordinates RA=7.5510934°, dec=-44.8071811°, you could run::
+
+  images = imcol.find_images( ra=7.5510934, dec=-44.8071811, dbclient=dbclient )
+
+That will return a list of ``snappl.image.Image`` objects.  You can read the docstring for that class, but most important is probably the ``path`` attribute that tells you where to find the FITS file.  (For this test, we are still using OpenUniverse 2024 FITS Images.  Eventually we'll be working with ASDF images.)  However, instead of reading the FITS file directly, we recommend working working with the methods Image class, as it has interfaces that will remain the same whether you're reading FITS or ASDF files.  For example, if you've used a good enough config file that snappl knows where to look for data, you can get access to the data array with::
+
+  first_image = images[0]
+  image_data = first_image.data
+
+(This is a little bit scary, as you can eat up memory using the easiest interfaces.  If you're reading multiple images at once, think about that.  You can *try* calling ``first_image.free()``, but that's not fully supported for all image types.  If you want to manage memory yourself, you can call ``first_image.get_data()`` with ``cache=False``; see the docstring on ``snappl.image.Image.get_data`` for more information.)
+
+If you wanted to get a list of all 4500 images in the database, you could just run::
+
+  images = imcol.find_images( dbclient=dbclient )
+
+However, we recommend against that.  While 4500 is perhaps not an overwhelming number of images, eventually the number of images is going to be huge, and you aren't going to want to pull them down all at once.  (Not only does this give you more than is reasonable to work with, but you will also be using a lot of bandwidth from the database server to pull all that information down.  The database server does *not* give you the full images, just metadata, but a million rows of a kilobyte of metadata is already a gigabyte.)
+
+Finding Objects
+===============
+
+There is also an interface that lets you find objects.  For instance, if you want to find all objects within 100 arcseconds of a given location, you could run::
+
+  from snappl.diaobject import DiaObject
+
+  objs = DiaObject.find_objects( provenance_tag=TAG, process=PROCESS,
+                                 ra=7.5510934, dec=-44.8071811, radius=100.,
+                                 dbclient=dbclient )
+
+Here, you can use ``ou2024`` for ``TAG`` and ``load_ou2024_diaobject`` for ``PROCESS`` to get the objects uploaded from the OpenUniverse 2024 truth tables.  However, you may instead want to use a different provenance tag and process to get objects discovered with Sidecar; see :ref:`nov2025-provtags` below.  Also, look at the docstring on ``snappl.diaobject.DiaObject.find_objects`` for more information.
+
+Getting Better Object Positions
+===============================
+
+``DiaObject.find_objects`` will return a list of ``DiaObject`` objects, and these include properties ``ra`` and ``dec``.  **However, the positions in the DiaObject object should be viewed as approximate.**  They will be the position it had when the object was first discovered.  For objects loaded from truth tables, they will be perfect, but of course we won't have truth tables for the real survey.  Often, the first discovery will be a relatively low S/N point, and much better positions can be determined; doing so will be one of the jobs of ``phrosty``.
+
+To get an improved position for an object, assume you have the object in the variable ``diaobj``.  You can then call::
+
+  position = diaobj.get_position( provenance_tag=TAG, process=PROCESS, dbclient=dbclient )
+
+See :ref:`nov2025-provtags` below to figure out what ``TAG`` and ``PROCESS`` should be.  You will get back a dictionary with keys:
+
+  * ``id``
+  * ``diaobject_id``
+  * ``provenance_id``
+  * ``ra``
+  * ``dec``
+  * ``ra_err``
+  * ``dec_err``
+  * ``ra_dec_covar``
+  * ``calculated_at``
+
+**Warning**: the fields ``ra_err``, ``dec_err``, and ``ra_dec_covar`` may be ``None``; this will be the case, for instance, for object positions that were loaded from truth tables rather than determined by software.
+
+**Important**: if you use an updated DiaObject position, then the provenance of that position should be one of your upstream provenances; see :ref:`nov2025-making-prov`.
+
+
+Finding Lightcurves
+===================
+
+TODO
+
+.. _nov2025-making-prov:
+
+Making Provenances
+==================
+
+Before you save anything to the database, you need to make a :ref:`provenance` for it.  For example, consider the difference imaging lightcurve package ``phrosty``.  It will need to have a diaobject (let's assume it's in the variable ``obj``), and it will need to have a list of images (let's assume they're in the variable ``images``; we'll leave aside details of template vs. science images for now).  Let's assume ``phrosty`` is using the :ref:`config` system in ``snappl``, and has put all of its configuration under ``photometry.phrosty``.  (There are details here you must be careful about; things like paths on your current system should *not* go under ``photometry.phrosty``, but should go somewhere underneath ``system.``.  The current object and list of images you're working on should not be in the configuration, but should just be passed via command-line parameters.  The idea is that the configuration has all of, but only, the things that are the same for a large number of runs on a large number of input files which guarantee (as much as possible) the same output files.)
+
+phrosty could then determine its own provenance with::
+
+  from snappl.config import Config
+  from snappl.provenance import Provenance
+
+  objprov = Provenance.get_by_id( obj.provenance_id, dbclient=dbclient )
+  improv = Provenance.get_by_id( images[0].provenance_id, dbclient=dbclient )
+  phrostyprov = Provenance( process='phrosty', major=MAJOR, minor=MINOR,
+                            upstreams=[ objprov, improv ],
+                            params=Config.get(), omitkeys=None, keepkeys=[ 'photometry.phrosty' ] )
+
+See :ref:`provenance` below for more details about what all of this means.  Here, ``MAJOR`` and ``MINOR`` are the first two parts of the `semantic version <https://semver.org/>`_ of phrosty.
+
+We recommend that phrosty put in its output files, somewhere, in addition to what's obvious:
+
+  * The ``provenance_id`` for phrosty (obtained from ``phrostyprov.id``).
+  * The configuration parameters for phrosty (obtained from ``phrostprov.params`` — a dictionary).
+
+(If you're very anal, you may want to save a gigantic dictionary structure including everything from ``phrostyprov`` and everything from all of the upstream provenances, and the upstreams of the upstreams, etc.)
+
+**NOTE**: provenance can also store environment and environment version, but we don't have that fully defined yet.
+
+Before saving anything to the database, you will need to make sure that the provenance has been saved to the database.  If you are sure that you've saved this same Provenance before, you can skip this step, but at some point you will need to::
+
+  phrostyprov.save_to_db( tag=PROVENANCE_TAG, dbclient=dbclient )
+
+where ``PROVENANCE_TAG`` is a string; see :ref:`nov2025-provtags` below for a list of what we plan to use.
+
+Saving DiaObjects
+=================
+
+This is mostly for Sidecar.  If it's found an object and wants to save it, and if it's obtained a Provenance (including the Provenance of the images it was searching as an upstream) in ``sidecarprov``, then it can call::
+
+  import uuid
+
+  diaobj = DiaObject( id=uuid.uuid4(), provenance_id=sidecarprov.id,
+                      ra=RA, dec=DEC, mjd_discovery=MJD, dbclient=dbclient )
+  diaobj.save_object( dbclient=None )
+
+Read the docstrings on the relevant functions for more details.  There is additional information that could be included if available.
+
+
+Saving DiaObject Positions
+==========================
+
+If you have an improved position for a DiaObject ``diaobj`` and you want to save it to the database, first you need to make a Provenance (see above) for this position; assume that's in ``diaobj_pos_prov``.  You would then do::
+
+  diaobj.save_updated_position( position_provenance=diaobj_pos_prov, ra=RA, dec=DEC,
+                                ra_err=RA_ERR, dec_err=DEC_ERR, ra_dec_covar=RA_DEC_COVAR,
+                                dbclient=dbclient )
+
+This will (I believe) return a dictionary that's the same as what you'd get back from ``diaobj.get_position``.
+
+
+Saving Lightcurves
+==================
+
+TODO
+
+
+
+.. _nov2025-provtags:
+
+Provenance Tags We Will Use In November 2025
+============================================
+
+TODO
 
 .. _connecting-to-the-database:
 
@@ -86,7 +330,7 @@ At runtime, if you set things up properly, you can override some of the paramete
     configparser = argarse.ArgumentParser( add_help=False )
     configparser.add_argument( '-c', '--config-file', default=None,
                                help=( "Location of the .yaml config file; defaults to the value of the "
-                                      "SNPIT_CONFIG environment varaible." ) )
+                                      "SNPIT_CONFIG environment variable." ) )
     args, leftovers = configparser.parse_known_args()
 
     try:
@@ -191,7 +435,7 @@ The upstream provenances are the ones that created the input files you use.  For
 
 It can figure out these upstreams by just looking at the ``provenance_id`` field of the objects its using.  Again, for example, campari will have (somehow) obtained a ``snappl.diaobject.DiaObject`` object; call that ``diaobj``.  It can get the diaobject provenance by just looking at ``diaobj.provenance_id``.  (To actually get the full Provenance object from the id, run ``snappl.provenance.Provenance.get_by_id( provenance_id )``.)
 
-Upstreams is part of the provenance because even if you run your code with all the same parameters, if you're taking input files that were from a differently configured process earlier in the pipline, you expect different outputs.  Upstreams basically specify which sorts of input files are valid for this provenance.
+Upstreams is part of the provenance because even if you run your code with all the same parameters, if you're taking input files that were from a differently configured process earlier in the pipeline, you expect different outputs.  Upstreams basically specify which sorts of input files are valid for this provenance.
 
 
 Creating a Provenance
