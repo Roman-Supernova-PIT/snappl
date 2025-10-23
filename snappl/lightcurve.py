@@ -25,8 +25,8 @@ class lightcurve:
         # This is a bit of a moving target, so it's possible the list below is out of date when you are reading this.
 
         meta_type_dict = {
-            "provenance_id": [uuid.UUID, None],
-            "diaobject_id": [uuid.UUID, None],
+            "provenance_id": (uuid.UUID, None),
+            "diaobject_id": (uuid.UUID, None),
             "iau_name": str,
             "ra": float,
             "ra_err": float,
@@ -44,22 +44,22 @@ class lightcurve:
             "sky_background": float,
         }
 
-        self.required_data_cols = data_unit_dict.keys()
-        self.required_meta_cols = meta_type_dict.keys()
+        self.required_data_cols = list(data_unit_dict.keys())
+        self.required_meta_cols = list(meta_type_dict.keys())
 
         unique_bands = np.unique(self._data["band"])
         for b in unique_bands:
             self.required_meta_cols.append(f"local_surface_brightness_{b}")
-            required_meta_col_types.append(float)
+            meta_type_dict[f"local_surface_brightness_{b}"] = float
 
         meta_cols = list(self._meta.keys())
         for col in self.required_meta_cols:
             assert col in meta_cols, f"Missing required metadata column {col}"
             col_type = meta_type_dict.get(col)
-            assert isinstance(self._meta[col], any(col_type)), (
+            assert isinstance(self._meta[col], col_type), (
                 f"Metadata column {col} must be of type {col_type} but" + f" it's actually {type(meta[col])}."
             )
-            if col_type is uuid.UUID:
+            if isinstance(self._meta[col], uuid.UUID):
                 self._meta[col] = str(self._meta[col]) # UUIDs can't be saved in this form, they must be strings.
 
 
@@ -67,7 +67,7 @@ class lightcurve:
         for col in self.required_data_cols:
             assert col in data_cols, f"Missing required data column {col}"
             col_type = data_unit_dict.get(col)
-            assert all([isinstance(item, any(col_type)) for item in data[col]]), \
+            assert all([isinstance(item, col_type) for item in data[col]]), \
                 f"Data column {col} must be of type {col_type}"
 
     def write(self, output_dir, filename=None, filetype="parquet", overwrite=False):

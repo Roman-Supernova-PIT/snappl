@@ -146,7 +146,7 @@ def test_write_lightcurve():
     finally:
         # Clean up test file
         (pathlib.Path(__file__).parent / "testdata" /
-         f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").unlink()
+         f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").unlink(missing_ok=True)
 
     # The lightcurve should save all of the required columns to the front of the table,
     # regardless of the order they were provided in.
@@ -176,4 +176,4 @@ def test_write_lightcurve():
     finally:
         # Clean up test file
         (pathlib.Path(__file__).parent / "testdata" /
-         f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").unlink()
+         f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").unlink(missing_ok=True)
