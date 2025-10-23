@@ -56,14 +56,10 @@ class lightcurve:
         for col in self.required_meta_cols:
             assert col in meta_cols, f"Missing required metadata column {col}"
             col_type = meta_type_dict.get(col)
-            SNLogger.debug(f"Checking metadata column {col} of type {col_type}")
-            SNLogger.debug(f"col_type type is {type(col_type)}")
-            SNLogger.debug(f"self._meta[col] type is {type(self._meta[col])}")
             assert isinstance(self._meta[col], col_type), (
                 f"Metadata column {col} must be of type {col_type} but" + f" it's actually {type(meta[col])}."
             )
             if isinstance(self._meta[col], uuid.UUID):
-                SNLogger.debug(f"Converting metadata column {col} from UUID to string for saving.")
                 self._meta[col] = str(self._meta[col]) # UUIDs can't be saved in this form, they must be strings.
 
 
