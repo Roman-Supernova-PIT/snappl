@@ -199,7 +199,7 @@ class DiaObject:
         -------
           dict
 
-          Keys are : id, diaobject_id, provenance_id, ra, ra_err, dec, dec_err, ra_dec_covar, calcualted_at
+          Keys are : id, diaobject_id, provenance_id, ra, ra_err, dec, dec_err, ra_dec_covar, calculated_at
 
           Note that ra_err, dec_err, and ra_dec_covar might be None.
 

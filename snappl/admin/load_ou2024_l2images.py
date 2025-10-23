@@ -2,6 +2,7 @@ import uuid
 import pathlib
 import multiprocessing
 import functools
+import argparse
 
 import psycopg
 
@@ -14,7 +15,7 @@ import snappl.db.db
 
 # python multiprocesing irritates me; it seems you can't
 #   send a class method as the function
-def parse_fits_file( relpath, base_path=None, provid=None ):
+def _parse_fits_file( relpath, base_path=None, provid=None ):
     base_path = pathlib.Path( base_path )
     provid = asUUID( provid )
     # import random
@@ -70,6 +71,8 @@ class OU2024_L2image_loader:
         subdirs = []
         imagefiles = []
 
+        SNLogger.debug( f"trolling directory {relpath}" )
+
         for fullpath in ( self.base_path / relpath ).iterdir():
             fullpath = fullpath.resolve()
             if fullpath.is_dir():
@@ -80,6 +83,34 @@ class OU2024_L2image_loader:
         for subdir in subdirs:
             imagefiles.extend( self.collect_ou2024_l2image_paths(subdir) )
 
+        return imagefiles
+
+    def get_ou2024_l2image_paths_from_list( self, listfile ):
+        imagefiles = []
+        with open( listfile ) as ifp:
+            header = None
+            for line in ifp:
+                line = line.strip()
+                if ( line[0] == '#' ) or ( len(line) == 0 ):
+                    continue
+                words = line.split(',')
+                if len(words) != 3:
+                    raise ValueError( f'Failed to parse line: "{line}"' )
+                if ( ( words[0].strip() == 'filter' ) and
+                     ( words[1].strip() == 'pointing' ) and
+                     ( words[2].strip() == 'sca' )
+                    ):
+                    header = True
+                elif not header:
+                    raise ValueError( f'First line was "{line}", not "filter,pointing,sca"' )
+                else:
+                    filter, pointing, sca = words
+                    fpath = pathlib.Path( f'{filter}/{pointing}/'
+                                          f'Roman_TDS_simple_model_{filter}_{pointing}_{sca}.fits.gz' )
+                    if ( self.base_path / fpath ).is_file():
+                        imagefiles.append( fpath )
+                    else:
+                        SNLogger.error( f"Couldn't find file {fpath}, skipping it" )
         return imagefiles
 
 
@@ -98,15 +129,20 @@ class OU2024_L2image_loader:
     def omg( self, e ):
         self.errors.append( e )
 
-    def __call__( self, dbcon=None, loadevery=1000, nprocs=1 ):
-        toload = self.collect_ou2024_l2image_paths( '.' )
+    def __call__( self, dbcon=None, loadevery=1000, nprocs=1, filelist=None ):
+        if filelist is None:
+            SNLogger.info( f"Collecting images underneath {self.base_path}" )
+            toload = self.collect_ou2024_l2image_paths( '.' )
+        else:
+            toload = filelist
+
         self.totloaded = 0
         self.copydata = []
         self.loadevery = loadevery
         self.errors = []
 
         SNLogger.info( f"Loading {len(toload)} files in {nprocs} processes...." )
-        do_parse_fits_file = functools.partial( parse_fits_file,
+        do_parse_fits_file = functools.partial( _parse_fits_file,
                                                 base_path=self.base_path,
                                                 provid=self.provid )
 
@@ -139,3 +175,64 @@ class OU2024_L2image_loader:
             SNLogger.info( f"Loaded {self.totloaded} of {len(toload)} images to database." )
 
         self.dbcon = None
+
+        return toload
+
+
+# ======================================================================
+
+def main():
+    parser = argparse.ArgumentParser( 'load_ou2024_l2images',
+                                      description='Load fits files below a directory.' )
+    parser.add_argument( '-p', '--provid', required=True, help="Provenance id" )
+    parser.add_argument( '-n', '--nprocs', type=int, default=20,
+                         help="Number of processes to run at once [default: 20]" )
+    parser.add_argument( '-b', '--basedir', default='/ou2024/RomanTDS/images/simple_model',
+                         help='Base directory.' )
+    parser.add_argument( '-f', '--filelist', default=None,
+                         help="File with list of filter,pointing,sca" )
+    parser.add_argument( '-j', '--just-get-filenames', default=False, action='store_true',
+                         help="Don't actually load files to the database, just generate a file list." )
+    parser.add_argument( '-s', '--save-file-list', default=None,
+                         help="Write the file list to this file." )
+    parser.add_argument( '-l', '--load-file-list', default=None,
+                         help="Instead of crawling the filesystem, load the file list from this file." )
+    args = parser.parse_args()
+
+    with snappl.db.db.DBCon( dictcursor=True ) as dbcon:
+        rows = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': args.provid } )
+        if len(rows) == 0:
+            raise ValueError( "Invalid provenance {args.provid}" )
+        SNLogger.info( f"Loading with provenance for process {rows[0]['process']} "
+                       f"{rows[0]['major']}.{rows[0]['minor']}" )
+
+
+    loader = OU2024_L2image_loader( args.provid, args.basedir )
+
+    if args.just_get_filenames:
+        if args.load_file_list is not None:
+            raise ValueError( "Can't give a load_file_list with just_get_filenames" )
+        if args.save_file_list is None:
+            raise ValueError( "You really want to give save_file_list when using just_get_filenames" )
+
+        imagefiles = loader.collect_ou2024_l2image_paths( '.' )
+        with open( args.save_file_list, 'w' ) as ofp:
+            for f in imagefiles:
+                ofp.write( str(f) )
+                ofp.write( '\n' )
+
+    else:
+        filelist = None
+        if args.load_file_list:
+            with open( args.load_file_list ) as ifp:
+                SNLogger.info( f"Reading files to load from {args.load_file_list}..." )
+                filelist = [ pathlib.Path(f.strip()) for f in ifp.readlines() ]
+
+        loader( nprocs=args.nprocs, filelist=filelist )
+
+    SNLogger.info( "All done." )
+
+
+# ======================================================================
+if __name__ == "__main__":
+    main()
