@@ -14,7 +14,7 @@ class TestL2Image( BaseTestDB ):
         self.safe_to_modify = [ 'pointing', 'sca', 'filter', 'ra', 'dec',
                                 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                 'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
-                                'filepath', 'extension', 'width', 'height', 'format', 'mjd_start',
+                                'filepath', 'extension', 'width', 'height', 'format', 'mjd',
                                 'exptime', 'properties' ]
         self.columns = set( self.safe_to_modify )
         self.columns.update( [ 'id', 'provenance_id' ] )
@@ -38,7 +38,7 @@ class TestL2Image( BaseTestDB ):
                              width=1024,
                              height=1024,
                              format=1,
-                             mjd_start=60000.,
+                             mjd=60000.,
                              exptime=60. )
         self.dict1 = { k: getattr( self.obj1, k ) for k in self.columns }
         self.obj2 = L2Image( id=uuid.uuid4(),
@@ -60,7 +60,7 @@ class TestL2Image( BaseTestDB ):
                              width=1025,
                              height=1025,
                              format=2,
-                             mjd_start=60001.,
+                             mjd=60001.,
                              exptime=61. )
         self.dict2 = { k: getattr( self.obj2, k ) for k in self.columns }
         self.dict3 = { 'id': uuid.uuid4(),
@@ -82,5 +82,5 @@ class TestL2Image( BaseTestDB ):
                        'width': 1026,
                        'height': 1026,
                        'format': 3,
-                       'mjd_start': 60002.,
+                       'mjd': 60002.,
                        'exptime': 62. }
