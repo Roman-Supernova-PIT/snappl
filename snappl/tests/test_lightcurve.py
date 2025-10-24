@@ -12,6 +12,8 @@ from astropy.table import Table, QTable
 
 # SNPIT
 from snappl.lightcurve import Lightcurve
+from snappl.diaobject import DiaObject
+from snappl.provenance import Provenance
 from snappl.db.db import DBCon
 
 
@@ -202,3 +204,55 @@ def test_save_to_db( ou2024_test_lightcurve_saved, dbclient ):
         assert str( row['diaobject_id'] ) == ltcv.meta['diaobject_id']
         assert row['filepath'] == str( ltcv.filepath )
         assert row['band'] == ltcv.meta['band']
+
+
+def test_get_by_id( ou2024_test_lightcurve_saved, dbclient ):
+    ltcv = Lightcurve.get_by_id( ou2024_test_lightcurve_saved.id, dbclient=dbclient )
+    assert ltcv.filepath == ou2024_test_lightcurve_saved.filepath
+    assert ltcv._lightcurve is None
+    assert isinstance( ltcv.lightcurve, QTable )
+    assert isinstance( ltcv._lightcurve, QTable )
+
+    with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500: No lightcurve with id" ):
+        ltcv = Lightcurve.get_by_id( uuid.uuid4(), dbclient=dbclient )
+
+
+def test_find_lightcurves( ou2024_test_lightcurve_saved, dbclient ):
+    # This isn't a great test because only one lightcurve is loaded;
+    # TODO, beef up this test and write ome fixtures that load more
+    # lightcurves.
+
+    dobj = DiaObject.find_objects( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
+                                   name='20172782', dbclient=dbclient )
+    dobj = dobj[0]
+
+    ltcvs = Lightcurve.find_lightcurves( dobj, provenance_tag='dbou2024_test', process='ou2024_test_lightcurve',
+                                         dbclient=dbclient )
+    assert len(ltcvs) == 1
+    assert ltcvs[0].id == ou2024_test_lightcurve_saved.id
+
+    ltcvs = Lightcurve.find_lightcurves( dobj.id, provenance_tag='dbou2024_test', process='ou2024_test_lightcurve',
+                                         dbclient=dbclient )
+    assert len(ltcvs) == 1
+    assert ltcvs[0].id == ou2024_test_lightcurve_saved.id
+
+    ltcvs = Lightcurve.find_lightcurves( dobj.id, provenance_tag='dbou2024_test', process='ou2024_test_lightcurve',
+                                         band='Y106', dbclient=dbclient )
+    assert len(ltcvs) == 1
+    assert ltcvs[0].id == ou2024_test_lightcurve_saved.id
+
+    ltcvs = Lightcurve.find_lightcurves( dobj.id, provenance_tag='dbou2024_test', process='ou2024_test_lightcurve',
+                                         band='R061', dbclient=dbclient )
+    assert len(ltcvs) == 0
+
+    prov = Provenance.get_provs_for_tag( 'dbou2024_test', 'ou2024_test_lightcurve', dbclient=dbclient )
+    ltcvs = Lightcurve.find_lightcurves( dobj.id, provenance=prov, dbclient=dbclient )
+    assert len(ltcvs) == 1
+    assert ltcvs[0].id == ou2024_test_lightcurve_saved.id
+
+    ltcvs = Lightcurve.find_lightcurves( dobj.id, provenance=prov.id, dbclient=dbclient )
+    assert len(ltcvs) == 1
+    assert ltcvs[0].id == ou2024_test_lightcurve_saved.id
+
+    ltcvs = Lightcurve.find_lightcurves( uuid.uuid4(), provenance=prov.id, dbclient=dbclient )
+    assert len(ltcvs) == 0

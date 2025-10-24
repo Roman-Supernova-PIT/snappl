@@ -575,7 +575,7 @@ class FindL2Images( BaseView ):
 class SaveLightcurve( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
-            return "Expected lightcurve inof in json POST, didn't get any.", 500
+            return "Expected lightcurve info in json POST, didn't get any.", 500
 
         data = flask.request.json
         needed_keys = { 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id', 'band', 'filepath' }
@@ -586,7 +586,7 @@ class SaveLightcurve( BaseView ):
             return f"Missing required keys: {needed_keys - passed_keys}", 500
 
         with db.DBCon( dictcursor=True ) as dbcon:
-            rows = dbcon.execute( "SELECT * FROM provenance WHERE Id=%(id)s", { 'id': data['provenance_id'] } )
+            rows = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': data['provenance_id'] } )
             if len(rows) == 0:
                 return f"Unknown provenance {data['provenance_id']}", 500
 
@@ -602,6 +602,56 @@ class SaveLightcurve( BaseView ):
                 return "Something went wrong, lightcurve not saved to database", 500
 
         return res[0]
+
+
+# ======================================================================
+
+class GetLightcurve( BaseView ):
+    def do_the_things( self, ltcvid ):
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM lightcurve WHERE id=%(id)s", { 'id': ltcvid } )
+            if len(rows) == 0:
+                return f"No lightcurve with id {ltcvid}", 500
+            elif len(rows) > 1:
+                return f"Multiple lightcurves with id {ltcvid}; this should never happen.", 500
+            else:
+                return rows[0]
+
+
+# ======================================================================
+
+class FindLightcurves( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected lightcurve search data in json POST, didn't get any.", 500
+
+        conditions = []
+
+        data = flask.request.json
+        q = "SELECT l.* FROM lightcurve l "
+        subdict = {}
+
+        if 'provenance_id' in data:
+            conditions.append( "l.provenance_id=%(provid)s" )
+            subdict['provid'] = data['provenance_id']
+        else:
+            if ( 'provenance_tag' not in data ) or ( 'process' not in data ):
+                return "Must pass either provenance_id, or both of provenance_tag and process", 500
+            q += "INNER JOIN provenance_tag t ON l.provenance_id=t.provenance_id "
+            conditions.append( "t.tag=%(tag)s" )
+            conditions.append( "t.process=%(process)s" )
+            subdict.update( { 'tag': data['provenance_tag'], 'process': data['process'] } )
+
+        for thing in [ 'diaobject_id', 'band' ]:
+            if thing in data:
+                conditions.append( f"l.{thing}=%({thing})s" )
+                subdict[thing] = data[thing]
+
+        if len(conditions) > 0:
+            q += " WHERE " + " AND ".join( conditions )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            return dbcon.execute( q, subdict )
 
 
 # ======================================================================
@@ -627,5 +677,7 @@ urls = {
     "/getl2image/<imageid>": GetL2Image,
     "/findl2images/<provid>": FindL2Images,
 
-    "/savelightcurve": SaveLightcurve
+    "/savelightcurve": SaveLightcurve,
+    "/getlightcurve/<ltcvid>": GetLightcurve,
+    "/findlightcurves": FindLightcurves,
 }

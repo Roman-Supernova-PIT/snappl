@@ -13,6 +13,8 @@ import pandas as pd
 from astropy.table import Table, QTable
 import astropy.units
 
+from snappl.provenance import Provenance
+from snappl.diaobject import DiaObject
 from snappl.logger import SNLogger
 from snappl.utils import asUUID, SNPITJsonEncoder
 from snappl.config import Config
@@ -451,6 +453,16 @@ class Lightcurve:
 
 
     @classmethod
+    def get_by_id( cls, lightcurve_id, dbclient=None ):
+        """Get a lightcurve from its ID."""
+
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        res = dbclient.send( f"getlightcurve/{lightcurve_id}" )
+
+        return Lightcurve( id=res['id'], filepath=res['filepath'] )
+
+
+    @classmethod
     def find_lightcurves( cls, diaobject, provenance=None, provenance_tag=None, process=None, band=None,
                           dbclient=None ):
         """Find lightcurves for an object.
@@ -494,7 +506,37 @@ class Lightcurve:
           List of Lightcurve
 
         """
-        raise NotImplementedError( "Soon." )
+
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+
+        params = {}
+
+        if provenance is not None:
+            if isinstance( provenance, Provenance ):
+                params['provenance_id'] = provenance.id
+            else:
+                params['provenance_id'] = asUUID( provenance )
+        else:
+            if ( provenance_tag is None ) or ( process is None ):
+                raise ValueError( "You must pass either provenance, or both of provenance_tag and process" )
+            params['provenance_tag'] = provenance_tag
+            params['process'] = process
+
+        if diaobject is not None:
+            params['diaobject_id'] = diaobject.id if isinstance( diaobject, DiaObject ) else asUUID( diaobject )
+
+        if band is not None:
+            params['band'] = band
+
+        senddata = simplejson.dumps( params, cls=SNPITJsonEncoder )
+        reses = dbclient.send( "/findlightcurves", data=senddata, headers={'Content-Type': 'application/json'} )
+
+        lightcurves = []
+        for res in reses:
+            lightcurves.append( Lightcurve( id=res['id'], filepath=res['filepath'] ) )
+
+        return lightcurves
+
 
     @classmethod
     def get_combined_lightcurve( cls, diaobject, provenance=None, provenance_tag=None, process=None, dbclient=None ):

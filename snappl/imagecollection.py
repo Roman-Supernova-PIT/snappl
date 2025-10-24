@@ -448,7 +448,6 @@ class ImageCollectionDB:
             row = rows[0]
 
         row['path'] = self.base_path / row['filepath']
-        row['band'] = row['band']
         return self.image_class( **row )
 
 
