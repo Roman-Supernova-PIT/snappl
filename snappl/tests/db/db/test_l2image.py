@@ -11,7 +11,7 @@ class TestL2Image( BaseTestDB ):
     @pytest.fixture
     def basetest_setup( self, stupid_provenance ):
         self.cls = L2Image
-        self.safe_to_modify = [ 'pointing', 'sca', 'filter', 'ra', 'dec',
+        self.safe_to_modify = [ 'pointing', 'sca', 'band', 'ra', 'dec',
                                 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                 'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                                 'filepath', 'extension', 'width', 'height', 'format', 'mjd',
@@ -23,7 +23,7 @@ class TestL2Image( BaseTestDB ):
                              provenance_id=stupid_provenance,
                              pointing=1,
                              sca=1,
-                             filter='a',
+                             band='a',
                              ra=1.,
                              dec=1.,
                              ra_corner_00=1.,
@@ -45,7 +45,7 @@ class TestL2Image( BaseTestDB ):
                              provenance_id=stupid_provenance,
                              pointing=2,
                              sca=2,
-                             filter='b',
+                             band='b',
                              ra=2.,
                              dec=2.,
                              ra_corner_00=2.,
@@ -67,7 +67,7 @@ class TestL2Image( BaseTestDB ):
                        'provenance_id': stupid_provenance,
                        'pointing': 3,
                        'sca': 3,
-                       'filter': 'c',
+                       'band': 'c',
                        'ra': 3.,
                        'dec': 3.,
                        'ra_corner_00': 3.,

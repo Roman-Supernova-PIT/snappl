@@ -1,3 +1,7 @@
-preloads:
+replaceable_preloads:
   - /default_snpit_config.yaml
   - /home/environment/test-docker-environment/test_config_for_db.yaml
+
+system:
+  paths:
+    lightcurves: /home/snappl/snappl/test/outdata/lightcurves

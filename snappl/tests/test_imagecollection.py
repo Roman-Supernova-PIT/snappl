@@ -60,7 +60,7 @@ def test_imagecollectionou2024_find_images():
     col = ImageCollection.get_collection( "ou2024" )
 
     # TODO, more tests, this is just a quick and basic
-    imgs = col.find_images( filter='Y106', ra=7.5510934, dec=-44.8071811 )
+    imgs = col.find_images( band='Y106', ra=7.5510934, dec=-44.8071811 )
     assert len(imgs) == 135
 
 

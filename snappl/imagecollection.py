@@ -126,7 +126,7 @@ class ImageCollection:
             Pointing.  If not given, just use the Path to find the image.
 
           band: str, default None
-            Filter.
+            Band.
 
           sca: int, default None
             SCA.
@@ -200,8 +200,8 @@ class ImageCollection:
           dec: float, default None
             Only return images that containe this dec
 
-          filter: str, default None
-            Only include images from this filter
+          band: str, default None
+            Only include images from this band
 
           exptime_min: float, default None
             Only include images with at least this exptime in seconds.
@@ -211,6 +211,25 @@ class ImageCollection:
 
           sca: int
             Only include images from this sca.
+
+          order_by: str or list, default None
+            By default, the returned images are not sorted in any
+            particular way.  Put a keyword here to sort by that value
+            (or by those values).  Options include 'id',
+            'provenance_id', 'pointing', 'sca', 'ra', 'dec', 'filepath',
+            'width', 'height', 'mjd', 'exptime'.  Not all of these are
+            necessarily useful, and some of them may be null for many
+            objects in the database.
+
+          limit : int, default None
+            Only return this many objects at most.
+
+          offset : int, default None
+            Useful with limit and order_by ; offset the returned value
+            by this many entries.  You can make repeated calls to
+            find_objects to get subsets of objects by passing the same
+            order_by and limit, but different offsets each time, to
+            slowly build up a list.
 
         Returns
         -------
@@ -288,7 +307,7 @@ class ImageCollectionOU2024:
                       mjd_max=None,
                       ra=None,
                       dec=None,
-                      filter=None,
+                      band=None,
                       exptime_min=None,
                       exptime_max=None,
                       sca=None ):
@@ -304,8 +323,8 @@ class ImageCollectionOU2024:
             params['mjd_min'] = float(mjd_min)
         if mjd_max is not None:
             params['mjd_max'] = float(mjd_max)
-        if filter is not None:
-            params['filter'] = str(filter)
+        if band is not None:
+            params['filter'] = str(band)
         if exptime_min is not None:
             params['exptime_min'] = float(exptime_min)
         if exptime_max is not None:
@@ -415,7 +434,7 @@ class ImageCollectionDB:
                      ( all( i is not None for i in [ pointing, band, sca ] ) ) ):
                 raise ValueError( "Must specify one of image_id, path, or (pointing, band, and sca)." )
 
-            data = { k: v for k, v in zip( ['filepath', 'pointing', 'filter', 'sca' ],
+            data = { k: v for k, v in zip( ['filepath', 'pointing', 'band', 'sca' ],
                                            [path, pointing, band, sca ] )
                      if v is not None }
             rows = dbclient.send( f"/findl2images/{self.provenance.id}",
@@ -429,7 +448,6 @@ class ImageCollectionDB:
             row = rows[0]
 
         row['path'] = self.base_path / row['filepath']
-        row['band'] = row['filter']
         return self.image_class( **row )
 
 
@@ -446,7 +464,7 @@ class ImageCollectionDB:
         images = []
         for row in rows:
             row['path'] = self.base_path / row['filepath']
-            row['band'] = row['filter']
+            row['band'] = row['band']
             images.append( self.image_class( **row ) )
 
         return images

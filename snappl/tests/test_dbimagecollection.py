@@ -47,12 +47,12 @@ def test_ou2024_find_images( loaded_ou2024_test_l2images, dbclient ):
     assert images[0].id == allimages[0].id
 
     # Test searching by pointing, SCA, and band
-    images = imcol.find_images( sca=allimages[0].sca, pointing=allimages[0].pointing, filter=allimages[0].band,
+    images = imcol.find_images( sca=allimages[0].sca, pointing=allimages[0].pointing, band=allimages[0].band,
                                 dbclient=dbclient )
     assert len(images) == 1
     assert images[0].id == allimages[0].id
 
-    images = imcol.find_images( sca=allimages[0].sca, pointing=allimages[0].pointing, filter='FOO', dbclient=dbclient )
+    images = imcol.find_images( sca=allimages[0].sca, pointing=allimages[0].pointing, band='FOO', dbclient=dbclient )
     assert len(images) == 0
 
     # Find all images that diaobject 20172782... which should be all of them

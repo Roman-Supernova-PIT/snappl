@@ -38,7 +38,7 @@ def _parse_fits_file( relpath, base_path=None, provid=None ):
                'provenance_id': provid,
                'pointing': image.pointing,
                'sca': image.sca,
-               'filter': image.band,
+               'band': image.band,
                'ra': ra,
                'dec': dec,
                'ra_corner_00': ra_corner_00,
@@ -96,17 +96,17 @@ class OU2024_L2image_loader:
                 words = line.split(',')
                 if len(words) != 3:
                     raise ValueError( f'Failed to parse line: "{line}"' )
-                if ( ( words[0].strip() == 'filter' ) and
+                if ( any( words[0].strip() == i for i in ('filter', 'band') ) and
                      ( words[1].strip() == 'pointing' ) and
                      ( words[2].strip() == 'sca' )
                     ):
                     header = True
                 elif not header:
-                    raise ValueError( f'First line was "{line}", not "filter,pointing,sca"' )
+                    raise ValueError( f'First line was "{line}", not "band,pointing,sca"' )
                 else:
-                    filter, pointing, sca = words
-                    fpath = pathlib.Path( f'{filter}/{pointing}/'
-                                          f'Roman_TDS_simple_model_{filter}_{pointing}_{sca}.fits.gz' )
+                    band, pointing, sca = words
+                    fpath = pathlib.Path( f'{band}/{pointing}/'
+                                          f'Roman_TDS_simple_model_{band}_{pointing}_{sca}.fits.gz' )
                     if ( self.base_path / fpath ).is_file():
                         imagefiles.append( fpath )
                     else:
@@ -190,7 +190,7 @@ def main():
     parser.add_argument( '-b', '--basedir', default='/ou2024/RomanTDS/images/simple_model',
                          help='Base directory.' )
     parser.add_argument( '-f', '--filelist', default=None,
-                         help="File with list of filter,pointing,sca" )
+                         help="File with list of band,pointing,sca" )
     parser.add_argument( '-j', '--just-get-filenames', default=False, action='store_true',
                          help="Don't actually load files to the database, just generate a file list." )
     parser.add_argument( '-s', '--save-file-list', default=None,
