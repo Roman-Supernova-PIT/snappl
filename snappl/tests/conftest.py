@@ -14,6 +14,7 @@ from tox.pytest import init_fixture # noqa: F401
 from snappl.imagecollection import ImageCollection
 from snappl.image import FITSImage, RomanDatamodelImage
 from snappl.diaobject import DiaObject
+from snappl.lightcurve import Lightcurve
 from snappl.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
 from snappl.admin.load_ou2024_l2images import OU2024_L2image_loader
 from snappl.config import Config
@@ -298,25 +299,70 @@ def loaded_ou2024_test_l2images_1proc():
                 dbcon.commit()
 
 
-@pytest.fixture
-def ou2024_test_lightcurve( loaded_ou2024_test_diaobject, loaded_ou2024_test_l2images, dbclient ):
+@pytest.fixture( scope="module" )
+def ou2024_test_lightcurve( loaded_ou2024_test_diaobjects, loaded_ou2024_test_l2images, dbclient ):
     try:
-        dobj = DiaObject.find_objects( provenance_tag='dbou2024_test', process='import_ou2024_diaobjets',
+        dobj = DiaObject.find_objects( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
                                        name='20172782', dbclient=dbclient )
+        dobj = dobj[0]
         imcol = ImageCollection.get_collection( provenance_tag='dbou2024_test', process='import_ou2024_l2images',
                                                 dbclient=dbclient )
-        images = imcol.find_images( ra=dobj.ra, dec=dobj.dec, dbclient=dbclient )
+        images = imcol.find_images( ra=dobj.ra, dec=dobj.dec, order_by='mjd', dbclient=dbclient )
         bands = set( i.band for i in images )
         if len(bands) != 1:
             raise RuntimeError( "I am surprised, there are multiple bands of test images." )
 
-        import pdb; pdb.set_trace()
+        prov = make_provenance_and_tag( 'ou2024_test_lightcurve', 0, 1, tag='dbou2024_test' )
 
-        yield None
+        # The fluxes aren't going to be right because we don't have the machinery to do
+        #   differnce imaging and measurement, so just making stuff up here.
+        # Making some other stuff up too.
+        data = { 'mjd': [ i.mjd for i in images ],
+                 'flux': [ 0., 0., 5., 30., 50., 40., 20., 10. ],
+                 'flux_err': [ 0.1 ] * 8,
+                 'zpt': [ i.zeropoint for i in images ],
+                 'NEA': [ 5. ] * 8,
+                 'sky_rms': [ 10. ] * 8,
+                 'pointing': [ i.pointing for i in images ],
+                 'sca': [ i.sca for i in images ],
+                 'pix_x': [ 128. ] * 8,
+                 'pix_y': [ 128. ] * 8
+                }
+        meta = { 'provenance_id': prov.id,
+                 'diaobject_id': dobj.id,
+                 'diaobject_position_id': None,
+                 'iau_name': None,
+                 'band': images[0].band,
+                 'ra': dobj.ra,
+                 'dec': dobj.dec,
+                 'ra_err': None,
+                 'dec_err': None,
+                 'ra_dec_covar': None,
+                 f'local_surface_brightness_{images[0].band}': 1.
+                }
+
+        ltcv = Lightcurve( data=data, meta=meta )
+
+        yield ltcv
+
     finally:
-        pass
+        with DBCon() as dbcon:
+            dbcon.execute( "DELETE FROM provenance_tag "
+                           "WHERE tag='dbou2024_test' AND process='ou2024_test_lightcurve'" )
+            dbcon.execute( "DELETE FROM provenance WHERE process='ou2024_test_lightcurve'" )
+            dbcon.commit()
 
 
+@pytest.fixture( scope="module" )
+def ou2024_test_lightcurve_saved( ou2024_test_lightcurve, dbclient ):
+    try:
+        ou2024_test_lightcurve.write()
+        ou2024_test_lightcurve.save_to_db( dbclient=dbclient )
+    finally:
+        ( ou2024_test_lightcurve.base_dir / ou2024_test_lightcurve.filepath ).unlink( missing_ok=True )
+        with DBCon() as dbcon:
+            dbcon.execute( "DELETE FROM lightcurve WHERE id=%(id)s", { 'id': ou2024_test_lightcurve.id } )
+            dbcon.commit()
 
 
 @pytest.fixture( scope='session' )

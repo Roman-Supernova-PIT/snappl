@@ -106,6 +106,14 @@ class Provenance:
                  'upstream_ids': [ str(u.id) for u in self.upstreams ]
                 }
 
+    def recursive_dict( self, dbclient=None ):
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+
+        rval = self.spec_dict()
+        del rval['upstream_ids']
+        rval['upstreams'] = [ u.recursive_dict( dbclient=dbclient ) for u in self.upstreams ]
+
+        return rval
 
     def update_id( self ):
         """Update self.id based on stored properties.

@@ -212,6 +212,25 @@ class ImageCollection:
           sca: int
             Only include images from this sca.
 
+          order_by: str or list, default None
+            By default, the returned images are not sorted in any
+            particular way.  Put a keyword here to sort by that value
+            (or by those values).  Options include 'id',
+            'provenance_id', 'pointing', 'sca', 'ra', 'dec', 'filepath',
+            'width', 'height', 'mjd', 'exptime'.  Not all of these are
+            necessarily useful, and some of them may be null for many
+            objects in the database.
+
+          limit : int, default None
+            Only return this many objects at most.
+
+          offset : int, default None
+            Useful with limit and order_by ; offset the returned value
+            by this many entries.  You can make repeated calls to
+            find_objects to get subsets of objects by passing the same
+            order_by and limit, but different offsets each time, to
+            slowly build up a list.
+
         Returns
         -------
           imagelist: list of snappl.image.Image

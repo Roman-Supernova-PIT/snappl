@@ -5,11 +5,14 @@ import pytest
 import uuid
 import numbers
 
+import numpy as np
+
 # Astronomy
 from astropy.table import Table, QTable
 
 # SNPIT
 from snappl.lightcurve import Lightcurve
+from snappl.db.db import DBCon
 
 
 def test_init_lightcurve():
@@ -170,75 +173,32 @@ def test_init_lightcurve():
     check_ltcv( ltcv )
 
 
-def test_write_lightcurve( ou2024_test_lightcurve ):
-    import pdb; pdb.set_trace()
-    pass
+def test_read_write_lightcurve( ou2024_test_lightcurve ):
+    ltcv = ou2024_test_lightcurve
 
-    meta_dict = {
-        "provenance_id": uuid.uuid4(),
-        "diaobject_id": uuid.uuid4(),
-        "iau_name": "ACoolLightcurve",
-        "ra": 70.0,
-        "ra_err": 1e-5,
-        "dec": 40.0,
-        "dec_err": 1e-5,
-        "local_surface_brightness_Y": 18.0,
-    }
-
-    data_dict = {
-        "mjd": [60000.0, 60001.0],
-        "band": ["Y", "Y"],
-        "flux": [1000.0, 1100.0],
-        "flux_err": [50.0, 55.0],
-        "zpt": [25.0, 25.0],
-        "NEA": [5.0, 5.0],
-        "sky_background": [200.0, 210.0],
-    }
-
-    lc = Lightcurve(data_dict, meta_dict)
     try:
-        lc.write(pathlib.Path(__file__).parent / "testdata")
-        read_table = Table.read(pathlib.Path(__file__).parent / "testdata" /
-        f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet", format="parquet")
-        metadata = read_table.meta
-        for col in data_dict.keys():
-            assert all(read_table[col] == data_dict[col])
-        for col in meta_dict.keys():
-            if isinstance(meta_dict[col], uuid.UUID):
-                assert metadata[col] == str(meta_dict[col])
-            else:
-                assert metadata[col] == meta_dict[col]
-    finally:
-        # Clean up test file
-        (pathlib.Path(__file__).parent / "testdata" /
-         f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").unlink(missing_ok=True)
+        ltcv.write()
+        assert ( ltcv.base_dir / ltcv.filepath ).is_file()
 
-    # The lightcurve should save all of the required columns to the front of the table,
-    # regardless of the order they were provided in.
-    data_dict = {
-        "mjd": [60000.0, 60001.0],
-        "unrequired_col": [3.0, 4.0],
-        "band": ["Y", "Y"],
-        "flux": [1000.0, 1100.0],
-        "another_unrequired_col": ["cupcake", "banana"],
-        "flux_err": [50.0, 55.0],
-        "zpt": [25.0, 25.0],
-        "NEA": [5.0, 5.0],
-        "yet_another_unrequired_col": [True, False],
-        "sky_background": [200.0, 210.0],
-    }
-    lc = Lightcurve(data_dict, meta_dict)
-    n_required = len([f for f in data_dict.keys() if "unrequired" not in f])
-    try:
-        lc.write(pathlib.Path(__file__).parent / "testdata")
-        read_table = Table.read(pathlib.Path(__file__).parent / "testdata" /
-            f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet", format="parquet")
-
-        for col in data_dict.keys():
-            if "unrequired" not in col:
-                assert col in read_table.columns[:n_required]
+        ltcv2 = Lightcurve( filepath=ltcv.filepath )
+        assert ltcv2._lightcurve is None
+        assert isinstance( ltcv2.lightcurve, QTable )
+        assert isinstance( ltcv2._lightcurve, QTable )
+        assert all( np.all( ltcv.data[c] == ltcv2.data[c] ) for c in ltcv.lightcurve.columns )
 
     finally:
-        # Clean up test file
-        (pathlib.Path(__file__).parent / "testdata" /
-         f"{str(meta_dict['provenance_id'])}_ltcv_{str(meta_dict['diaobject_id'])}.parquet").unlink(missing_ok=True)
+        ( ltcv.base_dir / ltcv.filepath ).unlink( missing_ok=True )
+
+
+def test_save_to_db( ou2024_test_lightcurve_saved, dbclient ):
+    ltcv = ou2024_test_lightcurve_saved
+
+    with DBCon( dictcursor=True ) as dbcon:
+        rows = dbcon.execute( "SELECT * FROM lightcurve WHERE id=%(id)s", { 'id': ltcv.id } )
+        assert len(rows) == 1
+        row = rows
+        assert row['id'] == str( ltcv.id )
+        assert row['provenance_id'] == str( ltcv.meta['provenance_id'] )
+        assert row['diaobject_id'] == str( ltcv.meta['diaobject_id'] )
+        assert row['filepath'] == str( ltcv.filepath )
+        assert row['band'] == ltcv.meta['band']

@@ -484,12 +484,27 @@ class GetL2Image( BaseView ):
 
 class FindL2Images( BaseView ):
     def do_the_things( self, provid ):
-        q = "SELECT * FROM l2image WHERE "
+        q = sql.SQL( "SELECT * FROM l2image WHERE " )
         conditions = [ 'provenance_id=%(provid)s' ]
         subdict = { 'provid': provid }
 
         if flask.request.is_json:
             data = flask.request.json
+
+            orderby = []
+            limit = None
+            offset = None
+            if 'order_by' in data:
+                orderby = data['order_by']
+                if not isinstance( orderby, list ):
+                    orderby = [ orderby ]
+                del data['order_by']
+            if 'limit' in data:
+                limit = int( data['limit'] )
+                del data['limit']
+            if 'offset' in data:
+                offset = int( data['offset'] )
+                del data['offset']
 
             if ( 'ra' in data ) or ( 'dec' in data ):
                 # 'ra' and 'dec' are supposed to be "includes this".
@@ -534,12 +549,59 @@ class FindL2Images( BaseView ):
             if len(data) != 0:
                 return f"Error, unknown parameters: {data.keys()}", 500
 
-        q += ' AND '.join( conditions )
+        q += sql.SQL( ' AND '.join( conditions ) )
+
+        if len( orderby ) > 0:
+            q += sql.SQL( " ORDER BY " )
+            comma = ""
+            for o in orderby:
+                q += sql.SQL( f"{comma}{{orderby}}" ).format( orderby=sql.Identifier(o) )
+                comma = ","
+        if limit is not None:
+            q += sql.SQL( " LIMIT %(limit)s" )
+            subdict['limit'] = limit
+        if offset is not None:
+            q += sql.SQL( " OFFSET %(offset)s" )
+            subdict['offset'] = offset
 
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( q, subdict )
 
         return rows
+
+
+# ======================================================================
+
+class SaveLightcurve( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected lightcurve inof in json POST, didn't get any.", 500
+
+        data = flask.request.json
+        needed_keys = { 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id', 'band', 'filepath' }
+        passed_keys = set( data.keys() )
+        if not passed_keys.issubset( needed_keys ):
+            return f"Unknown keys: {passed_keys - needed_keys}", 500
+        if not needed_keys.issubset( passed_keys ):
+            return f"Missing required keys: {needed_keys - passed_keys}", 500
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM provenance WHERE Id=%(id)s", { 'id': data['provenance_id'] } )
+            if len(rows) == 0:
+                return f"Unknown provenance {data['provenance_id']}", 500
+
+        dbcon.execute( ( "INSERT INTO lightcurve(id, provenance_id, diaobject_id, "
+                         "  diaobject_position_id, band, filepath) "
+                         "VALUES(%(id)s, %(provenance_id)s, %(diaobject_id)s, %(diaobject_position_id)s, "
+                         "  %(band)s, %(filepath)s" ),
+                       data )
+        dbcon.commit()
+
+        res = dbcon.execute( "SELECT * FROM lightcurve WHERE id=%(id)s", {'id': data['id']} )
+        if len(res) == 0:
+            return "Something went wrong, lightcurve not saved to database", 500
+
+        return res[0]
 
 
 # ======================================================================
@@ -564,4 +626,6 @@ urls = {
 
     "/getl2image/<imageid>": GetL2Image,
     "/findl2images/<provid>": FindL2Images,
+
+    "/savelightcurve": SaveLightcurve
 }

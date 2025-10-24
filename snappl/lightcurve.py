@@ -133,7 +133,7 @@ class Lightcurve:
         if ( id is None ) and ( filepath is not None ):
             match = re.search( r'([0-9a-f])/([0-9a-f])/([0-9a-f])/'
                                r'([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}).ltcv',
-                               filepath )
+                               str(filepath) )
             if match is None:
                 SNLogger.warning( "Could not parse filepath to find lightcurve id, assigning a new one." )
             else:
@@ -156,6 +156,38 @@ class Lightcurve:
             self._set_data_and_meta( data, meta )
 
 
+    @property
+    def lightcurve( self ):
+        if self._lightcurve is None and self._filepath is not None:
+            self.read()
+        return self._lightcurve
+
+    @property
+    def data( self ):
+        return self._lightcurve
+
+    @property
+    def meta( self ):
+        return None if self._lightcurve is None else self._lightcurve.meta
+
+
+    @property
+    def filepath( self ):
+        if self._filepath is None:
+            self.generate_filepath()
+        return self._filepath
+
+    @filepath.setter
+    def filepath( self, val ):
+        self._filepath = val
+
+    @property
+    def full_filepath( self, val ):
+        if self._filepath is None:
+            self.generate_filepath()
+        return self.base_dir / self._filepath
+
+
     def _set_data_and_meta( self, data, meta ):
         if not ( isinstance(data, dict) or isinstance(data, Table) or isinstance(data, QTable)
                  or isinstance(data, pd.DataFrame) ):
@@ -174,7 +206,7 @@ class Lightcurve:
             "provenance_id": (uuid.UUID, str, type(None)),
             "diaobject_id": (uuid.UUID, str, type(None)),
             "diaobject_position_id": (uuid.UUID, str, type(None)),
-            "iau_name": (str, None),
+            "iau_name": (str, type(None)),
             "band": str,
             "ra": numbers.Real,
             "dec": numbers.Real,
@@ -299,48 +331,25 @@ class Lightcurve:
         self._lightcurve = lc[sorted_cols]
 
 
-    def read( self ):
-        """Reads the lightcurve from its filepath."""
-        raise NotImplementedError( "Soon." )
-
-    @property
-    def lightcurve( self ):
-        return self._lightcurve
-
-    @property
-    def data( self ):
-        return self._lightcurve
-
-    @property
-    def meta( self ):
-        return None if self._lightcurve is None else self._lightcurve.meta
-
-
-    @property
-    def filepath( self ):
-        if self._filepath is None:
-            self.generate_filepath()
-        return self._filepath
-
-    @filepath.setter
-    def filepath( self, val ):
-        self._filepath = val
-
-    @property
-    def full_filepath( self, val ):
-        if self._filepath is None:
-            self.generate_filepath()
-        return self.base_dir / self._filepath
-
     def generate_filepath( self, filetype="parquet" ):
-        subdir = str(self.id)[0:2]
+        subdir = str(self.id)[0:3]
         basename = f"{self.meta['provenance_id']}/{subdir[0]}/{subdir[1]}/{subdir[2]}/{self.id}"
         if self._multiband:
-            self.filepath = Path( f"{basename}.ltcv.{self.filename_extensions[filetype]}" )
+            self.filepath = Path( f"{basename}.ltcv{self.filename_extensions[filetype]}" )
         else:
             if not re.search( r'^[A-Za-z0-9_:\-\.\+]+$', self.meta['band'] ):
                 SNLogger.Warning( f"Lightcurve band is {self.meta['band']}, which may cause filename problems." )
-            self.filepath = Path( f"{basename}.{self.meta['band']}.ltcv.{self.filename_extensions[filetype]}" )
+            self.filepath = Path( f"{basename}.{self.meta['band']}.ltcv{self.filename_extensions[filetype]}" )
+
+
+
+    def read( self, base_dir=None, filepath=None ):
+        """Reads the lightcurve from its filepath."""
+
+        basedir = Path( self.base_dir if base_dir is None else base_dir )
+        filepath = Path( self.filepath if filepath is None else filepath )
+
+        self._lightcurve = QTable.read( basedir / filepath )
 
 
     def write(self, base_dir=None, filepath=None, filetype="parquet", overwrite=False):
@@ -424,7 +433,7 @@ class Lightcurve:
 
         """
 
-        if self.filepath[-8:] != '.parquet':
+        if self.filepath.name[-8:] != '.parquet':
             raise ValueError( "Can only save lightcurves written as parquet files to the database." )
 
         dbclient = SNPITDBClient() if dbclient is None else dbclient
