@@ -125,12 +125,15 @@ class Lightcurve:
 
         """
 
-        if ( filepath is None ) != ( ( data is None ) and ( meta is None ) ):
-            raise ValueError( "Must specify filepath, or (data and meta), but not both." )
+        if ( ( ( data is None ) != ( meta is None ) ) or
+             ( ( filepath is not None ) and ( data is not None ) )
+            ):
+            raise ValueError( "Must specify either filepath, xor (data and meta)." )
 
         if ( id is None ) and ( filepath is not None ):
             match = re.search( r'([0-9a-f])/([0-9a-f])/([0-9a-f])/'
-                               r'([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}).ltcv' )
+                               r'([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}).ltcv',
+                               filepath )
             if match is None:
                 SNLogger.warning( "Could not parse filepath to find lightcurve id, assigning a new one." )
             else:
@@ -141,7 +144,7 @@ class Lightcurve:
                                       "lightcuve id from it, assigning a new one" )
                 else:
                     self.id = match.group(4)
-        id = asUUID( id ) if id is not None else uuid.uuid4()
+        self.id = asUUID( id ) if id is not None else uuid.uuid4()
 
         self.base_dir = Config.get().value('system.paths.lightcurves') if base_dir is None else base_dir
 
@@ -183,10 +186,10 @@ class Lightcurve:
             del meta_type_dict['band']
 
         # This list also has the required order.
-        # The keys of data_unit_dict must match the members of required_data_cols
+        # The keys of data_type_dict must match the members of required_data_cols
         required_data_cols = [ 'mjd', 'band', 'flux', 'flux_err', 'zpt', 'NEA', 'sky_rms',
                                'pointing', 'sca', 'pix_x', 'pix_y' ]
-        data_unit_dict = {
+        data_type_dict = {
             "mjd": numbers.Real,
             "band": str,
             "flux": numbers.Real,
@@ -200,16 +203,18 @@ class Lightcurve:
             "pix_y": numbers.Real
         }
         if self._multiband:
+            if 'band' not in ( data if isinstance(data, dict) else data.columns ):
+                raise ValueError( "missing data column band" )
             unique_bands = np.unique(data["band"])
             for b in unique_bands:
                 meta_type_dict[f"local_surface_brightness_{b}"] = numbers.Real
         else:
             required_data_cols.remove( 'band' )
-            del data_unit_dict['band']
+            del data_type_dict['band']
             if "band" not in meta:
                 raise ValueError( "band is a required metadata keyword" )
-            data_unit_dict[f"local_surface_brightness_{meta['band']}"] = numbers.Real
-        if list( data_unit_dict.keys() ) != required_data_cols:
+            meta_type_dict[f"local_surface_brightness_{meta['band']}"] = numbers.Real
+        if list( data_type_dict.keys() ) != required_data_cols:
             raise RuntimeError( "PROGRAMMER ERROR.  This should never happen.  See comments above this exception." )
 
         meta = copy.deepcopy( meta )
@@ -249,7 +254,7 @@ class Lightcurve:
         data_cols = list(data.keys()) if type(data) is dict else list(data.columns)
         missing_data = []
         bad_data_types = []
-        for col, col_type in self.required_data_cols.items():
+        for col, col_type in data_type_dict.items():
             if col not in data_cols:
                 missing_data.append( col )
             elif not all( isinstance(item, col_type) for item in data[col] ):
@@ -285,7 +290,10 @@ class Lightcurve:
                   "pix_y": astropy.units.pix
                  }
 
-        lc = QTable( data=data, meta=meta, units=units )
+        if isinstance( data, pd.DataFrame ):
+            lc = QTable( Table.from_pandas( data ), meta=meta, units=units )
+        else:
+            lc = QTable( data=data, meta=meta, units=units )
         data_cols = list(lc.columns)
         sorted_cols = required_data_cols + [ col for col in data_cols if col not in required_data_cols ]
         self._lightcurve = lc[sorted_cols]
