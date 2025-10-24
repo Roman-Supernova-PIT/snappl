@@ -3,8 +3,9 @@ import re
 import copy
 import numbers
 import collections.abc
-from pathlib import Path
 import uuid
+import simplejson
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -16,12 +17,18 @@ from snappl.logger import SNLogger
 from snappl.utils import asUUID, SNPITJsonEncoder
 from snappl.config import Config
 from snappl.dbclient import SNPITDBClient
-from snappl.diaobject import DiaObject
+
 
 class Lightcurve:
     """A class to store and save lightcurve data across different SNPIT photometry codes."""
 
-    def __init__(self, id=None, data=None, meta=None, filepath=None, base_dir=None ):
+    # I know this dictionary looks stupid, but it might not in the future.
+    filename_extensions = { 'parquet': '.parquet',
+                            'ecsv': '.ecsv'
+                           }
+
+
+    def __init__(self, id=None, data=None, meta=None, filepath=None, base_dir=None, multiband=False ):
         """Instantiate a lightcurve.
 
         Lightcurve file schema are defined here:
@@ -31,6 +38,9 @@ class Lightcurve:
         Inside the instantiated Lightcurve object, the lightcurve is
         stored as an astropy QTable that may be accessed via the
         lightcurve property of the Lightcurve object.
+
+       FOR LIGHTCURVE FILES THAT WILL BE SAVED TO THE DATABASE: Data can only have a single band.
+
 
         Parmeters
         ---------
@@ -52,7 +62,6 @@ class Lightcurve:
             allowed.
 
                * mjd : float (MJD in days of this lightcurve point)
-               * band : string (filter of this point)
                * flux : float (DN/s in the transient at this point)
                * flux_err : float (uncertainty on flux)
                * zpt : float (mag_ab = -2.5*log10(flux) + zpt)
@@ -62,6 +71,9 @@ class Lightcurve:
                * sca : int (the SCA of this image)
                * pix_x : float (The 0-offset position of the SN on the detector)
                * pix_y : float (The 0-offset position of the SN on the detector)
+
+            If multiband is true, then there needs to be a column band
+            (string) after mjd.
 
             If a dict, must be a dict of lists.  The keys of the dict
             are the columns; they will be sorted as listed above.  There
@@ -76,6 +88,7 @@ class Lightcurve:
               * diaobject_id : str or UUID (SN this is a lightcurve for)
               * diaobject_position_id : str or UUID (ID of the position in the database used*)
               * iau_name : str or None (TNS/IAU name of this SN)
+              * band : string (only required if multiband is False, otherwise prohibited)
               * ra : float (RA used for forced photometry / scene modelling for this lightcurve)
               * ra_err : float (uncertainty on RA)
               * dec : float (dec used for forced photometry /scene modelling for this lightcurve)
@@ -98,30 +111,43 @@ class Lightcurve:
             database, provenance_id and diaobject_id may be none,
             otherwise they are requried.
 
+          multiband : bool, default False
+            Lightcurves as saved in the database are stored one band at
+            a time.  However, you can write lightcurves that have all
+            the bands mixed together if you wish.
+
+            If a lightcurve is going to be saved to the databse, then
+            multiband must be False.
+
+            If multiband is True, then:
+              * The "band" metadata field is no longer required (and probably shouldn't be there)
+              * There is a required string column "band" after "mjd" in the data
+
         """
 
         if ( filepath is None ) != ( ( data is None ) and ( meta is None ) ):
-            raise ValueError( "Must specify filepath, or both of data and meta, but not both." )
+            raise ValueError( "Must specify filepath, or (data and meta), but not both." )
 
         if ( id is None ) and ( filepath is not None ):
-                match = re.search( r'([0-9a-f])/([0-9a-f])/([0-9a-f])/'
-                                   r'([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}).ltcv' )
-                if match is None:
-                    SNLogger.warning( "Could not parse filepath to find lightcurve id, assigning a new one." )
+            match = re.search( r'([0-9a-f])/([0-9a-f])/([0-9a-f])/'
+                               r'([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}).ltcv' )
+            if match is None:
+                SNLogger.warning( "Could not parse filepath to find lightcurve id, assigning a new one." )
+            else:
+                if any( match.group(1) != match.group(4)[0],
+                        match.group(2) != match.group(4)[1],
+                        match.group(3) != match.group(4)[2] ):
+                    SNLogger.warning( "filepath didn't have consistent directory and filename, cannot parse "
+                                      "lightcuve id from it, assigning a new one" )
                 else:
-                    if any( match.group(1) != match.group(4)[0],
-                            match.group(2) != match.group(4)[1],
-                            match.group(3) != match.group(4)[2] ):
-                        SNLogger.warning( "filepath didn't have consistent directory and filename, cannot parse "
-                                          "lightcuve id from it, assigning a new one" )
-                    else:
-                        self.id = match.group(4)
+                    self.id = match.group(4)
         id = asUUID( id ) if id is not None else uuid.uuid4()
 
         self.base_dir = Config.get().value('system.paths.lightcurves') if base_dir is None else base_dir
 
+        self._multiband = multiband
         self._lightcurve = None
-        self._filepath = filepath
+        self._filepath = Path( filepath ) if filepath is not None else None
 
         if filepath is None:
             self._set_data_and_meta( data, meta )
@@ -146,12 +172,15 @@ class Lightcurve:
             "diaobject_id": (uuid.UUID, str, type(None)),
             "diaobject_position_id": (uuid.UUID, str, type(None)),
             "iau_name": (str, None),
+            "band": str,
             "ra": numbers.Real,
             "dec": numbers.Real,
             "ra_err": (numbers.Real, type(None)),
             "dec_err": (numbers.Real, type(None)),
             "ra_dec_covar": (numbers.Real, type(None)),
         }
+        if self._multiband:
+            del meta_type_dict['band']
 
         # This list also has the required order.
         # The keys of data_unit_dict must match the members of required_data_cols
@@ -170,12 +199,18 @@ class Lightcurve:
             "pix_x": numbers.Real,
             "pix_y": numbers.Real
         }
+        if self._multiband:
+            unique_bands = np.unique(data["band"])
+            for b in unique_bands:
+                meta_type_dict[f"local_surface_brightness_{b}"] = numbers.Real
+        else:
+            required_data_cols.remove( 'band' )
+            del data_unit_dict['band']
+            if "band" not in meta:
+                raise ValueError( "band is a required metadata keyword" )
+            data_unit_dict[f"local_surface_brightness_{meta['band']}"] = numbers.Real
         if list( data_unit_dict.keys() ) != required_data_cols:
             raise RuntimeError( "PROGRAMMER ERROR.  This should never happen.  See comments above this exception." )
-
-        unique_bands = np.unique(data["band"])
-        for b in unique_bands:
-            meta_type_dict[f"local_surface_brightness_{b}"] = numbers.Real
 
         meta = copy.deepcopy( meta )
 
@@ -217,7 +252,7 @@ class Lightcurve:
         for col, col_type in self.required_data_cols.items():
             if col not in data_cols:
                 missing_data.append( col )
-            elif not all( isinstance(item, coltype) for item in data[col] ):
+            elif not all( isinstance(item, col_type) for item in data[col] ):
                 bad_data_types.append( [ col, col_type ] )
 
         if ( len(missing_data) != 0 ) or ( len(bad_data_types) != 0 ):
@@ -229,6 +264,7 @@ class Lightcurve:
                 for bad in bad_data_types:
                     sio.write( f"{bad[0]} needs to be {bad[1]}\n" )
                 SNLogger.error( sio.getvalue() )
+            raise ValueError( "Incorrect or missing data columns." )
 
 
         # Create our internal representation in self.lightcurve from the passed data
@@ -238,7 +274,6 @@ class Lightcurve:
         #   has units; we should verify!!!
 
         units = { "mjd": astropy.units.d,
-                  "band": "",
                   "flux": astropy.units.count / astropy.units.second,
                   "flux_err": astropy.units.count / astropy.units.second,
                   "zpt": astropy.units.mag,
@@ -252,7 +287,7 @@ class Lightcurve:
 
         lc = QTable( data=data, meta=meta, units=units )
         data_cols = list(lc.columns)
-        sorted_cols = required_data_cols + [ col for col in data_cols if col not required_data_cols ]
+        sorted_cols = required_data_cols + [ col for col in data_cols if col not in required_data_cols ]
         self._lightcurve = lc[sorted_cols]
 
 
@@ -260,17 +295,44 @@ class Lightcurve:
         """Reads the lightcurve from its filepath."""
         raise NotImplementedError( "Soon." )
 
-    @property lightcurve
+    @property
     def lightcurve( self ):
         return self._lightcurve
 
-    @property filepath
+    @property
+    def data( self ):
+        return self._lightcurve
+
+    @property
+    def meta( self ):
+        return None if self._lightcurve is None else self._lightcurve.meta
+
+
+    @property
     def filepath( self ):
+        if self._filepath is None:
+            self.generate_filepath()
         return self._filepath
 
     @filepath.setter
     def filepath( self, val ):
         self._filepath = val
+
+    @property
+    def full_filepath( self, val ):
+        if self._filepath is None:
+            self.generate_filepath()
+        return self.base_dir / self._filepath
+
+    def generate_filepath( self, filetype="parquet" ):
+        subdir = str(self.id)[0:2]
+        basename = f"{self.meta['provenance_id']}/{subdir[0]}/{subdir[1]}/{subdir[2]}/{self.id}"
+        if self._multiband:
+            self.filepath = Path( f"{basename}.ltcv.{self.filename_extensions[filetype]}" )
+        else:
+            if not re.search( r'^[A-Za-z0-9_:\-\.\+]+$', self.meta['band'] ):
+                SNLogger.Warning( f"Lightcurve band is {self.meta['band']}, which may cause filename problems." )
+            self.filepath = Path( f"{basename}.{self.meta['band']}.ltcv.{self.filename_extensions[filetype]}" )
 
 
     def write(self, base_dir=None, filepath=None, filetype="parquet", overwrite=False):
@@ -317,12 +379,10 @@ class Lightcurve:
         if filetype not in filetypemap:
             raise ValueError( f"Unknown filetype {filetype}" )
 
+        if ( filepath is None ) and ( self._filepath is None ):
+            self.generate_filepath( filetype=filetype )
+        filepath = self.filepath if filepath is None else filepath
         base_dir = Path( self.base_dir if base_dir is None else base_dir )
-
-        if filepath is None:
-            subdir = str(self.id)[0:2]
-            filepath = Path( f"{str(self.lightcurve.meta['provenance_id']}/{subdir[0]}/{subdir[1]}/{subdir[2]}/"
-                             f"{str(self.id)}.ltcv.parquet" )
 
         fullpath = base_dir / filepath
         if fullpath.exists():
@@ -356,30 +416,29 @@ class Lightcurve:
 
         """
 
-        if self.filepath is None:
-            raise ValueError( f"Cannot save lightcurve to database, filepath is None.  Call write() first." )
+        if self.filepath[-8:] != '.parquet':
+            raise ValueError( "Can only save lightcurves written as parquet files to the database." )
 
         dbclient = SNPITDBClient() if dbclient is None else dbclient
 
-        bands = list( np.unique( self.lightcurve["band"] ) )
-        bands.sort()
-
         data = { 'id': self.id,
-                 'provenance_id': self.lightcurve.meta['provenance_id'],
-                 'diaobject_id': self.lightcurve.meta['diaobject_id'],
-                 'diaobject_position_id': self.lightcurve.meta['diaobject_position_id'],
-                 'bands': bands,
-                 'filepath': self.filepath }
+                 'provenance_id': self.meta['provenance_id'],
+                 'diaobject_id': self.meta['diaobject_id'],
+                 'diaobject_position_id': self.meta['diaobject_position_id'],
+                 'band': self.meta['band'],
+                 'filepath': self.filepath
+                }
         senddata = simplejson.dumps( data, cls=SNPITJsonEncoder )
 
         return dbclient.send( "savelightcurve", data=senddata, headers={'Content-Type': 'application/json'} )
 
 
     @classmethod
-    def find_lightcurves( self, diaobject, provenance=None, provenance_tag=None, process=None, dbclient=None ):
+    def find_lightcurves( cls, diaobject, provenance=None, provenance_tag=None, process=None, band=None,
+                          dbclient=None ):
         """Find lightcurves for an object.
 
-        You may get back multiple lightcurves because the bands may be saved to different files.
+        You may get back multiple lightcurves if you don't specify a band.
 
         If what you want is the combined lightcurve for all bands, call get_combined_lightcurve.
 
@@ -404,6 +463,10 @@ class Lightcurve:
             provenance of the lightcurves you want.  Required if
             provenance_tag is not None.
 
+          band : str, default None
+            If given only return the lightcurve for this band.
+            Otherwise, return all available bands.
+
           dbclient : SNPITDBClient, default None
             The connection to the database web server.  If None, a new
             one will be made that logs you in using the information in
@@ -417,7 +480,7 @@ class Lightcurve:
         raise NotImplementedError( "Soon." )
 
     @classmethod
-    def get_combined_lightcurve( self, diaobject, provenance=None, provenance_tag=None, process=None, dbclient=None ):
+    def get_combined_lightcurve( cls, diaobject, provenance=None, provenance_tag=None, process=None, dbclient=None ):
         """Return a lightcurve combining together all bands that are available.
 
         Will raise exceptions if the various lightcurves it's trying to

@@ -13,6 +13,7 @@ from tox.pytest import init_fixture # noqa: F401
 
 from snappl.imagecollection import ImageCollection
 from snappl.image import FITSImage, RomanDatamodelImage
+from snappl.diaobject import DiaObject
 from snappl.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
 from snappl.admin.load_ou2024_l2images import OU2024_L2image_loader
 from snappl.config import Config
@@ -268,6 +269,23 @@ def loaded_ou2024_test_l2images():
                 dbcon.execute( "DELETE FROM provenance_tag WHERE provenance_id=%(id)s", { 'id': prov.id } )
                 dbcon.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
                 dbcon.commit()
+
+
+@pytest.fixture
+def ou2024_test_lightcurve( loaded_ou2024_test_diaobject, loaded_ou2024_test_l2images, dbclient ):
+    try:
+        dobj = DiaObject.find_objects( provenance_tag='dbou2024_test', process='import_ou2024_diaobjets',
+                                       name='20172782', dbclient=dbclient )
+        imcol = ImageCollection.get_collection( provenance_tag='dbou2024_test', process='import_ou2024_l2images',
+                                                dbclient=dbclient )
+        images = imcol.find_images( ra=dobj.ra, dec=dobj.dec, dbclient=dbclient )
+        bands = set( i.band for i in images )
+        if len(bands) != 1:
+            raise RuntimeError( "I am surprised, there are multiple bands of test images." )
+
+        yield None
+    finally:
+        pass
 
 
 # IMPORTANT : if you use this fixture, use it *before* the previous one.

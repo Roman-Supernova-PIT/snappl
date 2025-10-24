@@ -3,20 +3,24 @@ import pandas as pd
 import pathlib
 import pytest
 import uuid
+import numbers
 
 # Astronomy
-from astropy.table import Table
+from astropy.table import Table, QTable
 
 # SNPIT
 from snappl.lightcurve import lightcurve
 
 
+# Testing intializing with filepath is tested with test_write_and_read below
 def test_init_lightcurve():
     """Lightcurve class automatically checks that data and metadata follow Wiki guidelines. Let's ensure those work."""
     meta_dict = {
         "provenance_id": uuid.uuid4(),
         "diaobject_id": uuid.uuid4(),
+        "diaobject_position_id": uuid.uuid4(),
         "iau_name": "ACoolLightcurve",
+        "band": "Y",
         "ra": 70.0,
         "ra_err": 1e-5,
         "dec": 40.0,
@@ -26,89 +30,118 @@ def test_init_lightcurve():
 
     data_dict = {
         "mjd": [60000.0, 60001.0],
-        "band": ["Y", "Y"],
         "flux": [1000.0, 1100.0],
         "flux_err": [50.0, 55.0],
         "zpt": [25.0, 25.0],
         "NEA": [5.0, 5.0],
-        "sky_background": [200.0, 210.0],
+        "sky_rms": [200.0, 210.0],
+        "pointing": [1, 2],
+        "sca": [16, 18],
+        "pix_x": [ 128., 64. ],
+        "pix_y": [ 13.3, 47.7 ]
     }
 
     # You can pass data_dict as a dict...
-    lightcurve(data_dict, meta_dict)
+    ltcv = lightcurve( data=data_dict, meta=meta_dict )
+    assert isinstance( ltcv.lightcurve, QTable )
+    assert ltcv._filepath is None
+    assert isinstance( ltcv.id, uuid.UUID )
+
+    # You can explicitly pass the id
+    explicitid = uuid.uuid4()
+    ltcv = lightcurve( id=explicitid, data=data_dict, meta=meta_dict )
+    assert isinstance( ltcv.lightcurve, QTable )
+    assert ltcv._filepath is None
+    assert ltcv.id == explicitid
+    ltcv = lightcurve( id=str(explicitid), data=data_dict, meta=meta_dict )
+    assert ltcv.id == explicitid
 
     # ... or an astropy table...
     data_table = Table(data_dict)
-    lightcurve(data_table, meta_dict)
+    ltcv = lightcurve( data=data_table, meta=meta_dict )
+    assert isinstance( ltcv.lightcurve, QTable )
+    assert ltcv._filepath is None
 
     # ... or a pandas DataFrame.
     data_df = pd.DataFrame(data_dict)
-    lightcurve(data_df, meta_dict)
+    ltcv = lightcurve( data=data_df, meta=meta_dict )
+    assert isinstance( ltcv._lightcurve, QTable )
+    assert ltcv._filepath is None
+
+    # You can also initialize with a filepath, which won't be read right away
+    ltcv = lightcurve( filepath="foo/bar" )
+    assert ltcv._lightcurve is None
+    assert ltcv._filepath == pathlib.Path( "foo/bar" )
+
+    # But you can't pass both a filepath and meta / data
+    with pytest.raises( ValueError, match="Must specify filepath, or (data and meta), but not both." ):
+        lightcurve( filepath="foo/bar", data=data_dict, meta=meta_dict )
 
     # If anything is missing it should fail.
     for col in meta_dict.keys():
         bad_meta = meta_dict.copy()
         bad_meta.pop(col)
-        with pytest.raises(AssertionError) as e:
-            lightcurve(data_dict, bad_meta)
-        assert e
+        with pytest.raises( ValueError, match="Incorrect metadata." ):
+            lightcurve( data=data_dict, meta=bad_meta )
 
     for col in data_dict.keys():
         bad_data = data_dict.copy()
         bad_data.pop(col)
-
-        if col == "band":
-            # If band is missing, raises a KeyError because band is needed to determine required meta columns.
-            with pytest.raises(KeyError):
-                lightcurve(bad_data, meta_dict)
-
-        else:
-            with pytest.raises(AssertionError):
-                lightcurve(bad_data, meta_dict)
+        with pytest.raises( ValueError, match="Incorrect or missing data columns." ):
+            lightcurve( data=bad_data, meta=meta_dict )
 
     # Should Also fail if data or meta are the wrong type.
     bad_things = [3, 4.0, "cupcake", True, [1, 2, 3], (1, 2), None]
     for bad in bad_things:
-        with pytest.raises(AssertionError):
-            lightcurve(bad, meta_dict)
-        with pytest.raises(AssertionError):
-            lightcurve(data_dict, bad)
+        with pytest.raises( TypeError, match="Lightcurve data must be a dict, astropy Table, or pandas DataFrame" ):
+            lightcurve( data=bad, meta=meta_dict )
+        with pytest.raises( TypeError, meatch="Lightcurve meta must be a dict" ):
+            lightcurve( data=data_dict, meta=bad )
 
     # Should be able to handle additional info beyond the required columns.
     data_dict["apples eaten"] = [5, 6]
-    lightcurve(data_dict, meta_dict)
+    ltcv = lightcurve( data=data_dict, meta=meta_dict )
+    assert isinstance( ltcv.lightcurve, QTable )
+    assert "apples eaten" in ltcv.lightcurve.columns
 
     # Should fail if something is the wrong type.
     for bad in bad_things:
-        if isinstance(bad, float):
-            continue
-        else:
+        if not isinstance( bad, numbers.Floating ):
             bad_meta = meta_dict.copy()
             bad_meta["ra"] = bad
-            with pytest.raises(AssertionError):
-                lightcurve(data_dict, bad_meta)
+            with pytest.raises( ValueError, match="Incorrect metadata." ):
+                lightcurve( data=data_dict, meta=bad_meta )
 
     # Should fail if even a single element of data is the wrong type.
     for bad in bad_things:
-        if isinstance(bad, float):
-            continue
-        else:
+        if not isinstance( bad, numbers.Floating ):
             bad_data = data_dict.copy()
             bad_data["flux"] = [1000.0, bad]
-            with pytest.raises(AssertionError):
-                lightcurve(bad_data, meta_dict)
+            with pytest.raises( ValueError, match="Incorrect or missing data columns." ):
+                lightcurve( data=bad_data, meta=meta_dict)
+
+
+    # Test multiband lightcurve:
+    with pytest.raises( ValueError, match="band is a required metadata keyword" ):
+        lightcurve( data=data_dict, meta=meta_dict, multiband=True )
+
+    del meta_dict['band']
+    data_dict["band"] = [ "Y", "Y" ]
+    ltcv = lightcurve( data=data_dict, meta=meta_dict, multiband=True )
+    assert isinstance( ltcv.lightcurve, QTable )
 
     # Should fail if there are two types of bands but only one surface brightness
     data_dict["band"] = ["Y", "J"]
-    with pytest.raises(AssertionError):
-        lightcurve(data_dict, meta_dict)
+    with pytest.raises( ValueError, match="Incorrect metadata." ):
+        lightcurve( data=data_dict, meta=meta_dict )
 
     # But if I include the second surface brightness it should work.
     meta_dict["local_surface_brightness_J"] = 19.0
-    lightcurve(data_dict, meta_dict)
+    ltcv = lightcurve( data=data_dict, meta=meta_dict)
+    assert isinstance( ltcv.lightcurve, QTable )
 
 
-def test_write_lightcurve():
+def test_write_lightcurve( ou2024_test_lightcurve ):
     meta_dict = {
         "provenance_id": uuid.uuid4(),
         "diaobject_id": uuid.uuid4(),
