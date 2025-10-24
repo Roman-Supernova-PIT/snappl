@@ -68,7 +68,7 @@ def test_ou2024_find_images( loaded_ou2024_test_l2images, dbclient ):
     images = imcol.find_images( ra=7.65477, dec=-44.90313, dbclient=dbclient )
     assert len(images) == 0
 
-    # TODO MORE TESTS ... mjd_start, exptime
+    # TODO MORE TESTS ... mjd, exptime
 
 
 def test_ou2024_get_image( loaded_ou2024_test_l2images, dbclient ):
