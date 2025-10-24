@@ -358,6 +358,9 @@ def ou2024_test_lightcurve_saved( ou2024_test_lightcurve, dbclient ):
     try:
         ou2024_test_lightcurve.write()
         ou2024_test_lightcurve.save_to_db( dbclient=dbclient )
+
+        yield ou2024_test_lightcurve
+
     finally:
         ( ou2024_test_lightcurve.base_dir / ou2024_test_lightcurve.filepath ).unlink( missing_ok=True )
         with DBCon() as dbcon:

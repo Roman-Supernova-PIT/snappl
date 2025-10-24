@@ -196,9 +196,9 @@ def test_save_to_db( ou2024_test_lightcurve_saved, dbclient ):
     with DBCon( dictcursor=True ) as dbcon:
         rows = dbcon.execute( "SELECT * FROM lightcurve WHERE id=%(id)s", { 'id': ltcv.id } )
         assert len(rows) == 1
-        row = rows
-        assert row['id'] == str( ltcv.id )
-        assert row['provenance_id'] == str( ltcv.meta['provenance_id'] )
-        assert row['diaobject_id'] == str( ltcv.meta['diaobject_id'] )
+        row = rows[0]
+        assert row['id'] == ltcv.id
+        assert str( row['provenance_id'] ) == ltcv.meta['provenance_id']
+        assert str( row['diaobject_id'] ) == ltcv.meta['diaobject_id']
         assert row['filepath'] == str( ltcv.filepath )
         assert row['band'] == ltcv.meta['band']

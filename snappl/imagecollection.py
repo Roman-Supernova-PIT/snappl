@@ -324,7 +324,7 @@ class ImageCollectionOU2024:
         if mjd_max is not None:
             params['mjd_max'] = float(mjd_max)
         if band is not None:
-            params['band'] = str(band)
+            params['filter'] = str(band)
         if exptime_min is not None:
             params['exptime_min'] = float(exptime_min)
         if exptime_max is not None:
@@ -335,7 +335,7 @@ class ImageCollectionOU2024:
 
         images = []
         for i in range( len(res['pointing']) ):
-            path = self.get_image_path( res['pointing'][i], res['band'][i], res['sca'][i] )
+            path = self.get_image_path( res['pointing'][i], res['filter'][i], res['sca'][i] )
             image = OpenUniverse2024FITSImage(path, None, res["sca"][i])
             image.mjd = res['mjd'][i]
             images.append( image )
