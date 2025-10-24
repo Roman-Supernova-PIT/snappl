@@ -15,6 +15,7 @@ Provenance
       ~Provenance.get_provenance_id
       ~Provenance.get_provs_for_tag
       ~Provenance.parse_provenance
+      ~Provenance.recursive_dict
       ~Provenance.save_to_db
       ~Provenance.spec_dict
       ~Provenance.update_id
@@ -26,6 +27,7 @@ Provenance
    .. automethod:: get_provenance_id
    .. automethod:: get_provs_for_tag
    .. automethod:: parse_provenance
+   .. automethod:: recursive_dict
    .. automethod:: save_to_db
    .. automethod:: spec_dict
    .. automethod:: update_id

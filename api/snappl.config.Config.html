@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Config &#8212; roman_snpit_snappl 0.1.dev1+g463af9082 documentation</title>
+    <title>Config &#8212; roman_snpit_snappl 0.1.dev1+g3f6286e64 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=fd928990"></script>
+    <script src="../_static/documentation_options.js?v=edca619f"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -191,7 +191,7 @@ integer index.  For example, if the yaml files includes:</p>
   <span class="n">images</span><span class="p">:</span>
     <span class="nb">format</span><span class="p">:</span> <span class="n">fits</span>
     <span class="n">single_file</span><span class="p">:</span> <span class="n">false</span>
-    <span class="n">name_convention</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{inst_name}</span><span class="s2">_</span><span class="si">{date}</span><span class="s2">_</span><span class="si">{time}</span><span class="s2">_</span><span class="si">{section_id}</span><span class="s2">_</span><span class="si">{filter}</span><span class="s2">_</span><span class="si">{im_type}</span><span class="s2">_</span><span class="si">{prov_hash:.6s}</span><span class="s2">&quot;</span>
+    <span class="n">name_convention</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{inst_name}</span><span class="s2">_</span><span class="si">{date}</span><span class="s2">_</span><span class="si">{time}</span><span class="s2">_</span><span class="si">{section_id}</span><span class="s2">_</span><span class="si">{band}</span><span class="s2">_</span><span class="si">{im_type}</span><span class="s2">_</span><span class="si">{prov_hash:.6s}</span><span class="s2">&quot;</span>
 </pre></div>
 </div>
 <p>then confobj.value(“storage.images.format”) will return
@@ -199,7 +199,7 @@ integer index.  For example, if the yaml files includes:</p>
 example, config.value(“storage.images”) will return a dictionary:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;fits&quot;</span><span class="p">,</span>
   <span class="s2">&quot;single_file&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-  <span class="s2">&quot;name_convention&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{inst_name}</span><span class="s2">_</span><span class="si">{date}</span><span class="s2">_</span><span class="si">{time}</span><span class="s2">_</span><span class="si">{section_id}</span><span class="s2">_</span><span class="si">{filter}</span><span class="s2">_</span><span class="si">{im_type}</span><span class="s2">_</span><span class="si">{prov_hash:.6s}</span><span class="s2">&quot;</span>
+  <span class="s2">&quot;name_convention&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{inst_name}</span><span class="s2">_</span><span class="si">{date}</span><span class="s2">_</span><span class="si">{time}</span><span class="s2">_</span><span class="si">{section_id}</span><span class="s2">_</span><span class="si">{band}</span><span class="s2">_</span><span class="si">{im_type}</span><span class="s2">_</span><span class="si">{prov_hash:.6s}</span><span class="s2">&quot;</span>
 <span class="p">}</span>
 </pre></div>
 </div>

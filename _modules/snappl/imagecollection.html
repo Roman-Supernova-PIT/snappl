@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.imagecollection &#8212; roman_snpit_snappl 0.1.dev1+g463af9082 documentation</title>
+    <title>snappl.imagecollection &#8212; roman_snpit_snappl 0.1.dev1+g3f6286e64 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=fd928990"></script>
+    <script src="../../_static/documentation_options.js?v=edca619f"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -222,7 +222,7 @@
 <span class="sd">            Pointing.  If not given, just use the Path to find the image.</span>
 
 <span class="sd">          band: str, default None</span>
-<span class="sd">            Filter.</span>
+<span class="sd">            Band.</span>
 
 <span class="sd">          sca: int, default None</span>
 <span class="sd">            SCA.</span>
@@ -302,8 +302,8 @@
 <span class="sd">          dec: float, default None</span>
 <span class="sd">            Only return images that containe this dec</span>
 
-<span class="sd">          filter: str, default None</span>
-<span class="sd">            Only include images from this filter</span>
+<span class="sd">          band: str, default None</span>
+<span class="sd">            Only include images from this band</span>
 
 <span class="sd">          exptime_min: float, default None</span>
 <span class="sd">            Only include images with at least this exptime in seconds.</span>
@@ -313,6 +313,25 @@
 
 <span class="sd">          sca: int</span>
 <span class="sd">            Only include images from this sca.</span>
+
+<span class="sd">          order_by: str or list, default None</span>
+<span class="sd">            By default, the returned images are not sorted in any</span>
+<span class="sd">            particular way.  Put a keyword here to sort by that value</span>
+<span class="sd">            (or by those values).  Options include &#39;id&#39;,</span>
+<span class="sd">            &#39;provenance_id&#39;, &#39;pointing&#39;, &#39;sca&#39;, &#39;ra&#39;, &#39;dec&#39;, &#39;filepath&#39;,</span>
+<span class="sd">            &#39;width&#39;, &#39;height&#39;, &#39;mjd&#39;, &#39;exptime&#39;.  Not all of these are</span>
+<span class="sd">            necessarily useful, and some of them may be null for many</span>
+<span class="sd">            objects in the database.</span>
+
+<span class="sd">          limit : int, default None</span>
+<span class="sd">            Only return this many objects at most.</span>
+
+<span class="sd">          offset : int, default None</span>
+<span class="sd">            Useful with limit and order_by ; offset the returned value</span>
+<span class="sd">            by this many entries.  You can make repeated calls to</span>
+<span class="sd">            find_objects to get subsets of objects by passing the same</span>
+<span class="sd">            order_by and limit, but different offsets each time, to</span>
+<span class="sd">            slowly build up a list.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -402,7 +421,7 @@
                       <span class="n">mjd_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">ra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">dec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                      <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">exptime_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">exptime_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">sca</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
@@ -418,8 +437,8 @@
             <span class="n">params</span><span class="p">[</span><span class="s1">&#39;mjd_min&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">mjd_min</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">mjd_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">params</span><span class="p">[</span><span class="s1">&#39;mjd_max&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">mjd_max</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">filter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;filter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">filter</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">band</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;filter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">band</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">exptime_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">params</span><span class="p">[</span><span class="s1">&#39;exptime_min&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">exptime_min</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">exptime_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -547,7 +566,7 @@
                      <span class="p">(</span> <span class="nb">all</span><span class="p">(</span> <span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span> <span class="p">]</span> <span class="p">)</span> <span class="p">)</span> <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must specify one of image_id, path, or (pointing, band, and sca).&quot;</span> <span class="p">)</span>
 
-            <span class="n">data</span> <span class="o">=</span> <span class="p">{</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span> <span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;pointing&#39;</span><span class="p">,</span> <span class="s1">&#39;filter&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span> <span class="p">],</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span> <span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;pointing&#39;</span><span class="p">,</span> <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span> <span class="p">],</span>
                                            <span class="p">[</span><span class="n">path</span><span class="p">,</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span> <span class="p">]</span> <span class="p">)</span>
                      <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">}</span>
             <span class="n">rows</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;/findl2images/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -561,7 +580,6 @@
             <span class="n">row</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">row</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span> <span class="o">/</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
-        <span class="n">row</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filter&#39;</span><span class="p">]</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_class</span><span class="p">(</span> <span class="o">**</span><span class="n">row</span> <span class="p">)</span></div>
 
 
@@ -584,7 +602,7 @@
         <span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
             <span class="n">row</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span> <span class="o">/</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
-            <span class="n">row</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filter&#39;</span><span class="p">]</span>
+            <span class="n">row</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span>
             <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_class</span><span class="p">(</span> <span class="o">**</span><span class="n">row</span> <span class="p">)</span> <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">images</span></div>

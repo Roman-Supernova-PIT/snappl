@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.config &#8212; roman_snpit_snappl 0.1.dev1+g463af9082 documentation</title>
+    <title>snappl.config &#8212; roman_snpit_snappl 0.1.dev1+g3f6286e64 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=fd928990"></script>
+    <script src="../../_static/documentation_options.js?v=edca619f"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -209,7 +209,7 @@
 <span class="sd">           images:</span>
 <span class="sd">             format: fits</span>
 <span class="sd">             single_file: false</span>
-<span class="sd">             name_convention: &quot;{inst_name}_{date}_{time}_{section_id}_{filter}_{im_type}_{prov_hash:.6s}&quot;</span>
+<span class="sd">             name_convention: &quot;{inst_name}_{date}_{time}_{section_id}_{band}_{im_type}_{prov_hash:.6s}&quot;</span>
 
 <span class="sd">       then confobj.value(&quot;storage.images.format&quot;) will return</span>
 <span class="sd">       &quot;fits&quot;. You can also ask configobj.value for higher levels.  For</span>
@@ -217,7 +217,7 @@
 
 <span class="sd">          { &quot;format&quot;: &quot;fits&quot;,</span>
 <span class="sd">            &quot;single_file&quot;: False,</span>
-<span class="sd">            &quot;name_convention&quot;: &quot;{inst_name}_{date}_{time}_{section_id}_{filter}_{im_type}_{prov_hash:.6s}&quot;</span>
+<span class="sd">            &quot;name_convention&quot;: &quot;{inst_name}_{date}_{time}_{section_id}_{band}_{im_type}_{prov_hash:.6s}&quot;</span>
 <span class="sd">          }</span>
 
 <span class="sd">    4. Change a config value with::</span>
