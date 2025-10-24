@@ -171,6 +171,9 @@ def test_init_lightcurve():
 
 
 def test_write_lightcurve( ou2024_test_lightcurve ):
+    import pdb; pdb.set_trace()
+    pass
+
     meta_dict = {
         "provenance_id": uuid.uuid4(),
         "diaobject_id": uuid.uuid4(),

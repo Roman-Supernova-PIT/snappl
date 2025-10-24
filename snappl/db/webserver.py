@@ -512,7 +512,7 @@ class FindL2Images( BaseView ):
                 del data['ra']
                 del data['dec']
 
-            for kw in [ 'pointing', 'sca', 'filter', 'filepath' ]:
+            for kw in [ 'pointing', 'sca', 'band', 'filepath' ]:
                 if kw in data:
                     conditions.append( f"{kw}=%({kw})s" )
                     subdict[kw] = data[kw] if data[kw] is not None else None

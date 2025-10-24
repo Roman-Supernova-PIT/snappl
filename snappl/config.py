@@ -112,7 +112,7 @@ class Config:
            images:
              format: fits
              single_file: false
-             name_convention: "{inst_name}_{date}_{time}_{section_id}_{filter}_{im_type}_{prov_hash:.6s}"
+             name_convention: "{inst_name}_{date}_{time}_{section_id}_{band}_{im_type}_{prov_hash:.6s}"
 
        then confobj.value("storage.images.format") will return
        "fits". You can also ask configobj.value for higher levels.  For
@@ -120,7 +120,7 @@ class Config:
 
           { "format": "fits",
             "single_file": False,
-            "name_convention": "{inst_name}_{date}_{time}_{section_id}_{filter}_{im_type}_{prov_hash:.6s}"
+            "name_convention": "{inst_name}_{date}_{time}_{section_id}_{band}_{im_type}_{prov_hash:.6s}"
           }
 
     4. Change a config value with::

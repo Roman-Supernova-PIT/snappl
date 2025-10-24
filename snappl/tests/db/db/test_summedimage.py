@@ -11,7 +11,7 @@ class TestSummedImage( BaseTestDB ):
     @pytest.fixture
     def basetest_setup( self, stupid_provenance ):
         self.cls = SummedImage
-        self.safe_to_modify = [ 'filter', 'ra', 'dec',
+        self.safe_to_modify = [ 'band', 'ra', 'dec',
                                 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                 'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                                 'filepath', 'extension', 'width', 'height', 'format', 'mjd_start',
@@ -21,7 +21,7 @@ class TestSummedImage( BaseTestDB ):
         self.uniques = []
         self.obj1 = SummedImage( id=uuid.uuid4(),
                                  provenance_id=stupid_provenance,
-                                 filter='a',
+                                 band='a',
                                  ra=1.,
                                  dec=1.,
                                  ra_corner_00=1.,
@@ -41,7 +41,7 @@ class TestSummedImage( BaseTestDB ):
         self.dict1 = { k: getattr( self.obj1, k ) for k in self.columns }
         self.obj2 = SummedImage( id=uuid.uuid4(),
                                  provenance_id=stupid_provenance,
-                                 filter='b',
+                                 band='b',
                                  ra=2.,
                                  dec=2.,
                                  ra_corner_00=2.,
@@ -61,7 +61,7 @@ class TestSummedImage( BaseTestDB ):
         self.dict2 = { k: getattr( self.obj2, k ) for k in self.columns }
         self.dict3 = { 'id': uuid.uuid4(),
                        'provenance_id': stupid_provenance,
-                       'filter': 'c',
+                       'band': 'c',
                        'ra': 3.,
                        'dec': 3.,
                        'ra_corner_00': 3.,

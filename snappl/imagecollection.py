@@ -126,7 +126,7 @@ class ImageCollection:
             Pointing.  If not given, just use the Path to find the image.
 
           band: str, default None
-            Filter.
+            Band.
 
           sca: int, default None
             SCA.
@@ -200,8 +200,8 @@ class ImageCollection:
           dec: float, default None
             Only return images that containe this dec
 
-          filter: str, default None
-            Only include images from this filter
+          band: str, default None
+            Only include images from this band
 
           exptime_min: float, default None
             Only include images with at least this exptime in seconds.
@@ -288,7 +288,7 @@ class ImageCollectionOU2024:
                       mjd_max=None,
                       ra=None,
                       dec=None,
-                      filter=None,
+                      band=None,
                       exptime_min=None,
                       exptime_max=None,
                       sca=None ):
@@ -304,8 +304,8 @@ class ImageCollectionOU2024:
             params['mjd_min'] = float(mjd_min)
         if mjd_max is not None:
             params['mjd_max'] = float(mjd_max)
-        if filter is not None:
-            params['filter'] = str(filter)
+        if band is not None:
+            params['band'] = str(band)
         if exptime_min is not None:
             params['exptime_min'] = float(exptime_min)
         if exptime_max is not None:
@@ -316,7 +316,7 @@ class ImageCollectionOU2024:
 
         images = []
         for i in range( len(res['pointing']) ):
-            path = self.get_image_path( res['pointing'][i], res['filter'][i], res['sca'][i] )
+            path = self.get_image_path( res['pointing'][i], res['band'][i], res['sca'][i] )
             image = OpenUniverse2024FITSImage(path, None, res["sca"][i])
             image.mjd = res['mjd'][i]
             images.append( image )
@@ -415,7 +415,7 @@ class ImageCollectionDB:
                      ( all( i is not None for i in [ pointing, band, sca ] ) ) ):
                 raise ValueError( "Must specify one of image_id, path, or (pointing, band, and sca)." )
 
-            data = { k: v for k, v in zip( ['filepath', 'pointing', 'filter', 'sca' ],
+            data = { k: v for k, v in zip( ['filepath', 'pointing', 'band', 'sca' ],
                                            [path, pointing, band, sca ] )
                      if v is not None }
             rows = dbclient.send( f"/findl2images/{self.provenance.id}",
@@ -429,7 +429,7 @@ class ImageCollectionDB:
             row = rows[0]
 
         row['path'] = self.base_path / row['filepath']
-        row['band'] = row['filter']
+        row['band'] = row['band']
         return self.image_class( **row )
 
 
@@ -446,7 +446,7 @@ class ImageCollectionDB:
         images = []
         for row in rows:
             row['path'] = self.base_path / row['filepath']
-            row['band'] = row['filter']
+            row['band'] = row['band']
             images.append( self.image_class( **row ) )
 
         return images

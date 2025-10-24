@@ -1256,7 +1256,7 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
 
     @property
     def exptime( self ):
-        # Galsim has fixed exptimes for roman filters
+        # ou2024 has fixed exptimes for roman bands
         exptimes = {'F184': 901.175,
                    'J129': 302.275,
                    'H158': 302.275,
