@@ -53,7 +53,7 @@ def _parse_fits_file( relpath, base_path=None, provid=None ):
                'width': width,
                'height': height,
                'format': 1,
-               'mjd_start': image.mjd,
+               'mjd': image.mjd,
                'exptime': exptime,
                'properties': psycopg.types.json.Jsonb( {} )
               }
