@@ -590,16 +590,16 @@ class SaveLightcurve( BaseView ):
             if len(rows) == 0:
                 return f"Unknown provenance {data['provenance_id']}", 500
 
-        dbcon.execute( ( "INSERT INTO lightcurve(id, provenance_id, diaobject_id, "
-                         "  diaobject_position_id, band, filepath) "
-                         "VALUES(%(id)s, %(provenance_id)s, %(diaobject_id)s, %(diaobject_position_id)s, "
-                         "  %(band)s, %(filepath)s" ),
-                       data )
-        dbcon.commit()
+            dbcon.execute( ( "INSERT INTO lightcurve(id, provenance_id, diaobject_id, "
+                             "  diaobject_position_id, band, filepath) "
+                             "VALUES(%(id)s, %(provenance_id)s, %(diaobject_id)s, %(diaobject_position_id)s, "
+                             "  %(band)s, %(filepath)s)" ),
+                           data )
+            dbcon.commit()
 
-        res = dbcon.execute( "SELECT * FROM lightcurve WHERE id=%(id)s", {'id': data['id']} )
-        if len(res) == 0:
-            return "Something went wrong, lightcurve not saved to database", 500
+            res = dbcon.execute( "SELECT * FROM lightcurve WHERE id=%(id)s", {'id': data['id']} )
+            if len(res) == 0:
+                return "Something went wrong, lightcurve not saved to database", 500
 
         return res[0]
 
