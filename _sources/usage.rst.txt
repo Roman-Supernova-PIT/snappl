@@ -181,10 +181,28 @@ See :ref:`nov2025-provtags` below to figure out what ``TAG`` and ``PROCESS`` sho
 **Important**: if you use an updated DiaObject position, then the provenance of that position should be one of your upstream provenances; see :ref:`nov2025-making-prov`.
 
 
-Finding Lightcurves
+Reading Lightcurves
 ===================
 
-TODO
+To read a lightcurve, you need three or four things:
+
+  * The ``diaobject_id`` of the object whose lightcurve you want
+  * The ``provenance_tag`` of the provenance you want to get lightcurves from
+  * The ``process`` to go with the provenance tag
+  * (Optional) The ``band`` of the lightcurve
+
+The ``provenance_tag`` and ``process`` will be given to you through our fake orchestration process, and may possibly be found in :ref:`nov2025-provtags`.  The ``diaobject_id`` will be given to you through the fake orchestration process.
+
+To get the lightcurves::
+
+  from snappl.lightcurve import Lightcurve
+
+  ltcvs = Lightcurve.find_lightcurves( <diaobject_id>, provenance_tag=<tag>, process=<proc>, dbclient=dbclient )
+
+That will return a list of lightcurves.  If you also specify ``band=<band>``, that will be a 1-element list with the lightcurve just for that band.  (Or a 0-element list if it's not found.)
+
+Each element of the list will be a ``Lightcurve`` object.  You can find the actual lightcurve data in the ``.lightcurve`` property as an astropy QTable.  You can find the metadata dictionary either in the ``.lightcurve.meta`` or in the ``.meta`` property (though the latter will intially be ``None`` until you access the ``.lightcurve`` property).  Guaranteed metadata can be found in the `lightcurve schema specification on the PIT wiki <https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve>`_.  You should probably ignore the ``filepath`` in the metadata, because ``snappl`` has already read the file for you (and put it in the ``.lightcurve`` property).
+
 
 .. _nov2025-making-prov:
 
@@ -250,9 +268,24 @@ This will (I believe) return a dictionary that's the same as what you'd get back
 Saving Lightcurves
 ==================
 
-TODO
+Lightcurves saved to the database are for only a single band.  If you have a multiband lightcurve, from the point of view of the database that's several different lightcurves.
 
+To write a Lightcurve, first create a ``Lightcurve`` object::
 
+  from snappl.lightcurve import Lightcurve
+
+  ltcv = Lightcurve( data=<data>, meta=<meta> )
+
+where ``<meta>`` is a dictionary with metadata, and ``<data>`` is one of an astropy Table, a pandas DataFrame, or a dictionary of lists.  On the `lightcurve schema specification on the PIT wiki <https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve>`_ you can find the mandatory fields in the metadata dictionary; it's allowed to have additional ones as well.  Likewise, there you can find the mandatory columns (and the order of those columns) in the data array.  You may also have additional columns in that data array.
+
+In order to create a lightcurve, you will need to make a provenance for it; see :ref:`nov2025-making-prov`.  Make sure to include the ``diaobject position`` provenance as an upstream provenance if you used a position other than the cheesy approximate one that comes with the ``DiaObject``.
+
+Once you have your lightcurve object, do two things::
+
+  ltcv.write()
+  ltcv.save_to_db( dbclient=dbclient )
+
+The first one writes the actual file; it will write it in the standard location, and will populate the ``.filepath`` property with the location of the file *relative to the configured base directory for lightcurves* (which is in config option ``system.paths.lightcurves``).  The second call saves a record to the database with information about your lightcurve.
 
 .. _nov2025-provtags:
 
