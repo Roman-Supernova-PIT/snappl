@@ -1,8 +1,9 @@
 import pytest
 import uuid
 import pathlib
-import simplejson
+import subprocess
 
+import simplejson
 import numpy as np
 import psycopg.types
 
@@ -12,7 +13,8 @@ import tox # noqa: F401
 from tox.pytest import init_fixture # noqa: F401
 
 from snappl.imagecollection import ImageCollection
-from snappl.image import FITSImage, RomanDatamodelImage
+from snappl.image import FITSImage, FITSImageStdHeaders, RomanDatamodelImage
+from snappl.image_simulator import ImageSimulator
 from snappl.diaobject import DiaObject
 from snappl.lightcurve import Lightcurve
 from snappl.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
@@ -449,3 +451,119 @@ def stupid_object( stupid_provenance ):
         with DBCon() as con:
             con.execute_nofetch( "DELETE FROM diaobject WHERE id=%(id)s", { 'id': objid } )
             con.commit()
+
+@pytest.fixture( scope="module" )
+def sim_image_and_segmap( stupid_provenance ):
+    base_image_path = pathlib.Path( Config.get().value( 'system.paths.images' ) )
+    base_segmap_path = pathlib.Path( Config.get().value( 'system.paths.segmaps' ) )
+    imageid = uuid.uuid4()
+    segmapid = uuid.uuid4()
+
+    fnamebase = 'sim_image_and_segmap'
+    fname = f'{fnamebase}_60030.0'
+    fullbase = base_image_path / fname
+    fullbase.parent.mkdir( parents=True, exist_ok=True )
+    base_segmap_path.mkdir( parents=True, exist_ok=True )
+
+    try:
+        kwargs = {
+            "seed": 64738,
+            "star_center": (120.0, -13.0),
+            "star_sky_radius": 20.,
+            "alpha": 1.0,
+            "nstars": 50,
+            "psf_class": "gaussian",
+            "psf_kwargs": ["sigmax=1.0", "sigmay=1.0", "theta=0."],
+            "basename": str( base_image_path / fnamebase ),
+            "width": 256,
+            "height": 256,
+            "pixscale": 0.11,
+            "mjds": [60030.0],
+            "image_centers": [120.0, -13.0],
+            "image_rotations": [0.0],
+            "zeropoints": [33.0],
+            "sky_noise_rms": [100.0],
+            "sky_level": [0.0],
+            "transient_peak_mag": 21.0,
+            "transient_peak_mjd": 60030.0,
+            "transient_start_mjd": 60010.0,
+            "transient_end_mjd": 60060.0,
+            "transient_ra": 120.0,
+            "transient_dec": -13.0,
+            "numprocs": 1,
+        }
+        sim = ImageSimulator( **kwargs )
+        sim()
+
+        import pdb; pdb.set_trace()
+
+        image = FITSImageStdHeaders( base_image_path / fname, std_imagenames=True )
+
+        wcs = image.get_wcs()
+        ra00, dec00 = wcs.pixel_to_world( 0, 0 )
+        ra10, dec10 = wcs.pixel_to_world( 255, 0 )
+        ra01, dec01 = wcs.pixel_to_world( 0, 255 )
+        ra11, dec11 = wcs.pixel_to_world( 255, 0 )
+
+        with DBCon() as dbcon:
+            dbcon.execute( "INSERT INTO l2image(id,provenance_id, pointing, sca, band, ra, dec, "
+                           "  ra_corner_00, ra_corner_01, ra_corner_10, ra_corner_11, "
+                           "  dec_corner_00, dec_corner_01, dec_corner_10, dec_corner_11, "
+                           "  filepath, width, height, format, mjd, exptime) "
+                           "VALUES(%(id)s, %(provid)s, %(point)s, %(sca)s, %(band)s, %(ra)s, %(dec)s, "
+                           "       %(ra00)s, %(ra01)s, %(ra10)s, %(ra11)s, %(dec00)s, %(dec01)s, %(dec10)s, %(dec11)s, "
+                           "       %(path)s, %(w)s, %(h)s, %(format)s, %(mjd)s, %(texp)s)",
+                           { 'id': imageid,
+                             'provid': stupid_provenance,
+                             'point': 0,
+                             'sca': 1,
+                             'band': 'R062',
+                             'ra': 120.,
+                             'dec': -13.,
+                             'ra00': ra00,
+                             'ra01': ra01,
+                             'ra10': ra10,
+                             'ra11': ra11,
+                             'dec00': dec00,
+                             'dec01': dec01,
+                             'dec10': dec10,
+                             'dec11': dec11,
+                             'path': str( fname ),
+                             'w': 256,
+                             'h': 256,
+                             'format': 1,
+                             'mjd': 60030.,
+                             'texp': 60.
+                            } )
+            dbcon.commit()
+
+        args = [ 'sextractor', f'{fullbase}_image.fits',
+                 '-WEIGHT_TYPE', 'MAP_RMS',
+                 '-WEIGHT_IMAGE', f'{fullbase}_noise.fits',
+                 '-RESCALE_WEIGHTS', 'N',
+                 '-WEIGHT_GAIN', 'N',
+                 '-GAIN', '1.0',
+                 '-PIXEL_SCALE', '0.0',
+                 '-SEEING_FWHM', '2.35',
+                 '-CATALOG_NAME', '/tmp/cat',
+                 '-BACK_TYPE', 'MANUAL',
+                 '-BACK_VALUE', '0.0',
+                 '-CHECKIMAGE_TYPE', 'SEGMENTATION',
+                 '-CHECKIMAGE_NAME', f'{fullbase}_segmap.fits',
+                 '-PARAMETERS_NAME', '/usr/share/source-extractor/default.param',
+                 '-FILTER', 'Y',
+                 '-FILTER_NAME', '/usr/share/source-extractor/default.conv',
+                 '-STARNNW_NAME', '/usr/share/source-extractor/default.nnw'
+                ]
+        res = subprocess.run( args, capture_output=True )
+        if res.returncode:
+            raise RuntimeError( res.stderr.decode("utf-8") )
+
+    finally:
+        for which in [ 'image', 'noise', 'flags', 'segmap' ]:
+            ( base_image_path / f'{fname}_{which}.fits' ).unlink( missing_ok=True )
+        pathlib.Path( '/tmp/cat' ).unlink( missing_ok=True )
+
+        with DBCon() as dbcon:
+            dbcon.execute( "DELETE FROM l2image WHERE id=%(id)s", { 'id': imageid } )
+            dbcon.commit()

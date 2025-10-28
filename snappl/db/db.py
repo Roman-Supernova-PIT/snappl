@@ -1076,6 +1076,14 @@ class SummedImage( DBBase ):
 
 # ======================================================================
 
+class SegMap( DBBase ):
+    __tablename__ = "segmap"
+    _tablemeta = None
+    _pk = [ 'id' ]
+
+
+# ======================================================================
+
 class Lightcurve( DBBase ):
     __tablename__ = "lightcurve"
     _tablemeta = None
