@@ -124,7 +124,7 @@ def main():
     SNLogger.info( "Creating shapely polygons of image footprints...." )
     polys = get_rects()
     SNLogger.info( f"...have {len(polys)} polygons." )
-    
+
     # First, collect all the parquet files
 
     def find_pqfiles( direc ):
