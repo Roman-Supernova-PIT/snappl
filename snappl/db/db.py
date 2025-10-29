@@ -13,6 +13,7 @@ from contextlib import contextmanager
 
 import numpy as np
 import psycopg
+from psycopg import sql
 
 from snappl.config import Config
 from snappl.logger import SNLogger
@@ -266,7 +267,8 @@ class DBCon:
 
         """
         if self.echoqueries and not silent:
-            SNLogger.debug( f"Sending query\n{q}\nwith substitutions: {subdict}" )
+            qprint = q.as_string() if isinstance( q, sql.Composable ) else q
+            SNLogger.debug( f"Sending query\n{qprint}\nwith substitutions: {subdict}" )
 
         if self.alwaysexplain and not silent:
             self.cursor.execute( f"EXPLAIN {q}", subdict )
@@ -1070,6 +1072,14 @@ class L2Image( DBBase ):
 
 class SummedImage( DBBase ):
     __tablename__ = "summed_image"
+    _tablemeta = None
+    _pk = [ 'id' ]
+
+
+# ======================================================================
+
+class SegMap( DBBase ):
+    __tablename__ = "segmap"
     _tablemeta = None
     _pk = [ 'id' ]
 

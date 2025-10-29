@@ -145,6 +145,14 @@ However, we recommend against that.  While 4500 is perhaps not an overwhelming n
 Finding Objects
 ===============
 
+You may just be given an diaobject id.  In that case, all you have to do is::
+
+  from snappl.diaobject import DiaObject
+
+  obj = DiaObject.get_object( diaobject_id=<id> )
+
+where ``<id>`` is the diaobject id you were given.  ``obj`` will be a ``DiaObject`` object.
+
 There is also an interface that lets you find objects.  For instance, if you want to find all objects within 100 arcseconds of a given location, you could run::
 
   from snappl.diaobject import DiaObject
@@ -158,7 +166,7 @@ Here, you can use ``ou2024`` for ``TAG`` and ``load_ou2024_diaobject`` for ``PRO
 Getting Better Object Positions
 ===============================
 
-``DiaObject.find_objects`` will return a list of ``DiaObject`` objects, and these include properties ``ra`` and ``dec``.  **However, the positions in the DiaObject object should be viewed as approximate.**  They will be the position it had when the object was first discovered.  For objects loaded from truth tables, they will be perfect, but of course we won't have truth tables for the real survey.  Often, the first discovery will be a relatively low S/N point, and much better positions can be determined; doing so will be one of the jobs of ``phrosty``.
+The ``DiaObject`` you got from ``DiaObject.get_object`` or ``DiaObject.find_object`` include properties ``ra`` and ``dec``.  **However, the positions in the DiaObject object should be viewed as approximate.**  They will be the position it had when the object was first discovered.  For objects loaded from truth tables, they will be perfect, but of course we won't have truth tables for the real survey.  Often, the first discovery will be a relatively low S/N point, and much better positions can be determined; doing so will be one of the jobs of ``phrosty``.
 
 To get an improved position for an object, assume you have the object in the variable ``diaobj``.  You can then call::
 
@@ -202,6 +210,14 @@ To get the lightcurves::
 That will return a list of lightcurves.  If you also specify ``band=<band>``, that will be a 1-element list with the lightcurve just for that band.  (Or a 0-element list if it's not found.)
 
 Each element of the list will be a ``Lightcurve`` object.  You can find the actual lightcurve data in the ``.lightcurve`` property as an astropy QTable.  You can find the metadata dictionary either in the ``.lightcurve.meta`` or in the ``.meta`` property (though the latter will intially be ``None`` until you access the ``.lightcurve`` property).  Guaranteed metadata can be found in the `lightcurve schema specification on the PIT wiki <https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve>`_.  You should probably ignore the ``filepath`` in the metadata, because ``snappl`` has already read the file for you (and put it in the ``.lightcurve`` property).
+
+
+Finding Segmentation Maps
+=========================
+
+You will need to ``from snappl.segmap import SegmentationMap`` and then call ``SegmentationMap.find_segmaps``.  You need to pass a provenance tag and a process to ``find_segmaps``; you will be given these (see :ref:`nov2025-provtags`).  Beyond that, look at the docstring for that function to see what you can search on.
+
+You will get back a list of ``SegmentationMap`` objects.  A ``SegmentationMap`` object has several attributes, including ``band``, and eight attributes ``ra_corner_00``, ``dec_corner_00``, etc., where ``00`` is the lower-left pixel, ``01`` upper-left pixel, ``10`` is the lower-right pixel, and ``11`` is the upper-right pixel.  The most important field is ``.image``.  This is a ``snappl.image.Image`` object.  You can get the 2d numpy array of the image data of the segmentaton map from the ``.data`` property of the ``Image`` object.
 
 
 .. _nov2025-making-prov:

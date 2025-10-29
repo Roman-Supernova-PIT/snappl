@@ -363,6 +363,16 @@ class DiaObject:
                     multiple_ok=False, dbclient=None ):
         """Get a DiaObject. from the database.
 
+        RECOMMENDATION: only call this when you know the diaobject_id.
+        In that case, pass the diaobject_id, optionally pass a dbclient,
+        and optionally pass either provenance, or provenance_tag and
+        process.  If you pass provenance info, this function will verify
+        that the object you asked for is in that provenance; if you
+        don't, it will just return the object you asked for.
+
+        While you can use the name= and iauname= parameters, I recommend
+        you don't use this function.  Instead, use find_objects.
+
         Specify the object with exactly one of:
           * diaobject_id
           * name
@@ -622,6 +632,10 @@ class DiaObject:
             return prov._find_objects( **kwargs )
 
         # Otherwise, we know we're dealing with the database
+
+        # Do the radius default
+        if ( 'ra' in kwargs ) and ( 'radius' not in kwargs ):
+            kwargs['radius'] = 1.0
 
         dbclient = SNPITDBClient() if dbclient is None else dbclient
         res = dbclient.send( f"finddiaobjects/{prov.id}", kwargs )
