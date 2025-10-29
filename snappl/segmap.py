@@ -21,7 +21,8 @@ class SegmentationMap:
 
     def __init__( self, id=None, provenance_id=None, format=None, filepath=None, l2image_id=None ):
         self.id = asUUID(id) if id is not None else uuid.uuid4()
-        self.provenance_id = provenance_id if provenance_id is not None else None
+        self.provenance_id = ( provenance_id.id if isinstance( provenance_id, Provenance)
+                               else asUUID(provenance_id) if provenance_id is not None else None )
         self.filepath = pathlib.Path(filepath) if filepath is not None else None
         self.format = int(format) if format is not None else None
         self.l2image_id = asUUID(l2image_id) if l2image_id is not None else None
@@ -119,9 +120,9 @@ class SegmentationMap:
     def find_segmaps( cls, provenance=None, provenance_tag=None, process=None, dbclient=None, **kwargs ):
         """Find segmentation maps.
 
-        Paramaeters
-        -----------
-          provenance : Provenance, UUID, or str, default NOne
+        Parameters
+        ----------
+          provenance : Provenance, UUID, or str, default None
             The Provenacne, or the id of the Provenance, to search.
             Must specify either this, or both of provenance_tag and
             process.
@@ -140,10 +141,19 @@ class SegmentationMap:
 
           ra_min, ra_max, dec_min, dec_max: float, default None
             If any of these are given, will limit images to things that
-            fall within the relevant range.  WARNING : ra ranges
-            crossing 0 are not yet properly implemented.  It probably
-            doesn't make sense to include any of these alongside
-            (ra, dec).
+            fall within the relevant range.  It probably doesn't make
+            sense to include any of these alongside (ra, dec).
+
+            NOTE: this refers the the centra ra of the segmentation map;
+            it does not consider the corners.  If you really want to be
+            anal, you could include 16 parameters, ra_corner_00_min,
+            ra_corner_00_max, etc.  Be aware, however, that corner_00
+            refers to the lower-left of the image (i.e. pixel 0,0),
+            which depending on rotation will *not* be an extremum of ra
+            and dec.
+
+            WARNING : ra ranges crossing 0 are not yet properly
+            implemented.
 
           band : str, default None
             If given, only include segmentation maps that go with this band.
@@ -158,11 +168,11 @@ class SegmentationMap:
 
         """
         if provenance is not None:
-            params = { 'provenance_id': provenance.id if isinstance(provenance, Provenance) else asUUID( provenance ) }
+            params = { 'provenance': provenance.id if isinstance(provenance, Provenance) else asUUID( provenance ) }
         else:
             if ( provenance_tag is None ) or ( process is None ):
                 raise ValueError( "Must specify either provenance, or both of provenance_tag and process" )
-            params = { 'provenace_tag': str(provenance_tag),
+            params = { 'provenance_tag': str(provenance_tag),
                        'process': str(process)
                       }
 

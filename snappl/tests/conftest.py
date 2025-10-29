@@ -426,14 +426,18 @@ def stupid_provenance():
     try:
         with DBCon() as con:
             provid = uuid.uuid4()
-            con.execute_nofetch( "INSERT INTO provenance(id,environment,env_major,env_minor,"
-                                 "process,major,minor) VALUES (%(provid)s,0,0,0,'foo',0,0)",
-                                 { 'provid': provid } )
+            con.execute( "INSERT INTO provenance(id, environment, env_major, env_minor,"
+                         "  process, major, minor) VALUES (%(provid)s, 0, 0, 0, 'foo', 0, 0)",
+                         { 'provid': provid } )
+            con.execute( "INSERT INTO provenance_tag(tag, process, provenance_id) "
+                         "VALUES(%(tag)s, %(proc)s, %(provid)s)",
+                         { 'tag': 'stupid_provenance_tag', 'proc': 'foo', 'provid': provid } )
             con.commit()
             yield provid
     finally:
         with DBCon() as con:
-            con.execute_nofetch( "DELETE FROM provenance WHERE id=%(id)s", { 'id': provid } )
+            con.execute( "DELETE FROM provenance_tag WHERE provenance_id=%(id)s", { 'id': provid } )
+            con.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': provid } )
             con.commit()
 
 
@@ -469,6 +473,11 @@ def sim_image_and_segmap( stupid_provenance, dbclient ):
     segmappath = f'{fname}_segmap.fits'
     fullsegmappath = base_segmap_path / segmappath
 
+    # We really need to make a cheesy sampling gaussian PSF and make
+    #   that an option for the image simulator.  That would be plenty
+    #   good enough for this test, and much faster than using the
+    #   integrating gaussian PSF it uses right now.  (For photometry
+    #   tests, you really want to use the integrating PSF.)
     try:
         kwargs = {
             "seed": 64738,
@@ -500,6 +509,7 @@ def sim_image_and_segmap( stupid_provenance, dbclient ):
         sim()
 
         image = FITSImageStdHeaders( base_image_path / fname, std_imagenames=True )
+        image.id = imageid
 
         wcs = image.get_wcs()
         ra00, dec00 = wcs.pixel_to_world( 0, 0 )
@@ -568,8 +578,9 @@ def sim_image_and_segmap( stupid_provenance, dbclient ):
         yield image, segmap
 
     finally:
-        for which in [ 'image', 'noise', 'flags', 'segmap' ]:
+        for which in [ 'image', 'noise', 'flags' ]:
             ( base_image_path / f'{fname}_{which}.fits' ).unlink( missing_ok=True )
+        fullsegmappath.unlink( missing_ok=True )
         pathlib.Path( '/tmp/cat' ).unlink( missing_ok=True )
 
         with DBCon() as dbcon:
