@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.diaobject &#8212; roman_snpit_snappl 0.1.dev1+g8b631da64 documentation</title>
+    <title>snappl.diaobject &#8212; roman_snpit_snappl 0.1.dev1+g7a9941597 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=5f586c8b"></script>
+    <script src="../../_static/documentation_options.js?v=54dac7c5"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -468,6 +468,16 @@
                     <span class="n">multiple_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a DiaObject. from the database.</span>
 
+<span class="sd">        RECOMMENDATION: only call this when you know the diaobject_id.</span>
+<span class="sd">        In that case, pass the diaobject_id, optionally pass a dbclient,</span>
+<span class="sd">        and optionally pass either provenance, or provenance_tag and</span>
+<span class="sd">        process.  If you pass provenance info, this function will verify</span>
+<span class="sd">        that the object you asked for is in that provenance; if you</span>
+<span class="sd">        don&#39;t, it will just return the object you asked for.</span>
+
+<span class="sd">        While you can use the name= and iauname= parameters, I recommend</span>
+<span class="sd">        you don&#39;t use this function.  Instead, use find_objects.</span>
+
 <span class="sd">        Specify the object with exactly one of:</span>
 <span class="sd">          * diaobject_id</span>
 <span class="sd">          * name</span>
@@ -730,6 +740,10 @@
             <span class="k">return</span> <span class="n">prov</span><span class="o">.</span><span class="n">_find_objects</span><span class="p">(</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
 
         <span class="c1"># Otherwise, we know we&#39;re dealing with the database</span>
+
+        <span class="c1"># Do the radius default</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="s1">&#39;ra&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="s1">&#39;radius&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="p">):</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
 
         <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
         <span class="n">res</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;finddiaobjects/</span><span class="si">{</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">kwargs</span> <span class="p">)</span>
