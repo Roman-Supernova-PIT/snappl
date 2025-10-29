@@ -14,7 +14,7 @@ from snappl.utils import SNPITJsonEncoder
 import snappl.db.db
 
 
-def load_snana_ou2024_diaobject( provid, polys, pqf, logevery=10000, dbcon=None ):
+def load_snana_ou2024_diaobject( provid, polys, pqf, logevery=100, dbcon=None ):
     match = re.search( r'^snana_([0-9]+)\.parquet$', pqf.name )
     if match is None:
         raise ValueError( f"Failed to parse filename {match}" )
@@ -30,8 +30,12 @@ def load_snana_ou2024_diaobject( provid, polys, pqf, logevery=10000, dbcon=None 
         params = { k: v for k, v in zip( row.model_param_names, row.model_param_values ) }
 
         included = False
-        for poly in polys:
+        for polydex, poly in enumerate( polys ):
+            # if polydex % 500 == 0:
+            #     SNLogger.info( f"...evaluating polygon {polydex} of {len(polys)}" )
             if poly.contains( shapely.Point( row.ra, row.dec ) ):
+                # import random
+                # import remote_pdb; remote_pdb.RemotePdb('127.0.0.1', random.randint(4000,60000) ).set_trace()
                 included = True
                 break
 
@@ -88,7 +92,7 @@ def get_rects( dbcon=None ):
     with snappl.db.db.DBCon( dictcursor=True ) as dbcon:
         rows = dbcon.execute( "SELECT ra_corner_00, ra_corner_01, ra_corner_10, ra_corner_11,"
                               "  dec_corner_00, dec_corner_01, dec_corner_10, dec_corner_11 "
-                              "FROM l2images" )
+                              "FROM l2image" )
     polys = []
     for row in rows:
         polys.append( shapely.Polygon( ( (row['ra_corner_00'], row['dec_corner_00']),
@@ -117,9 +121,10 @@ def main():
             raise ValueError( "Invalid provenance {args.provid}" )
         SNLogger.info( f"Loading provenance for process {rows[0]['process']} {rows[0]['major']}.{rows[0]['minor']}" )
 
-    SNLogger.info( "Creating shapely polygons of image footprints" )
+    SNLogger.info( "Creating shapely polygons of image footprints...." )
     polys = get_rects()
-
+    SNLogger.info( f"...have {len(polys)} polygons." )
+    
     # First, collect all the parquet files
 
     def find_pqfiles( direc ):
@@ -160,13 +165,17 @@ def main():
         SNLogger.error( f"Subprocess returned error: {e}" )
         errors.append( e )
 
-    do_load = functools.partial( load_snana_ou2024_diaobject, [ args.provid, polys ] )
+    do_load = functools.partial( load_snana_ou2024_diaobject, args.provid, polys )
 
-    with multiprocessing.Pool( args.nprocs ) as pool:
+    if args.nprocs > 1:
+        with multiprocessing.Pool( args.nprocs ) as pool:
+            for pqf in pqfiles:
+                pool.apply_async( do_load, [ pqf ], callback=add_to_did, error_callback=omg )
+            pool.close()
+            pool.join()
+    else:
         for pqf in pqfiles:
-            pool.apply_async( do_load, [ pqf ], callback=add_to_did, error_callback=omg )
-        pool.close()
-        pool.join()
+            add_to_did( do_load( pqf ) )
 
     if len(errors) > 0:
         nl = '\n'
