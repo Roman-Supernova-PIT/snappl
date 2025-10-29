@@ -7,12 +7,17 @@ import simplejson
 
 from snappl.dbclient import SNPITDBClient
 from snappl.config import Config
-from snappl.image import OpenUniverse2024FITSImage
+from snappl.image import OpenUniverse2024FITSImage, FITSImageStdHeaders
 from snappl.provenance import Provenance
 from snappl.utils import SNPITJsonEncoder, asUUID
 
+
 class SegmentationMap:
     """Encapsulate a single segmentation map."""
+
+    image_format_to_class = { 1: OpenUniverse2024FITSImage,
+                              2: FITSImageStdHeaders
+                             }
 
     def __init__( self, id=None, provenance_id=None, format=None, filepath=None, l2image_id=None ):
         self.id = asUUID(id) if id is not None else uuid.uuid4()
@@ -32,7 +37,7 @@ class SegmentationMap:
                 setattr( self, f'{which}_corner_{corner}', None )
 
         self.base_path = pathlib.Path( Config.get().value( 'system.paths.segmaps' ) )
-        
+
 
     def _load_image( self ):
         if self.image is not None:
@@ -40,10 +45,10 @@ class SegmentationMap:
 
         if self.filepath is None:
             raise ValueError( "Can't load image when filepath is None." )
-        fullpath = self.base_path / filepath
+        fullpath = self.base_path / self.filepath
 
-        if self.format == 1:
-            self.image = OpenUniverse2024FITSImage( fullpath, imagehdu=0, noisehdu=None, flagshdu=None )
+        if self.format in ( 1, 2 ):
+            self.image = self.image_format_to_class[self.format]( fullpath, imagehdu=0, noisehdu=None, flagshdu=None )
         else:
             raise ValueError( f"Unknown format {self.format}" )
 
@@ -57,7 +62,7 @@ class SegmentationMap:
         self.ra_corner_10, self.dec_corner_10 = wcs.pixel_to_world( self.width-1, 0. )
         self.ra_corner_11, self.dec_corner_11 = wcs.pixel_to_world( self.width-1, self.height-1 )
 
-    def save_to_db( self, dbclinet=None ):
+    def save_to_db( self, dbclient=None ):
         self._load_image()
         params = { 'id': self.id,
                    'provenance_id': self.provenance_id,
@@ -79,9 +84,9 @@ class SegmentationMap:
                    'l2image_id': self.l2image_id
                   }
         postdata = simplejson.dumps( params, cls=SNPITJsonEncoder )
-        
+
         dbclient = SNPITDBClient() if dbclient is None else dbclient
-        
+
         return dbclient.send( "savesegmap", data=postdata, headers={'Content-Type': 'application/json'} )
 
     @classmethod
@@ -106,7 +111,7 @@ class SegmentationMap:
     def get_by_id( cls, segmap_id, dbclient=None ):
         dbclient = SNPITDBClient() if dbclient is None else dbclient
         res = dbclient.send( f"getsegmap/{segmap_id}" )
-        if not isisntance( res, dict ):
+        if not isinstance( res, dict ):
             raise TypeError( f"Expected a dict from web server, got a {type(res)}" )
         return cls._segmap_from_dbreturn( res )
 
@@ -150,27 +155,20 @@ class SegmentationMap:
         Returns
         -------
           list of SegmentationMap
-        
+
         """
         if provenance is not None:
             params = { 'provenance_id': provenance.id if isinstance(provenance, Provenance) else asUUID( provenance ) }
         else:
-            if ( provenanance_tag is None ) or ( process is None ):
+            if ( provenance_tag is None ) or ( process is None ):
                 raise ValueError( "Must specify either provenance, or both of provenance_tag and process" )
             params = { 'provenace_tag': str(provenance_tag),
                        'process': str(process)
                       }
 
         params.update( kwargs )
-        dbclient = SNPITDBClient() if dbclient is None else dbclent
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
         postdata = simplejson.dumps( params, cls=SNPITJsonEncoder )
         res = dbclient.send( "findsegmaps", data=postdata, headers={'Content-Type': 'application/json'} )
 
         return [ cls._segmap_from_dbreturn(r) for r in res ]
-        
-        
-    
-
-                   
-                   
-        

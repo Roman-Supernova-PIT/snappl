@@ -572,6 +572,31 @@ class FindL2Images( BaseView ):
 
 # ======================================================================
 
+class SaveSegmentationMap( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected segmeap info in json POST< didn't get any.", 500
+
+        needed_keys = { 'id', 'provenance_id', 'band', 'ra', 'dec', 'filepath', 'format' }
+        for which in [ 'ra', 'dec' ]:
+            for corner in [ '00', '01', '10', '11' ]:
+                needed_keys.add( f"{which}_corner_{corner}" )
+        allowed_keys = { 'width', 'height', 'l2image_id' }.union( needed_keys )
+        data = self.check_json_keys( needed_keys, allowed_keys )
+
+        keysql, subs = self.build_sql_insert( data.keys() )
+        q = sql.SQL( "INSERT INTO segmap(" ) + keysql + sql.SQL( ") VALUES (" ) + sql.SQL( subs ) + sql.SQL( ")" )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            dbcon.execute( q, data )
+            row = dbcon.execute( "SELECT * FROM segmap WHERE id=%(id)s", {'id': data['id']} )
+            dbcon.commit()
+
+        return row
+
+
+# ======================================================================
+
 class SaveLightcurve( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
@@ -676,6 +701,8 @@ urls = {
 
     "/getl2image/<imageid>": GetL2Image,
     "/findl2images/<provid>": FindL2Images,
+
+    "/savesegmap": SaveSegmentationMap,
 
     "/savelightcurve": SaveLightcurve,
     "/getlightcurve/<ltcvid>": GetLightcurve,

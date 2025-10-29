@@ -17,6 +17,7 @@ from snappl.image import FITSImage, FITSImageStdHeaders, RomanDatamodelImage
 from snappl.image_simulator import ImageSimulator
 from snappl.diaobject import DiaObject
 from snappl.lightcurve import Lightcurve
+from snappl.segmap import SegmentationMap
 from snappl.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
 from snappl.admin.load_ou2024_l2images import OU2024_L2image_loader
 from snappl.config import Config
@@ -452,8 +453,9 @@ def stupid_object( stupid_provenance ):
             con.execute_nofetch( "DELETE FROM diaobject WHERE id=%(id)s", { 'id': objid } )
             con.commit()
 
+
 @pytest.fixture( scope="module" )
-def sim_image_and_segmap( stupid_provenance ):
+def sim_image_and_segmap( stupid_provenance, dbclient ):
     base_image_path = pathlib.Path( Config.get().value( 'system.paths.images' ) )
     base_segmap_path = pathlib.Path( Config.get().value( 'system.paths.segmaps' ) )
     imageid = uuid.uuid4()
@@ -464,6 +466,8 @@ def sim_image_and_segmap( stupid_provenance ):
     fullbase = base_image_path / fname
     fullbase.parent.mkdir( parents=True, exist_ok=True )
     base_segmap_path.mkdir( parents=True, exist_ok=True )
+    segmappath = f'{fname}_segmap.fits'
+    fullsegmappath = base_segmap_path / segmappath
 
     try:
         kwargs = {
@@ -494,8 +498,6 @@ def sim_image_and_segmap( stupid_provenance ):
         }
         sim = ImageSimulator( **kwargs )
         sim()
-
-        import pdb; pdb.set_trace()
 
         image = FITSImageStdHeaders( base_image_path / fname, std_imagenames=True )
 
@@ -549,8 +551,8 @@ def sim_image_and_segmap( stupid_provenance ):
                  '-BACK_TYPE', 'MANUAL',
                  '-BACK_VALUE', '0.0',
                  '-CHECKIMAGE_TYPE', 'SEGMENTATION',
-                 '-CHECKIMAGE_NAME', f'{fullbase}_segmap.fits',
-                 '-PARAMETERS_NAME', '/usr/share/source-extractor/default.param',
+                 '-CHECKIMAGE_NAME', str( fullsegmappath ),
+                 '-PARAMETERS_NAME', '/home/snappl/snappl/tests/default.param',
                  '-FILTER', 'Y',
                  '-FILTER_NAME', '/usr/share/source-extractor/default.conv',
                  '-STARNNW_NAME', '/usr/share/source-extractor/default.nnw'
@@ -559,11 +561,18 @@ def sim_image_and_segmap( stupid_provenance ):
         if res.returncode:
             raise RuntimeError( res.stderr.decode("utf-8") )
 
+        segmap = SegmentationMap( id=segmapid, provenance_id=stupid_provenance, format=2,
+                                  filepath=segmappath, l2image_id=imageid )
+        segmap.save_to_db( dbclient=dbclient )
+
+        yield image, segmap
+
     finally:
         for which in [ 'image', 'noise', 'flags', 'segmap' ]:
             ( base_image_path / f'{fname}_{which}.fits' ).unlink( missing_ok=True )
         pathlib.Path( '/tmp/cat' ).unlink( missing_ok=True )
 
         with DBCon() as dbcon:
+            dbcon.execute( "DELETE FROM segmap WHERE id=%(id)s", { 'id': segmapid } )
             dbcon.execute( "DELETE FROM l2image WHERE id=%(id)s", { 'id': imageid } )
             dbcon.commit()

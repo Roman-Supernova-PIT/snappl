@@ -3,6 +3,7 @@ import simplejson
 
 import flask
 import flask.views
+from psycopg import sql
 
 from snappl.db.db import DB
 from snappl.logger import SNLogger
@@ -23,7 +24,7 @@ class BaseView( flask.views.View ):
     it the web server will send to the client text/plain with status
     200.  If it's a tuple, just let Flask deal with that tuple to figure
     out what the web server should send to the client.  Otherwise, the
-    web server will sendn to the client application/octet-stream with
+    web server will send to the client application/octet-stream with
     status 200.
 
     Subclasses that do not override dispatch_request do not need to call
@@ -36,6 +37,35 @@ class BaseView( flask.views.View ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
+
+
+    def check_json_keys( self, needed_keys, allowed_keys ):
+        if not flask.request.is_json:
+            raise RuntimeError( "Expected json POST data, didn't get any." )
+        data = flask.request.json
+        passed_keys = set( data.keys() )
+        if not needed_keys.issubset( passed_keys ):
+            raise RuntimeError( "Missing required keys: {needed_keys - passed_keys}" )
+        if not passed_keys.issubset( allowed_keys ):
+            raise RuntimeError( "Unknown keys: {passed_keys - allowed_keys}" )
+        return data
+
+
+    # Warning : only call this next one if you've made sure that there is no SQL injection in keys!
+    def build_sql_insert( self, keys ):
+        keysql = None
+        subs = None
+        for key in keys:
+            if keysql is None:
+                keysql = sql.SQL( "{key}" ).format( key=sql.Identifier( key ) )
+            else:
+                keysql += sql.SQL( ", {key}" ).format( key=sql.Identifier( key ) )
+            if subs is None:
+                subs = f"%({key})s"
+            else:
+                subs += f", %({key})s"
+        return keysql, subs
+
 
     def check_auth( self ):
         self.username = flask.session['username'] if 'username' in flask.session else '(None)'
