@@ -27,16 +27,246 @@ November 2025 SNPIT Pipeline Test Primer
 The database connection is under heavy development, and more things are showing up every day.  Right now, the following is available:
 
 * Find image L2 images in the database
+* Find segmentation maps in the database
 * Saving newly discovered DiaObjects to the database
 * Finding DiaObjects
 * Saving updated positions for DiaObjects
-
-I *hope* that we will have saving lightcurves and finding lightcurves also available by the November test.  How much spectrum saving, and how much characterization saving, is implemented will depend on my time and what we get from those working groups.
-
+* Saving lightcurves to the database
+* Finding and reading lightcurves from the database
+  
 This section describes what you need to do in order to connect to the database.
 
 **WARNING**: because everything is under heavy development, it's possible that interfaces will change.  We will try to avoid doing this, because it's a pain when everybody has to adapt, but we're still building this, so it may be inevitable.
 
+Recipes
+=======
+
+Read everything to understand what's going on, but these are intended as a quick start.
+
+These recipes assume you have a working environment (see :ref:`nov2025-working-env`), which hopefully is as simple as ``pip install roman-snpit-snappl``, but see that section for all the details and where you eventually need to be heading.
+
+They also assume you have set up a config file.  If you're on NERSC, *not* running in a container, then use the config file ROB PUT A LINK TO THE RIGHT CONFIG FILE.  If you are running in a container, then ROB PUT IN INSTRUCTIONS.  If you are elsewhere, you will need to edit the config file to have the right paths to find things on your system.
+
+You need to set the environment variable ``SNPIT_CONFIG`` to point to where this configuration file lives.
+
+Finally, once at the top of your code you need to do::
+  
+  from snappl.dbclient import SNPITDBClient
+
+  dbclient = SNPITDBClient()
+
+Most of the recipes below use the ``dbclient`` variable.
+
+  
+.. _recipe-command-line-args:
+
+Command-line Arguments
+----------------------
+
+Below, you will be told you need to know a number of object ids and/or provenance-related values.  These will generally be provided by orchestration.  You should make them things that can be passed on the command line.  I recommend using the following command-line arguments — choose the ones that you need (they are all string values)::
+
+  --diaobject-id
+  --diaobject-provenance-tag
+  --diaobject-process
+  --diaobject-position-provenance-tag
+  --diaobject-position-process
+  --image-id
+  --image-provenance-tag
+  --image-process
+  --segmap-provenance-tag
+  --segmap-process
+  --ltcv-provenance-tag
+  --ltcv-process
+
+
+.. _recipe-find-diaobject:
+
+Finding a DiaObject
+-------------------
+
+You need to know *either* the ``diaobjectd_id`` of the object (which you will generally be given), or you need to know the ``diaobject_provenance_tag`` and ``diaobject_process``, and you must have enough search criteria to find the object.  If you're doing the latter, read the docstring on ``snappl.diaobject.DiaObject.find_objects``.  For the former::
+
+  from snappl.diaobject import DiaObject
+
+  diaobject = DiaObject.get_object( diaobject_id=diaobject_id, dbclient=dbclient )
+
+The returned ``DiaObject`` object has, among other things, properties ``.ra`` and ``.dec``.
+
+
+.. _recipe-diabobject-position:
+
+Getting an updated diaobject position
+-------------------------------------
+
+You need the ``diaobject_position_provenance_tag`` and ``diaobject_position_process``.
+
+Do::
+
+  diaobj_pos = diaobject.get_position( provenance_tag=diaobject_position_provenance_tag,
+                                       process=diaobject_position_process,
+                                       dbclient=dbclient )
+
+You get back a dictionary that has a number of keys including ``ra`` and ``dec``.
+
+   
+
+
+Getting a Specific Image
+------------------------
+
+ROB IMPLEMENT THIS BETTER
+
+Orchestration has given you a ``image_id`` that you are supposed to do something with.  E.g.,, you are running sidecar, and you're supposed to subtract and search this image.  Right now you also need to know the images's ``image_provenance_tag`` and ``image_process``, but that requirement will go away when Rob fixes it::
+
+  from snappl.imagecollection import ImageCollection
+  from snappl.image import Image
+
+  collection = ImageCollection.get_collection( provenance_tag=image_provenance_tag,
+                                               process=image_process, dbclient=dbclient )
+  image = collection.get_image( image_id=image_id, dbclient=dbclient )
+
+You will get back an ``Image`` object.  It has a number of properties.  Most important are ``.data``, ``.noise``, and ``.flags``, which hold 2d numpy arrays.  There is also a ``.get_fits_header()`` method that currently works, **but be careful using this as this method will not work in the future when we're using ASDF files**.  See the docstrings in ``snappl.image.Image`` for more details.  Some of the stuff you might want is available directly as properties of and ``Image`` object.
+                                               
+
+Finding Images
+--------------
+
+You need to know the ``image_provenance_tag`` and ``image_process``.
+
+See the docstring on ``snappl.imagecollection.ImageCollection.find_images`` if you want to do more than what's below.
+
+
+Finding all images that include a ra and dec
+********************************************
+
+Do::
+
+  from snappl.imagecollection import ImageCollection
+
+  collection = ImageCollection.get_collection( provenance_tag=image_provenance_tag,
+                                               process=image_process, dbclient=dbclient )
+  images = collection.find_images( ra=ra, dec=dec, band=band, dbclient=dbclient )
+
+where ``band=band`` is optional but often useful.  You will get back a list of ``Image`` objects, which have a number of properties.  Most important are ``.data``, ``.noise``, and ``.flags``, which hold 2d numpy arrays.  There is also a ``.get_fits_header()`` method that currently works, **but be careful using this as this method will not work in the future when we're using ASDF files**.  See the docstrings in ``snappl.image.Image`` for more details.
+
+Finding Segmentation Maps
+-------------------------
+
+You need to know the ``segmap_provenance_tag`` and the ``segmap_process``.
+
+See the dockstring on ``snappl.segmap.SegmentationMap.find_segmaps`` for more information on searches you can do beyond what's below.
+
+Finding all segmaps that include a ra and dec
+*********************************************
+
+Do::
+
+  from snappl.segmap import SegmentationMap
+
+  segmaps = SegmentationMap.find_segmaps( provenance_tag=segmap_provenance_tag,
+                                          process=segmap_process,
+                                          ra=ra, dec=dec,
+                                          dbclient=dbclient )
+
+You get back a list of ``SegmentationMap`` objects.  These have a number of properties, most import of which is ``image``, which holds an ``Image`` object.  You can get the image data for the segmentation map for the first element of the list with ``segmaps[0].image.data`` (a 2d numpy array).
+
+
+Saving a new DiaObject
+----------------------
+
+You are running sidecar and you've found a new diaobject you want to save.  You need a ``process`` (we shall assume ``process='sidecar'`` here), the ``major`` and ``minor`` version of your code, and the ``params`` that define how the code runs.  The latter is just a dictionary; you can build it yourself, but see :ref:`nov2025-making-prov` below.  Finally, assume that ``images`` is an list that has the ``snappl.image.Image`` objects of the images that you've used; replace ``images[0]`` below with wherever you have your ``Image`` object::
+
+  from snappl.provenance import Provenance
+  from snappl.diaobject import DiaObject
+
+  imageprov = Provenance.get_by_id( images[0].provenance_id, dbclient=dbclient )
+  prov = Provenance( process='sidecar', major=major, minor=minor, params=params,
+                     upstreams=[ imageprov ] )
+  # You only have to do this next line once for a given provenance;
+  #   once the provenance is in the databse, you never need to save it again.
+  prov.save_to_db( tag=diaobject_provenance_tag, dbclient=dbclient )   # See note below
+
+  diaobj = DiaObject( provenance_id=prov.id, ra=ra, dec=dec, name=optional, mjd_discovery=mjd )
+  diaobj.save_object( dbclient=dbclient )
+  
+
+*Note*: right now, you'll get exceptions on the ``prov.save_to_db`` line, but it probaby did work.  There is a snappl issue out for Rob to fix this.
+
+This will save the object to the database.  You can then look at ``diaobj.id`` to see what UUID it was assigned.  You do not need to give it a ``name``, but you can if you want to.  (The database uses the ``id`` as the unique identifier.)  ``mjd_discovery`` should be the MJD of the science image that the object was found on.
+
+Finding and reading lightcurves
+-------------------------------
+
+You need to know the ``ltcv_provenance_tag`` and ``ltcv_process``, and the ``diaobject_id`` of the object for which you want to get lightcurves::
+
+  from snappl.lightcurve import Lightcurve
+
+  ltcvs = Lightcurve.find_lightcurves( provenance_tag=ltcv_provenance_tag,
+                                       process=ltcv_process,
+                                       diaobject=diaobject_id,
+                                       band=band,         # optional
+                                       dbclient=dbclient )
+
+You will get back a list of ``Lightcurve`` objects.  You can find the actual lightcurve data of the first lightcurve from the list with ``ltcvs[0].lightcurve``.  This is an astropy QTable.  You can read the metadata from ``ltcvs[0].lightcurve.meta``.
+
+**Coming soon**: a way to read a combined lightcurve that has all of the bands mixed together.  (Not implemented yet.)
+
+
+Saving lightcurves
+------------------
+
+You need to make sure you've created a dictionary with `all the necessary metadata <https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve>`_.  Also make sure you've created a data table with the necessary columns; this can be an astropy Table, a pandas DataFrame, or a dict of lists.  We shall call these two things ``meta`` and ``data``.
+
+Assume that you've made the lightcurve for object ``diaobject`` (a ``DiaObject`` object), and that you have a list of your images in ``images``.  Adjust below for the variables where you really have things.  Finally, if you used an updated :ref:`DiaObject position <recipe-diaobject-position>`, make sure you have set the ``ra`` and ``dec`` in ``meta`` from that.
+
+Finally, you will need to know the ``ltcv_provenance_tag`` we're using.
+
+Below, ``process`` is probably either ``campari`` or ``phrosty``.  ``major`` and ``minor`` are the major and minor parts of the version, which you should parse from ``campari.__version__`` or ``phrosty.__version__``.  ``params`` are the parameters as described below in :ref:`nov2025-making-prov`.
+
+Do::
+
+  from snappl.provenance import Provenance
+  from snappl.lightcurve import Lightcurve
+
+  imgprov = Provenance.get_by_id( images[0].provenance_id, dbclient=dbclient )
+  objprov = Provenance.get_by_id( diaobject.provenance_id, dbclient=dbclient )
+  objposprov = Provenance.get_by_id( diaobj_pos['provenance_id'] )
+
+  ltcvprov = Provenance( process=process, major=major, minor=minor, params=params,
+                         upstreams=[imgprov, objprov, objposprov], dbclient=dbclient )
+  # The next line only needs to be run once.  Once you've saved it to the database,
+  #   you never need to do this again.
+  ltcvprov.save_to_db( tag=ltcv_provenance_tag )
+
+  meta['provenance_id'] = ltcvprov.id
+  meta['diaobject_id'] = diaobject.id
+  meta['diaobject_position_id'] = diaobj_pos['id']
+  for att in [ 'ra', 'dec', 'ra_err', 'dec_err', 'ra_dec_covar' ]:
+      meta[att] = diaobj_pos[att]
+
+  ltcv = Lightcurve( data=data, meta=meta )
+  ltcv.write()
+  ltcv.save_to_db( dbclient=dbclient )
+
+You can look at ``ltcv.id`` to see the ``UUID`` of the lightcurve you saved, in case you are curious.
+  
+If you used the ``ra`` and ``dec`` that was in ``DiaObject``, then ``meta['diaobject_position_id']`` should be ``None``.  Skip everything else above that refers to ``diaobj_pos``.
+  
+
+
+Finding and reading 1d Spectra
+------------------------------
+
+(Not implemented yet.)
+
+Saving 1d Spectra
+-----------------
+
+(Not implemented yet.)
+
+
+
+.. _nov2025-working-env:
 
 Choose a working environment
 ============================
