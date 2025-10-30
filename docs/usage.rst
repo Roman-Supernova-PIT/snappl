@@ -77,6 +77,8 @@ Below, you will be told you need to know a number of object ids and/or provenanc
   --segmap-process
   --ltcv-provenance-tag
   --ltcv-process
+  --spec1d-provenance-tag
+  --spec1d-process
 
 
 .. _recipe-find-diaobject:
@@ -93,7 +95,7 @@ You need to know *either* the ``diaobjectd_id`` of the object (which you will ge
 The returned ``DiaObject`` object has, among other things, properties ``.ra`` and ``.dec``.
 
 
-.. _recipe-diabobject-position:
+.. _recipe-diaobject-position:
 
 Getting an updated diaobject position
 -------------------------------------
@@ -262,7 +264,46 @@ Finding and reading 1d Spectra
 Saving 1d Spectra
 -----------------
 
-(Not implemented yet.)
+**Warning: this is not implemented yet.  When it is, the process will look *something* like hte following.**
+
+You need to have the ``diaobject`` (a ``DiaObject`` object) for which you made the spectrum, potentially a ``diaobj_pos``, an improved position for the object, and ``images``, a list of ``Image`` object that held the dispersed images from which you are making the spectrum.  You need to know the ``spec1d_provenance_tag``.
+
+You need to know the ``process`` (which is probably just the name of your code), and the ``major`` and ``minor`` versions of your code.  Finally, you need to know the ``params`` that define how your code runs.   The latter is just a dictionary; you can build it yourself, but see :ref:`nov2025-making-prov` below.
+
+You build a data structure that is described on `the wiki <https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/spectrum_1d>`_; call that ``spec_struct``.  Some of lines below make sure that some of this metadata is right.
+
+Do::
+
+  from snappl.provenance import Provenance
+  from snappl.spec1d import Spectrum1d
+
+  diaobj_prov = Provenance.get_by_id( diaobject.provenance_id, dbclient=dbclient )
+  imageprov = Provenance.get_by_id( images[0].provenance_id, dbclient=dbclient )
+  diaobj_pos_prov = Provenance.get_by_id( diaobj_pos['id'], dbclient=dbclient )
+
+  spec1d_prov = Provenance( process=process, major=major, minor=minor, params=params,
+                            upstreams=[ diaobj_prov, imageprov, diaobj_pos_prov ] )
+  # The next line only needs to be run once.  Once
+  #   you have saved a Provenance to the databse you
+  #   never need to save it again
+  spec1d_prov.save_to_db( tag=spec1d_provenance_tag, dbclient-dbclient )
+
+  spec_struct['meta']['provenance_id'] = spec1d_prov.id
+  spec_struct['meta']['diaobject_id'] = diaobject.id
+  spec_struct['meta']['diaobject_position_id'] = diaobj_pos['id']
+  spec_struct['meta']['image_ids'] = [ i.id for i in images ]
+
+  # Make sure that all (but see below) of the other mandatory metadata is there
+
+  spec1d = Spectrum1d( spec_struct )
+  spec1d.write()
+  spec1d.save_to_db( dbclient=dbclient )
+  
+  
+You do *not* need to set ``meta['id']`` or ``meta['filepath']`` yourself; those will be set automatically when you save the sepctrum.
+
+Note that when you create a ``Spectrum1d``, it will keep a *copy* of the ``spec_struct`` object you passed in its ``spec_struct`` property.  It will also modify this object, in particular, setting the ``id`` when the ``Specrtrum1d`` object is constructed, and setting the ``filepath`` when it is saved.
+
 
 
 
