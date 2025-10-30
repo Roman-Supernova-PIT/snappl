@@ -45,7 +45,7 @@ Read everything to understand what's going on, but these are intended as a quick
 
 These recipes assume you have a working environment (see :ref:`nov2025-working-env`), which hopefully is as simple as ``pip install roman-snpit-snappl``, but see that section for all the details and where you eventually need to be heading.
 
-They also assume you have set up a config file.  If you're on NERSC, *not* running in a container, then use the config file ROB PUT A LINK TO THE RIGHT CONFIG FILE.  If you are running in a container, then ROB PUT IN INSTRUCTIONS.  If you are elsewhere, you will need to edit the config file to have the right paths to find things on your system.
+They also assume you have set up a config file.  If you're on NERSC, *not* running in a container, then save `this config file <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_nersc_native_config.yaml>`_.   (this is the file ``nov2025_nersc_native_config.yaml`` from the top level of the ``environment`` roman snpit github archive).  If you are running in a podman container, then look at `this config file <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_container_config.yaml>`_ (this is the file ``nov2025_nersc_container_config.yaml`` from the top level of the ``environment`` roman snpit github archive); you will also need to download `interactive-podman-nov2025.sh <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/interactive-podman-nov2025.sh>`_.   If you are elsewhere, you will need to edit the config file to have the right paths to find things on your system.
 
 You need to set the environment variable ``SNPIT_CONFIG`` to point to where this configuration file lives.
 
