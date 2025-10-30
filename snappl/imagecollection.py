@@ -402,8 +402,12 @@ class ImageCollectionManualFITS:
 # Images that are in the Roman SNPIT Database
 
 class ImageCollectionDB:
-    image_class_dict = { 'ou2024': OpenUniverse2024FITSImage }
-    base_path_dict = { 'ou2024': 'system.ou24.images' }
+    image_class_dict = { 'ou2024': OpenUniverse2024FITSImage,
+                         'ou2024nov2025': OpenUniverse2024FITSImage
+                        }
+    base_path_dict = { 'ou2024': 'system.ou24.images',
+                       'ou2024nov2025': 'system.paths.images'
+                      }
 
     def __init__( self, provenance=None, base_path=None ):
         if provenance is None:
