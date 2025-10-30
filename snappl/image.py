@@ -1264,9 +1264,13 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
                    'R062': 161.025,
                    'Y106': 302.275,
                    'Z087': 101.7 }
-        if self.band not in exptimes:
-            raise ValueError( f"Don't know exptime for band {self.band}" )
-        return exptimes[ self.band ]
+        if self.band in exptimes:
+            return exptimes[ self.band ]
+        else:
+            header = self.get_fits_header()
+            if 'EXPTIME' not in header:
+                raise ValueError( f"Don't know exptime for band {self.band}" )
+            return header[ 'EXPTIME' ]
 
     @property
     def truthpath( self ):

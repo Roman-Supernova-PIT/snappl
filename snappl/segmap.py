@@ -32,16 +32,22 @@ class SegmentationMap:
         self.dec = None
         self.width = None
         self.height = None
-        self.image = None
+        self._image = None
         for which in [ 'ra', 'dec' ]:
             for corner in [ '00', '01', '10', '11' ]:
                 setattr( self, f'{which}_corner_{corner}', None )
 
         self.base_path = pathlib.Path( Config.get().value( 'system.paths.segmaps' ) )
 
+    @property
+    def image( self ):
+        if self._image is None:
+            self._load_image()
+        return self._image
+
 
     def _load_image( self ):
-        if self.image is not None:
+        if self._image is not None:
             return
 
         if self.filepath is None:
@@ -49,14 +55,14 @@ class SegmentationMap:
         fullpath = self.base_path / self.filepath
 
         if self.format in ( 1, 2 ):
-            self.image = self.image_format_to_class[self.format]( fullpath, imagehdu=0, noisehdu=None, flagshdu=None )
+            self._image = self.image_format_to_class[self.format]( fullpath, imagehdu=0, noisehdu=None, flagshdu=None )
         else:
             raise ValueError( f"Unknown format {self.format}" )
 
-        self.width, self.height = self.image.image_shape
-        self.band = self.image.band
+        self.width, self.height = self._image.image_shape
+        self.band = self._image.band
 
-        wcs = self.image.get_wcs()
+        wcs = self._image.get_wcs()
         self.ra, self.dec = wcs.pixel_to_world( self.width/2., self.height/2. )
         self.ra_corner_00, self.dec_corner_00 = wcs.pixel_to_world( 0., 0. )
         self.ra_corner_01, self.dec_corner_01 = wcs.pixel_to_world( 0., self.height-1 )

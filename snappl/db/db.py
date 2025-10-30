@@ -9,6 +9,7 @@
 import collections
 import types
 import uuid
+import time
 from contextlib import contextmanager
 
 import numpy as np
@@ -66,8 +67,17 @@ def get_dbcon():
     """
 
     dbhost, dbport, dbname, dbuser, dbpasswd = get_connect_info()
-    conn = psycopg.connect( dbname=dbname, user=dbuser, password=dbpasswd, host=dbhost, port=dbport )
-    return conn
+    ntries = 5
+    while ntries > 0:
+        try:
+            conn = psycopg.connect( dbname=dbname, user=dbuser, password=dbpasswd, host=dbhost, port=dbport,
+                                    connect_timeout=1 )
+            return conn
+        except Exception as e:
+            ntries -= 1
+            if ntries <= 0:
+                raise e
+            time.sleep( 1 )
 
 
 @contextmanager
