@@ -14,7 +14,7 @@ class TestSegMap( BaseTestDB ):
         self.safe_to_modify = [ 'band', 'ra', 'dec',
                                 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                 'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
-                                'filepath', 'width', 'height', 'format' ]
+                                'filepath', 'width', 'height', 'position_angle', 'format' ]
         self.columns = set( self.safe_to_modify )
         self.columns.update( [ 'id', 'provenance_id', 'l2image_id' ] )
         self.uniques = []
@@ -34,6 +34,7 @@ class TestSegMap( BaseTestDB ):
                             filepath='segmap1',
                             width=1024,
                             height=1024,
+                            position_angle=12.96,
                             format=1,
                             l2image_id=None )
         self.dict1 = { k: getattr( self.obj1, k ) for k in self.columns }
@@ -53,6 +54,7 @@ class TestSegMap( BaseTestDB ):
                             filepath='segmap2',
                             width=1025,
                             height=1025,
+                            position_angle=2.37,
                             format=2,
                             l2image_id=None )
         self.dict2 = { k: getattr( self.obj2, k ) for k in self.columns }
@@ -72,5 +74,6 @@ class TestSegMap( BaseTestDB ):
                        'filepath': 'segmap3',
                        'width': 1026,
                        'height': 1026,
+                       'position_angle': 0.212,
                        'format': 3,
                        'l2image_id': None }

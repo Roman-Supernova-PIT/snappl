@@ -68,6 +68,7 @@ def _parse_fits_file( relpath, base_path=None, provid=None ):
                'filepath': str( relpath ),
                'width': width,
                'height': height,
+               'position_angle': image.position_angle,
                'format': 1,
                'l2image_id': l2image_id
               }
