@@ -1,5 +1,5 @@
-__all__ = [ 'ImageSimulatorPointSource', 'ImageSimulatorStarCollection', 'ImageSimulatorTransient',
-            'ImageSimulatorStaticSource', 'ImageSimulatorImage', 'ImageSimulator' ]
+__all__ = [ 'ImageSimulatorPointSource', 'ImageSimulationStar', 'ImageSimulatorStarCollection',
+            'ImageSimulatorTransient', 'ImageSimulatorStaticSource', 'ImageSimulatorImage', 'ImageSimulator' ]
 
 import re
 import argparse
