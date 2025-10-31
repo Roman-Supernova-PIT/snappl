@@ -1,3 +1,6 @@
+__all__ = [ 'ImageSimulatorPointSource', 'ImageSimulationStar', 'ImageSimulatorStarCollection',
+            'ImageSimulatorTransient', 'ImageSimulatorStaticSource', 'ImageSimulatorImage', 'ImageSimulator' ]
+
 import re
 import argparse
 import functools
@@ -6,8 +9,8 @@ import multiprocessing
 import numpy as np
 import astropy.wcs
 
-from snpit_utils.logger import SNLogger
-from snpit_utils.utils import isSequence
+from snappl.logger import SNLogger
+from snappl.utils import isSequence
 from snappl.psf import PSF
 from snappl.image import FITSImageStdHeaders
 from snappl.wcs import AstropyWCS
