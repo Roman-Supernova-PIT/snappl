@@ -24,6 +24,8 @@ jobs:
         with:
           fetch-depth: 0
       - run: sudo apt-get -y update && sudo apt-get install -y libfftw3-double3
+      - run: sudo ln -s /usr/lib/x86_64-linux-gnu/libfftw3.so.3 /usr/lib/libfftw3.so
+      - run: ls -l /usr/lib/libff*
       - run: pip install .
       - run: pip install towncrier
       - run: towncrier check
