@@ -178,10 +178,7 @@ class Provenance:
 
         dbclient = SNPITDBClient() if dbclient is None else dbclient
         self.update_id()
-        try:
-            savedprov = self.get_by_id( self.id, dbclient=dbclient )
-        except Exception:
-            savedprov = None
+        savedprov = self.get_by_id( self.id, dbclient=dbclient, return_none_if_not_exists=True )
 
         if ( savedprov is None ) and ( exists is not None ) and exists:
             raise RuntimeError( f"Provenance {self.id} doesn't exist in the database, and exists is True; "
@@ -189,7 +186,7 @@ class Provenance:
         if ( savedprov is not None ) and ( exists is not None ) and ( not exists ):
             raise RuntimeError( f"Error saving provenance {self.id}; it already exists in the database." )
 
-        if savedprov is None:
+        if ( savedprov is None ) or ( tag is not None ):
             res = dbclient.send( "createprovenance",
                                  { 'id': str(self.id),
                                    'process': self.process,
@@ -201,6 +198,7 @@ class Provenance:
                                    'params': self.params,
                                    'upstream_ids': [ str(u.id) for u in self.upstreams ],
                                    'tag': tag,
+                                   'exist_ok': True,
                                    'replace_tag': replace_tag } )
             if res['status'] != 'ok':
                 raise RuntimeError( f"Something went wrong saving provenance {self.id} to the databse." )
@@ -283,7 +281,7 @@ class Provenance:
 
 
     @classmethod
-    def get_by_id( cls, provid, dbclient=None ):
+    def get_by_id( cls, provid, dbclient=None, return_none_if_not_exists=False ):
         """Return a Provenance pulled from the database.
 
         Raises an exception if it does not exist.
@@ -297,10 +295,29 @@ class Provenance:
             This is needed to talk to the Roman SNPIT database web
             server.  If not given, will construct one based on config.
 
+          return_none_if_not_exists : bool, default False
+
+        Returns
+        -------
+          Provenance
+
+          If return_none_if_not_exists is True, then None will be
+          returned if the provenance does not exist in the database.  If
+          return_none_if_not_exists is False (the default), then an
+          exception will be raised if the provenance does not exist in
+          the database.
+
         """
 
         dbclient = SNPITDBClient() if dbclient is None else dbclient
-        return cls.parse_provenance( dbclient.send( f"getprovenance/{provid}" ) )
+        rval = dbclient.send( f"getprovenance/{provid}" )
+        if ( 'status' in rval ) and ( rval['status'] == f'No such provenance {provid}' ):
+            if return_none_if_not_exists:
+                return None
+            else:
+                raise ValueError( f"No such provenance {provid}" )
+        else:
+            return cls.parse_provenance( rval )
 
 
 

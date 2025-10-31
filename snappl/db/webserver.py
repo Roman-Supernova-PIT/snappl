@@ -137,7 +137,7 @@ class GetProvenance( BaseProvenance ):
                                           "WHERE t.process=%(process)s AND t.tag=%(tag)s",
                                           { 'process': process, 'tag': provid } )
             if len(rows) == 0:
-                return f"Unknown provenance {provid}{'' if process is None else f' for process {process}'}", 500
+                return { 'status': f'No such provenance {provid}' }
             if len(rows) > 1:
                 return ( f"Database corruption!  More than one provenance {provid}"
                          f"{'' if process is None else f' for process {process}'}!" ), 500
