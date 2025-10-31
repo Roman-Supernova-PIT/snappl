@@ -60,7 +60,7 @@ class Image:
     """
 
     # How close in degrees should the right- and up- calculated position angles match?
-    _close_enough_position_angle = 2
+    _close_enough_position_angle = 3
 
     data_array_list = [ 'all', 'data', 'noise', 'flags' ]
 
@@ -272,10 +272,23 @@ class Image:
             dupdec = updec - middec
             rightang = np.arctan2( -drightdec, drightra ) * 180. / np.pi
             upang = np.arctan2( dupra, dupdec ) * 180 / np.pi
+            # Have to deal with the edge case where they are around -180.
+            if ( ( ( rightang > 0 ) != ( upang > 0 ) )
+                 and
+                 ( np.fabs( np.fabs(rightang) - 180. ) <= self._close_enough_position_angle )
+                 and
+                 ( np.fabs( np.fabs(upang) - 180. ) <= self._close_enough_position_angle )
+                ):
+                if rightang < 0:
+                    rightang += 360.
+                if upang < 0:
+                    upang += 360.
             if np.abs( rightang - upang ) > self._close_enough_position_angle:
-                raise ValueError( f"Calculated position angle of {rightang}° looking to the right "
-                                  f"and {upang} looking up; these are inconsistent!" )
+                raise ValueError( f"Calculated position angle of {rightang:.2f}° looking to the right "
+                                  f"and {upang:.2f}° looking up; these are inconsistent!" )
             self._position_angle = ( rightang + upang ) / 2.
+            if self.position_angle > 180.:
+                self.position_angle -= 360.
         return self._position_angle
 
     @position_angle.setter
