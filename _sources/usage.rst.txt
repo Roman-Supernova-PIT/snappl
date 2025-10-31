@@ -45,7 +45,7 @@ Read everything to understand what's going on, but these are intended as a quick
 
 These recipes assume you have a working environment (see :ref:`nov2025-working-env`), which hopefully is as simple as ``pip install roman-snpit-snappl``, but see that section for all the details and where you eventually need to be heading.
 
-They also assume you have set up a config file.  If you're on NERSC, *not* running in a container, then save `this config file <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_nersc_native_config.yaml>`_.   (this is the file ``nov2025_nersc_native_config.yaml`` from the top level of the ``environment`` roman snpit github archive).  If you are running in a podman container, then look at `this config file <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_container_config.yaml>`_ (this is the file ``nov2025_nersc_container_config.yaml`` from the top level of the ``environment`` roman snpit github archive); you will also need to download `interactive-podman-nov2025.sh <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/interactive-podman-nov2025.sh>`_.   If you are elsewhere, you will need to edit the config file to have the right paths to find things on your system.
+They also assume you have set up a config file.  If you're on NERSC, *not* running in a container, then save `the config file for running natively on NERSC <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_nersc_native_config.yaml>`_.  (This is the file ``nov2025_nersc_native_config.yaml`` from the top level of the ``environment`` roman snpit github archive).  Note that you will need to do two small edits in this file!  If you are running in a podman container, then look at `the in-container config file <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_container_config.yaml>`_. (This is the file ``nov2025_nersc_container_config.yaml`` from the top level of the ``environment`` roman snpit github archive); you will also need to download `interactive-podman-nov2025.sh <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/interactive-podman-nov2025.sh>`_.   If you are elsewhere, you will need to edit the config file to have the right paths to find things on your system.
 
 You need to set the environment variable ``SNPIT_CONFIG`` to point to where this configuration file lives.
 
@@ -60,8 +60,8 @@ Most of the recipes below use the ``dbclient`` variable.
   
 .. _recipe-command-line-args:
 
-Command-line Arguments
-----------------------
+Variables/Arguments for IDs and Provenances
+-------------------------------------------
 
 Below, you will be told you need to know a number of object ids and/or provenance-related values.  These will generally be provided by orchestration.  You should make them things that can be passed on the command line.  I recommend using the following command-line arguments — choose the ones that you need (they are all string values)::
 
@@ -80,6 +80,10 @@ Below, you will be told you need to know a number of object ids and/or provenanc
   --spec1d-provenance-tag
   --spec1d-process
 
+If you just plan to call functions from python, then you can make the things you need keyword arguments.  I recommend using the same names as above, only replacing the dashes with underscores (and removing the two dashes at the beginning).  The examples below all assume that the variables have these names.
+
+For a list of provenance tags we will be using during the November 2025 run, see :ref:`nov2025-provtags`.
+
 
 .. _recipe-find-diaobject:
 
@@ -92,7 +96,7 @@ You need to know *either* the ``diaobjectd_id`` of the object (which you will ge
 
   diaobject = DiaObject.get_object( diaobject_id=diaobject_id, dbclient=dbclient )
 
-The returned ``DiaObject`` object has, among other things, properties ``.ra`` and ``.dec``.
+The returned ``DiaObject`` object has, among other things, properties ``.id``, ``.ra`` and ``.dec``.
 
 
 .. _recipe-diaobject-position:
@@ -156,7 +160,7 @@ Finding Segmentation Maps
 
 You need to know the ``segmap_provenance_tag`` and the ``segmap_process``.
 
-See the dockstring on ``snappl.segmap.SegmentationMap.find_segmaps`` for more information on searches you can do beyond what's below.
+See the docstring on ``snappl.segmap.SegmentationMap.find_segmaps`` for more information on searches you can do beyond what's below.
 
 Finding all segmaps that include a ra and dec
 *********************************************
@@ -185,14 +189,12 @@ You are running sidecar and you've found a new diaobject you want to save.  You 
   prov = Provenance( process='sidecar', major=major, minor=minor, params=params,
                      upstreams=[ imageprov ] )
   # You only have to do this next line once for a given provenance;
-  #   once the provenance is in the databse, you never need to save it again.
+  #   once the provenance is in the database, you never need to save it again.
   prov.save_to_db( tag=diaobject_provenance_tag, dbclient=dbclient )   # See note below
 
   diaobj = DiaObject( provenance_id=prov.id, ra=ra, dec=dec, name=optional, mjd_discovery=mjd )
   diaobj.save_object( dbclient=dbclient )
   
-
-*Note*: right now, you'll get exceptions on the ``prov.save_to_db`` line, but it probaby did work.  There is a snappl issue out for Rob to fix this.
 
 This will save the object to the database.  You can then look at ``diaobj.id`` to see what UUID it was assigned.  You do not need to give it a ``name``, but you can if you want to.  (The database uses the ``id`` as the unique identifier.)  ``mjd_discovery`` should be the MJD of the science image that the object was found on.
 
@@ -264,7 +266,7 @@ Finding and reading 1d Spectra
 Saving 1d Spectra
 -----------------
 
-**Warning: this is not implemented yet.  When it is, the process will look *something* like hte following.**
+**Warning: this is not implemented yet.  When it is, the process will look *something* like the following.**
 
 You need to have the ``diaobject`` (a ``DiaObject`` object) for which you made the spectrum, potentially a ``diaobj_pos``, an improved position for the object, and ``images``, a list of ``Image`` object that held the dispersed images from which you are making the spectrum.  You need to know the ``spec1d_provenance_tag``.
 
@@ -284,7 +286,7 @@ Do::
   spec1d_prov = Provenance( process=process, major=major, minor=minor, params=params,
                             upstreams=[ diaobj_prov, imageprov, diaobj_pos_prov ] )
   # The next line only needs to be run once.  Once
-  #   you have saved a Provenance to the databse you
+  #   you have saved a Provenance to the database you
   #   never need to save it again
   spec1d_prov.save_to_db( tag=spec1d_provenance_tag, dbclient-dbclient )
 
@@ -304,7 +306,7 @@ You do *not* need to set ``meta['id']`` or ``meta['filepath']`` yourself; those 
 
 Note that when you create a ``Spectrum1d``, it will keep a *copy* of the ``spec_struct`` object you passed in its ``spec_struct`` property.  It will also modify this object, in particular, setting the ``id`` when the ``Specrtrum1d`` object is constructed, and setting the ``filepath`` when it is saved.
 
-
+----------------------------
 
 
 .. _nov2025-working-env:
@@ -314,9 +316,7 @@ Choose a working environment
 
 Whatever it is, you will need to ``pip install roman-snpit-snappl``.  *This package is under heavy development, so you will want to update your install often*.  This provides the ``snappl`` modules that you are currently reading the documentation for.
 
-**We strongly recommend you develop your code to run in a container.  The SNPIT will eventually need to run everything it does in containers.**  On your desktop or laptop, you can use Docker.  On NERSC, you can use ``podman-hpc``.  On many other HPC clusters, you can use Singularity.
-
-**WARNING:** The snpit environment does not currently work on ARM architecture machines (because of issues with Galsim and fftw).  This means that if you're on a Mac, you're SOL.  If you're on a Linux machine, do ``uname -a`` and look towards the end of the output to see if you're on ``x86_64`` or ARM.  We hope to resolve this eventually.  For now, as much as possible run on ``x86_64`` machines.
+**We strongly recommend you think ahead towards developing your code to run in a container.  The SNPIT will probably eventually need to run everything it does in containers.**  On your desktop or laptop, you can use Docker.  On NERSC, you can use ``podman-hpc``.  On many other HPC clusters, you can use Singularity.
 
 The SN PIT provides a containerized environment which includes the latest version of snappl at https://github.com/Roman-Supernova-PIT/environment .  You can pull the docker image for this environment from one of:
 
@@ -330,6 +330,8 @@ The SN PIT provides a containerized environment which includes the latest versio
   * ``rknop/roman-snpit-env:cuda-dev``
 
 We recommend you use the ``cpu`` version, unless you need CUDA, in which case try the ``cuda`` version, but you may need the ``cuda-dev`` version (which is terribly bloated).
+
+**WARNING:** The snpit docker environment does not currently work on ARM architecture machines (because of issues with Galsim and fftw).  This means that if you're on a Mac, you're SOL.  If you're on a Linux machine, do ``uname -a`` and look towards the end of the output to see if you're on ``x86_64`` or ARM.  We hope to resolve this eventually.  For now, as much as possible run on ``x86_64`` machines.  (However, reports are that ``pip instasll roman-snpit-snappl`` *does* work on ARM Macs, so the issue may just be we need to figure out how to get the docker images to build for ARM.)
 
 You can, of course, create your own containerized environment for your code to run in, but you will need to support it, and eventually you will need to deliver it for the PIT to run in production.  For that reason, we strongly recommend you start trying to use the standard SNPIT environment.  Ideally, your code should be pip installable from PyPI, and eventually your code will be included in the environment just like ``snappl`` currently is.
 
@@ -352,7 +354,8 @@ You will eventually need a password for connecting to the database.  **Make sure
 
   * Make sure the secrets directory is not world-readable::
 
-      chmod 710 secrets
+      chmod 710 secrets\
+      setfacl -Rdm g::x,o::- secrets
 
   * Create a file in that secrets directory named ``roman_snpit_ou2024_nov_ou2024nov`` that has one line holding the password for database access.  (We will give you this password if you need it.)
 
@@ -363,10 +366,13 @@ The minimal config file
 
 You will need to set an environment variable ``SNPIT_CONFIG`` that points to a yaml configuration file.
 
-This is the minimal config file to connect to the database for November 2025; save it to a file named ``roman_snpit_ou2024_nov_config.yaml`` (or anything else, but remember what you save it to)::
+Here are a couple of config files that are set up for the Nov2025 run.  The first requires two lines to be edited.
 
-  destructive_appends:
-    - snpit_ou2024_nersc.yaml
+* `nov2025_nersc_native_config.yaml <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_nersc_native_config.yaml>`_ for running on NERSC *not* in a container.
+* `nov2025_container_config.yaml <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_container_config.yaml>`_  for running on NERSC with ``podman-hpc``; also see the `interactive_podman.sh <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/interactive-podman-nov2025.sh>`_ script (which is for interactive sessions; it will need to be modified for use in a bash script).
+
+
+This is the minimal config file to connect to the database for November 2025; save it to a file named ``roman_snpit_ou2024_nov_config.yaml`` (or anything else, but remember what you save it to)::
 
   system:
     db:
@@ -375,11 +381,14 @@ This is the minimal config file to connect to the database for November 2025; sa
       password: null
       passwordfile: /secrets/roman_snpit_ou2024_nov_ou2024nov
 
+    paths:
+      images: /path/to/where/images/are/stored
+      segmaps: /path/to/where/segmentation_maps/are/stored
+      lightcurves: /path/to/where/lightcurves/are/stored
+      
 Please resist the temptation to put the password in the ``password:`` field, even though it's hanging out there enticing you.  Once somebody commits that password to a git archive, our database can now be accessed by anybody.  Once we realize a password has been leaked to a git archive, we'll need to change the password, which will be a hassle for everybody.  (We do use this field sometimes in our test suite, where the user is ``test`` and the password is ``test_password``, and because it's never a live accessible database, we don't care.)  The value of ``passwordfile`` assumes that you're working inside a container; if not, replace it with the full path to where you created the password file (see :ref:`password-file`).
 
-This config file includes the file `snpit_ou2024_nersc.yaml <https://github.com/Roman-Supernova-PIT/environment/blob/main/snpit_ou2024_nersc.yaml>`_.  Save that file in the same directory as where you are writing your config file.  This assumes you're *not* working in a container, but are working directly on NERSC in a python venv where you've ``pip`` installed ``snappl``.  If you're working in a container, then edit the line after ``destructive_appends:`` to read ``- snpit_ou2024_container.yaml``; download that file from `here <https://github.com/Roman-Supernova-PIT/environment/blob/main/snpit_ou2024_container.yaml>`_.  You will then need to make sure you bind-mount the right directories to the right places in the container.  Ask Rob for help if you're trying to figure out how to do this.  Exactly what the directories are will depend on what system you're on.
-
-You may well want to include other things in the config; please see :ref:`config` below.
+You may well want to include other things in the config; please see :ref:`config` below, or, if you're really bold, fully peruse the ``smappl.config.Config`` docstring.
 
 
 Finding Images
@@ -579,7 +588,48 @@ The first one writes the actual file; it will write it in the standard location,
 Provenance Tags We Will Use In November 2025
 ============================================
 
-TODO
+**WARNING**: View this list as preliminary.  It may all change at any moment.
+
+
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| provenance_tag          | process                   | for                | produced by     | notes           |
++=========================+===========================+====================+=================+=================+
+| ``ou2024_truth``        | ``load_ou2024_diaobject`` | diaobject          | (primordial)    | Truth-table     |
+|                         |                           |                    |                 | objects         |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``ou2204_truth``        | ``diaobject_position``    | diaobject_position | (primordial)    | Truth-table     |
+|                         |                           |                    |                 | positions (1)   |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``nov2025``             | ``sidecar``               | diaobject          | sidecar         | objects found   |
+|                         |                           |                    |                 | by sidecar dia  |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``nov2025``             | ``phrosty``               | lightcurve         | phrosty         | forced-phot     |
+|                         |                           |                    |                 | lightcurves     |
+|                         |                           |                    |                 | on sidecar objs |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``nov2025_ou2024``      | ``phrosty``               | lightcurve         | phrosty         | forced-phot     |
+|                         |                           |                    |                 | lightcurves     |
+|                         |                           |                    |                 | on ou2024 objs  |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``nov2025``             | ``phrosty_position``      | diaobject_position | phrosty         | improved        |
+|                         |                           |                    |                 | positions of    |
+|                         |                           |                    |                 | sidecar objs    |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``nov2025``             | (something)               | spectrum1d         | (something)     | spectra of      |
+|                         |                           |                    |                 | sidecar objs w/ |
+|                         |                           |                    |                 | phrosty poses   |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``nov2025_ou2024``      | (something)               | spectrum1d         | (something)     | spectra of      |
+|                         |                           |                    |                 | ou2024 truth    |
+|                         |                           |                    |                 | objs w/ truth   |
+|                         |                           |                    |                 | poses           |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+
+
+
+**(1)** These positions will be identical to the positions in the ``DiaObject`` object for the ``ou2024_truth`` provenance tag.  However, they are still here so you can write the code to use the positions table.
+
+
 
 .. _connecting-to-the-database:
 
