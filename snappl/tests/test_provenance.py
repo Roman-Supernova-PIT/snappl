@@ -1,4 +1,5 @@
 import pytest
+import uuid
 
 from snappl.config import Config
 from snappl.provenance import Provenance
@@ -18,7 +19,55 @@ def test_provenance( dbclient ):
 
     provstodel = { 'provs': [] }
     try:
-        provstodel['provs'] = [ wayupstream.id, upstream2.id, upstream1.id, upstream1a.id ]
+        # Just save a provenance, make sure it shows up but is not tagged
+        gratprov1 = Provenance( process="gratprov", major=1, minor=0 )
+        provstodel['provs'].append( gratprov1.id )
+        gratprov1.save_to_db( dbclient=dbclient )
+        with DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", {'id': gratprov1.id} )
+            assert len(rows) == 1
+            rows = dbcon.execute( "SELECT * FROM provenance_tag WHERE provenance_id=%(id)s", {'id': gratprov1.id} )
+            assert len(rows) == 0
+
+        # Tag an existing provenance
+        gratprov1.save_to_db( tag='kaglorky', dbclient=dbclient )
+        with DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM provenance_tag WHERE provenance_id=%(id)s", {'id': gratprov1.id} )
+            assert len(rows) == 1
+            assert rows[0]['tag'] == 'kaglorky'
+
+        # Try the null op (with lots of network and database thought to do nothing)
+        gratprov1.save_to_db( tag='kaglorky', dbclient=dbclient )
+
+        # Make a second provenance, make sure we can't save it with the same tag
+        gratprov2 = Provenance( process="gratprov", major=2, minor=0 )
+        provstodel['provs'].append( gratprov2.id )
+        assert gratprov2.id != gratprov1.id
+        with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500.*already exists a provenance" ):
+            gratprov2.save_to_db( tag='kaglorky', dbclient=dbclient )
+
+        # Make sure we can (succesfully) save a provenance and a tag all in one go
+        gratprov3 = Provenance( process="alternate_gratprov", major=1, minor=0 )
+        provstodel['provs'].append( gratprov3.id )
+        gratprov3.save_to_db( tag='gazorniplotz', dbclient=dbclient )
+        gratprov3.save_to_db( tag='kaglorky', dbclient=dbclient )
+        with DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM provenance_tag WHERE tag=%(tag)s", {'tag': 'kaglorky'} )
+            assert len(rows) == 2
+            assert set( [ r['provenance_id'] for r in rows ] ) == { gratprov1.id, gratprov3.id }
+            rows = dbcon.execute( "SELECT * FROM provenance_tag WHERE tag=%(tag)s", {'tag': 'gazorniplotz'} )
+            assert rows[0]['provenance_id'] == gratprov3.id
+
+        # Fail to get a provenance
+        with pytest.raises( ValueError, match=r"^No such provenance" ):
+            Provenance.get_by_id( uuid.uuid4(), dbclient=dbclient )
+
+        # Make sure we get None for a nonexistent provenance if that's what we want
+        noprov = Provenance.get_by_id( uuid.uuid4(), dbclient=dbclient, return_none_if_not_exists=True )
+        assert noprov is None
+
+        # Now test upstreams and all that
+        provstodel['provs'].extend( [ wayupstream.id, upstream2.id, upstream1.id, upstream1a.id ] )
         wayupstream.save_to_db( tag='kitten', dbclient=dbclient )
         upstream2.save_to_db( tag='foo', dbclient=dbclient )
         upstream1.save_to_db( tag='foo', dbclient=dbclient )
@@ -75,7 +124,6 @@ def test_provenance( dbclient ):
         check_provs( prov, downstream )
 
         # Make sure we can get a provenance by an id:
-
         prov = Provenance.get_by_id( downstream.id, dbclient=dbclient )
         check_provs( prov, downstream )
 
@@ -124,7 +172,7 @@ def test_provenance( dbclient ):
     finally:
         with DBCon() as dbcon:
             dbcon.execute( "DELETE FROM provenance_tag WHERE tag=ANY(%(tag)s)",
-                           { 'tag': [ 'kitten', 'foo', 'bar', 'kaglorky' ] } )
+                           { 'tag': [ 'kitten', 'foo', 'bar', 'kaglorky', 'gazorniplotz' ] } )
             dbcon.execute( "DELETE FROM provenance_upstream "
                            "WHERE upstream_id=ANY(%(provs)s) OR downstream_id=ANY(%(provs)s)",
                            provstodel )
