@@ -1,4 +1,5 @@
 import pytest
+import uuid
 
 from snappl.config import Config
 from snappl.provenance import Provenance
@@ -56,6 +57,14 @@ def test_provenance( dbclient ):
             assert set( [ r['provenance_id'] for r in rows ] ) == { gratprov1.id, gratprov3.id }
             rows = dbcon.execute( "SELECT * FROM provenance_tag WHERE tag=%(tag)s", {'tag': 'gazorniplotz'} )
             assert rows[0]['provenance_id'] == gratprov3.id
+
+        # Fail to get a provenance
+        with pytest.raises( ValueError, match=r"^No such provenance" ):
+            Provenance.get_by_id( uuid.uuid4(), dbclient=dbclient )
+
+        # Make sure we get None for a nonexistent provenance if that's what we want
+        noprov = Provenance.get_by_id( uuid.uuid4(), dbclient=dbclient, return_none_if_not_exists=True )
+        assert noprov is None
 
         # Now test upstreams and all that
         provstodel['provs'].extend( [ wayupstream.id, upstream2.id, upstream1.id, upstream1a.id ] )
