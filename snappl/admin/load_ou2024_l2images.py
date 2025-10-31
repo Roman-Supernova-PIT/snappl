@@ -54,6 +54,7 @@ def _parse_fits_file( relpath, base_path=None, provid=None ):
                'height': height,
                'format': 1,
                'mjd': image.mjd,
+               'position_angle': image.position_angle,
                'exptime': exptime,
                'properties': psycopg.types.json.Jsonb( {} )
               }

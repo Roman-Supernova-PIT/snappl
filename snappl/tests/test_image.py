@@ -12,6 +12,23 @@ from snappl.psf import PSF
 
 
 # ======================================================================
+# Image tests
+
+def test_position_angle( ou2024image_module ):
+    # Really, this is testing that the position_angle code gives
+    # the same answer as the formula Russel harvested from some
+    # IDL code.
+    hdr = ou2024image_module.get_fits_header()
+    det = hdr['CD1_1'] * hdr['CD2_2'] - hdr['CD1_2'] * hdr['CD2_1']
+    sgn = -1 if det < 0 else 1
+    ang1 = np.arctan2( sgn * hdr['CD1_2'], sgn * hdr['CD1_1'] ) * 180. / np.pi
+    ang2 = np.arctan2( -hdr['CD2_1'], hdr['CD2_2'] ) * 180. / np.pi
+    assert ang1 == pytest.approx( ang2, abs=0.75 )
+    compang = ( ang1 + ang2 ) / 2.
+    assert ou2024image_module.position_angle == pytest.approx( compang, abs=0.01 )
+
+
+# ======================================================================
 # FITSImage tests
 # Note that some of these tests use the ou2024image fixtures.
 #   The reason is that the functions we're testing requires some
