@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Image &#8212; roman_snpit_snappl 0.1.dev1+gec32ad072 documentation</title>
+    <title>Image &#8212; roman_snpit_snappl 0.1.dev1+gb84fe5a43 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=f0c5d3e0"></script>
+    <script src="../_static/documentation_options.js?v=e863439e"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -114,7 +114,7 @@ be defined for some subclasses of Image.</p>
 <li><p>sca : int (str?); the SCA of this image</p></li>
 <li><p>band : str; filter</p></li>
 <li><p>mjd : float; mjd of the start of the image</p></li>
-<li><p>position_angle : float; position anglke in degree east of north (yes?) (is this defined?)</p></li>
+<li><p>position_angle : float; position angle in degrees north of east (CHECK THIS)</p></li>
 <li><p>exptime : float; exposure time in seconds</p></li>
 <li><p>sky_level : float; an estimate of the sky level in ADU if defined, which it often isn’t</p></li>
 <li><p>zeropoint : float; convert to AB mag with -2.5*log(adu) + zeropoint, where adu is the units of data</p></li>
@@ -205,7 +205,7 @@ database (but is required in that case).</p></li>
 <td><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Image.position_angle" title="snappl.image.Image.position_angle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">position_angle</span></code></a></p></td>
-<td><p>Position angle in degrees east of north (or what)?</p></td>
+<td><p>Position angle in degrees north of east (CHECK THIS)</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.Image.provenance_id" title="snappl.image.Image.provenance_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">provenance_id</span></code></a></p></td>
 <td><p>The database provenance uuid of the image in the l2image table.</p></td>
@@ -339,7 +339,7 @@ usage, we need a way of making this more general. Issue #45.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="snappl.image.Image.position_angle">
 <span class="sig-name descname"><span class="pre">position_angle</span></span><a class="headerlink" href="#snappl.image.Image.position_angle" title="Link to this definition">¶</a></dt>
-<dd><p>Position angle in degrees east of north (or what)?</p>
+<dd><p>Position angle in degrees north of east (CHECK THIS)</p>
 </dd></dl>
 
 <dl class="py attribute">
