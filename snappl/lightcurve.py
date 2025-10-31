@@ -393,7 +393,7 @@ class Lightcurve:
         """
 
         filetypemap = { 'parquet': 'parquet',
-                        'ecsv': None
+                        'ecsv': 'ecsv'
                        }
         if filetype not in filetypemap:
             raise ValueError( f"Unknown filetype {filetype}" )
