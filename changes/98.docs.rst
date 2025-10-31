@@ -1,0 +1,1 @@
+Add lightcurve reading and writing to the nov 2025 primer in the usage docs

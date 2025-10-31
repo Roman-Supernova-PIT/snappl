@@ -9,10 +9,12 @@
 import collections
 import types
 import uuid
+import time
 from contextlib import contextmanager
 
 import numpy as np
 import psycopg
+from psycopg import sql
 
 from snappl.config import Config
 from snappl.logger import SNLogger
@@ -65,8 +67,17 @@ def get_dbcon():
     """
 
     dbhost, dbport, dbname, dbuser, dbpasswd = get_connect_info()
-    conn = psycopg.connect( dbname=dbname, user=dbuser, password=dbpasswd, host=dbhost, port=dbport )
-    return conn
+    ntries = 5
+    while ntries > 0:
+        try:
+            conn = psycopg.connect( dbname=dbname, user=dbuser, password=dbpasswd, host=dbhost, port=dbport,
+                                    connect_timeout=1 )
+            return conn
+        except Exception as e:
+            ntries -= 1
+            if ntries <= 0:
+                raise e
+            time.sleep( 1 )
 
 
 @contextmanager
@@ -266,7 +277,8 @@ class DBCon:
 
         """
         if self.echoqueries and not silent:
-            SNLogger.debug( f"Sending query\n{q}\nwith substitutions: {subdict}" )
+            qprint = q.as_string() if isinstance( q, sql.Composable ) else q
+            SNLogger.debug( f"Sending query\n{qprint}\nwith substitutions: {subdict}" )
 
         if self.alwaysexplain and not silent:
             self.cursor.execute( f"EXPLAIN {q}", subdict )
@@ -1070,6 +1082,14 @@ class L2Image( DBBase ):
 
 class SummedImage( DBBase ):
     __tablename__ = "summed_image"
+    _tablemeta = None
+    _pk = [ 'id' ]
+
+
+# ======================================================================
+
+class SegMap( DBBase ):
+    __tablename__ = "segmap"
     _tablemeta = None
     _pk = [ 'id' ]
 

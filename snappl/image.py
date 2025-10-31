@@ -46,7 +46,7 @@ class Image:
     * sca : int (str?); the SCA of this image
     * band : str; filter
     * mjd : float; mjd of the start of the image
-    * position_angle : float; position anglke in degree east of north (yes?) (is this defined?)
+    * position_angle : float; position angle in degrees north of east (CHECK THIS)
     * exptime : float; exposure time in seconds
     * sky_level : float; an estimate of the sky level in ADU if defined, which it often isn't
     * zeropoint : float; convert to AB mag with -2.5*log(adu) + zeropoint, where adu is the units of data
@@ -58,6 +58,9 @@ class Image:
     * coord_center : SOMETHING; ra and dec at the center of the image.
 
     """
+
+    # How close in degrees should the right- and up- calculated position angles match?
+    _close_enough_position_angle = 3
 
     data_array_list = [ 'all', 'data', 'noise', 'flags' ]
 
@@ -120,6 +123,7 @@ class Image:
         self._pointing = pointing
         self._sca = sca
         self._mjd = None
+        self._position_angle = None
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
         self._zeropoint = None
@@ -254,8 +258,42 @@ class Image:
 
     @property
     def position_angle( self ):
-        """Position angle in degrees east of north (or what)?"""
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement position_angle" )
+        """Position angle in degrees north of east (CHECK THIS)"""
+        if self._position_angle is None:
+            wcs = self.get_wcs()
+            nx, ny = self.image_shape
+            midra, middec = wcs.pixel_to_world( nx/2., ny/2. )
+            cosdec = np.cos( middec * np.pi / 180. )
+            rightra, rightdec = wcs.pixel_to_world( nx/2.+1, ny/2. )
+            drightra = ( rightra - midra ) * cosdec
+            drightdec = rightdec - middec
+            upra, updec = wcs.pixel_to_world( nx/2., ny/2.+1 )
+            dupra = ( upra - midra ) * cosdec
+            dupdec = updec - middec
+            rightang = np.arctan2( -drightdec, drightra ) * 180. / np.pi
+            upang = np.arctan2( dupra, dupdec ) * 180 / np.pi
+            # Have to deal with the edge case where they are around -180.
+            if ( ( ( rightang > 0 ) != ( upang > 0 ) )
+                 and
+                 ( np.fabs( np.fabs(rightang) - 180. ) <= self._close_enough_position_angle )
+                 and
+                 ( np.fabs( np.fabs(upang) - 180. ) <= self._close_enough_position_angle )
+                ):
+                if rightang < 0:
+                    rightang += 360.
+                if upang < 0:
+                    upang += 360.
+            if np.abs( rightang - upang ) > self._close_enough_position_angle:
+                raise ValueError( f"Calculated position angle of {rightang:.2f}° looking to the right "
+                                  f"and {upang:.2f}° looking up; these are inconsistent!" )
+            self._position_angle = ( rightang + upang ) / 2.
+            if self.position_angle > 180.:
+                self.position_angle -= 360.
+        return self._position_angle
+
+    @position_angle.setter
+    def position_angle( self, val ):
+        self._position_angle = val
 
     def fraction_masked( self ):
         """Fraction of pixels that are masked."""
@@ -1264,9 +1302,13 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
                    'R062': 161.025,
                    'Y106': 302.275,
                    'Z087': 101.7 }
-        if self.band not in exptimes:
-            raise ValueError( f"Don't know exptime for band {self.band}" )
-        return exptimes[ self.band ]
+        if self.band in exptimes:
+            return exptimes[ self.band ]
+        else:
+            header = self.get_fits_header()
+            if 'EXPTIME' not in header:
+                raise ValueError( f"Don't know exptime for band {self.band}" )
+            return header[ 'EXPTIME' ]
 
     @property
     def truthpath( self ):
