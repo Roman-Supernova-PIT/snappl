@@ -510,7 +510,7 @@ class FindL2Images( BaseView ):
 
             for kw in [ 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                         'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
-                        'width', 'height', 'mjd', 'exptime' ]:
+                        'width', 'height', 'mjd', 'posang', 'exptime' ]:
                 if kw in data:
                     conditions.append( f"{kw}=%({kw})s" )
                     subdict[kw] = data[kw] if data[kw] is not None else None
