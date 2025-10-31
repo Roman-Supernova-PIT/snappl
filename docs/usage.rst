@@ -189,14 +189,12 @@ You are running sidecar and you've found a new diaobject you want to save.  You 
   prov = Provenance( process='sidecar', major=major, minor=minor, params=params,
                      upstreams=[ imageprov ] )
   # You only have to do this next line once for a given provenance;
-  #   once the provenance is in the databse, you never need to save it again.
+  #   once the provenance is in the database, you never need to save it again.
   prov.save_to_db( tag=diaobject_provenance_tag, dbclient=dbclient )   # See note below
 
   diaobj = DiaObject( provenance_id=prov.id, ra=ra, dec=dec, name=optional, mjd_discovery=mjd )
   diaobj.save_object( dbclient=dbclient )
   
-
-*Note*: right now, you'll get exceptions on the ``prov.save_to_db`` line, but it probaby did work.  There is a snappl issue out for Rob to fix this.
 
 This will save the object to the database.  You can then look at ``diaobj.id`` to see what UUID it was assigned.  You do not need to give it a ``name``, but you can if you want to.  (The database uses the ``id`` as the unique identifier.)  ``mjd_discovery`` should be the MJD of the science image that the object was found on.
 
@@ -288,7 +286,7 @@ Do::
   spec1d_prov = Provenance( process=process, major=major, minor=minor, params=params,
                             upstreams=[ diaobj_prov, imageprov, diaobj_pos_prov ] )
   # The next line only needs to be run once.  Once
-  #   you have saved a Provenance to the databse you
+  #   you have saved a Provenance to the database you
   #   never need to save it again
   spec1d_prov.save_to_db( tag=spec1d_provenance_tag, dbclient-dbclient )
 
@@ -367,6 +365,12 @@ The minimal config file
 -----------------------
 
 You will need to set an environment variable ``SNPIT_CONFIG`` that points to a yaml configuration file.
+
+Here are a couple of config files that are set up for the Nov2025 run.  The first requires two lines to be edited.
+
+* `nov2025_nersc_native_config.yaml <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_nersc_native_config.yaml>`_ for running on NERSC *not* in a container.
+* `nov2025_container_config.yaml <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/nov2025_container_config.yaml>`_  for running on NERSC with ``podman-hpc``; also see the `interactive_podman.sh <https://raw.githubusercontent.com/Roman-Supernova-PIT/environment/refs/heads/main/interactive-podman-nov2025.sh>`_ script (which is for interactive sessions; it will need to be modified for use in a bash script).
+
 
 This is the minimal config file to connect to the database for November 2025; save it to a file named ``roman_snpit_ou2024_nov_config.yaml`` (or anything else, but remember what you save it to)::
 
