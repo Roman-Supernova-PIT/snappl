@@ -702,7 +702,7 @@ class DiaObjectOU2024( DiaObject ):
                        mjd_start_max=None,
                        mjd_end_min=None,
                        mjd_end_max=None,
-                       **kwargs
+                       diaobject_id=None,
                       ):
         if any( i is not None for i in [ mjd_peak_min, mjd_peak_max, mjd_discovery_min, mjd_discovery_max ] ):
             raise NotImplementedError( "DiaObjectOU2024 doesn't support searching on mjd_peak or mjd_discovery" )
