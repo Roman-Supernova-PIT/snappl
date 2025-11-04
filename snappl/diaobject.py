@@ -7,6 +7,7 @@ from snappl.config import Config
 from snappl.http import retry_post
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
+from snappl.logger import SNLogger
 from snappl.utils import SNPITJsonEncoder, asUUID
 
 
@@ -706,6 +707,9 @@ class DiaObjectOU2024( DiaObject ):
                       ):
         if any( i is not None for i in [ mjd_peak_min, mjd_peak_max, mjd_discovery_min, mjd_discovery_max ] ):
             raise NotImplementedError( "DiaObjectOU2024 doesn't support searching on mjd_peak or mjd_discovery" )
+
+        if diaobject_id is not None:
+            SNLogger.warning("DiaObject OU2024 ignoring diaobject_id parameter in find_objects")
 
         params = {}
 
