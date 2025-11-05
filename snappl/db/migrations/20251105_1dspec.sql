@@ -1,0 +1,33 @@
+CREATE TABLE spectrum1d(
+  id UUID PRIMARY KEY,
+  provenance_id UUID PRIMARY KEY,
+  diaobject_id UUID PRIMARY KEY,
+  diaobject_position_id UUID PRIMARY KEY,
+  filepath text,
+  epoch int,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX ix_spectrum1d_provenance_id ON spectrum1d USING btree(provnenace_id);
+CREATE INDEX ix_spectrum1d_diaobject_id ON spectrum1d USING btree(diaobject_id);
+CREATE INDEX ix_spectrum1d_diaobject_position_id ON spectrum1d USING btree(diaobject_position_id);
+CREATE INDEX ix_spectrum1d_epoch ON spectrum1d USING btree(epoch);
+CREATE UNIQUE INDEX ix_spectrum1d_unique ON spectrum1d USING btree(provenance_id,diaobject_id,epoch);
+ALTER TABLE spectrum1d ADD CONSTRAINT fk_spectrum1d_provenance_id
+  FOREIGN KEY(provenance_id) REFERENCES provenance(id);
+ALTER TABLE spectrum1d ADD CONSTRAINT fk_spectrum1d_diaobject_id
+  FOREIGN KEY(diaobject_id) REFERENCES diaobject(id);
+ALTER TABLE spectrum1d ADD CONSTRAINT fk_spectrum1d_diaobject_position_id
+  FOREIGN KEY(diaobject_position_id) REFERENCES diaobject_position(id);
+  
+CREATE TABLE spectrum1d_included_image(
+  spectrum1d_id UUID,
+  l2image_id UUID
+);
+CREATE UNIQUE INDEX ix_s1d_inclim_dual ON spectrum1d_included_image USING btree(spectrum1d_id, l2image_id);
+CREATE INDEX ix_s1d_inclim_spec ON spectrum1d_included_image USING btree(spectrum1d_id);
+CREATE INDEX ix_s1d_inclim_im ON spectrum1d_included_image USING btree(l2image_id);
+ALTER TABLE spectrum1d_included_image ADD CONSTRAINT fk_s1d_inclim_spec
+  FOREIGN KEY(spectrum1d_id) REFERENCES spectrum1d(id) ON DELETE CASCADE;
+ALTER TABLE spectrum1d_included_image ADD CONSTRAINT fk_s1d_inclim_im
+  FOREIGN KEY(l2image_id) REFERENCES l2image(id) ON DELETE RESTRICT;
+  
