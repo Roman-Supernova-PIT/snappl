@@ -600,6 +600,10 @@ Provenance Tags We Will Use In November 2025
 | ``ou2204_truth``        | ``diaobject_position``    | diaobject_position | (primordial)    | Truth-table     |
 |                         |                           |                    |                 | positions (1)   |
 +-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``ou2024``              | ``load_ou2024_image``     | direct image       | (primordial)    | l2 images       |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``ou2024``              | ``load_ou2024_dispimages`` | prism image       | (primordial)    | l2 prism images |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
 | ``nov2025``             | ``sidecar``               | diaobject          | sidecar         | objects found   |
 |                         |                           |                    |                 | by sidecar dia  |
 +-------------------------+---------------------------+--------------------+-----------------+-----------------+
@@ -614,6 +618,9 @@ Provenance Tags We Will Use In November 2025
 | ``nov2025``             | ``phrosty_position``      | diaobject_position | phrosty         | improved        |
 |                         |                           |                    |                 | positions of    |
 |                         |                           |                    |                 | sidecar objs    |
++-------------------------+---------------------------+--------------------+-----------------+-----------------+
+| ``nov2025``             | ``campari``               | lightcurve         | campari         | scene-modelling |
+|                         |                           |                    |                 | lightcurve      |
 +-------------------------+---------------------------+--------------------+-----------------+-----------------+
 | ``nov2025``             | (something)               | spectrum1d         | (something)     | spectra of      |
 |                         |                           |                    |                 | sidecar objs w/ |
