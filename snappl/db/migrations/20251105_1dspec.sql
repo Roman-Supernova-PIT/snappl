@@ -3,6 +3,7 @@ CREATE TABLE spectrum1d(
   provenance_id UUID NOT NULL,
   diaobject_id UUID NOT NULL,
   diaobject_position_id UUID DEFAULT NULL,
+  band text NOT NULL,
   filepath text NOT NULL,
   epoch int NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
