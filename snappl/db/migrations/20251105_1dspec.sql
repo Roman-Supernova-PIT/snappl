@@ -1,13 +1,13 @@
 CREATE TABLE spectrum1d(
   id UUID PRIMARY KEY,
-  provenance_id UUID PRIMARY KEY,
-  diaobject_id UUID PRIMARY KEY,
-  diaobject_position_id UUID PRIMARY KEY,
-  filepath text,
-  epoch int,
+  provenance_id UUID NOT NULL,
+  diaobject_id UUID NOT NULL,
+  diaobject_position_id UUID DEFAULT NULL,
+  filepath text NOT NULL,
+  epoch int NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-CREATE INDEX ix_spectrum1d_provenance_id ON spectrum1d USING btree(provnenace_id);
+CREATE INDEX ix_spectrum1d_provenance_id ON spectrum1d USING btree(provenance_id);
 CREATE INDEX ix_spectrum1d_diaobject_id ON spectrum1d USING btree(diaobject_id);
 CREATE INDEX ix_spectrum1d_diaobject_position_id ON spectrum1d USING btree(diaobject_position_id);
 CREATE INDEX ix_spectrum1d_epoch ON spectrum1d USING btree(epoch);
@@ -18,7 +18,10 @@ ALTER TABLE spectrum1d ADD CONSTRAINT fk_spectrum1d_diaobject_id
   FOREIGN KEY(diaobject_id) REFERENCES diaobject(id);
 ALTER TABLE spectrum1d ADD CONSTRAINT fk_spectrum1d_diaobject_position_id
   FOREIGN KEY(diaobject_position_id) REFERENCES diaobject_position(id);
+COMMENT ON TABLE spectrum1d IS 'Single-epoch (combining ~4 images) 1d transient spectrum';
+COMMENT ON COLUMN spectrum1d.epoch IS 'floor( (Average MJD of images) * 1000 + 0.5 )';
   
+
 CREATE TABLE spectrum1d_included_image(
   spectrum1d_id UUID,
   l2image_id UUID
