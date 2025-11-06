@@ -451,7 +451,13 @@ class ImageCollectionDB:
 
             row = rows[0]
 
+        # Remove things the Image constroctor won't know, fix
+        #   things that need fixing
         row['path'] = self.base_path / row['filepath']
+        del row['filepath']
+        del row['extension']
+        del row['format']
+        del row['properties']
         return self.image_class( **row )
 
 
@@ -467,8 +473,13 @@ class ImageCollectionDB:
 
         images = []
         for row in rows:
+            # Remove things the Image constructor won't know, fix
+            #   things that need fixing
             row['path'] = self.base_path / row['filepath']
-            row['band'] = row['band']
+            del row['filepath']
+            del row['extension']
+            del row['format']
+            del row['properties']
             images.append( self.image_class( **row ) )
 
         return images
