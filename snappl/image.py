@@ -130,7 +130,7 @@ class Image:
             The id of the provenance of the image.  Only relevant if the
             image is in the l2image table of the Roman SNPIT internal
             database (but is required in that case).
-        
+
           width, height: int, default None
             The width and height of the image in pixels if known.
 
@@ -156,12 +156,14 @@ class Image:
                                          'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                          'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                                          'band', 'mjd', 'position_nagle', 'exptime', 'sky_level', 'zeropoint' } )
-        self._verify_all_consumed_kwargs( kwargs )
-        
+        self._verify_all_consumed_kwargs( **kwargs )
+
         self.path = pathlib.Path( path ) if path is not None else None
 
         self._id = asUUID( id ) if id is not None else None
         self._provenance_id = asUUID( provenance_id ) if provenance_id is not None else None
+        self._width = width
+        self._height = height
         self._pointing = pointing
         self._sca = sca
         self._ra = ra
@@ -180,14 +182,14 @@ class Image:
         self._exptime = exptime
         self._sky_level = sky_level
         self._zeropoint = zeropoint
-        
+
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
 
 
     def _declare_consumed_kwargs( self, consumed_kwargs ):
-        if hasattr( self._consumed_kwargs ):
-            overlaps = self._consumed_kwargs, consumed_kwargs )
+        if hasattr( self, '_consumed_kwargs' ):
+            overlaps = self._consumed_kwargs.intersection( consumed_kwargs )
             if len(overlaps) != 0:
                 raise RuntimeError( f"Programming error in {self.__class__.__name__}: the following kwargs "
                                     f"are interpreted by more than one constructor in the inheritance chain: "
@@ -195,21 +197,21 @@ class Image:
             self._consumed_kwargs = self._consumed_kwargs.union( consumed_kwargs )
         else:
             self._consumed_kwargs = consumed_kwargs.copy()
-            
+
     def _verify_all_consumed_kwargs( self, **kwargs ):
         unconsumed = set( kwargs.keys() ) - self._consumed_kwargs
         if len(unconsumed) != 0:
             # Do we want this to be an exeption or just a warning?
             raise RuntimeError( f"{self.__class__.__name__} constructor didn't recognize "
-                                f"keyword arguments: {unconsuemd} " )
+                                f"keyword arguments: {unconsumed} " )
             # SCLogger.warning( f"{self.__class__.__name__} constructor didn't recognize "
-            #                   f"keyword arguments: {unconsuemd} " )
-        
+            #                   f"keyword arguments: {unconsumed} " )
+
     @property
     def name( self ):
         """str; The filename of the image (i.e. the path without the directory)"""
         return self.path.name if self.path is not None else None
-        
+
     @property
     def id( self ):
         """The database image uuid in the l2image table."""
@@ -267,7 +269,7 @@ class Image:
     @property
     def image_shape( self ):
         """Tuple: (ny, nx) pixel size of image."""
-        return ( self.width, self.height )
+        return ( self.height, self.width )
 
     @property
     def width( self ):
@@ -311,7 +313,7 @@ class Image:
         if self._ra is None:
             self._get_ra_dec()
         return self._ra
-    
+
     @ra.setter
     def ra( self, val ):
         self._ra = float( val ) if val is not None else None
@@ -330,7 +332,7 @@ class Image:
     @property
     def ra_corner_00( self ):
         """Float; decimal degrees; tha RA of pixel (x=0, y=0)"""
-        if _ra_corner_00 is None:
+        if self._ra_corner_00 is None:
             self._get_corners()
         return self._ra_corner_00
 
@@ -341,7 +343,7 @@ class Image:
     @property
     def ra_corner_01( self ):
         """Float; decimal degrees; the RA of pixel (x=0, y=height-1)"""
-        if _ra_corner_01 is None:
+        if self._ra_corner_01 is None:
             self._get_corners()
         return self._ra_corner_01
 
@@ -352,7 +354,7 @@ class Image:
     @property
     def ra_corner_10( self ):
         """Float; decimal degrees; the RA of pixel (x=width-1, height=0)"""
-        if _ra_corner_10 is None:
+        if self._ra_corner_10 is None:
             self._get_corners()
         return self._ra_corner_10
 
@@ -363,7 +365,7 @@ class Image:
     @property
     def ra_corner_11( self ):
         """Float; decimal degrees; the RA of pixel (x=width-1, y=height=1)"""
-        if _ra_corner_11 is None:
+        if self._ra_corner_11 is None:
             self._get_corners()
         return self._ra_corner_11
 
@@ -374,7 +376,7 @@ class Image:
     @property
     def dec_corner_00( self ):
         """Float; decimal degrees; the dec of pixel (x=0, y=0)"""
-        if _dec_corner_00 is None:
+        if self._dec_corner_00 is None:
             self._get_corners()
         return self._dec_corner_00
 
@@ -385,7 +387,7 @@ class Image:
     @property
     def dec_corner_01( self ):
         """Float; decimal degrees; the dec of pixel (x=0, y=height-1)"""
-        if _dec_corner_01 is None:
+        if self._dec_corner_01 is None:
             self._get_corners()
         return self._dec_corner_01
 
@@ -396,7 +398,7 @@ class Image:
     @property
     def dec_corner_10( self ):
         """Float; decimal degrees; the dec of pixel (x=width-1, y=0)"""
-        if _dec_corner_10 is None:
+        if self._dec_corner_10 is None:
             self._get_corners()
         return self._dec_corner_10
 
@@ -407,7 +409,7 @@ class Image:
     @property
     def dec_corner_11( self ):
         """Float; decimal degrees; the dec of pixel (x=width-1, y=height-1)"""
-        if _dec_corner_11 is None:
+        if self._dec_corner_11 is None:
             self._get_corners()
         return self._dec_corner_11
 
@@ -452,7 +454,7 @@ class Image:
     def exptime( self ):
         """Exposure time in seconds."""
         if self._exptime is None:
-            self.get_exptime()
+            self._get_exptime()
         return self._exptime
 
     @exptime.setter
@@ -463,7 +465,7 @@ class Image:
     def sky_level( self ):
         """Estimate of the sky level in ADU."""
         if self._sky_level is None:
-            self.get_sky_level()
+            self._get_sky_level()
         return self._sky_level
 
     @sky_level.setter
@@ -486,15 +488,15 @@ class Image:
 
     @zeropoint.setter
     def zeropoint( self, val ):
-        self._zerpoint = float( val ) if val is not None else None
-    
+        self._zeropoint = float( val ) if val is not None else None
+
 
     def _get_image_shape( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_image_shape" )
 
     def _get_pointing( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_pointing" )
-    
+
     def _get_sca( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_sca" )
 
@@ -710,7 +712,7 @@ class Image:
         ------
           True if (ra, dec) is within the image borders, False otherwise.
         """
-              
+
         wcs = self.get_wcs()
         sc = SkyCoord( ra=ra * astropy.units.deg, dec=dec * astropy.units.deg )
         try:
@@ -886,7 +888,7 @@ class Numpy2DImage( Image ):
     def __init__( self, *args, data=None, noise=None, flags=None, **kwargs ):
         self._declare_consumed_kwargs( { 'data', 'noise', 'flags' } )
         super().__init__( *args, **kwargs )
-        
+
         self._data = data
         self._noise = noise
         self._flags = flags
@@ -1085,7 +1087,7 @@ class FITSImage( Numpy2DImage ):
     # Subclasses may want to replace this with something different based on how they work
     def get_fits_header( self ):
         """Get the header of the image.
-        
+
         Note that FITSImage and subclasses set self._header here, inside get_fits_header.
         """
         if self._header is None:
@@ -1336,7 +1338,7 @@ class FITSImageStdHeaders( FITSImage ):
     # Sadly, it seems that in python if you want to override either
     #   the property or the setter, you have to override both, you
     #   can't take the parent class implementation for just one.
-        
+
     def _get_pointing( self ):
         hdr = self.get_fits_header()
         self._pointing = hdr[ self._header_kws['pointing'] ]
@@ -1346,7 +1348,7 @@ class FITSImageStdHeaders( FITSImage ):
         if self._pointing is None:
             self._get_pointing()
         return self._pointing
-        
+
     @pointing.setter
     def pointing( self, val ):
         self._pointing = val
@@ -1356,7 +1358,7 @@ class FITSImageStdHeaders( FITSImage ):
     def _get_sca( self ):
         hdr = self.get_fits_header()
         self._sca = int( hdr[ self._header_kws['sca'] ] )
-        
+
     @property
     def sca( self ):
         if self._sca is None:
@@ -1402,7 +1404,7 @@ class FITSImageStdHeaders( FITSImage ):
     def _get_band( self ):
         hdr = self.get_fits_header()
         self._band = str( hdr[ self._header_kws['band'] ] )
-        
+
     @property
     def band( self ):
         if self._band is None:
@@ -1426,7 +1428,7 @@ class FITSImageStdHeaders( FITSImage ):
             return self._get_mjd()
         return self._mjd
 
-    @mjd.setter( self )
+    @mjd.setter
     def mjd( self, val ):
         self._mjd = float( val ) if val is not None else None
         hdr = self.get_fits_header()
@@ -1471,7 +1473,7 @@ class FITSImageStdHeaders( FITSImage ):
 
     def _get_sky_level( self ):
         hdr = set.get_fits_header()
-        self._sky_level = float( hdr[ self._header_kws['sky_level'] ) )
+        self._sky_level = float( hdr[ self._header_kws['sky_level'] ] )
 
     @property
     def sky_level( self ):
@@ -1487,19 +1489,19 @@ class FITSImageStdHeaders( FITSImage ):
 
     def _get_zeropoint( self ):
         hdr = self.get_fits_header()
-        self._zeropoint = float( hdr[ self._header_kws['zeropoint'] ) )
+        self._zeropoint = float( hdr[ self._header_kws['zeropoint'] ] )
 
     @property
     def zeropoint( self ):
         if self._zeropoint is None:
-            self._get_zeropoint() if val is not None else None
+            self._get_zeropoint()
         return self._zeropoint
 
     @zeropoint.setter
     def zeropoint( self, val ):
-        self._zeropoint = float( val )
-            
-    
+        self._zeropoint = float( val ) if val is not None else None
+
+
 
 # ======================================================================
 # This class is poorly named, because FITSImage can already
@@ -1667,73 +1669,10 @@ class FITSImageOnDisk( FITSImage ):
 #  HDU 3 : DQ (32-bit integer)
 
 class OpenUniverse2024FITSImage( FITSImageOnDisk ):
-    def __init__( self, *args, noisepath=None, flagspath=None, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs ):
-        super().__init__( *args,
-                          noisepath=noisepath, flagspath=flagspath,
-                          imagehdu=imagehdu, noisehdu=noisehdu, flagshdu=flagshdu,
-                          **kwargs )
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs )
 
     _filenamere = re.compile( r'^Roman_TDS_simple_model_(?P<band>[^_]+)_(?P<pointing>\d+)_(?P<sca>\d+).fits' )
-
-    @property
-    def pointing( self ):
-        if self._pointing is None:
-            # Irritatingly, the pointing is not in the header.  So, we have to
-            #   parse the filename to get the pointing.
-            mat = self._filenamere.search( self.path.name )
-            if mat is None:
-                raise ValueError( f"Failed to parse {self.path.name} for pointing" )
-            self._pointing = int( mat.group( 'pointing' ) )
-        return self._pointing
-
-    @property
-    def sca( self ):
-        if self._sca is None:
-            header = self.get_fits_header()
-            self._sca = int( header['SCA_NUM'] )
-        return self._sca
-
-    @property
-    def band(self):
-        """The band the image is taken in (str)."""
-        header = self.get_fits_header()
-        return header['FILTER'].strip()
-
-    @property
-    def mjd(self):
-        """The mjd of the image.
-
-        TODO : is this start-time, mid-time, or end-time?
-
-        """
-        if self._mjd is None:
-            header = self.get_fits_header()
-            self._mjd =  float( header['MJD-OBS'] )
-        return self._mjd
-
-    @mjd.setter
-    def mjd( self, val ):
-        # We need an MJD setter so that ImageCollection can set the MJD when fetching the images, much faster than
-        # reading the header each time!
-        self._mjd = val
-
-    @property
-    def exptime( self ):
-        # ou2024 has fixed exptimes for roman bands
-        exptimes = {'F184': 901.175,
-                   'J129': 302.275,
-                   'H158': 302.275,
-                   'K213': 901.175,
-                   'R062': 161.025,
-                   'Y106': 302.275,
-                   'Z087': 101.7 }
-        if self.band in exptimes:
-            return exptimes[ self.band ]
-        else:
-            header = self.get_fits_header()
-            if 'EXPTIME' not in header:
-                raise ValueError( f"Don't know exptime for band {self.band}" )
-            return header[ 'EXPTIME' ]
 
     @property
     def truthpath( self ):
@@ -1742,9 +1681,68 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
         return ( tds_base / f'truth/{self.band}/{self.pointing}/'
                  f'Roman_TDS_index_{self.band}_{self.pointing}_{self.sca}.txt' )
 
+
+    def _get_image_shape( self ):
+        header = self.get_fits_header()
+        self._width = int( header['NAXIS1'] )
+        self._height = int( header['NAXIS2'] )
+
+    def _get_pointing( self ):
+        # Irritatingly, the pointing is not in the header.  So, we have to
+        #   parse the filename to get the pointing.
+        mat = self._filenamere.search( self.path.name )
+        if mat is None:
+            raise ValueError( f"Failed to parse {self.path.name} for pointing" )
+        self._pointing = int( mat.group( 'pointing' ) )
+
+    def _get_sca( self ):
+        header = self.get_fits_header()
+        self._sca = int( header['SCA_NUM'] )
+
+    def _get_ra_dec( self ):
+        header = self.get_fits_header()
+        self._ra = float( header['RA_TARG'] )
+        self._dec = float( header['DEC_TARG'] )
+
+    def _get_corners( self ):
+        ny, nx = self.image_shape
+        wcs = self.get_wcs()
+        self._ra_corner_00, self._dec_corner_00 = wcs.pixel_to_world( 0, 0 )
+        self._ra_corner_01, self._dec_corner_01 = wcs.pixel_to_world( 0, ny-1 )
+        self._ra_corner_10, self._dec_corner_10 = wcs.pixel_to_world( nx-1, 0 )
+        self._ra_corner_11, self._dec_corner_11 = wcs.pixel_to_world( nx-1, ny-1 )
+
+    def _get_band( self ):
+        header = self.get_fits_header()
+        self._band = header['FILTER'].strip()
+
+    def _get_mjd( self ):
+        header = self.get_fits_header()
+        self._mjd =  float( header['MJD-OBS'] )
+
+    def _get_exptime( self ):
+        header = self.get_fits_header()
+        if 'EXPTIME' in header:
+            self._exptime = float( header['EXPTIME'] )
+        else:
+            exptimes = {'F184': 901.175,
+                        'J129': 302.275,
+                        'H158': 302.275,
+                        'K213': 901.175,
+                        'R062': 161.025,
+                        'Y106': 302.275,
+                        'Z087': 101.7 }
+            if self.band not in exptimes:
+                raise ValueError( f"Can't find exptime for band {self.band}" )
+            self._exptime = exptimes[ self.band ]
+
+    def _get_sky_level( self ):
+        header = self.get_fits_header()
+        self._sky_level = header['SKY_MEAN']
+
     def _get_zeropoint( self ):
         header = self.get_fits_header()
-        return galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+        self._zeropoint = galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
 
     def _get_zeropoint_the_hard_way( self, psf, ap_r=9 ):
         """This is here hopefully as legacy code.
@@ -1817,27 +1815,30 @@ class RomanDatamodelImage( Image ):
 
     _detectormatch = re.compile( "^WFI([0-9]{2})$" )
 
-    def __init__( self, path ):
-        super().__init__( path, None, None )
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
         # We really want to open the image readonly, because otherwise normal use of
         #   this class will modify the image on disk.  We really don't want to modify
         #   our input data, and want to be explicit about saving like we are used
         #   to with FITS files.
-        self._dm = rdm.open( path, mode='r' )
+        self._dm = rdm.open( self.path, mode='r' )
         match = self._detectormatch.search( self._dm.meta.instrument.detector )
         if match is None:
             raise ValueError( f'Failed to parse self._dm.meat.instrument.detector= '
                               f'"{self._dm.meta.instrument.detector} for "WFInn"' )
-        self.sca = int( match.group(1) )
+        self._sca = int( match.group(1) )
 
+    # TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !
 
-    @property
-    def band( self ):
-        return self.dm.meta.instrument.optical_element
+    def _get_image_shape( self ):
+        # TODO : this must be in the header / meta information somewhere
+        self._height, self._width = self.data.shape
 
-    @property
-    def mjd( self ):
-        return self.dm.meta.exposure.mid_time.mjd
+    def _get_band( self ):
+        self._band = self.dm.meta.instrument.optical_element
+
+    def _get_mjd( self ):
+        self._mjd = self.dm.meta.exposure.mid_time.mjd
 
     @property
     def data( self ):
