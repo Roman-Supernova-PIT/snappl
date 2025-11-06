@@ -354,7 +354,7 @@ class Config:
 
 
     @staticmethod
-    def get( configfile=None, setdefault=None, static=True, clone=None ):
+    def get( configfile=None, setdefault=None, static=True, reread=False, clone=None ):
         """Returns a Config object.
 
         Parameters
@@ -400,6 +400,16 @@ class Config:
             anywhere other than the return value.  In this case, you may
             modify the config.  Call Config.get(static=False) to get a
             modifiable version of the default config.
+
+        reread : bool, default False
+           If True, then the config file will be reread if it's already
+           been cache.  If static is True and reread is True, then the
+           singleton will be modified (meaning that thereafter, whenever
+           you get() that singleton, you'll get the new config values
+           that were just reread here).  If static is False and reread
+           is True, then you the returned Config object will read the
+           config files from disk, but will not change the singleton.
+           Ignored if clone is not None.
 
         clone : Config, default None
             If given, return a clone of this Config object.  The
@@ -450,16 +460,22 @@ class Config:
 
         configfile = str( pathlib.Path(configfile).resolve() )
 
-        if configfile not in Config._configs:
-            Config._configs[configfile] = Config( configfile=configfile, _ok_to_call=True )
-
         if setdefault:
             Config._default = configfile
 
-        if static:
-            return Config._configs[configfile]
+        if reread or ( configfile not in Config._configs ):
+            cfg = Config( configfile=configfile, _ok_to_call=True )
+            if static or ( not reread ):
+                Config._configs[configfile] = cfg
+            else:
+                cfg._static = False
         else:
-            return Config( clone=Config._configs[configfile], _ok_to_call=True )
+            if static:
+                cfg = Config._configs[configfile]
+            else:
+                cfg = Config( clone=Config._configs[configfile], _ok_to_call=True )
+
+        return cfg
 
 
     # SOMETHING I DON'T UNDERSTAND:
