@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Config &#8212; roman_snpit_snappl 0.1.dev1+g713e1bbc4 documentation</title>
+    <title>Config &#8212; roman_snpit_snappl 0.1.dev1+g1e3731bd5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=27de33e3"></script>
+    <script src="../_static/documentation_options.js?v=2c2393ca"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -411,7 +411,7 @@ don’t do that!)</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.config.Config.dump_to_dict_for_params" title="snappl.config.Config.dump_to_dict_for_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dump_to_dict_for_params</span></code></a>([omitkeys, keepkeys])</p></td>
 <td><p>Dump the config to a dictionary suitable for use in a Provenance params field.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.config.Config.get" title="snappl.config.Config.get"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code></a>([configfile, setdefault, static, clone])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.config.Config.get" title="snappl.config.Config.get"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code></a>([configfile, setdefault, static, ...])</p></td>
 <td><p>Returns a Config object.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.config.Config.init" title="snappl.config.Config.init"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init</span></code></a>([configfile, setdefault])</p></td>
@@ -491,7 +491,7 @@ screwing up the internal config state.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.config.Config.get">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">setdefault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.get" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">setdefault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reread</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config.get" title="Link to this definition">¶</a></dt>
 <dd><p>Returns a Config object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -532,6 +532,14 @@ clone of the config singleton, and that clone is not stored
 anywhere other than the return value.  In this case, you may
 modify the config.  Call Config.get(static=False) to get a
 modifiable version of the default config.</p></li>
+<li><p><strong>reread</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – If True, then the config file will be reread if it’s already
+been cache.  If static is True and reread is True, then the
+singleton will be modified (meaning that thereafter, whenever
+you get() that singleton, you’ll get the new config values
+that were just reread here).  If static is False and reread
+is True, then you the returned Config object will read the
+config files from disk, but will not change the singleton.
+Ignored if clone is not None.</p></li>
 <li><p><strong>clone</strong> (<a class="reference internal" href="#snappl.config.Config" title="snappl.config.Config"><em>Config</em></a><em>, </em><em>default None</em>) – If given, return a clone of this Config object.  The
 returned object, if all is working properly, is a deep copy,
 so it should be safe to mangle it.  It’s not possibe to set
