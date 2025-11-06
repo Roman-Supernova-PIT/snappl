@@ -336,7 +336,11 @@ class ImageCollectionOU2024:
         images = []
         for i in range( len(res['pointing']) ):
             path = self.get_image_path( res['pointing'][i], res['filter'][i], res['sca'][i] )
-            image = OpenUniverse2024FITSImage(path, None, res["sca"][i])
+            image = OpenUniverse2024FITSImage(path,
+                                              band=res['filter'][i],
+                                              pointing=res['pointing'][i],
+                                              sca=res["sca"][i],
+                                              mjd=res['mjd'][i] )
             image.mjd = res['mjd'][i]
             images.append( image )
 

@@ -1066,14 +1066,13 @@ class FITSImage( Numpy2DImage ):
         return hdr
 
 
-    @property
     def _get_image_shape(self):
         """tuple: (ny, nx) shape of image"""
 
         if not self._is_cutout:
             hdr = self.get_fits_header()
             self._width = hdr[ 'NAXIS1' ]
-            self._neight = hdr[ 'NAXIS2' ]
+            self._height = hdr[ 'NAXIS2' ]
         else:
             self._height, self._width = self.data.shape
 
@@ -1207,7 +1206,7 @@ class FITSImage( Numpy2DImage ):
         # https://github.com/spacetelescope/roman_datamodels/blob/main/src/roman_datamodels/dqflags.py
         astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=1)
 
-        snappl_cutout = self.__class__(self.path)
+        snappl_cutout = self.__class__(self.path, width=xsize, height=ysize)
         snappl_cutout._data = astropy_cutout.data
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
         snappl_cutout._noise = astropy_noise.data
@@ -1425,7 +1424,7 @@ class FITSImageStdHeaders( FITSImage ):
     @property
     def mjd( self ):
         if self._mjd is None:
-            return self._get_mjd()
+            self._get_mjd()
         return self._mjd
 
     @mjd.setter
