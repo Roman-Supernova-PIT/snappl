@@ -33,7 +33,11 @@ def config_cleanup():
 
 @pytest.fixture
 def cfg():
-    return Config.get( _rundir / "config_test_data/test.yaml" )
+    cfgpath = str( _rundir / "config_test_data/test.yaml" )
+    assert cfgpath not in Config._configs
+    cfgobj = Config.get( _rundir / "config_test_data/test.yaml" )
+    assert cfgpath in Config._configs
+    return cfgobj
 
 
 # It would be nice to use this test, but it's not really consistenet
@@ -476,3 +480,44 @@ def test_dump_to_dict_for_params( cfg ):
     d = cfg.dump_to_dict_for_params( omitkeys=omits )
     assert d == { 'mainlist4': ['app1'], 'mainscalar3': 'override2',
                   'nest': {'nest1': [{'nest1a': {'val': 'foo'}}], 'nest2': {'val': 'bar'}} }
+
+
+def test_reread( cfg ):
+    cfgpath = str( cfg._path )
+    assert cfgpath in Config._configs
+
+    # Change a value so we can detect if it got reread
+    origstatic = cfg._static
+    cfg._static = False
+    cfg.set_value( 'mainscalar1', 'changed' )
+    cfg._static = origstatic
+
+    # If we do reread=False, static=True, we should
+    #   just get the singleton.
+    newcfg = Config.get( configfile=cfgpath, static=True, reread=False )
+    assert newcfg is Config._configs[ cfgpath ]
+    assert newcfg.value( 'mainscalar1' ) == 'changed'
+
+    # If we do reread=False, static=False, we should
+    #  get a copy of the singleton
+    newcfg = Config.get( configfile=cfgpath, static=False, reread=False )
+    assert newcfg is not Config._configs[ cfgpath ]
+    assert newcfg.value( 'mainscalar1' ) == 'changed'
+    assert not newcfg._static
+
+    # If we do reread=True, static=False, we should
+    #  get the original value, but the config
+    #  singleton shouldn't have changed.
+
+    newcfg = Config.get( configfile=cfgpath, static=False, reread=True )
+    assert newcfg.value( 'mainscalar1' ) == 'main1'
+    assert Config._configs[cfgpath].value( 'mainscalar1' ) == 'changed'
+
+    # If we do reread=True, static=True, then
+    #   we should get the original value, and
+    #   the config singleton should have been reset.
+
+    newcfg = Config.get( configfile=cfgpath, static=True, reread=True )
+    assert newcfg.value( 'mainscalar1' ) == 'main1'
+    assert Config._configs[cfgpath].value( 'mainscalar1' ) == 'main1'
+    assert newcfg is Config._configs[cfgpath]
