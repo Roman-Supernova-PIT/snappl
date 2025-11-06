@@ -145,7 +145,6 @@ class Image:
           exptime: float, default None
           sky_level: float, default None
           zeropoint: float, default None
-          image_shape: 2-element tuple of ints, default None
             All of these are the values that should be set for these
             properties (see Image class docstring).  If they are None,
             how they get populated depends on the image subclass.  In
