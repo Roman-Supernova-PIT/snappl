@@ -173,7 +173,7 @@ class Spectrum1d:
                         raise ValueError( f"Property {prop} in data_dict['meta'] has value {data_dict['meta'][prop]}, "
                                           f"doesn't match expected value {val}" )
 
-        data_dict['band'] = data_dict['band'] if data_dict['band'] is not None else None
+        data_dict['band'] = data_dict['band'] if 'band' in data_dict else None
         data_dict['filepath'] = str( self.filepath )
         
         
