@@ -14,8 +14,14 @@ Image
       ~Image.coord_center
       ~Image.data
       ~Image.data_array_list
+      ~Image.dec
+      ~Image.dec_corner_00
+      ~Image.dec_corner_01
+      ~Image.dec_corner_10
+      ~Image.dec_corner_11
       ~Image.exptime
       ~Image.flags
+      ~Image.height
       ~Image.id
       ~Image.image_shape
       ~Image.mjd
@@ -24,8 +30,14 @@ Image
       ~Image.pointing
       ~Image.position_angle
       ~Image.provenance_id
+      ~Image.ra
+      ~Image.ra_corner_00
+      ~Image.ra_corner_01
+      ~Image.ra_corner_10
+      ~Image.ra_corner_11
       ~Image.sca
       ~Image.sky_level
+      ~Image.width
       ~Image.zeropoint
 
    .. rubric:: Methods Summary
@@ -50,8 +62,14 @@ Image
    .. autoattribute:: coord_center
    .. autoattribute:: data
    .. autoattribute:: data_array_list
+   .. autoattribute:: dec
+   .. autoattribute:: dec_corner_00
+   .. autoattribute:: dec_corner_01
+   .. autoattribute:: dec_corner_10
+   .. autoattribute:: dec_corner_11
    .. autoattribute:: exptime
    .. autoattribute:: flags
+   .. autoattribute:: height
    .. autoattribute:: id
    .. autoattribute:: image_shape
    .. autoattribute:: mjd
@@ -60,8 +78,14 @@ Image
    .. autoattribute:: pointing
    .. autoattribute:: position_angle
    .. autoattribute:: provenance_id
+   .. autoattribute:: ra
+   .. autoattribute:: ra_corner_00
+   .. autoattribute:: ra_corner_01
+   .. autoattribute:: ra_corner_10
+   .. autoattribute:: ra_corner_11
    .. autoattribute:: sca
    .. autoattribute:: sky_level
+   .. autoattribute:: width
    .. autoattribute:: zeropoint
 
    .. rubric:: Methods Documentation

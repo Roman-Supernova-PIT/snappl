@@ -6,12 +6,6 @@ FITSImage
 .. autoclass:: FITSImage
    :show-inheritance:
 
-   .. rubric:: Attributes Summary
-
-   .. autosummary::
-
-      ~FITSImage.image_shape
-
    .. rubric:: Methods Summary
 
    .. autosummary::
@@ -23,10 +17,6 @@ FITSImage
       ~FITSImage.get_wcs
       ~FITSImage.save
       ~FITSImage.set_fits_header
-
-   .. rubric:: Attributes Documentation
-
-   .. autoattribute:: image_shape
 
    .. rubric:: Methods Documentation
 

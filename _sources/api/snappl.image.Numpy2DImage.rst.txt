@@ -12,7 +12,6 @@ Numpy2DImage
 
       ~Numpy2DImage.data
       ~Numpy2DImage.flags
-      ~Numpy2DImage.image_shape
       ~Numpy2DImage.noise
 
    .. rubric:: Methods Summary
@@ -25,7 +24,6 @@ Numpy2DImage
 
    .. autoattribute:: data
    .. autoattribute:: flags
-   .. autoattribute:: image_shape
    .. autoattribute:: noise
 
    .. rubric:: Methods Documentation

@@ -10,11 +10,9 @@ RomanDatamodelImage
 
    .. autosummary::
 
-      ~RomanDatamodelImage.band
       ~RomanDatamodelImage.data
       ~RomanDatamodelImage.dm
       ~RomanDatamodelImage.flags
-      ~RomanDatamodelImage.mjd
       ~RomanDatamodelImage.noise
 
    .. rubric:: Methods Summary
@@ -26,11 +24,9 @@ RomanDatamodelImage
 
    .. rubric:: Attributes Documentation
 
-   .. autoattribute:: band
    .. autoattribute:: data
    .. autoattribute:: dm
    .. autoattribute:: flags
-   .. autoattribute:: mjd
    .. autoattribute:: noise
 
    .. rubric:: Methods Documentation

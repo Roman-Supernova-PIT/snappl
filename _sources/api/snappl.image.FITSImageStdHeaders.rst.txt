@@ -11,10 +11,14 @@ FITSImageStdHeaders
    .. autosummary::
 
       ~FITSImageStdHeaders.band
+      ~FITSImageStdHeaders.dec
       ~FITSImageStdHeaders.exptime
       ~FITSImageStdHeaders.mjd
       ~FITSImageStdHeaders.pointing
+      ~FITSImageStdHeaders.position_angle
+      ~FITSImageStdHeaders.ra
       ~FITSImageStdHeaders.sca
+      ~FITSImageStdHeaders.sky_level
       ~FITSImageStdHeaders.zeropoint
 
    .. rubric:: Methods Summary
@@ -26,10 +30,14 @@ FITSImageStdHeaders
    .. rubric:: Attributes Documentation
 
    .. autoattribute:: band
+   .. autoattribute:: dec
    .. autoattribute:: exptime
    .. autoattribute:: mjd
    .. autoattribute:: pointing
+   .. autoattribute:: position_angle
+   .. autoattribute:: ra
    .. autoattribute:: sca
+   .. autoattribute:: sky_level
    .. autoattribute:: zeropoint
 
    .. rubric:: Methods Documentation
