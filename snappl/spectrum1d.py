@@ -1,10 +1,15 @@
 import pathlib
 import copy
+import uuid
+import re
 
+import h5py
+
+from snappl.config import Config
 from snappl.provenance import Provenance
 from snappl.diaobject import DiaObject
 from snappl.logger import SNLogger
-from snappl.util import asUUID
+from snappl.utils import asUUID
 
 
 class Spectrum1d:
@@ -41,15 +46,16 @@ class Spectrum1d:
 
             You must give one of data_dict or filepath; it is bad form
             to specify both.
-        
+
           filepath : Path or str, default None
             File path to find the lightcurve, realtive to base dir.  You
             must specify either data_dict or filepath; it is bad form to
             specify both.
 
           base_dir: Path or str, default None
-            Base directory that filepath is relative to.  If None, will
-            use the config value of "system.paths.spectra1d".
+            Base directory that filepath is relative to.  If None (which
+            is what you want if you're writing things to the database),
+            will use the config value of "system.paths.spectra1d".
 
           provenance: Provenance or UUID or str or None
             The provenance of this lightcurve.  You may also set
@@ -79,20 +85,31 @@ class Spectrum1d:
             if match is None:
                 SNLogger.warning( "Could not parse filepath to find spectrum1d id, assigning a new one." )
             else:
-                if any( match.group(1) != match.group(4)[0],
-                        match.group(2) != match.group(4)[1],
-                        match.group(3) != match.group(4)[2] ):
+                if any( [ match.group(1) != match.group(4)[0],
+                          match.group(2) != match.group(4)[1],
+                          match.group(3) != match.group(4)[2] ] ):
                     SNLogger.warning( "filepath didn't have consistent directory and filename, cannot parse "
                                       "spectrum1d id from it, assigning a new one" )
                 else:
                     self.id = match.group(4)
         self.id = asUUID( id ) if id is not None else uuid.uuid4()
 
-        self.base_dir = Config.get().value('system.paths.lightcurves') if base_dir is None else base_dir
-        self._data_dict = self._set_data_dict( data_dict ) if data_dict is not None else None
+        self.base_dir = Config.get().value('system.paths.spectra1d') if base_dir is None else base_dir
         self._filepath = pathlib.Path( filepath ) if filepath is not None else None
+        self.provenance_id = ( provenance.id if isinstance( provenance, Provenance )
+                               else asUUID( provenance, oknone=True ) )
+        self.diaobject_id = ( diaobject.id if isinstance( diaobject, DiaObject )
+                              else asUUID( diaobject, oknone=True ) )
+        self.diaobject_position_id = ( asUUID(diaobject_position['id']) if isinstance( diaobject_position, dict )
+                                       else asUUID( diaobject_position, oknone=True ) )
         self.no_database = no_database
-        
+
+        if data_dict is None:
+            self._data_dict = None
+        else:
+            self._set_data_dict( data_dict )
+
+
     @property
     def data_dict( self ):
         if self._data_dict is None:
@@ -122,61 +139,208 @@ class Spectrum1d:
         return self.data_dict['combined']['data']
 
     @property
-    def individual( sellf ):
-        returns self.data_dict['individual']
+    def individual( self ):
+        return self.data_dict['individual']
 
     @property
-    def filepath:
+    def filepath( self ):
         if self._filepath is None:
             self.generate_filepath()
         return self._filepath
-        
+
     @property
-    def full_filepath:
+    def full_filepath( self ):
         if self._filepath is None:
             self.generate_filepath()
         return self.base_dir / self._filepath
 
-    def _set_data_dict( self, data_dict, provenance, diaobject, diaobject_position ):
+
+    def generate_filepath( self, filetype='hdf5' ):
+        suffixdict = { 'hdf5': 'hdf5' }
+        if filetype not in suffixdict:
+            raise ValueError( f"Unknown filetype {filetype}" )
+        subdir = str(self.id)[0:3]
+        basename = f'{self.provenance_id}/{subdir[0]}/{subdir[1]}/{subdir[2]}/{self.id}'
+        self._filepath = pathlib.Path( f'{basename}_1dspec.{suffixdict[filetype]}' )
+
+    def _set_data_dict( self, data_dict, provenance=None, diaobject=None, diaobject_position=None ):
         """Verifies and sets the data dict.  Makes a copy, so will not mung the passed object."""
-        
+
         provenance = provenance.id if isinstance( provenance, Provenance ) else asUUID( provenance, oknone=True )
         diaobject = diaobject.id if isinstance( diaobject, DiaObject) else asUUID( diaobject, oknone=True )
         diaobject_position = ( diaobject_position['id'] if isinstance( diaobject_position, dict )
                                else asUUID( diaobject_position, oknone=True ) )
-        
+
+        provenance = self.provenance_id if provenance is None else provenance
+        diaobject = self.diaobject_id if diaobject is None else None
+        diaobject_position = self.diaobject_position_id if diaobject_position is None else None
+
         data_dict = copy.deepcopy( data_dict )
-        
+
+        # Basic type checking
+
         if not isinstance( data_dict, dict ):
             raise TypeError( f"data_dict must be a dict, not a {type(data_dict)}" )
-
         if set( data_dict.keys() ) != { 'meta', 'combined', 'individual' }:
-            raise ValueError( f"data_dict must have keys 'meta', 'combined', and 'individual'" )
-
+            raise ValueError( "data_dict must have keys 'meta', 'combined', and 'individual'" )
         if not isinstance( data_dict['meta'], dict ):
             raise TypeError( f"data_dict['meta'] must be a dict, not a {type(data_dict['meta'])}" )
-        
+        if not isinstance( data_dict['combined'], dict ):
+            raise TypeError( f"data_dict['combined'] must be a dict, not a {type(data_dict['combined'])}" )
+        if set( data_dict['combined'].keys() ) != { 'meta', 'data' }:
+            raise ValueError( "data_dict['combined'] must have keys 'meta' and 'data'" )
+        if not isinstance( data_dict['individual'], list ):
+            raise TypeError( f"data_dict['individual'] must be a list, not a {type(data_dict['individual'])}" )
+        for indiv in data_dict['individual']:
+            if not isinstance( indiv, dict ):
+                raise TypeError( f"elements of the data_dict['individual'] list must be dicts, but at least one is "
+                                 f"a {type(indiv)}" )
+            if set( indiv.keys() ) != { 'meta', 'data' }:
+                raise ValueError( "Each dict in the data_dict['individual'] list must have keys 'meta' and 'data'" )
+
+        # Make sure the ids and provenances are all there
+
         if not self.no_database:
-            for prop, val in zip( [ 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
-                                    self.id, provenance, diaobject, diaobject_position ] ):
+            for prop, val in zip( [ 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id' ],
+                                  [ self.id, provenance, diaobject, diaobject_position ] ):
                 if prop not in data_dict['meta']:
-                    data_dict['meta'] == val
+                    data_dict['meta'][prop] = val
+
+                try:
+                    # This weird way of doing things is so that we will get the same error
+                    #   message if there's a uuid mismatch, or if asUUID fails.
+                    # diaobject_position_id is the only one that can be None
+                    _ok = ( ( ( val is None ) and ( prop == 'diaobject_position_id' ) )
+                            or
+                            ( asUUID( data_dict['meta'][prop] ) == val )
+                           )
+                    data_dict['meta'][prop] = asUUID( data_dict['meta'][prop], oknone=True )
+                except Exception:
+                    raise ValueError( f"Property {prop} in data_dict['meta'] has value {data_dict['meta'][prop]}, "
+                                      f"doesn't match expected value {val}" )
+
+            # Make sure the self attributes are set
+            self.provenance_id = data_dict['meta']['provenance_id']
+            self.diaobject_id = data_dict['meta']['diaobject_id']
+            self.diaobject_position_id = data_dict['meta']['diaobject_position_id']
+
+
+        data_dict['meta']['band'] = data_dict['band'] if 'band' in data_dict else None
+        data_dict['meta']['filepath'] = str( self.filepath )
+
+        # Make sure that if there's an nfiles in meta, it is right
+        if 'nfiles' in data_dict['combined']['meta']:
+            if data_dict['combined']['meta']['nfiles'] != len(data_dict['individual']):
+                raise ValueError( f"You have nfiles={data_dict['meta']['nfiles']} in meta, but the individual list "
+                                  f"is length {len(data_dict['individual'])}" )
+        else:
+            data_dict['meta']['combined']['nfiles'] = len( data_dict['individual'] )
+
+
+        # TODO VERIFY DATA FORMAT
+
+        self._data_dict = data_dict
+
+
+    def write_file( self, filepath=None ):
+        """Writes the file
+
+        Parameters
+        ----------
+          filepath : str or pathlib.Path, default None
+            The full path to write the file to.  If None, then will use
+            the base_path and filepath passed at object construction, or
+            if those were None, will generate a standard filepath used
+            for the database files.  If you're writing to the database,
+            you usually want this to be None.
+
+        """
+
+        filepath = pathlib.Path( filepath ) if filepath is not None else self.full_filepath
+        filepath.parent.mkdir( exist_ok=True, parents=True )
+
+        with h5py.File( filepath, 'w' ) as h5f:
+            topgrp = h5f.create_group( "spectrum1d" )
+            for key, val in self.data_dict['meta'].items():
+                if isinstance( val, uuid.UUID ):
+                    topgrp.attrs[key] = str(val)
                 else:
-                    try:
-                        # This weird way of doing things is so that we will get the same error
-                        #   message if there's a uuid mismatc, or if asUUID fails.
-                        _ok = ( ( asUUID( data_dict['meta'][prop], oknone=True ) == val )
-                                or
-                                ( val is None ) )
-                        data_dict['meta'][prop] = asUUID( data_dict['meta'][prop] )
-                    except Exception:
-                        raise ValueError( f"Property {prop} in data_dict['meta'] has value {data_dict['meta'][prop]}, "
-                                          f"doesn't match expected value {val}" )
+                    topgrp.attrs[key] = val if val is not None else h5py.Empty('i')
 
-        data_dict['band'] = data_dict['band'] if 'band' in data_dict else None
-        data_dict['filepath'] = str( self.filepath )
-        
-        
+            combined = topgrp.create_group( "combined" )
+            for key, val in self.data_dict['combined']['meta'].items():
+                if isinstance( val, uuid.UUID ):
+                    combined.attrs[key] = str( val )
+                else:
+                    combined.attrs[key] = val if val is not None else h5py.Empty('i')
+            combined.create_dataset( 'lamb', data=self.data_dict['combined']['data']['lamb'] )
+            combined.create_dataset( 'flam', data=self.data_dict['combined']['data']['flam'] )
+            combined.create_dataset( 'func', data=self.data_dict['combined']['data']['func'] )
+            combined.create_dataset( 'count', data=self.data_dict['combined']['data']['count'] )
 
-        
-        
+            for dex, indiv in enumerate( self.data_dict['individual'] ):
+                indivgrp = topgrp.create_group( f"individual_{dex}" )
+                for key, val in indiv['meta'].items():
+                    if isinstance( val, uuid.UUID ):
+                        indivgrp.attrs[key] = str(val)
+                    else:
+                        indivgrp.attrs[key] = val if val is not None else h5py.Empty('i')
+                indivgrp.create_dataset( 'lamb', data=indiv['data']['lamb'] )
+                indivgrp.create_dataset( 'flam', data=indiv['data']['flam'] )
+                indivgrp.create_dataset( 'func', data=indiv['data']['func'] )
+
+    def read_data( self, filepath=None ):
+        """Reads the file.
+
+        Populates self._data_dict
+
+        Parameters
+        ----------
+          filepath : str or pathlib.Path, default None
+            The full path to write the file to.  If None, then will use
+            the base_path and filepath passed at object construction.
+
+        """
+
+        filepath = pathlib.Path( filepath ) if filepath is not None else self.full_filepath
+
+        self._data_dict = { 'meta': {},
+                            'combined': { 'meta': {}, 'data': {} },
+                            'individual': [] }
+
+        with h5py.File( filepath, 'r' ) as h5f:
+            topgrp = h5f['spectrum1d']
+            self._data_dict['meta'] = dict( topgrp.attrs )
+            for key in self._data_dict['meta']:
+                if self._data_dict['meta'][key] == h5py.Empty('i'):
+                    self._data_dict['meta'][key] = None
+
+            combgrp = topgrp['combined']
+            self._data_dict['combined']['meta'] = dict( combgrp.attrs )
+            tmpd = self._data_dict['combined']['meta']
+            for key in tmpd:
+                if tmpd[key] == h5py.Empty('i'):
+                    tmpd[key] = None
+            self._data_dict['combined']['data']['lamb'] = combgrp['lamb'][:]
+            self._data_dict['combined']['data']['flam'] = combgrp['flam'][:]
+            self._data_dict['combined']['data']['func'] = combgrp['func'][:]
+            self._data_dict['combined']['data']['count'] = combgrp['count'][:]
+
+            # Figure out how many individuals there are
+            nkeys = 0
+            for key in topgrp.keys():
+                mat = re.search( r'^individual_(\d+)$', key )
+                if mat is not None:
+                    nkeys = max( nkeys, int(mat.group(1))+1 )
+
+            for indivdex in range(nkeys):
+                indiv = {}
+                indivgrp = topgrp[ f'individual_{indivdex}' ]
+                indiv['meta'] = dict( indivgrp.attrs )
+                for key in indiv['meta']:
+                    if indiv['meta'][key] == h5py.Empty('i'):
+                        indiv['meta'][key] =  None
+                indiv['data'] = { 'lamb': indivgrp['lamb'][:],
+                                  'flam': indivgrp['flam'][:],
+                                  'func': indivgrp['func'][:] }
+                self._data_dict['individual'].append( indiv )

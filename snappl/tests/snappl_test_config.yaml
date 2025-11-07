@@ -4,6 +4,7 @@ replaceable_preloads:
 
 system:
   paths:
+    spectra1d: /home/snappl/snappl/tests/outdata/spectra1d
     lightcurves: /home/snappl/snappl/tests/outdata/lightcurves
     segmaps: /home/snappl/snappl/tests/outdata/segmaps
     images: /home/snappl/snappl/tests/outdata/images
