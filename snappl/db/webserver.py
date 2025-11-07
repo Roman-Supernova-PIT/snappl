@@ -494,7 +494,7 @@ class FindL2Images( BaseView ):
                 # with clever nested queries.)
                 #
                 if not ( ( 'ra' in data ) and ( 'dec' in data ) ):
-                    return "Error, if you specify ra or dec, you must specify both"
+                    return "Error, if you specify ra or dec, you must specify both", 500
                 conditions.append( "q3c_poly_query( %(ra)s, %(dec)s, "
                                    "ARRAY[ ra_corner_00, dec_corner_00, ra_corner_01, dec_corner_01, "
                                    "       ra_corner_11, dec_corner_11, ra_corner_10, dec_corner_10 ] )" )
@@ -707,6 +707,40 @@ class FindLightcurves( BaseView ):
 
 # ======================================================================
 
+class SaveSpectrum1d( BaseView ):
+    def do_the_things( self ):
+       needed_keys = { 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id', 'band',
+                        'filepath', 'mjd_start', 'mjd_end', 'epoch' }
+        allowed_keys = needed_keys
+        data = self.check_json_keys( needed_keys, allowed_keys )
+
+        keysql, subs = self.build_sql_insert( data.keys() )
+        q = sql.SQL( "INSERT INTO spectrum1d(" ) + keysql + sql.SQL( ") VALUES (" ) + sql.SQL( subs ) + sql.SQL( ")" )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            dbcon.execute( q, data )
+            row = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': data['id']} )
+            dbcon.commit()
+
+        return row
+
+
+# ======================================================================
+
+def GetSpectrum1d( BaseView ):
+    def do_the_things( self, spectrumid ):
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': spectrumid} )
+            if len(rows) == 0:
+                return f"No spectrum1d with id {spectrumid}", 500
+            elif len(rows) > 1:
+                return f"Multiple spectrum1d with id {spectrumid}; this should never happen.", 500
+            else:
+                return rows[0]
+
+
+# ======================================================================
+
 urls = {
     "/": MainPage,
     "/test/<param>": TestEndpoint,
@@ -736,4 +770,8 @@ urls = {
     "/savelightcurve": SaveLightcurve,
     "/getlightcurve/<ltcvid>": GetLightcurve,
     "/findlightcurves": FindLightcurves,
+
+    "/savespectrum1d": SaveSpectrum1d,
+    "/getspectrum1d/<spectrumid>": GetSpectrum1d,
+    # "/findspectra1d": FindSpectra1d,
 }

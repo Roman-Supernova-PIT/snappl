@@ -120,18 +120,13 @@ You get back a dictionary that has a number of keys including ``ra`` and ``dec``
 Getting a Specific Image
 ------------------------
 
-ROB IMPLEMENT THIS BETTER
+Orchestration has given you a ``image_id`` that you are supposed to do something with.  E.g.,, you are running sidecar, and you're supposed to subtract and search this image.
 
-Orchestration has given you a ``image_id`` that you are supposed to do something with.  E.g.,, you are running sidecar, and you're supposed to subtract and search this image.  Right now you also need to know the images's ``image_provenance_tag`` and ``image_process``, but that requirement will go away when Rob fixes it::
-
-  from snappl.imagecollection import ImageCollection
   from snappl.image import Image
 
-  collection = ImageCollection.get_collection( provenance_tag=image_provenance_tag,
-                                               process=image_process, dbclient=dbclient )
-  image = collection.get_image( image_id=image_id, dbclient=dbclient )
+  image = Image.get_image( image_id, dbclient=dbclient )
 
-You will get back an ``Image`` object.  It has a number of properties.  Most important are ``.data``, ``.noise``, and ``.flags``, which hold 2d numpy arrays.  There is also a ``.get_fits_header()`` method that currently works, **but be careful using this as this method will not work in the future when we're using ASDF files**.  See the docstrings in ``snappl.image.Image`` for more details.  Some of the stuff you might want is available directly as properties of and ``Image`` object.
+You will get back an ``Image`` object (really, an object of a class that is a subclass of ``Image``).  It has a number of properties.  Most important are ``.data``, ``.noise``, and ``.flags``, which hold 2d numpy arrays.  There is also a ``.get_fits_header()`` method that currently works, **but be careful using this as this method will not work in the future when we're using ASDF files**.  See the docstrings in ``snappl.image.Image`` for more details.  Some of the stuff you might want is available directly as properties of and ``Image`` object.
                                                
 
 Finding Images
@@ -142,18 +137,47 @@ You need to know the ``image_provenance_tag`` and ``image_process``.
 See the docstring on ``snappl.imagecollection.ImageCollection.find_images`` if you want to do more than what's below.
 
 
-Finding all images that include a ra and dec
-********************************************
+Finding all images in a given band that include a ra and dec
+************************************************************
 
 Do::
 
-  from snappl.imagecollection import ImageCollection
+  from snappl.image import Image
 
-  collection = ImageCollection.get_collection( provenance_tag=image_provenance_tag,
-                                               process=image_process, dbclient=dbclient )
-  images = collection.find_images( ra=ra, dec=dec, band=band, dbclient=dbclient )
+  images = Image.find_images( provenance_tag=image_provenacne_tag, process=image_process, dbclient=dbclient,
+                              ra=ra, dec=dec, band=band )
 
-where ``band=band`` is optional but often useful.  You will get back a list of ``Image`` objects, which have a number of properties.  Most important are ``.data``, ``.noise``, and ``.flags``, which hold 2d numpy arrays.  There is also a ``.get_fits_header()`` method that currently works, **but be careful using this as this method will not work in the future when we're using ASDF files**.  See the docstrings in ``snappl.image.Image`` for more details.
+where ``band=band`` is optional but often useful.  (If you don't specify it, you will get back images from all bands.) You will get back a list of ``Image`` objects, which have a number of properties (some of which may be ``None`` if they are unknown):
+
+  * ``data`` : the data array, in ADU, a 2d numpy array
+  * ``noise`` : the ADU uncertainty on the data, a 2d numpy array
+  * ``flags`` : pixel flags, a 2d numpy array of ints [we are still working on definining these]
+  * ``width`` : int, the width of the image in pixels; horizontal as viewed on ds9; corresponds to data.shape[1]
+  * ``height`` : int, the height of the image in pixels; vertical as viewed on ds9; corresponds to data.shape[0]
+  * ``image_shape`` : tuple of ints, (height, width)
+  * ``pointing`` : int or str, the pointing; **warning** this property name will change when we know more
+  * ``sca`` : int, the chip of the image
+  * ``ra`` : float, the nominal center of the image in decimal degrees (usu. from the header)
+  * ``dec`` : float, the nominal center of the image in decimal degrees (usu. from the header)
+  * ``coord_center`` : tuple of (ra, dec) [I THINK], calcualted from the image WCS
+  * ``ra_corner_00`` : float, decimal degrees, the RA of pixel (0, 0)
+  * ``ra_corner_01`` : float, decimal degrees, the RA of pixel (0, height-1)
+  * ``ra_corner_10`` : float, decimal degrees, the RA of pixel (width-1, 0)
+  * ``ra_corner_11`` : float, decimal degrees, the RA of pixel (width-1, height-1)
+  * ``dec_corner_00`` : float, decimal degrees, the Dec of pixel (0, 0)
+  * ``dec_corner_01`` : float, decimal degrees, the Dec of pixel (0, height-1)
+  * ``dec_corner_10`` : float, decimal degrees, the Dec of pixel (width-1, 0)
+  * ``dec_corner_11`` : float, decimal degrees, the Dec of pixel (width-1, height-1)
+  * ``band`` : str, the filter/band/whatever you call it for this image
+  * ``mjd`` : float, mjd (days) when the image exposure started
+  * ``position_angle`` : float, position angle in degrees north of east (CHECK THIS)
+  * ``exptime`` float, exposure time in seconds
+  * ``sky_level`` float; an estimate of the sky level (in ADU) if known, None otherwise
+  * ``zeropoint`` : float; convert ADU to AB magnitudes with ``m = -2.5*log10(adu) + zeropoint``
+
+**Warning**: because of how numpy arrays are indexed, if you want to get the flux value in pixel ``(ix, iy)``, you would look at ``.data[iy, ix]``.
+  
+There is also a ``.get_fits_header()`` method that currently works, **but be careful using this as this method will not work in the future when we're using ASDF files**.  See the docstrings in ``snappl.image.Image`` for more details.
 
 Finding Segmentation Maps
 -------------------------

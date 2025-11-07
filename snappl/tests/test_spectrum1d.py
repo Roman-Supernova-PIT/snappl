@@ -63,7 +63,7 @@ def gratuitous_spectrum( stupid_provenance, stupid_object, bogus_images ):
                      }
         },
         'individual': [
-            { 'meta': { 'imageid': bogus_images[0],
+            { 'meta': { 'image_id': bogus_images[0],
                         'x0': 512.,
                         'y0': 256.
                        },
@@ -72,7 +72,7 @@ def gratuitous_spectrum( stupid_provenance, stupid_object, bogus_images ):
                         'func': np.array( [   0.1,   0.2,   0.2,   0.2,   0.1 ] )
                        }
              },
-            { 'meta': { 'image1d': bogus_images[1],
+            { 'meta': { 'image_id': bogus_images[1],
                         'x0': 489.,
                         'y0': 137.,
                        },
@@ -85,6 +85,19 @@ def gratuitous_spectrum( stupid_provenance, stupid_object, bogus_images ):
     }
 
     return data_dict
+
+
+@pytest.fixture
+def saved_gratuitous_spectrum( gratuitous_spectrum, dbclient ):
+    spec = Spectrum1d( data_dict=gratuitous_spectrum, dbclient=dbclient )
+    try:
+        spec.save_to_db( write=True, dbclient=dbclient )
+        yield spec
+    finally:
+        spec.full_filepath.unlink( missing_ok=True )
+        with snappl.db.db.DBCon() as dbcon:
+            dbcon.execute( "DELETE FROM spectrum1d WHERE id=%(id)s", {'id':spec.id} )
+            dbcon.commit()
 
 
 def recursive_compare( val1, val2, path='' ):
@@ -138,11 +151,11 @@ def recursive_compare( val1, val2, path='' ):
 def test_write_and_read_spectrum( bogus_images, gratuitous_spectrum ):
     ofpath = None
     try:
-        spec = Spectrum1d( data_dict=gratuitous_spectrum )
+        spec = Spectrum1d( data_dict=gratuitous_spectrum, no_database=True )
         ofpath = spec.full_filepath
         spec.write_file()
 
-        newspec = Spectrum1d( filepath=spec.filepath )
+        newspec = Spectrum1d( filepath=spec.filepath, no_database=True )
         assert recursive_compare( newspec.data_dict, spec.data_dict )
 
 
@@ -150,3 +163,43 @@ def test_write_and_read_spectrum( bogus_images, gratuitous_spectrum ):
     finally:
         if ofpath is not None:
             ofpath.unlink( missing_ok=True )
+
+
+def test_save_to_db( bogus_images, gratuitous_spectrum, dbclient ):
+    spec = Spectrum1d( data_dict=gratuitous_spectrum, dbclient=dbclient )
+    try:
+        spec.save_to_db( write=False, dbclient=dbclient )
+        assert not spec.full_filepath.exists()
+        with snappl.db.db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': spec.id} )
+            assert len(rows) == 1
+            assert str(rows[0]['filepath']) == str(spec.filepath)
+            # Could check other things, but naah, will effectively check that when
+            #   we test get_spectrum
+            dbcon.execute("DELETE FROM spectrum1d WHERE id=%(id)s", {'id': spec.id} )
+            dbcon.commit()
+
+        spec.save_to_db( write=True, dbclient=dbclient )
+        assert spec.full_filepath.is_file()
+        with snappl.db.db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': spec.id} )
+            assert len(rows) == 1
+            assert str(rows[0]['filepath']) == str(spec.filepath)
+
+        oldspec = Spectrum1d( data_dict=gratuitous_spectrum, dbclient=dbclient )
+        assert recursive_compare( spec.data_dict, oldspec.data_dict )
+
+    finally:
+        spec.full_filepath.unlink( missing_ok=True )
+        with snappl.db.db.DBCon() as dbcon:
+            dbcon.execute( "DELETE FROM spectrum1d WHERE id=%(id)s", {'id': spec.id} )
+            dbcon.commit()
+
+
+def test_get_find( saved_gratuitous_spectrum, dbclient ):
+    # This test isn't great as there's only one spectrum saved.  We
+    # should probably beef up this test by saving several test spectra
+    # and making sure that searching really does the right thing.
+
+    # Make sure we error out if we ask for a non-existent spectrum
+    Spectrum1d.get_spectrum1d( uuid.uuid4(), dbclient=dbclient )

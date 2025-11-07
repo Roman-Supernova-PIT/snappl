@@ -2,21 +2,36 @@ import pathlib
 import copy
 import uuid
 import re
+import simplejson
 
 import h5py
+import numpy as np
 
 from snappl.config import Config
 from snappl.provenance import Provenance
 from snappl.diaobject import DiaObject
+from snappl.image import Image
 from snappl.logger import SNLogger
-from snappl.utils import asUUID
+from snappl.utils import asUUID, SNPITJsonEncoder
+from snappl.dbclient import SNPITDBClient
 
 
 class Spectrum1d:
     """A class to store and save single-epoch 1d transient spectra."""
 
-    def __init__( self, id=None, data_dict=None, filepath=None, base_dir=None,
-                  provenance=None, diaobject=None, diaobject_position=None, no_database=False ):
+    def __init__( self, id=None,
+                  data_dict=None,
+                  filepath=None,
+                  base_dir=None,
+                  provenance=None,
+                  diaobject=None,
+                  diaobject_position=None,
+                  band=None,
+                  mjd_start=None,
+                  mjd_end=None,
+                  epoch=None,
+                  no_database=False,
+                  dbclient=None ):
         """Instantiate a Spectrum1d
 
         Spectrum1d schema are defined here:
@@ -104,11 +119,43 @@ class Spectrum1d:
                                        else asUUID( diaobject_position, oknone=True ) )
         self.no_database = no_database
 
+        self.band = None
+        self.mjd_start = None
+        self.mjd_end = None
+        self.epoch = None
+        self.images = None
+        
         if data_dict is None:
             self._data_dict = None
         else:
-            self._set_data_dict( data_dict )
+            self._set_data_dict( data_dict, dbclient=dbclient )
 
+    def _fill_props( self, dbclient=None ):
+        """Fills self.images, self.band, self.mjd_start, self.mjd_end, and self.epoch based on data_dict."""
+        
+        imageids = set( str(i['meta']['image_id']) for i in self.individual  )
+        if ( self.images is None ) or ( set( str(i.id) for i in self.images ) != imageids ):
+            # Have to reload images:
+            dbclient = SNPITDBClient() if dbclient is None else dbclient
+            self.images = []
+            for imid in imageids:
+                try:
+                    image = Image.get_image( imid, dbclient=dbclient )
+                    if not isinstance( image, Image ):
+                        raise TypeError( "Didn't get an Image back from Image.get_image; this should not happen." )
+                except Exception as ex:
+                    SNLogger.error( f"Spectrum1d.save_to_db failed to get image {imid} from the database:\n{ex}" )
+                    raise
+                self.images.append( image )
+            self.images.sort( key=lambda x: x.mjd )
+
+        self.mjd_start = self.images[0].mjd
+        self.mjd_end = self.images[-1].mjd + self.images[-1].exptime / 3600. / 24.
+        self.epoch = int( np.floor( sum([ i.mjd for i in self.images ]) / len(self.images) * 1000 + 0.5 ) )
+        if any( i.band != self.images[0].band for i in self.images ):
+            raise ValueError( "Images have inconsistent bands!" )
+        self.band = self.images[0].band
+        
 
     @property
     def data_dict( self ):
@@ -163,7 +210,7 @@ class Spectrum1d:
         basename = f'{self.provenance_id}/{subdir[0]}/{subdir[1]}/{subdir[2]}/{self.id}'
         self._filepath = pathlib.Path( f'{basename}_1dspec.{suffixdict[filetype]}' )
 
-    def _set_data_dict( self, data_dict, provenance=None, diaobject=None, diaobject_position=None ):
+    def _set_data_dict( self, data_dict, provenance=None, diaobject=None, diaobject_position=None, dbclient=None ):
         """Verifies and sets the data dict.  Makes a copy, so will not mung the passed object."""
 
         provenance = provenance.id if isinstance( provenance, Provenance ) else asUUID( provenance, oknone=True )
@@ -224,7 +271,6 @@ class Spectrum1d:
             self.diaobject_id = data_dict['meta']['diaobject_id']
             self.diaobject_position_id = data_dict['meta']['diaobject_position_id']
 
-
         data_dict['meta']['band'] = data_dict['band'] if 'band' in data_dict else None
         data_dict['meta']['filepath'] = str( self.filepath )
 
@@ -236,10 +282,21 @@ class Spectrum1d:
         else:
             data_dict['meta']['combined']['nfiles'] = len( data_dict['individual'] )
 
+        # Make sure that we have an image_id for all the individual files
+
+        if not self.no_database:
+            for indiv_dict in data_dict['individual']:
+                if 'image_id' not in indiv_dict['meta']:
+                    raise ValueError( "All 'individual' dictionaries must have an image_id key" )
+                # Make sure it uuidifies
+                _ = asUUID( indiv_dict['meta']['image_id'] )
 
         # TODO VERIFY DATA FORMAT
 
         self._data_dict = data_dict
+        if not self.no_database:
+            dbclient = SNPITDBClient() if dbclient is None else dbclient
+            self._fill_props( dbclient=dbclient )
 
 
     def write_file( self, filepath=None ):
@@ -289,7 +346,7 @@ class Spectrum1d:
                 indivgrp.create_dataset( 'flam', data=indiv['data']['flam'] )
                 indivgrp.create_dataset( 'func', data=indiv['data']['func'] )
 
-    def read_data( self, filepath=None ):
+    def read_data( self, filepath=None, dbclient=None ):
         """Reads the file.
 
         Populates self._data_dict
@@ -344,3 +401,75 @@ class Spectrum1d:
                                   'flam': indivgrp['flam'][:],
                                   'func': indivgrp['func'][:] }
                 self._data_dict['individual'].append( indiv )
+
+        if not self.no_database:
+            dbclient = SNPITDBClient() if dbclient is None else dbclient
+            self._fill_props( dbclient=dbclient )
+                
+
+    def save_to_db( self, write=False, dbclient=None ):
+        """Save spectrum to db.
+
+        Parmaters
+        ---------
+          write : bool, default False
+            If write=True, then also write the file.  If not, then you
+            must call write_file() first.  (If you call write() and then
+            call this with write=True, you'll get a file exists error.)
+
+          dbclient : SNPITDBClient, default None
+            The connection to the database web server.  If None, a new
+            one will be made that logs you in using the information in
+            Config.
+
+        Returns
+        -------
+          dict : the row of the database saved, for informational purposes
+
+
+        """
+        if self.no_database:
+            raise RuntimeError( "Can't save a no_database spectrum to the database." )
+
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        self._fill_props( dbclient=dbclient )
+        if write:
+            self.write_file()
+
+        data = { 'id': self.id,
+                 'provenance_id': self.provenance_id,
+                 'diaobject_id': self.diaobject_id,
+                 'diaobject_position_id': self.diaobject_position_id,
+                 'band': self.images[0].band,
+                 'filepath': self.filepath,
+                 'mjd_start': self.mjd_start,
+                 'mjd_end': self.mjd_end,
+                 'epoch': self.epoch }
+
+        return dbclient.send( "savespectrum1d", data=simplejson.dumps( data, cls=SNPITJsonEncoder ),
+                              headers={'Content-Type': 'application/json'} )
+
+    @classmethod
+    def get_sectrum1d( cls, spectrum1d_id, dbclient=None ):
+        """Get a Specrum1d from the database.
+
+        Parameters
+        ----------
+          spectrum1d_id : UUID or str that can be converted to a UUID
+            The id of the spectrum to fetch.
+
+          dbclient : SNPITDBClient or None
+            The connection to the database web server.  If None, a new
+            one will be made that logs you in using the information in
+            Config.
+
+        Returns
+        -------
+          Spectrum1d
+
+        """
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+
+        result = dbclient.send( f"getspectrum1d/{spectrum1d_id}" )
+        del result['created_at']
+        return Spectrum1d( **result )

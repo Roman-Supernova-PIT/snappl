@@ -5,12 +5,16 @@ CREATE TABLE spectrum1d(
   diaobject_position_id UUID DEFAULT NULL,
   band text NOT NULL,
   filepath text NOT NULL,
+  mjd_start real,
+  mjd_end real,
   epoch int NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE INDEX ix_spectrum1d_provenance_id ON spectrum1d USING btree(provenance_id);
 CREATE INDEX ix_spectrum1d_diaobject_id ON spectrum1d USING btree(diaobject_id);
 CREATE INDEX ix_spectrum1d_diaobject_position_id ON spectrum1d USING btree(diaobject_position_id);
+CREATE INDEX ix_spectrum1d_mjd_start ON spectrum1d USING btree(mjd_start);
+CREATE INDEX ix_spectrum1d_mjd_end ON spectrum1d USING btree(mjd_end);
 CREATE INDEX ix_spectrum1d_epoch ON spectrum1d USING btree(epoch);
 CREATE UNIQUE INDEX ix_spectrum1d_unique ON spectrum1d USING btree(provenance_id,diaobject_id,epoch);
 ALTER TABLE spectrum1d ADD CONSTRAINT fk_spectrum1d_provenance_id
@@ -20,7 +24,9 @@ ALTER TABLE spectrum1d ADD CONSTRAINT fk_spectrum1d_diaobject_id
 ALTER TABLE spectrum1d ADD CONSTRAINT fk_spectrum1d_diaobject_position_id
   FOREIGN KEY(diaobject_position_id) REFERENCES diaobject_position(id);
 COMMENT ON TABLE spectrum1d IS 'Single-epoch (combining ~4 images) 1d transient spectrum';
-COMMENT ON COLUMN spectrum1d.epoch IS 'floor( (Average MJD of images) * 1000 + 0.5 )';
+COMMENT ON COLUMN spectrum1d.mjd_start IS 'mjd of earliest image included';
+COMMENT ON COLUMN spectrum1d.mjd_end IS 'mjd + exptime (in days) of latest image included';
+COMMENT ON COLUMN spectrum1d.epoch IS 'millidays; floor( (Average MJD of images) * 1000 + 0.5 )';
   
 
 CREATE TABLE spectrum1d_included_image(

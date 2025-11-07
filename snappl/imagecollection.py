@@ -6,7 +6,7 @@ import simplejson
 
 from snappl.config import Config
 from snappl.http import retry_post
-from snappl.image import OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders
+from snappl.image import Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
 from snappl.utils import asUUID, SNPITJsonEncoder
@@ -406,12 +406,12 @@ class ImageCollectionManualFITS:
 # Images that are in the Roman SNPIT Database
 
 class ImageCollectionDB:
-    image_class_dict = { 'ou2024': OpenUniverse2024FITSImage,
-                         'ou2024nov2025': OpenUniverse2024FITSImage
-                        }
-    base_path_dict = { 'ou2024': 'system.ou24.images',
-                       'ou2024nov2025': 'system.paths.images'
-                      }
+    # This is a mapping of the 'image_class' in the provenance parameters for
+    #   a l2image to the 'format' field of the image (defined by
+    #   Image._format_def; see bottom of image.py).
+    image_class_to_format = { 'ou2024': 2,
+                              'ou2024nov2025': 1
+                              }
 
     def __init__( self, provenance=None, base_path=None ):
         if provenance is None:
@@ -419,12 +419,13 @@ class ImageCollectionDB:
         self.provenance = provenance
 
         prov_imclass = self.provenance.params['image_class']
-        if prov_imclass not in self.image_class_dict:
+        if prov_imclass not in self.image_to_format:
             raise RuntimeError( "Unknown image_class {image_class}" )
-        self.image_class = self.image_class_dict[ prov_imclass ]
+        imclass_format = self.image_to_format[ prov_imclass ]
+        self.image_class = Image._format_def[ imclass_format ]['image_class']
 
         if base_path is None:
-            base_path = Config.get().value( self.base_path_dict[ prov_imclass ] )
+            base_path = Config.get().value( Image._format_def[ imclass_format ]['base_path_config'] )
         self.base_path = pathlib.Path( base_path )
 
 

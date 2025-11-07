@@ -4,6 +4,7 @@ __all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'FITSIm
 import re
 import pathlib
 import random
+import simplejson
 
 import numpy as np
 import pandas
@@ -26,7 +27,9 @@ import roman_datamodels as rdm
 from snappl.logger import SNLogger
 from snappl.config import Config
 from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, GWCS
-from snappl.utils import asUUID
+from snappl.utils import asUUID, SNPITJsonEncoder
+from snappl.provenance import Provenance
+from snappl.dbclient import SNPITDBClient
 
 
 # ======================================================================
@@ -80,7 +83,14 @@ class Image:
     # How close in degrees should the right- and up- calculated position angles match?
     _close_enough_position_angle = 3
 
+    # This is just a conveneince varaible used by the vearious get_data methods
     data_array_list = [ 'all', 'data', 'noise', 'flags' ]
+
+    # SEE THE VERY BOTTOM OF THIS FILE
+    # There a class variable _format_def is defined that explains the "format" field
+    #  in the l2images table in the database.  (It's defined at the bottom of the
+    #  file so all the classes will be defined by the time we get there.)
+
 
     def __init__( self, path, id=None, provenance_id=None, width=None, height=None,
                   pointing=None, sca=None, ra=None, dec=None,
@@ -875,6 +885,153 @@ class Image:
         """
         raise NotImplementedError( f"{self.__class__.__name} doesn't implement save" )
 
+
+    @classmethod
+    def get_image( cls, image_id, dbclient=None ):
+        """Get an Image from the database based on its image id.
+
+        Parmameters
+        -----------
+          image_id : UUID or str that can be converted to UUID
+            The ID of the image to get.
+
+          dbclient : SNPITDBClient, default None
+            The connection to the database.  If None, a new connection
+            will be created based on what's it the config.
+
+        """
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+
+        row = dbclient.send( f"/getl2image/{image_id}" )
+
+        if row['format'] not in Image._format_def:
+            raise ValueError( f"Database {image_id} has format {row['format']}, which is unknown." )
+        image_class = Image._format_def[ row['format'] ][ 'image_class' ]
+        base_path = pathlib.Path( Config.get().value( Image._format_def[ row['format'] ] [ 'base_path_config' ] ) )
+
+        # Remove things the Image constroctor won't know, fix
+        #   things that need fixing
+        row['path'] = base_path / row['filepath']
+        del row['filepath']
+        del row['extension']
+        del row['format']
+        del row['properties']
+        return image_class( **row )
+
+    @classmethod
+    def find_images( cls, provenance=None, provenance_tag=None, process=None, dbclient=None, **kwargs ):
+        """Search the database for images.
+
+        Parameters
+        ----------
+          provenance : Provenance or UUID, default None
+            Either provenance, or both of provenacne_tag and process,
+            are required.  provenacne is the provenance of images to
+            search.
+
+          provenance_tag : string, default None
+            The provenance tag to search.  Required if provenance is
+            None.
+
+          process : string, deafault None
+            The process, used with provenance_tag, to find the
+            provenance.  Required if provenacne_tag is not None.
+
+          dbclient: SNPITDBClient, default None
+            The connection to the database.  If None, a new connection
+            will be created based on what's it the config.
+
+          path: pathlib.Path or str, default None
+            Relative path of the image to search for.  Usually if you
+            feed it this, you don't want to feed it nay other
+            parameters.
+
+          mjd_min : float, default None
+            Only return images at this mjd or later
+
+          mjd_max : float, default None
+            Only return images at this mjd or earlier.
+
+          ra: float, default None
+            Only return images that contain this ra
+
+          dec: float, default None
+            Only return images that containe this dec
+
+          band: str, default None
+            Only include images from this band
+
+          exptime_min: float, default None
+            Only include images with at least this exptime in seconds.
+
+          exptime_max: float, default None
+            Only include images with at most this exptime in seconds.
+
+          sca: int
+            Only include images from this sca.
+
+          order_by: str or list, default None
+            By default, the returned images are not sorted in any
+            particular way.  Put a keyword here to sort by that value
+            (or by those values).  Options include 'id',
+            'provenance_id', 'pointing', 'sca', 'ra', 'dec', 'filepath',
+            'width', 'height', 'mjd', 'exptime'.  Not all of these are
+            necessarily useful, and some of them may be null for many
+            objects in the database.
+
+          limit : int, default None
+            Only return this many objects at most.
+
+          offset : int, default None
+            Useful with limit and order_by ; offset the returned value
+            by this many entries.  You can make repeated calls to
+            find_objects to get subsets of objects by passing the same
+            order_by and limit, but different offsets each time, to
+            slowly build up a list.
+
+        Returns
+        -------
+          imagelist: list of snappl.image.Image
+            Really it will be list of objects of a subclass of
+            snappl.image.Image, but you shouldn't need to know that.
+
+        """
+        dbclient = SNPITDBClient() if dbclient is None else dbclient
+
+        # Figure out the provenance id
+        provenance_id = provenance.id if isinstance( provenance, Provenance ) else asUUID( provenance, oknone=True )
+        if provenance_tag is not None:
+            if process is None:
+                raise ValueError( "Must specify process with provenance_tag" )
+            prov = Provenance.get_provs_for_tag( provenance_tag, process, dbclient=dbclient )
+            if ( provenance_id is not None ) and ( prov.id != provenance_id ):
+                raise ValueError( f"You asked for provenance {provenance_id}, provenance_tag {provenance_tag}, "
+                                  f"and process {process}, but that tag/process corresponds to provenance "
+                                  f"{prov.id}" )
+            provenance_id = prov.id
+        if provenance_id is None:
+            raise ValueError( "Must specify either provenance, or both of provenance_tag and process." )
+
+        # Find things
+
+        rows = dbclient.send( f"/findl2images/{provenance_id}",
+                              data=simplejson.dumps( kwargs, cls=SNPITJsonEncoder ),
+                              headers={'Content-Type': 'application/json'} )
+
+        images = []
+        for row in rows:
+            if row['format'] not in Image._format_def:
+                raise ValueError( f"Database image {row['id']} has format {row['format']}, which is unknown." )
+            image_class = Image._format_def[ row['format'] ][ 'image_class' ]
+            base_path = pathlib.Path( Config.get().value( Image._format_def[ row['format'] ] [ 'base_path_config' ] ) )
+            # Remove things the Image constructor won't know, fix
+            #   things that need fixing
+            row['path'] = base_path / row['filepath']
+            del row['filepath']
+            del row['extension']
+            del row['format']
+            del row['properties']
+            images.append( image_class( **row ) )
 
 
 # ======================================================================
@@ -1924,3 +2081,27 @@ class RomanDatamodelImage( Image ):
             else:
                 raise NotImplementedError( "RomanDataModelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs
+
+
+# ======================================================================
+# This dictionary defines the format field in the database.  The key is the format
+#   integer, the value gives the image class, the base path config value, and eventually
+#    maybe other information
+
+Image._format_def = { 0 : { 'description': "Unknown",
+                            'image_class': Image,
+                            'base_path_config': 'system.paths.images'
+                           },
+                      1 : { 'description': "OU2024 FITS Image in standard database location",
+                            'image_class': OpenUniverse2024FITSImage,
+                            'base_path_config': 'system.paths.images'
+                           },
+                      2: { 'description': "OU2024 FITS Image at the native OU2024 location",
+                           'image_class': OpenUniverse2024FITSImage,
+                           'base_path_config': 'system.ou24.images'
+                          },
+                      100: { 'description': "Basic Roman Data Model Image at standard database location",
+                             'image_class': RomanDatamodelImage,
+                             'base_path_config': 'system.paths.images'
+                            },
+                     }
