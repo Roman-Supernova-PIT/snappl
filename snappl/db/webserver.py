@@ -185,17 +185,13 @@ class CreateProvenance( BaseProvenance ):
         with db.DBCon() as dbcon:
             rows, _cols = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': data['id'] } )
             if len(rows) == 0:
-                SNLogger.info( f"Saving provenance {data['id']}" )
                 prov.insert( dbcon=dbcon.con, nocommit=True, refresh=False )
                 for uid in upstream_ids:
-                    SNLogger.info( f"Saving upstream {uid} of {prov.id}" )
                     dbcon.execute( "INSERT INTO provenance_upstream(downstream_id,upstream_id) "
                                    "VALUES (%(down)s,%(up)s)",
                                    { 'down': prov.id, 'up': uid } )
             elif not existok:
                 return f"Error, provenance {data['id']} already exists", 500
-            else:
-                SNLogger.info( f"Provenance {data['id']} already exists, but existok is True, so, yay." )
 
             if tag is not None:
                 self.tag_provenance( dbcon, tag, data['process'], data['id'], replace=replace_tag )
