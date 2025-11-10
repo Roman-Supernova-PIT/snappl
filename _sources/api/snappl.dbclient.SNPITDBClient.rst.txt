@@ -5,3 +5,23 @@ SNPITDBClient
 
 .. autoclass:: SNPITDBClient
    :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~SNPITDBClient.default_dbclient
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~SNPITDBClient.get
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: default_dbclient
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get

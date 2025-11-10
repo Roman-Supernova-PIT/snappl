@@ -10,8 +10,7 @@ ImageCollectionDB
 
    .. autosummary::
 
-      ~ImageCollectionDB.base_path_dict
-      ~ImageCollectionDB.image_class_dict
+      ~ImageCollectionDB.image_class_to_format
 
    .. rubric:: Methods Summary
 
@@ -23,8 +22,7 @@ ImageCollectionDB
 
    .. rubric:: Attributes Documentation
 
-   .. autoattribute:: base_path_dict
-   .. autoattribute:: image_class_dict
+   .. autoattribute:: image_class_to_format
 
    .. rubric:: Methods Documentation
 

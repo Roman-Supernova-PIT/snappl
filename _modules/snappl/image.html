@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+g859ef2f38 documentation</title>
+    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+g1c84f1a68 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=03d0dfcf"></script>
+    <script src="../../_static/documentation_options.js?v=30f8f4f6"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -93,6 +93,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">simplejson</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span>
@@ -115,7 +116,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNLogger</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.wcs</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseWCS</span><span class="p">,</span> <span class="n">AstropyWCS</span><span class="p">,</span> <span class="n">GalsimWCS</span><span class="p">,</span> <span class="n">GWCS</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">asUUID</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">asUUID</span><span class="p">,</span> <span class="n">SNPITJsonEncoder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provenance</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.dbclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITDBClient</span>
 
 
 <span class="c1"># ======================================================================</span>
@@ -171,7 +174,14 @@
     <span class="c1"># How close in degrees should the right- and up- calculated position angles match?</span>
     <span class="n">_close_enough_position_angle</span> <span class="o">=</span> <span class="mi">3</span>
 
+    <span class="c1"># This is just a conveneince varaible used by the vearious get_data methods</span>
     <span class="n">data_array_list</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;noise&#39;</span><span class="p">,</span> <span class="s1">&#39;flags&#39;</span> <span class="p">]</span>
+
+    <span class="c1"># SEE THE VERY BOTTOM OF THIS FILE</span>
+    <span class="c1"># There a class variable _format_def is defined that explains the &quot;format&quot; field</span>
+    <span class="c1">#  in the l2images table in the database.  (It&#39;s defined at the bottom of the</span>
+    <span class="c1">#  file so all the classes will be defined by the time we get there.)</span>
+
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">pointing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -997,8 +1007,161 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">__name</span><span class="si">}</span><span class="s2"> doesn&#39;t implement save&quot;</span> <span class="p">)</span></div>
-</div>
 
+
+
+<div class="viewcode-block" id="Image.get_image">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.get_image">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">image_id</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get an Image from the database based on its image id.</span>
+
+<span class="sd">        Parmameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">          image_id : UUID or str that can be converted to UUID</span>
+<span class="sd">            The ID of the image to get.</span>
+
+<span class="sd">          dbclient : SNPITDBClient, default None</span>
+<span class="sd">            The connection to the database.  If None, a new connection</span>
+<span class="sd">            will be created based on what&#39;s it the config.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+
+        <span class="n">row</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;/getl2image/</span><span class="si">{</span><span class="n">image_id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Database </span><span class="si">{</span><span class="n">image_id</span><span class="si">}</span><span class="s2"> has format </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, which is unknown.&quot;</span> <span class="p">)</span>
+        <span class="n">image_class</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">[</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="p">][</span> <span class="s1">&#39;image_class&#39;</span> <span class="p">]</span>
+        <span class="n">base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">[</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="p">]</span> <span class="p">[</span> <span class="s1">&#39;base_path_config&#39;</span> <span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
+
+        <span class="c1"># Remove things the Image constroctor won&#39;t know, fix</span>
+        <span class="c1">#   things that need fixing</span>
+        <span class="n">row</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_path</span> <span class="o">/</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;extension&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">image_class</span><span class="p">(</span> <span class="o">**</span><span class="n">row</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Image.find_images">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.find_images">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_images</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search the database for images.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          provenance : Provenance or UUID, default None</span>
+<span class="sd">            Either provenance, or both of provenacne_tag and process,</span>
+<span class="sd">            are required.  provenacne is the provenance of images to</span>
+<span class="sd">            search.</span>
+
+<span class="sd">          provenance_tag : string, default None</span>
+<span class="sd">            The provenance tag to search.  Required if provenance is</span>
+<span class="sd">            None.</span>
+
+<span class="sd">          process : string, deafault None</span>
+<span class="sd">            The process, used with provenance_tag, to find the</span>
+<span class="sd">            provenance.  Required if provenacne_tag is not None.</span>
+
+<span class="sd">          dbclient: SNPITDBClient, default None</span>
+<span class="sd">            The connection to the database.  If None, a new connection</span>
+<span class="sd">            will be created based on what&#39;s it the config.</span>
+
+<span class="sd">          path: pathlib.Path or str, default None</span>
+<span class="sd">            Relative path of the image to search for.  Usually if you</span>
+<span class="sd">            feed it this, you don&#39;t want to feed it nay other</span>
+<span class="sd">            parameters.</span>
+
+<span class="sd">          mjd_min : float, default None</span>
+<span class="sd">            Only return images at this mjd or later</span>
+
+<span class="sd">          mjd_max : float, default None</span>
+<span class="sd">            Only return images at this mjd or earlier.</span>
+
+<span class="sd">          ra: float, default None</span>
+<span class="sd">            Only return images that contain this ra</span>
+
+<span class="sd">          dec: float, default None</span>
+<span class="sd">            Only return images that containe this dec</span>
+
+<span class="sd">          band: str, default None</span>
+<span class="sd">            Only include images from this band</span>
+
+<span class="sd">          exptime_min: float, default None</span>
+<span class="sd">            Only include images with at least this exptime in seconds.</span>
+
+<span class="sd">          exptime_max: float, default None</span>
+<span class="sd">            Only include images with at most this exptime in seconds.</span>
+
+<span class="sd">          sca: int</span>
+<span class="sd">            Only include images from this sca.</span>
+
+<span class="sd">          order_by: str or list, default None</span>
+<span class="sd">            By default, the returned images are not sorted in any</span>
+<span class="sd">            particular way.  Put a keyword here to sort by that value</span>
+<span class="sd">            (or by those values).  Options include &#39;id&#39;,</span>
+<span class="sd">            &#39;provenance_id&#39;, &#39;pointing&#39;, &#39;sca&#39;, &#39;ra&#39;, &#39;dec&#39;, &#39;filepath&#39;,</span>
+<span class="sd">            &#39;width&#39;, &#39;height&#39;, &#39;mjd&#39;, &#39;exptime&#39;.  Not all of these are</span>
+<span class="sd">            necessarily useful, and some of them may be null for many</span>
+<span class="sd">            objects in the database.</span>
+
+<span class="sd">          limit : int, default None</span>
+<span class="sd">            Only return this many objects at most.</span>
+
+<span class="sd">          offset : int, default None</span>
+<span class="sd">            Useful with limit and order_by ; offset the returned value</span>
+<span class="sd">            by this many entries.  You can make repeated calls to</span>
+<span class="sd">            find_objects to get subsets of objects by passing the same</span>
+<span class="sd">            order_by and limit, but different offsets each time, to</span>
+<span class="sd">            slowly build up a list.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          imagelist: list of snappl.image.Image</span>
+<span class="sd">            Really it will be list of objects of a subclass of</span>
+<span class="sd">            snappl.image.Image, but you shouldn&#39;t need to know that.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+
+        <span class="c1"># Figure out the provenance id</span>
+        <span class="n">provenance_id</span> <span class="o">=</span> <span class="n">provenance</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">Provenance</span> <span class="p">)</span> <span class="k">else</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">oknone</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">provenance_tag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">process</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must specify process with provenance_tag&quot;</span> <span class="p">)</span>
+            <span class="n">prov</span> <span class="o">=</span> <span class="n">Provenance</span><span class="o">.</span><span class="n">get_provs_for_tag</span><span class="p">(</span> <span class="n">provenance_tag</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="n">provenance_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">prov</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">provenance_id</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;You asked for provenance </span><span class="si">{</span><span class="n">provenance_id</span><span class="si">}</span><span class="s2">, provenance_tag </span><span class="si">{</span><span class="n">provenance_tag</span><span class="si">}</span><span class="s2">, &quot;</span>
+                                  <span class="sa">f</span><span class="s2">&quot;and process </span><span class="si">{</span><span class="n">process</span><span class="si">}</span><span class="s2">, but that tag/process corresponds to provenance &quot;</span>
+                                  <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+            <span class="n">provenance_id</span> <span class="o">=</span> <span class="n">prov</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">if</span> <span class="n">provenance_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must specify either provenance, or both of provenance_tag and process.&quot;</span> <span class="p">)</span>
+
+        <span class="c1"># Find things</span>
+
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;/findl2images/</span><span class="si">{</span><span class="n">provenance_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                              <span class="n">data</span><span class="o">=</span><span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="n">kwargs</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">SNPITJsonEncoder</span> <span class="p">),</span>
+                              <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">}</span> <span class="p">)</span>
+
+        <span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Database image </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> has format </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, which is unknown.&quot;</span> <span class="p">)</span>
+            <span class="n">image_class</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">[</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="p">][</span> <span class="s1">&#39;image_class&#39;</span> <span class="p">]</span>
+            <span class="n">base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">[</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="p">]</span> <span class="p">[</span> <span class="s1">&#39;base_path_config&#39;</span> <span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
+            <span class="c1"># Remove things the Image constructor won&#39;t know, fix</span>
+            <span class="c1">#   things that need fixing</span>
+            <span class="n">row</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_path</span> <span class="o">/</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;extension&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span>
+            <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">image_class</span><span class="p">(</span> <span class="o">**</span><span class="n">row</span> <span class="p">)</span> <span class="p">)</span></div>
+</div>
 
 
 
@@ -2112,6 +2275,30 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span></div>
 </div>
 
+
+
+<span class="c1"># ======================================================================</span>
+<span class="c1"># This dictionary defines the format field in the database.  The key is the format</span>
+<span class="c1">#   integer, the value gives the image class, the base path config value, and eventually</span>
+<span class="c1">#    maybe other information</span>
+
+<span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">0</span> <span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s2">&quot;Unknown&quot;</span><span class="p">,</span>
+                            <span class="s1">&#39;image_class&#39;</span><span class="p">:</span> <span class="n">Image</span><span class="p">,</span>
+                            <span class="s1">&#39;base_path_config&#39;</span><span class="p">:</span> <span class="s1">&#39;system.paths.images&#39;</span>
+                           <span class="p">},</span>
+                      <span class="mi">1</span> <span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s2">&quot;OU2024 FITS Image in standard database location&quot;</span><span class="p">,</span>
+                            <span class="s1">&#39;image_class&#39;</span><span class="p">:</span> <span class="n">OpenUniverse2024FITSImage</span><span class="p">,</span>
+                            <span class="s1">&#39;base_path_config&#39;</span><span class="p">:</span> <span class="s1">&#39;system.paths.images&#39;</span>
+                           <span class="p">},</span>
+                      <span class="mi">2</span><span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s2">&quot;OU2024 FITS Image at the native OU2024 location&quot;</span><span class="p">,</span>
+                           <span class="s1">&#39;image_class&#39;</span><span class="p">:</span> <span class="n">OpenUniverse2024FITSImage</span><span class="p">,</span>
+                           <span class="s1">&#39;base_path_config&#39;</span><span class="p">:</span> <span class="s1">&#39;system.ou24.images&#39;</span>
+                          <span class="p">},</span>
+                      <span class="mi">100</span><span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s2">&quot;Basic Roman Data Model Image at standard database location&quot;</span><span class="p">,</span>
+                             <span class="s1">&#39;image_class&#39;</span><span class="p">:</span> <span class="n">RomanDatamodelImage</span><span class="p">,</span>
+                             <span class="s1">&#39;base_path_config&#39;</span><span class="p">:</span> <span class="s1">&#39;system.paths.images&#39;</span>
+                            <span class="p">},</span>
+                     <span class="p">}</span>
 </pre></div>
 
           </div>

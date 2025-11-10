@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.diaobject &#8212; roman_snpit_snappl 0.1.dev1+g859ef2f38 documentation</title>
+    <title>snappl.diaobject &#8212; roman_snpit_snappl 0.1.dev1+g1c84f1a68 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=03d0dfcf"></script>
+    <script src="../../_static/documentation_options.js?v=30f8f4f6"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -259,7 +259,7 @@
         <span class="k">if</span> <span class="s1">&#39;properties&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">],</span> <span class="bp">cls</span><span class="o">=</span><span class="n">SNPITJsonEncoder</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
 
-        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
         <span class="n">senddata</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="n">data</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">SNPITJsonEncoder</span> <span class="p">)</span>
         <span class="k">return</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="s2">&quot;savediaobject&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">senddata</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">}</span> <span class="p">)</span></div>
 
@@ -301,7 +301,7 @@
 <span class="sd">          Note that ra_err, dec_err, and ra_dec_covar might be None.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
         <span class="n">provid</span> <span class="o">=</span> <span class="n">Provenance</span><span class="o">.</span><span class="n">get_provenance_id</span><span class="p">(</span> <span class="n">position_provenance</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
         <span class="k">return</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;getdiaobjectposition/</span><span class="si">{</span><span class="n">provid</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span></div>
 
@@ -348,7 +348,7 @@
 <span class="sd">          Note that ra_err, dec_err, and ra_dec_covar might be None.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
         <span class="n">provid</span> <span class="o">=</span> <span class="n">Provenance</span><span class="o">.</span><span class="n">get_provenance_id</span><span class="p">(</span> <span class="n">position_provenance</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
 
         <span class="n">objlist</span> <span class="o">=</span> <span class="p">[</span> <span class="n">o</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">o</span><span class="p">,</span> <span class="n">DiaObject</span> <span class="p">)</span> <span class="k">else</span> <span class="n">o</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">diaobject_ids</span> <span class="p">]</span>
@@ -365,7 +365,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">save_updated_position</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">position_provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                <span class="n">ra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra_err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec_err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra_dec_covar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
-        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
         <span class="n">provid</span> <span class="o">=</span> <span class="n">Provenance</span><span class="o">.</span><span class="n">get_provenance_id</span><span class="p">(</span> <span class="n">position_provenance</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span> <span class="n">ra</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">dec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
@@ -444,7 +444,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Either both or neither of provenance_tag and process must be given with &quot;</span>
                               <span class="s2">&quot;collection=&#39;snpitdb&#39;.&quot;</span> <span class="p">)</span>
 
-        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
 
         <span class="k">if</span> <span class="n">provenance_tag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">prov</span> <span class="o">=</span> <span class="n">Provenance</span><span class="o">.</span><span class="n">get_provs_for_tag</span><span class="p">(</span> <span class="n">provenance_tag</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
@@ -585,7 +585,7 @@
         <span class="k">if</span> <span class="p">(</span> <span class="n">prov</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">diaobject_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must give one of diaobject_id, provenance_id, or (provenance_tag and process)&quot;</span> <span class="p">)</span>
 
-        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
 
         <span class="k">if</span> <span class="n">diaobject_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">kwargs</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;getdiaobject/</span><span class="si">{</span><span class="n">diaobject_id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
@@ -746,7 +746,7 @@
         <span class="k">if</span> <span class="p">(</span> <span class="s1">&#39;ra&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="s1">&#39;radius&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="p">):</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
 
-        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
         <span class="n">res</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;finddiaobjects/</span><span class="si">{</span><span class="n">prov</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">kwargs</span> <span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span> <span class="n">DiaObject</span><span class="p">(</span> <span class="o">**</span><span class="n">r</span> <span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">res</span> <span class="p">]</span></div>
 

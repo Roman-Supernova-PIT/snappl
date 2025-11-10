@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>SNPITDBClient &#8212; roman_snpit_snappl 0.1.dev1+g859ef2f38 documentation</title>
+    <title>SNPITDBClient &#8212; roman_snpit_snappl 0.1.dev1+g1c84f1a68 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=03d0dfcf"></script>
+    <script src="../_static/documentation_options.js?v=30f8f4f6"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -149,6 +149,79 @@ this to fale.</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.dbclient.SNPITDBClient.default_dbclient" title="snappl.dbclient.SNPITDBClient.default_dbclient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_dbclient</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.dbclient.SNPITDBClient.get" title="snappl.dbclient.SNPITDBClient.get"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code></a>([set_default, use_default])</p></td>
+<td><p>Create a SNPITDBClient</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.dbclient.SNPITDBClient.default_dbclient">
+<span class="sig-name descname"><span class="pre">default_dbclient</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#snappl.dbclient.SNPITDBClient.default_dbclient" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.dbclient.SNPITDBClient.get">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/dbclient.html#SNPITDBClient.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.dbclient.SNPITDBClient.get" title="Link to this definition">¶</a></dt>
+<dd><p>Create a SNPITDBClient</p>
+<p>All arguments are optional.  Will pull the url, and username
+from config options systm.db.url and system.db.username
+respectively.  If system.db.password is null, will read the
+password from the file system.db.passwordfile, otherwise will
+use the password in system.db.password.  (NOTE: you should leave
+system.db.password as null, as config files are usually global
+and are often committed to github archives!)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>set_default</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default True</em>) – If use_default is True and a SNPITDBClient has already been
+created, then just use that one.  Otherwise, save the newly
+created SNPITDBClient as the default.</p></li>
+<li><p><strong>use_default</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default True</em>) – If a SNPITDBClient has already been created, just return
+that.  If this is False, or one doesn’t already exist, make
+a new one.  WARNING : thought required about how this might
+interact with multiprocessing and/or multithreading.  It may
+be safe, but you might want to make sure to always make a
+new dbclient with each new process.</p></li>
+<li><p><strong>url</strong> (<em>string</em>) – The base URL of the roman snpit internal db.  If not given,
+will use the config value system.db.url</p></li>
+<li><p><strong>username</strong> (<em>string</em>) – Username on the roman snpit internal db web api.  If not
+given, will use the config value system.db.username</p></li>
+<li><p><strong>password</strong> (<em>string</em>) – Password on the roman snpit internal db web api.  If not
+given, will first try using the config value system.db.password; if
+that is None, or if that is not in the config file, will
+read the passowrd as the first line in the file given in the
+config value system.db.passwordfile</p></li>
+<li><p><strong>retries</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default 5</em>) – When calling send or post, if the request to the server
+doesn’t return a HTTP 200, try again at most this many
+times.</p></li>
+<li><p><strong>maxtimeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default 30.</em>) – If retries are taking a very long time, don’t keep retrying
+if this much time has passed.</p></li>
+<li><p><strong>retrysleep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default 0.2</em>) – After the first failed attempt to contact the server, sleep this many seconds
+before retrying.</p></li>
+<li><p><strong>sleepfac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default 2</em>) – Multiply the sleep time by this much after each retry.</p></li>
+<li><p><strong>sleepfuzz</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default True</em>) – Randomly adjust the sleep time by 10% of itself (Gaussian, sort of) so that if
+lots of processes are running, they will (hopefully) dsync.</p></li>
+<li><p><strong>verify</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default True</em>) – Verify SSL certs?  Sometimes for tests when you’re using a
+test web server with a self-signed cert you may need to set
+this to fale.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>

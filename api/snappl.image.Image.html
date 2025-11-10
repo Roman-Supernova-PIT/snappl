@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Image &#8212; roman_snpit_snappl 0.1.dev1+g859ef2f38 documentation</title>
+    <title>Image &#8212; roman_snpit_snappl 0.1.dev1+g1c84f1a68 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=03d0dfcf"></script>
+    <script src="../_static/documentation_options.js?v=30f8f4f6"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -292,17 +292,23 @@ many cases, they will be lazy-loaded from the header.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Image.ap_phot" title="snappl.image.Image.ap_phot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ap_phot</span></code></a>(coords[, ap_r, method, subpixels, ...])</p></td>
 <td><p>Do aperture photometry on the image at the specified coordinates.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.Image.fraction_masked" title="snappl.image.Image.fraction_masked"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fraction_masked</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.Image.find_images" title="snappl.image.Image.find_images"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_images</span></code></a>([provenance, provenance_tag, ...])</p></td>
+<td><p>Search the database for images.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Image.fraction_masked" title="snappl.image.Image.fraction_masked"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fraction_masked</span></code></a>()</p></td>
 <td><p>Fraction of pixels that are masked.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Image.free" title="snappl.image.Image.free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">free</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.Image.free" title="snappl.image.Image.free"><code class="xref py py-obj docutils literal notranslate"><span class="pre">free</span></code></a>()</p></td>
 <td><p>Try to free memory.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.Image.get_cutout" title="snappl.image.Image.get_cutout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_cutout</span></code></a>(ra, dec, xsize[, ysize, mode, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Image.get_cutout" title="snappl.image.Image.get_cutout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_cutout</span></code></a>(ra, dec, xsize[, ysize, mode, ...])</p></td>
 <td><p>Make a cutout of the image at the given RA and DEC.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Image.get_data" title="snappl.image.Image.get_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_data</span></code></a>([which, always_reload, cache])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.Image.get_data" title="snappl.image.Image.get_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_data</span></code></a>([which, always_reload, cache])</p></td>
 <td><p>Read the data from disk and return one or more 2d numpy arrays of data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Image.get_image" title="snappl.image.Image.get_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_image</span></code></a>(image_id[, dbclient])</p></td>
+<td><p>Get an Image from the database based on its image id.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.Image.get_ra_dec_cutout" title="snappl.image.Image.get_ra_dec_cutout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ra_dec_cutout</span></code></a>(ra, dec, xsize[, ysize, ...])</p></td>
 <td><p>Creates a new snappl image object that is a cutout of the original image, at a location in pixel-space.</p></td>
@@ -550,6 +556,58 @@ Set to &lt;=0 to not do background subtraction.</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="snappl.image.Image.find_images">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">find_images</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#Image.find_images"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.Image.find_images" title="Link to this definition">¶</a></dt>
+<dd><p>Search the database for images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>provenance</strong> (<a class="reference internal" href="snappl.provenance.Provenance.html#snappl.provenance.Provenance" title="snappl.provenance.Provenance"><em>Provenance</em></a><em> or </em><em>UUID</em><em>, </em><em>default None</em>) – Either provenance, or both of provenacne_tag and process,
+are required.  provenacne is the provenance of images to
+search.</p></li>
+<li><p><strong>provenance_tag</strong> (<em>string</em><em>, </em><em>default None</em>) – The provenance tag to search.  Required if provenance is
+None.</p></li>
+<li><p><strong>process</strong> (<em>string</em><em>, </em><em>deafault None</em>) – The process, used with provenance_tag, to find the
+provenance.  Required if provenacne_tag is not None.</p></li>
+<li><p><strong>dbclient</strong> (<a class="reference internal" href="snappl.dbclient.SNPITDBClient.html#snappl.dbclient.SNPITDBClient" title="snappl.dbclient.SNPITDBClient"><em>SNPITDBClient</em></a><em>, </em><em>default None</em>) – The connection to the database.  If None, a new connection
+will be created based on what’s it the config.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Relative path of the image to search for.  Usually if you
+feed it this, you don’t want to feed it nay other
+parameters.</p></li>
+<li><p><strong>mjd_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images at this mjd or later</p></li>
+<li><p><strong>mjd_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images at this mjd or earlier.</p></li>
+<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images that contain this ra</p></li>
+<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images that containe this dec</p></li>
+<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Only include images from this band</p></li>
+<li><p><strong>exptime_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only include images with at least this exptime in seconds.</p></li>
+<li><p><strong>exptime_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only include images with at most this exptime in seconds.</p></li>
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Only include images from this sca.</p></li>
+<li><p><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>default None</em>) – By default, the returned images are not sorted in any
+particular way.  Put a keyword here to sort by that value
+(or by those values).  Options include ‘id’,
+‘provenance_id’, ‘pointing’, ‘sca’, ‘ra’, ‘dec’, ‘filepath’,
+‘width’, ‘height’, ‘mjd’, ‘exptime’.  Not all of these are
+necessarily useful, and some of them may be null for many
+objects in the database.</p></li>
+<li><p><strong>limit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Only return this many objects at most.</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Useful with limit and order_by ; offset the returned value
+by this many entries.  You can make repeated calls to
+find_objects to get subsets of objects by passing the same
+order_by and limit, but different offsets each time, to
+slowly build up a list.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>imagelist</strong> – Really it will be list of objects of a subclass of
+snappl.image.Image, but you shouldn’t need to know that.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference internal" href="#snappl.image.Image" title="snappl.image.Image">snappl.image.Image</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="snappl.image.Image.fraction_masked">
 <span class="sig-name descname"><span class="pre">fraction_masked</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#Image.fraction_masked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.Image.fraction_masked" title="Link to this definition">¶</a></dt>
 <dd><p>Fraction of pixels that are masked.</p>
@@ -627,6 +685,24 @@ somewhere.  This does mean it’s read from disk every time.</p>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> (length 1 or 3 ) of 2d numpy arrays</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.image.Image.get_image">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#Image.get_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.Image.get_image" title="Link to this definition">¶</a></dt>
+<dd><p>Get an Image from the database based on its image id.</p>
+<section id="parmameters">
+<h2>Parmameters<a class="headerlink" href="#parmameters" title="Link to this heading">¶</a></h2>
+<blockquote>
+<div><dl class="simple">
+<dt>image_id<span class="classifier">UUID or str that can be converted to UUID</span></dt><dd><p>The ID of the image to get.</p>
+</dd>
+<dt>dbclient<span class="classifier">SNPITDBClient, default None</span></dt><dd><p>The connection to the database.  If None, a new connection
+will be created based on what’s it the config.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
 </dd></dl>
 
 <dl class="py method">

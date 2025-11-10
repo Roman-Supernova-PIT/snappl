@@ -45,10 +45,12 @@ Image
    .. autosummary::
 
       ~Image.ap_phot
+      ~Image.find_images
       ~Image.fraction_masked
       ~Image.free
       ~Image.get_cutout
       ~Image.get_data
+      ~Image.get_image
       ~Image.get_ra_dec_cutout
       ~Image.get_wcs
       ~Image.includes_radec
@@ -91,10 +93,12 @@ Image
    .. rubric:: Methods Documentation
 
    .. automethod:: ap_phot
+   .. automethod:: find_images
    .. automethod:: fraction_masked
    .. automethod:: free
    .. automethod:: get_cutout
    .. automethod:: get_data
+   .. automethod:: get_image
    .. automethod:: get_ra_dec_cutout
    .. automethod:: get_wcs
    .. automethod:: includes_radec
