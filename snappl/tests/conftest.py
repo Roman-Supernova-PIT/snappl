@@ -424,21 +424,30 @@ def dbclient( dbuser ):
 @pytest.fixture( scope="module" )
 def stupid_provenance():
     try:
+        prov = None
         with DBCon() as con:
-            provid = uuid.uuid4()
+            prov = Provenance( 'foo', 0, 0 )
             con.execute( "INSERT INTO provenance(id, environment, env_major, env_minor,"
-                         "  process, major, minor) VALUES (%(provid)s, 0, 0, 0, 'foo', 0, 0)",
-                         { 'provid': provid } )
+                         "  process, major, minor) "
+                         "VALUES (%(provid)s, %(env)s, %(envmaj)s, %(envmin)s, %(proc)s, %(maj)s, %(min)s)",
+                         { 'provid': prov.id,
+                           'env': prov.environment,
+                           'envmaj': prov.env_major,
+                           'envmin': prov.env_minor,
+                           'proc': prov.process,
+                           'maj': prov.major,
+                           'min': prov.minor } )
             con.execute( "INSERT INTO provenance_tag(tag, process, provenance_id) "
                          "VALUES(%(tag)s, %(proc)s, %(provid)s)",
-                         { 'tag': 'stupid_provenance_tag', 'proc': 'foo', 'provid': provid } )
+                         { 'tag': 'stupid_provenance_tag', 'proc': 'foo', 'provid': prov.id } )
             con.commit()
-            yield provid
+            yield prov.id
     finally:
-        with DBCon() as con:
-            con.execute( "DELETE FROM provenance_tag WHERE provenance_id=%(id)s", { 'id': provid } )
-            con.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': provid } )
-            con.commit()
+        if prov is not None:
+            with DBCon() as con:
+                con.execute( "DELETE FROM provenance_tag WHERE provenance_id=%(id)s", { 'id': prov.id } )
+                con.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
+                con.commit()
 
 
 

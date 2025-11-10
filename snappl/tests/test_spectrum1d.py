@@ -232,7 +232,7 @@ def test_get_find( saved_gratuitous_spectrum, stupid_provenance, stupid_object )
 
     actual_stupid_object = DiaObject.get_object( diaobject_id=stupid_object )
     actual_stupid_provenance = Provenance.get_by_id( stupid_provenance )
-    
+
     specs = Spectrum1d.find_spectra( provenance=actual_stupid_provenance, diaobject=actual_stupid_object )
     assert len(specs) == 1
     for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',

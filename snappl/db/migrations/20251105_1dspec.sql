@@ -5,8 +5,8 @@ CREATE TABLE spectrum1d(
   diaobject_position_id UUID DEFAULT NULL,
   band text NOT NULL,
   filepath text NOT NULL,
-  mjd_start real,
-  mjd_end real,
+  mjd_start double precision,
+  mjd_end double precision,
   epoch int NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

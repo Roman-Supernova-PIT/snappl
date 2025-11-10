@@ -204,13 +204,13 @@ class BaseView( flask.views.View ):
                         subdict[f'{kw}_{edge}'] = data[f'{kw}_{edge}']
                     del data[f'{kw}_{edge}']
 
-        _and = None
+        condstr = None
         for condition in conditions:
-            if _and is None:
+            if condstr is None:
                 condstr = condition
             else:
-                _and = " AND "
-                condstr += sql.SQL(_and) + condition
+                condstr += sql.SQL(" AND ") + condition
+        condstr = sql.SQL("") if condstr is None else condstr
 
         return data, condstr, subdict, finalclause
 
