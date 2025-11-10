@@ -438,7 +438,7 @@ class Lightcurve:
         if self.filepath.name[-8:] != '.parquet':
             raise ValueError( "Can only save lightcurves written as parquet files to the database." )
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         data = { 'id': self.id,
                  'provenance_id': self.meta['provenance_id'],
@@ -507,7 +507,7 @@ class Lightcurve:
 
         """
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         params = {}
 

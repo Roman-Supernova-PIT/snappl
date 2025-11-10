@@ -1104,6 +1104,14 @@ class Lightcurve( DBBase ):
 
 # ======================================================================
 
+class Spectrum1d( DBBase ):
+    __tablename__ = "spectrum1d"
+    _tablemeta = None
+    _pk = [ 'id' ]
+
+
+# ======================================================================
+
 # class DiaObjectClassification( DBBase ):
 #     __tablename__ = "diaobject_classification"
 #     _tablemeta = None

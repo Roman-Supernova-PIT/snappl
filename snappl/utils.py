@@ -65,8 +65,10 @@ def env_as_bool( varname ):
     return parse_bool( os.getenv(varname) )
 
 
-def asUUID( id ):
+def asUUID( id, oknone=False ):
     """Pass either a UUID or a string representation of one, get a UUID back."""
+    if oknone and ( id is None ):
+        return None
     if isinstance( id, uuid.UUID ):
         return id
     if not isinstance( id, str ):

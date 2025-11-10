@@ -166,7 +166,7 @@ class DiaObject:
         if 'properties' in data:
             data['properties'] = simplejson.dumps( data['properties'], cls=SNPITJsonEncoder, sort_keys=True )
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         senddata = simplejson.dumps( data, cls=SNPITJsonEncoder )
         return dbclient.send( "savediaobject", data=senddata, headers={'Content-Type': 'application/json'} )
 
@@ -205,7 +205,7 @@ class DiaObject:
           Note that ra_err, dec_err, and ra_dec_covar might be None.
 
         """
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         provid = Provenance.get_provenance_id( position_provenance, provenance_tag, process, dbclient=dbclient )
         return dbclient.send( f"getdiaobjectposition/{provid}/{self.id}" )
 
@@ -249,7 +249,7 @@ class DiaObject:
           Note that ra_err, dec_err, and ra_dec_covar might be None.
 
         """
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         provid = Provenance.get_provenance_id( position_provenance, provenance_tag, process, dbclient=dbclient )
 
         objlist = [ o.id if isinstance( o, DiaObject ) else o for o in diaobject_ids ]
@@ -263,7 +263,7 @@ class DiaObject:
     def save_updated_position( self, position_provenance=None, provenance_tag=None, process=None,
                                ra=None, dec=None, ra_err=None, dec_err=None, ra_dec_covar=None,
                                dbclient=None ):
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         provid = Provenance.get_provenance_id( position_provenance, provenance_tag, process, dbclient=dbclient )
 
         if ( ra is None ) or ( dec is None ):
@@ -341,7 +341,7 @@ class DiaObject:
             raise ValueError( "Either both or neither of provenance_tag and process must be given with "
                               "collection='snpitdb'." )
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         if provenance_tag is not None:
             prov = Provenance.get_provs_for_tag( provenance_tag, process, dbclient=dbclient )
@@ -480,7 +480,7 @@ class DiaObject:
         if ( prov is None ) and ( diaobject_id is None ):
             raise ValueError( "Must give one of diaobject_id, provenance_id, or (provenance_tag and process)" )
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         if diaobject_id is not None:
             kwargs = dbclient.send( f"getdiaobject/{diaobject_id}" )
@@ -638,7 +638,7 @@ class DiaObject:
         if ( 'ra' in kwargs ) and ( 'radius' not in kwargs ):
             kwargs['radius'] = 1.0
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         res = dbclient.send( f"finddiaobjects/{prov.id}", kwargs )
         return [ DiaObject( **r ) for r in res ]
 

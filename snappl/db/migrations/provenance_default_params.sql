@@ -1,0 +1,1 @@
+ALTER TABLE provenance ALTER COLUMN params SET DEFAULT '{}'::JSONB;
