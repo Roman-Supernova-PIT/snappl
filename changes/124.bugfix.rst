@@ -1,0 +1,3 @@
+If you save an existing provenance, as long as it's consistent, the
+database should do nothing. Previously, if that provenance had
+upstreams, the null-op save would fail. Fixed.

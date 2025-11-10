@@ -349,7 +349,10 @@ class Provenance:
         """
         dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         if process is not None:
-            return cls.parse_provenance( dbclient.send( f"/getprovenance/{tag}/{process}" ) )
+            result = dbclient.send( f"/getprovenance/{tag}/{process}" )
+            if 'status' in result:
+                raise ValueError( result['status'] )
+            return cls.parse_provenance( result )
         else:
             return [ cls.parse_provenance(p) for p in dbclient.send( f"/provenancesfortag/{tag}" ) ]
 
