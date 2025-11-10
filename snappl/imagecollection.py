@@ -419,9 +419,9 @@ class ImageCollectionDB:
         self.provenance = provenance
 
         prov_imclass = self.provenance.params['image_class']
-        if prov_imclass not in self.image_to_format:
+        if prov_imclass not in self.image_class_to_format:
             raise RuntimeError( "Unknown image_class {image_class}" )
-        imclass_format = self.image_to_format[ prov_imclass ]
+        imclass_format = self.image_class_to_format[ prov_imclass ]
         self.image_class = Image._format_def[ imclass_format ]['image_class']
 
         if base_path is None:

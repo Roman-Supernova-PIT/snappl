@@ -13,7 +13,7 @@ class TestSpectrum1d( BaseTestDB ):
     def basetest_setup( self, stupid_provenance, stupid_object ):
         now = datetime.datetime.now( tz=datetime.UTC )
         self.cls = Spectrum1d
-        self.safe_to_modify = [ 'filepath', 'created_at' ]
+        self.safe_to_modify = [ 'filepath', 'created_at', 'mjd_start', 'mjd_end', 'band' ]
         self.columns = set( self.safe_to_modify )
         self.columns.update( [ 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id', 'epoch' ] )
         self.uniques = []
@@ -21,6 +21,9 @@ class TestSpectrum1d( BaseTestDB ):
                                 provenance_id=stupid_provenance,
                                 diaobject_id=stupid_object,
                                 filepath='/dev/null',
+                                band='a',
+                                mjd_start=60000,
+                                mjd_end=60000.1,
                                 epoch=60000000,
                                 created_at=now
                                )
@@ -29,6 +32,9 @@ class TestSpectrum1d( BaseTestDB ):
                                 provenance_id=stupid_provenance,
                                 diaobject_id=stupid_object,
                                 filepath='/bin/false',
+                                band='b',
+                                mjd_start=60001,
+                                mjd_end=60001.1,
                                 epoch=60001000,
                                 created_at=now + datetime.timedelta( days=1 )
                                )
@@ -37,6 +43,9 @@ class TestSpectrum1d( BaseTestDB ):
                        'provenance_id': stupid_provenance,
                        'diaobject_id': stupid_object,
                        'filepath': '/bin/true',
+                       'band': 'c',
+                       'mjd_start': 60002.,
+                       'mjd_end': 60002.1,
                        'epoch': 60002000,
                        'created_at': now + datetime.timedelta( days=2 )
                       }
