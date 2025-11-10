@@ -5,6 +5,8 @@ import uuid
 import numpy as np
 
 import snappl.db.db
+from snappl.provenance import Provenance
+from snappl.diaobject import DiaObject
 from snappl.spectrum1d import Spectrum1d
 from snappl.logger import SNLogger
 
@@ -89,9 +91,10 @@ def gratuitous_spectrum( stupid_provenance, stupid_object, bogus_images ):
 
 @pytest.fixture
 def saved_gratuitous_spectrum( gratuitous_spectrum, dbclient ):
-    spec = Spectrum1d( data_dict=gratuitous_spectrum, dbclient=dbclient )
+    spec = Spectrum1d( data_dict=gratuitous_spectrum )
     try:
-        spec.save_to_db( write=True, dbclient=dbclient )
+        spec.save_to_db( write=True )
+        spec._fill_props()
         yield spec
     finally:
         spec.full_filepath.unlink( missing_ok=True )
@@ -166,9 +169,9 @@ def test_write_and_read_spectrum( bogus_images, gratuitous_spectrum ):
 
 
 def test_save_to_db( bogus_images, gratuitous_spectrum, dbclient ):
-    spec = Spectrum1d( data_dict=gratuitous_spectrum, dbclient=dbclient )
+    spec = Spectrum1d( data_dict=gratuitous_spectrum )
     try:
-        spec.save_to_db( write=False, dbclient=dbclient )
+        spec.save_to_db( write=False )
         assert not spec.full_filepath.exists()
         with snappl.db.db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': spec.id} )
@@ -179,14 +182,14 @@ def test_save_to_db( bogus_images, gratuitous_spectrum, dbclient ):
             dbcon.execute("DELETE FROM spectrum1d WHERE id=%(id)s", {'id': spec.id} )
             dbcon.commit()
 
-        spec.save_to_db( write=True, dbclient=dbclient )
+        spec.save_to_db( write=True )
         assert spec.full_filepath.is_file()
         with snappl.db.db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': spec.id} )
             assert len(rows) == 1
             assert str(rows[0]['filepath']) == str(spec.filepath)
 
-        oldspec = Spectrum1d( data_dict=gratuitous_spectrum, dbclient=dbclient )
+        oldspec = Spectrum1d( data_dict=gratuitous_spectrum )
         assert recursive_compare( spec.data_dict, oldspec.data_dict )
 
     finally:
@@ -196,10 +199,162 @@ def test_save_to_db( bogus_images, gratuitous_spectrum, dbclient ):
             dbcon.commit()
 
 
-def test_get_find( saved_gratuitous_spectrum, dbclient ):
+def test_get_find( saved_gratuitous_spectrum, stupid_provenance, stupid_object ):
     # This test isn't great as there's only one spectrum saved.  We
     # should probably beef up this test by saving several test spectra
     # and making sure that searching really does the right thing.
 
+    origspec = saved_gratuitous_spectrum
+
     # Make sure we error out if we ask for a non-existent spectrum
-    Spectrum1d.get_spectrum1d( uuid.uuid4(), dbclient=dbclient )
+    with pytest.raises( RuntimeError, match=r"Failed to connect.*Got response 500: No spectrum1d with id" ):
+        Spectrum1d.get_spectrum1d( uuid.uuid4() )
+
+    spec = Spectrum1d.get_spectrum1d( saved_gratuitous_spectrum.id )
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( spec, prop ) == getattr( origspec, prop )
+    assert recursive_compare( spec.data_dict, origspec.data_dict )
+
+    # Make sure it yells at us if we don't give a provenance
+
+    with pytest.raises( ValueError, match=r"You must pass either provenance, or both of provenance_tag and process" ):
+        specs = Spectrum1d.find_spectra()
+
+    with pytest.raises( ValueError, match=r"You must pass either provenance, or both of provenance_tag and process" ):
+        specs = Spectrum1d.find_spectra( provenance_tag="stupid_provenance_tag" )
+
+    with pytest.raises( ValueError, match=r"You must pass either provenance, or both of provenance_tag and process" ):
+        specs = Spectrum1d.find_spectra( proces="foo" )
+
+    # Try to find the spectrum based on object id, make sure all
+    # combinations of provenance and object vs. object id work
+
+    actual_stupid_object = DiaObject.get_object( diaobject_id=stupid_object )
+    actual_stupid_provenance = Provenance.get_by_id( stupid_provenance )
+    
+    specs = Spectrum1d.find_spectra( provenance=actual_stupid_provenance, diaobject=actual_stupid_object )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance=actual_stupid_provenance, diaobject=stupid_object )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, diaobject=stupid_object )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance_tag='stupid_provenance_tag', process='foo', diaobject=stupid_object )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    # Try to find a non-existent object
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, diaobject=uuid.uuid4() )
+    assert len(specs) == 0
+
+    # Try to find based on band
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, band=origspec.band )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, band="no such band" )
+    assert len(specs) == 0
+
+    # Try to find based on mjd_start and mjd_end
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_start_min=origspec.mjd_start-10 )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_start_min=origspec.mjd_start+10 )
+    assert len(specs) == 0
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_start_max=origspec.mjd_start-1 )
+    assert len(specs) == 0
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_start_max=origspec.mjd_start+1 )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_start_min=origspec.mjd_start-10.,
+                                     mjd_start_max=origspec.mjd_start-1. )
+    assert len(specs) == 0
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_start_min=origspec.mjd_start-10.,
+                                     mjd_start_max=origspec.mjd_start+1. )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_end_min=origspec.mjd_end-1 )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_end_min=origspec.mjd_end+1 )
+    assert len(specs) == 0
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_end_max=origspec.mjd_end-1 )
+    assert len(specs) == 0
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_end_max=origspec.mjd_end+1 )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_end_min=origspec.mjd_end-2.,
+                                     mjd_end_max=origspec.mjd_end-1. )
+    assert len(specs) == 0
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_end_min=origspec.mjd_end-1.,
+                                     mjd_end_max=origspec.mjd_end+1. )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_start_min=origspec.mjd_start-1.,
+                                    mjd_end_max=origspec.mjd_end+1 )
+    assert len(specs) == 1
+    for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',
+                  'band', 'mjd_start', 'mjd_end' ):
+        assert getattr( specs[0], prop ) == getattr( origspec, prop )
+    assert recursive_compare( specs[0].data_dict, origspec.data_dict )
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_start_min=origspec.mjd_start-1.,
+                                     mjd_end_max=origspec.mjd_end-1 )
+    assert len(specs) == 0
+
+    specs = Spectrum1d.find_spectra( provenance=stupid_provenance, mjd_start_min=origspec.mjd_start+1.,
+                                     mjd_end_max=origspec.mjd_end+1. )
+    assert len(specs) == 0

@@ -74,12 +74,12 @@ class Provenance:
             only include the specified keys from the Config.
 
         """
-        self.process = process
-        self.major = major
-        self.minor = minor
-        self.environment = environment
-        self.env_major = env_major
-        self.env_minor = env_minor
+        self.process = str( process )
+        self.major = int( major )
+        self.minor = int( minor )
+        self.environment = int( environment ) if environment is not None else None
+        self.env_major = int( env_major ) if env_major is not None else None
+        self.env_minor = int( env_minor ) if env_minor is not None else None
         self.upstreams = list( upstreams ) if upstreams is not None else []
         if not all( isinstance( u, Provenance ) for u in self.upstreams ):
             raise TypeError( "upstream must be a list of Provenance" )
@@ -107,7 +107,7 @@ class Provenance:
                 }
 
     def recursive_dict( self, dbclient=None ):
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         rval = self.spec_dict()
         del rval['upstream_ids']
@@ -176,7 +176,7 @@ class Provenance:
 
         """
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         self.update_id()
         savedprov = self.get_by_id( self.id, dbclient=dbclient, return_none_if_not_exists=True )
 
@@ -244,7 +244,7 @@ class Provenance:
 
         """
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         prov = cls( process, major, minor, params=params, environment=environment,
                     env_major=env_major, env_minor=env_minor, upstreams=upstreams )
         if exists:
@@ -309,7 +309,7 @@ class Provenance:
 
         """
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         rval = dbclient.send( f"getprovenance/{provid}" )
         if ( 'status' in rval ) and ( rval['status'] == f'No such provenance {provid}' ):
             if return_none_if_not_exists:
@@ -347,7 +347,7 @@ class Provenance:
           process is None, you get back a list of Provenance.
 
         """
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         if process is not None:
             return cls.parse_provenance( dbclient.send( f"/getprovenance/{tag}/{process}" ) )
         else:
@@ -387,6 +387,6 @@ class Provenance:
         if process is None:
             raise ValueError( "provenance_tag requires process" )
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         prov = Provenance.get_provs_for_tag( provenance_tag, process, dbclient=dbclient )
         return prov.id

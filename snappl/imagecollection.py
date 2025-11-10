@@ -70,7 +70,7 @@ class ImageCollection:
 
         """
         if collection == 'snpitdb':
-            dbclient = SNPITDBClient() if dbclient is None else dbclient
+            dbclient = SNPITDBClient.get() if dbclient is None else dbclient
             if ( provenance is None ) and ( provenance_tag is None ):
                 raise ValueError( 'Collection snpitdb requires either provenance_tag or provenance' )
             if ( provenance_tag is None ) != ( process is None ):
@@ -430,7 +430,7 @@ class ImageCollectionDB:
 
 
     def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, dbclient=None ):
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         if image_id is not None:
             row = dbclient.send( f"/getl2image/{image_id}" )
@@ -471,7 +471,7 @@ class ImageCollectionDB:
 
 
     def find_images( self, dbclient=None, **kwargs ):
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         rows = dbclient.send( f'findl2images/{self.provenance.id}',
                               data=simplejson.dumps( kwargs, cls=SNPITJsonEncoder ),
                               headers={'Content-Type': 'application/json'} )

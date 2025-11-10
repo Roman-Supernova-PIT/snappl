@@ -900,7 +900,7 @@ class Image:
             will be created based on what's it the config.
 
         """
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         row = dbclient.send( f"/getl2image/{image_id}" )
 
@@ -996,7 +996,7 @@ class Image:
             snappl.image.Image, but you shouldn't need to know that.
 
         """
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         # Figure out the provenance id
         provenance_id = provenance.id if isinstance( provenance, Provenance ) else asUUID( provenance, oknone=True )

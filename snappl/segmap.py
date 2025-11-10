@@ -92,7 +92,7 @@ class SegmentationMap:
                   }
         postdata = simplejson.dumps( params, cls=SNPITJsonEncoder )
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         return dbclient.send( "savesegmap", data=postdata, headers={'Content-Type': 'application/json'} )
 
@@ -116,7 +116,7 @@ class SegmentationMap:
 
     @classmethod
     def get_by_id( cls, segmap_id, dbclient=None ):
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         res = dbclient.send( f"getsegmap/{segmap_id}" )
         if not isinstance( res, dict ):
             raise TypeError( f"Expected a dict from web server, got a {type(res)}" )
@@ -183,7 +183,7 @@ class SegmentationMap:
                       }
 
         params.update( kwargs )
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         postdata = simplejson.dumps( params, cls=SNPITJsonEncoder )
         res = dbclient.send( "findsegmaps", data=postdata, headers={'Content-Type': 'application/json'} )
 

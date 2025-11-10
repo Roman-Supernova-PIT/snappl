@@ -19,7 +19,8 @@ from snappl.dbclient import SNPITDBClient
 class Spectrum1d:
     """A class to store and save single-epoch 1d transient spectra."""
 
-    def __init__( self, id=None,
+    def __init__( self,
+                  id=None,
                   data_dict=None,
                   filepath=None,
                   base_dir=None,
@@ -47,6 +48,16 @@ class Spectrum1d:
            * combined_meta: data_dict['combined']['meta']
            * combined_data: data_dict['combined']['data']
            * individual: data_dict['indivdual']
+
+           * id : UUID, the id of the spectrum
+           * provenance_id : UUID, the id of the spectrum's provenance
+           * diaobject_id : UUID, the id of the object for which this is a spectrum
+           * diaobject_position_id : UUID or None, the id of the object's improved position if any
+           * band : str, the band
+           * mjd_start : float, the MJD of the earliest component image
+           * mjd_end : float, the MJD + exposure time (in days) of the latest component image
+           * epoch : integer, the average MJD in millidays (i.e. MJD * 1000) of the comonent image MJDs
+           * images : list of Image, the component images
 
         Parameters
         ----------
@@ -119,25 +130,56 @@ class Spectrum1d:
                                        else asUUID( diaobject_position, oknone=True ) )
         self.no_database = no_database
 
-        self.band = None
-        self.mjd_start = None
-        self.mjd_end = None
-        self.epoch = None
-        self.images = None
-        
+        self._band = None
+        self._mjd_start = None
+        self._mjd_end = None
+        self._epoch = None
+        self._images = None
+
         if data_dict is None:
             self._data_dict = None
         else:
             self._set_data_dict( data_dict, dbclient=dbclient )
 
+    @property
+    def band( self ):
+        if self._band is None:
+            self._fill_props()
+        return self._band
+
+    @property
+    def mjd_start( self ):
+        if self._mjd_start is None:
+            self._fill_props()
+        return self._mjd_start
+
+    @property
+    def mjd_end( self ):
+        if self._mjd_end is None:
+            self._fill_props()
+        return self._mjd_end
+
+    @property
+    def epoch( self ):
+        if self._epoch is None:
+            self._fill_props()
+        return self.epoch
+
+    @property
+    def images( self ):
+        if self._images is None:
+            self._fill_props()
+        return self.images
+
+
     def _fill_props( self, dbclient=None ):
         """Fills self.images, self.band, self.mjd_start, self.mjd_end, and self.epoch based on data_dict."""
-        
+
         imageids = set( str(i['meta']['image_id']) for i in self.individual  )
-        if ( self.images is None ) or ( set( str(i.id) for i in self.images ) != imageids ):
+        if ( self._images is None ) or ( set( str(i.id) for i in self._images ) != imageids ):
             # Have to reload images:
-            dbclient = SNPITDBClient() if dbclient is None else dbclient
-            self.images = []
+            dbclient = SNPITDBClient.get() if dbclient is None else dbclient
+            self._images = []
             for imid in imageids:
                 try:
                     image = Image.get_image( imid, dbclient=dbclient )
@@ -146,16 +188,16 @@ class Spectrum1d:
                 except Exception as ex:
                     SNLogger.error( f"Spectrum1d.save_to_db failed to get image {imid} from the database:\n{ex}" )
                     raise
-                self.images.append( image )
-            self.images.sort( key=lambda x: x.mjd )
+                self._images.append( image )
+            self._images.sort( key=lambda x: x.mjd )
 
-        self.mjd_start = self.images[0].mjd
-        self.mjd_end = self.images[-1].mjd + self.images[-1].exptime / 3600. / 24.
-        self.epoch = int( np.floor( sum([ i.mjd for i in self.images ]) / len(self.images) * 1000 + 0.5 ) )
-        if any( i.band != self.images[0].band for i in self.images ):
+        self._mjd_start = self._images[0].mjd
+        self._mjd_end = self._images[-1].mjd + self._images[-1].exptime / 3600. / 24.
+        self._epoch = int( np.floor( sum([ i.mjd for i in self._images ]) / len(self._images) * 1000 + 0.5 ) )
+        if any( i.band != self._images[0].band for i in self._images ):
             raise ValueError( "Images have inconsistent bands!" )
-        self.band = self.images[0].band
-        
+        self._band = self._images[0].band
+
 
     @property
     def data_dict( self ):
@@ -295,7 +337,7 @@ class Spectrum1d:
 
         self._data_dict = data_dict
         if not self.no_database:
-            dbclient = SNPITDBClient() if dbclient is None else dbclient
+            dbclient = SNPITDBClient.get() if dbclient is None else dbclient
             self._fill_props( dbclient=dbclient )
 
 
@@ -403,9 +445,9 @@ class Spectrum1d:
                 self._data_dict['individual'].append( indiv )
 
         if not self.no_database:
-            dbclient = SNPITDBClient() if dbclient is None else dbclient
+            dbclient = SNPITDBClient.get() if dbclient is None else dbclient
             self._fill_props( dbclient=dbclient )
-                
+
 
     def save_to_db( self, write=False, dbclient=None ):
         """Save spectrum to db.
@@ -431,7 +473,7 @@ class Spectrum1d:
         if self.no_database:
             raise RuntimeError( "Can't save a no_database spectrum to the database." )
 
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         self._fill_props( dbclient=dbclient )
         if write:
             self.write_file()
@@ -440,17 +482,17 @@ class Spectrum1d:
                  'provenance_id': self.provenance_id,
                  'diaobject_id': self.diaobject_id,
                  'diaobject_position_id': self.diaobject_position_id,
-                 'band': self.images[0].band,
+                 'band': self._images[0].band,
                  'filepath': self.filepath,
-                 'mjd_start': self.mjd_start,
-                 'mjd_end': self.mjd_end,
-                 'epoch': self.epoch }
+                 'mjd_start': self._mjd_start,
+                 'mjd_end': self._mjd_end,
+                 'epoch': self._epoch }
 
         return dbclient.send( "savespectrum1d", data=simplejson.dumps( data, cls=SNPITJsonEncoder ),
                               headers={'Content-Type': 'application/json'} )
 
     @classmethod
-    def get_sectrum1d( cls, spectrum1d_id, dbclient=None ):
+    def get_spectrum1d( cls, spectrum1d_id, dbclient=None ):
         """Get a Specrum1d from the database.
 
         Parameters
@@ -468,8 +510,120 @@ class Spectrum1d:
           Spectrum1d
 
         """
-        dbclient = SNPITDBClient() if dbclient is None else dbclient
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         result = dbclient.send( f"getspectrum1d/{spectrum1d_id}" )
+        # Adjust the return dict to what's expected by Spectrum1d.__init__()
+        result['provenance'] = result['provenance_id']
+        result['diaobject'] = result['diaobject_id']
+        result['diaobject_position'] = result['diaobject_position_id']
+        del result['provenance_id']
+        del result['diaobject_id']
+        del result['diaobject_position_id']
         del result['created_at']
         return Spectrum1d( **result )
+
+    @classmethod
+    def find_spectra( cls, provenance=None, provenance_tag=None, process=None, dbclient=None,
+                      diaobject=None, **kwargs ):
+        """Search the database for spectra.
+
+        Must pass either provenance, or both of (provenance_tag and
+        process).  All the rest are optional; omitted parameters will
+        just not be used to filter the list of returned spectra.
+
+        Parameters
+        -----------
+          provenance : Provenance or UUID or str, default None
+            The Provenance, or the id of the Provenacne, of the
+            lightcurve you want.  You must pass either provenance or
+            provenance_tag.  (If you pass both, provenance_tag will be
+            ignored).
+
+          provenance_tag : str, default None
+            The provenance tag used to find the provenance of the
+            lightcurves you want.  Ignored if provenance is not None.
+            Requires process.
+
+          process : str, default None
+            The process used together with provenance_tag to find the
+            provenance of the lightcurves you want.  Required if
+            provenance_tag is not None.
+
+          dbclient : SNPITDBClient or None
+            The connection to the database (optional).  If you don't
+            pass one, will use the cached connection, or will make a new
+            one based on what's in the config.
+
+          diaobject : DiaObject or UUID or str or None
+            The DiaObject, or the ID of the object, you want spectra for.
+
+          band : str
+            The band of the images that went into the spectrum
+
+          mjd_start, mjd_end : float The earliesr mjd, and latest mjd,
+            of the individual images that went into the exposure.
+            (mjd_end is actually the mjd of the final image, plus it's
+            exposure time converted to days).
+
+          mjd_start_min, mjd_start_max, mjd_end_min, mjd_end_max : float
+            Use these if you want to search a range of times.
+
+          order_by: str or list, default None
+            By default, the returned images are not sorted in any
+            particular way.  Put a keyword here to sort by that value
+            (or by those values).  Options include 'id',
+            'provenance_id', 'pointing', 'sca', 'ra', 'dec', 'filepath',
+            'width', 'height', 'mjd', 'exptime'.  Not all of these are
+            necessarily useful, and some of them may be null for many
+            objects in the database.
+
+          limit : int, default None
+            Only return this many objects at most.
+
+          offset : int, default None
+            Useful with limit and order_by ; offset the returned value
+            by this many entries.  You can make repeated calls to
+            find_objects to get subsets of objects by passing the same
+            order_by and limit, but different offsets each time, to
+            slowly build up a list.
+
+        Returns
+        -------
+          List of spectra
+
+        """
+
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
+
+        params = kwargs
+
+        if provenance is not None:
+            if isinstance( provenance, Provenance ):
+                params['provenance'] = provenance.id
+            else:
+                params['provenance'] = asUUID( provenance )
+        else:
+            if ( provenance_tag is None ) or ( process is None ):
+                raise ValueError( "You must pass either provenance, or both of provenance_tag and process" )
+            params['provenance_tag'] = provenance_tag
+            params['process'] = process
+
+        if diaobject is not None:
+            params['diaobject_id'] = diaobject.id if isinstance( diaobject, DiaObject ) else asUUID( diaobject )
+
+        reses = dbclient.send( "/findspectra1d", data=simplejson.dumps( params, cls=SNPITJsonEncoder ),
+                               headers={'Content-Type': 'application/json'} )
+        spectra1d = []
+        for res in reses:
+            # Worm things around to work for kwargs to __init__
+            res['provenance'] = res['provenance_id']
+            res['diaobject'] = res['diaobject_id']
+            res['diaobject_position'] = res['diaobject_position_id']
+            del res['provenance_id']
+            del res['diaobject_id']
+            del res['diaobject_position_id']
+            del res['created_at']
+            spectra1d.append( Spectrum1d( **res ) )
+
+        return spectra1d

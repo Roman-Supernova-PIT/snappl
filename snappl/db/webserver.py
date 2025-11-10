@@ -709,8 +709,8 @@ class FindLightcurves( BaseView ):
 
 class SaveSpectrum1d( BaseView ):
     def do_the_things( self ):
-       needed_keys = { 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id', 'band',
-                        'filepath', 'mjd_start', 'mjd_end', 'epoch' }
+        needed_keys = { 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id', 'band',
+                         'filepath', 'mjd_start', 'mjd_end', 'epoch' }
         allowed_keys = needed_keys
         data = self.check_json_keys( needed_keys, allowed_keys )
 
@@ -727,7 +727,7 @@ class SaveSpectrum1d( BaseView ):
 
 # ======================================================================
 
-def GetSpectrum1d( BaseView ):
+class GetSpectrum1d( BaseView ):
     def do_the_things( self, spectrumid ):
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': spectrumid} )
@@ -737,6 +737,36 @@ def GetSpectrum1d( BaseView ):
                 return f"Multiple spectrum1d with id {spectrumid}; this should never happen.", 500
             else:
                 return rows[0]
+
+
+# ======================================================================
+
+class FindSpectra1d( BaseView ):
+    def do_the_things( self ):
+        equalses = { 'id', 'diaobject_id', 'band', 'filepath' }
+        minmaxes = { 'mjd_start', 'mjd_end', 'epoch' }
+        allowed_keys = { 'provenance', 'provenance_tag', 'process', 'order_by', 'limit', 'offset' }
+        allowed_keys = allowed_keys.union( equalses )
+        allowed_keys = allowed_keys.union( minmaxes )
+        data = self.check_json_keys( set(), allowed_keys, minmax_keys=minmaxes )
+
+        q = sql.SQL( "SELECT * FROM spectrum1d WHERE " )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            data, provid = self.get_provenance_id( data, dbcon=dbcon )
+            conditions = [ sql.SQL( "provenance_id=%(provid)s" ) ]
+            subdict = { 'provid': provid }
+
+            ( data, conditions, subdict, finalclause ) = self.make_sql_conditions( data,
+                                                                                   equalses=equalses,
+                                                                                   minmaxes=minmaxes,
+                                                                                   conditions=conditions,
+                                                                                   subdict=subdict )
+            if len(data) != 0:
+                return f"Error, unknown parametrs: {data.keys()}", 500
+
+            q += conditions + finalclause
+            return dbcon.execute( q, subdict )
 
 
 # ======================================================================
@@ -773,5 +803,5 @@ urls = {
 
     "/savespectrum1d": SaveSpectrum1d,
     "/getspectrum1d/<spectrumid>": GetSpectrum1d,
-    # "/findspectra1d": FindSpectra1d,
+    "/findspectra1d": FindSpectra1d,
 }
