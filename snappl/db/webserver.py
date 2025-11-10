@@ -11,7 +11,7 @@ from rkwebutil import rkauth_flask
 from snappl.config import Config
 from snappl.db import db
 from snappl.db.baseview import BaseView
-# from snappl.logger import SNLogger
+from snappl.logger import SNLogger
 
 
 # ======================================================================
@@ -137,7 +137,10 @@ class GetProvenance( BaseProvenance ):
                                           "WHERE t.process=%(process)s AND t.tag=%(tag)s",
                                           { 'process': process, 'tag': provid } )
             if len(rows) == 0:
-                return { 'status': f'No such provenance {provid}' }
+                if process is None:
+                    return { 'status': f'No such provenance {provid}' }
+                else:
+                    return { 'status': f'No provenance for tag {provid} and process {process}' }
             if len(rows) > 1:
                 return ( f"Database corruption!  More than one provenance {provid}"
                          f"{'' if process is None else f' for process {process}'}!" ), 500
@@ -182,13 +185,17 @@ class CreateProvenance( BaseProvenance ):
         with db.DBCon() as dbcon:
             rows, _cols = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': data['id'] } )
             if len(rows) == 0:
+                SNLogger.info( f"Saving provenance {data['id']}" )
                 prov.insert( dbcon=dbcon.con, nocommit=True, refresh=False )
                 for uid in upstream_ids:
+                    SNLogger.info( f"Saving upstream {uid} of {prov.id}" )
                     dbcon.execute( "INSERT INTO provenance_upstream(downstream_id,upstream_id) "
                                    "VALUES (%(down)s,%(up)s)",
                                    { 'down': prov.id, 'up': uid } )
             elif not existok:
                 return f"Error, provenance {data['id']} already exists", 500
+            else:
+                SNLogger.info( f"Provenance {data['id']} already exists, but existok is True, so, yay." )
 
             if tag is not None:
                 self.tag_provenance( dbcon, tag, data['process'], data['id'], replace=replace_tag )

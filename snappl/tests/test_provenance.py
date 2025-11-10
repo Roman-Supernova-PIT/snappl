@@ -123,6 +123,23 @@ def test_provenance( dbclient ):
 
         check_provs( prov, downstream )
 
+        # Test the "exist=" parameter of save_to_db
+        # downstream was saved before (the test above on Provenance.get( "proc3"... savetodb=True )
+        # If we try to save it with exists=False, it will fail.  If we don't, it should succeed.
+
+        with pytest.raises( RuntimeError, match=r'Error saving provenance.*it already exists in the database.' ):
+            downstream.save_to_db( exists=False )
+        downstream.save_to_db()
+
+        # Also tag it with 'foo'.  Previously, this would fail even with exists=None, because
+        #   of an error that has since been fixed.
+        with pytest.raises( RuntimeError, match=r'Error saving provenance.*it already exists in the database.' ):
+            downstream.save_to_db( tag='anisotropies', exists=False )
+        with pytest.raises( ValueError, match=r'No provenance for tag anisotropies and process proc3' ):
+            _ = Provenance.get_provs_for_tag( 'anisotropies', 'proc3' )
+        downstream.save_to_db( tag='anisotropies' )
+        assert Provenance.get_provs_for_tag( 'anisotropies', 'proc3' ) is not None
+
         # Make sure we can get a provenance by an id:
         prov = Provenance.get_by_id( downstream.id, dbclient=dbclient )
         check_provs( prov, downstream )
@@ -172,7 +189,7 @@ def test_provenance( dbclient ):
     finally:
         with DBCon() as dbcon:
             dbcon.execute( "DELETE FROM provenance_tag WHERE tag=ANY(%(tag)s)",
-                           { 'tag': [ 'kitten', 'foo', 'bar', 'kaglorky', 'gazorniplotz' ] } )
+                           { 'tag': [ 'kitten', 'foo', 'bar', 'kaglorky', 'gazorniplotz', 'anisotropies' ] } )
             dbcon.execute( "DELETE FROM provenance_upstream "
                            "WHERE upstream_id=ANY(%(provs)s) OR downstream_id=ANY(%(provs)s)",
                            provstodel )
