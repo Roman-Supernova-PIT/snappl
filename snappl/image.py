@@ -1033,6 +1033,8 @@ class Image:
             del row['properties']
             images.append( image_class( **row ) )
 
+        return images
+
 
 # ======================================================================
 # Lots of classes will probably internally store all of data, noise, and

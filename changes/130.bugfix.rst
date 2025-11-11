@@ -1,0 +1,1 @@
+Add missing return statement in Image.find_images
