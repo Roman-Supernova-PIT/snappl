@@ -274,8 +274,13 @@ def test_save_diaobject( test_object_provenance, dbclient ):
         assert retval['id'] == str( diaobj3.id )
         assert retval['name'] == diaobj3.name
 
+        # Make sure we can save objects with just the minimal data
+        diaobj = DiaObject( ra=1., dec=2., provenance_id=test_object_provenance.id, mjd_discovery=60000. )
+        objids.append( diaobj.id )
+        diaobj.save_object()
+
         # Make sure it yells at us if things are missing
-        for omit in [ 'provenance_id', 'name', 'ra', 'dec', 'mjd_discovery' ]:
+        for omit in [ 'provenance_id', 'ra', 'dec', 'mjd_discovery' ]:
             objids.append( uuid.uuid4() )
             tmp = kwargs.copy()
             tmp['id'] = objids[-1]

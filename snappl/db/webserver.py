@@ -290,14 +290,14 @@ class SaveDiaObject( BaseView ):
             return "Expected diaobject data in json POST data, didn't get any.", 500
 
         data = flask.request.json
-        needed_keys = { 'provenance_id', 'name', 'ra', 'dec', 'mjd_discovery' }
-        allowed_keys = { 'id', 'iauname', 'mjd_peak', 'mjd_start',
+        needed_keys = { 'provenance_id', 'ra', 'dec', 'mjd_discovery' }
+        allowed_keys = { 'id', 'iauname', 'name', 'mjd_peak', 'mjd_start',
                          'mjd_end', 'properties', 'association_radius' }.union( needed_keys )
         passed_keys = set( data.keys() )
         if not passed_keys.issubset( allowed_keys ):
             return f"Unknown keys: {passed_keys - allowed_keys}", 500
         if not needed_keys.issubset( passed_keys ):
-            return f"Missing required keys: {passed_keys - needed_keys}", 500
+            return f"Missing required keys: {needed_keys - passed_keys}", 500
         if any( data[i] is None for i in needed_keys ):
             return f"None of the necessary keys can be None: {needed_keys}"
 
@@ -339,7 +339,7 @@ class SaveDiaObject( BaseView ):
                     oldobj = rows[0]
                     del oldobj['dist']
 
-            if ( oldobj is None ) and ( not duplicate_ok ):
+            if ( oldobj is None ) and ( 'name' in data ) and ( not duplicate_ok ):
                 rows = dbcon.execute( "SELECT * FROM diaobject WHERE name=%(name)s AND provenance_id=%(prov)s",
                                       { 'name': data['name'], 'prov': data['provenance_id'] } )
                 if len(rows) > 0:

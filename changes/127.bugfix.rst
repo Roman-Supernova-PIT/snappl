@@ -1,0 +1,1 @@
+Fix two small diaobject saving bugs re: required parameters (make "name" not required)
