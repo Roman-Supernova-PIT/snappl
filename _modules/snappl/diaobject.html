@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.diaobject &#8212; roman_snpit_snappl 0.1.dev1+g6d5085b30 documentation</title>
+    <title>snappl.diaobject &#8212; roman_snpit_snappl 0.1.dev1+g6f3e9d973 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=fb6e76c2"></script>
+    <script src="../../_static/documentation_options.js?v=b21c41b0"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -89,6 +89,7 @@
   <h1>Source code for snappl.diaobject</h1><div class="highlight"><pre>
 <span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;DiaObject&#39;</span><span class="p">,</span> <span class="s1">&#39;DiaObjectOU2024&#39;</span><span class="p">,</span> <span class="s1">&#39;DiaObjectManual&#39;</span> <span class="p">]</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">simplejson</span>
 
@@ -110,8 +111,21 @@
 <span class="sd">    id : UUID; the id of the object if it is in the SNPIT Internal database (or intended to be)</span>
 <span class="sd">    provenance_id : UUID; the provenance of the object if it is in the SNPIT Internal database (or intended to be)</span>
 
+<span class="sd">    name : str; some name assigned by the thing that found it.  These</span>
+<span class="sd">           will be heterogeneous, may be duplciated for different</span>
+<span class="sd">           objects, and may be None, so don&#39;t rely on this property as</span>
+<span class="sd">           an identifier.  View it as more a comment field.</span>
+<span class="sd">    iauname : str; the IAU or TNS name for the object, if know, and if the field has been populated.</span>
+<span class="sd">              Will be None for most objects.</span>
+
 <span class="sd">    ra : ra in degrees (ICRS)</span>
 <span class="sd">    dec : dec in degrees (ICRS)</span>
+<span class="sd">          The ra/dec position should be considered an _approximate_</span>
+<span class="sd">          position only.  It&#39;s the position that was saved when the</span>
+<span class="sd">          object was first found, which means it was probably well</span>
+<span class="sd">          before peak and likely a low S/N detection.  Use</span>
+<span class="sd">          get_position() with an appropriate provenance to find a better</span>
+<span class="sd">          position for an object (if we&#39;ve calcaulted one).</span>
 
 <span class="sd">    mjd_discovery : when the object was first discovered; may be None if unknown (float MJD)</span>
 <span class="sd">    mjd_peak : peak of the object&#39;s lightcurve; may be None if unknown (float MJD)</span>
@@ -133,10 +147,12 @@
 <span class="sd">                 object should have, we should add it as a top-level</span>
 <span class="sd">                 property, and add that column to the database.)</span>
 
-<span class="sd">    Don&#39;t instantiate one of these directly.  Instead, use</span>
+<span class="sd">    Usually, don&#39;t instantiate one of these directly.  Instead, use</span>
 <span class="sd">    DiaObject.get_object or DiaObject.find_objects.  If you&#39;re trying to</span>
 <span class="sd">    get a manual object, use provenance_tag &#39;manual&#39; with</span>
-<span class="sd">    DiaObject.get_object.</span>
+<span class="sd">    DiaObject.get_object.  Only instantiate a DiaObject if you&#39;re</span>
+<span class="sd">    writing discovery software and want to create a new one to save to</span>
+<span class="sd">    the database.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -150,9 +166,9 @@
 
 <span class="sd">        Properties</span>
 <span class="sd">        ----------</span>
-<span class="sd">          id : UUID or str</span>
-<span class="sd">            The id of the diaobject.  Required if you&#39;re going to save</span>
-<span class="sd">            this to the database later.</span>
+<span class="sd">          id : UUID or str, default None.</span>
+<span class="sd">            The id of the diaobject.  If you leave this as None</span>
+<span class="sd">            (recommended), a new one will be assigned.</span>
 
 <span class="sd">          provenance_id : UUID or str</span>
 <span class="sd">            The provenance of the object. Required if you&#39;re going to save</span>
@@ -164,14 +180,15 @@
 <span class="sd">          dec : float</span>
 <span class="sd">            Decimal degrees.</span>
 
-<span class="sd">          name : str</span>
+<span class="sd">          name : str, defanot None</span>
 <span class="sd">            A name for the object.  These aren&#39;t strictly required to be</span>
 <span class="sd">            unique, but you should strive to make them unique.</span>
 <span class="sd">            Normally, saving them will raise an error if you end up with</span>
 <span class="sd">            more than one object in the same provenance with the same</span>
 <span class="sd">            name.  Ideally, this is something digestable for humans, but</span>
 <span class="sd">            if you&#39;re lazy, you can make this a string version of id and</span>
-<span class="sd">            then you can be sure it will be unique.</span>
+<span class="sd">            then you can be sure it will be unique.  You may also just</span>
+<span class="sd">            leave it at Hone.</span>
 
 <span class="sd">          iauname : str, default None</span>
 <span class="sd">            The IAU / TNS name for the object.  If given, this must be</span>
@@ -204,7 +221,7 @@
 <span class="sd">            Any optional properties you want to save with the object.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span> <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span> <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">provenance_id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span><span class="n">provenance_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">provenance_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ra</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">ra</span> <span class="p">)</span> <span class="k">if</span> <span class="n">ra</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">dec</span> <span class="p">)</span> <span class="k">if</span> <span class="n">dec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
