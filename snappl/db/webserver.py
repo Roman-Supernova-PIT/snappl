@@ -339,7 +339,7 @@ class SaveDiaObject( BaseView ):
                     oldobj = rows[0]
                     del oldobj['dist']
 
-            if ( oldobj is None ) and ( not duplicate_ok ):
+            if ( oldobj is None ) and ( 'name' in data ) and ( not duplicate_ok ):
                 rows = dbcon.execute( "SELECT * FROM diaobject WHERE name=%(name)s AND provenance_id=%(prov)s",
                                       { 'name': data['name'], 'prov': data['provenance_id'] } )
                 if len(rows) > 0:
