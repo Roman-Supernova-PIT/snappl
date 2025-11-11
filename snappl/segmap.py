@@ -13,7 +13,18 @@ from snappl.utils import SNPITJsonEncoder, asUUID
 
 
 class SegmentationMap:
-    """Encapsulate a single segmentation map."""
+    """Encapsulate a single segmentation map.
+
+    Properties of a SegmentationMap object are:
+
+    * filepath : pathlib.Path ; path *relative to the base path* of the image file of the segmentation map
+    * full_filepath : pathlib.Path ; absolute path to file on system.  (Same as base_path / filepath.)
+    * base_path : base path for images; usually will be Config value system.paths.segmaps
+    * base_dir : synonym for base_path
+    * image : an Image object that holds the actual segmentation map data.  Get the 2d numpy
+              data of segmap s in s.image.data
+
+    """
 
     image_format_to_class = { 1: OpenUniverse2024FITSImage,
                               2: FITSImageStdHeaders
@@ -40,6 +51,10 @@ class SegmentationMap:
         self.base_path = pathlib.Path( Config.get().value( 'system.paths.segmaps' ) )
 
     @property
+    def full_filepath( self ):
+        return self.base_path / self.filepath
+
+    @property
     def image( self ):
         if self._image is None:
             self._load_image()
@@ -52,7 +67,7 @@ class SegmentationMap:
 
         if self.filepath is None:
             raise ValueError( "Can't load image when filepath is None." )
-        fullpath = self.base_path / self.filepath
+        fullpath = self.full_filepath
 
         if self.format in ( 1, 2 ):
             self._image = self.image_format_to_class[self.format]( fullpath, imagehdu=0, noisehdu=None, flagshdu=None )

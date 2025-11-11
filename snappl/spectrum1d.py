@@ -17,7 +17,36 @@ from snappl.dbclient import SNPITDBClient
 
 
 class Spectrum1d:
-    """A class to store and save single-epoch 1d transient spectra."""
+    """A class to store and save single-epoch 1d transient spectra.
+
+       Spectrum1d schema are defined here:
+
+          https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/spectrum_1d
+
+       Properties of a Spectrum1d object include:
+        * filepath : pathlib.Path ; path *relative to the base path* of the spectrum1d file
+        * full_filepath : pathlib.Path ; absolute path on the system to the spectrum1d file
+        * base_path : base path for lightcurves; usually will be Config value system.paths.lightcurves
+        * base_dir : synonym for base_path
+
+        * data_dict : the full dict described the schema wiki page linked above
+        * meta : data_dict['meta']
+        * combined: data_dict['combined']
+        * combined_meta: data_dict['combined']['meta']
+        * combined_data: data_dict['combined']['data']
+        * individual: data_dict['indivdual']
+
+        * id : UUID, the id of the spectrum
+        * provenance_id : UUID, the id of the spectrum's provenance
+        * diaobject_id : UUID, the id of the object for which this is a spectrum
+        * diaobject_position_id : UUID or None, the id of the object's improved position if any
+        * band : str, the band
+        * mjd_start : float, the MJD of the earliest component image
+        * mjd_end : float, the MJD + exposure time (in days) of the latest component image
+        * epoch : integer, the average MJD in millidays (i.e. MJD * 1000) of the comonent image MJDs
+        * images : list of Image, the component images
+
+    """
 
     def __init__( self,
                   id=None,
@@ -34,30 +63,6 @@ class Spectrum1d:
                   no_database=False,
                   dbclient=None ):
         """Instantiate a Spectrum1d
-
-        Spectrum1d schema are defined here:
-
-           https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/spectrum_1d
-
-        Inside the object, you can get access to parts of the spectrum
-        with the following properties:
-
-           * data_dict : the full dict described on that page
-           * meta : data_dict['meta']
-           * combined: data_dict['combined']
-           * combined_meta: data_dict['combined']['meta']
-           * combined_data: data_dict['combined']['data']
-           * individual: data_dict['indivdual']
-
-           * id : UUID, the id of the spectrum
-           * provenance_id : UUID, the id of the spectrum's provenance
-           * diaobject_id : UUID, the id of the object for which this is a spectrum
-           * diaobject_position_id : UUID or None, the id of the object's improved position if any
-           * band : str, the band
-           * mjd_start : float, the MJD of the earliest component image
-           * mjd_end : float, the MJD + exposure time (in days) of the latest component image
-           * epoch : integer, the average MJD in millidays (i.e. MJD * 1000) of the comonent image MJDs
-           * images : list of Image, the component images
 
         Parameters
         ----------

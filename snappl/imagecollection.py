@@ -272,7 +272,7 @@ class ImageCollectionOU2024:
 
         base_path = self.base_path if base_path is None else pathlib.Path( base_path )
         if path is not None:
-            img = OpenUniverse2024FITSImage( base_path / path )
+            img = OpenUniverse2024FITSImage( base_path / path, format=-1 )
             if ( pointing is not None ) and ( int(pointing) != int(img.pointing) ):
                 raise ValueError( "Pointing {pointing} inconsistent with what's in {path}" )
             if ( sca is not None ) and ( int(sca) != int(img.sca) ):
@@ -285,7 +285,7 @@ class ImageCollectionOU2024:
             raise ValueError( "Must specify either path or all of (pointing, band, sca)" )
 
         path = self.get_image_path( pointing, band, sca, base_path=base_path )
-        img = OpenUniverse2024FITSImage( path, pointing=pointing, sca=sca )
+        img = OpenUniverse2024FITSImage( path, pointing=pointing, sca=sca, format=-1 )
         return img
 
 
@@ -301,16 +301,16 @@ class ImageCollectionOU2024:
         return path
 
     def find_images( self,
-                      subset=None,
-                      path=None,
-                      mjd_min=None,
-                      mjd_max=None,
-                      ra=None,
-                      dec=None,
-                      band=None,
-                      exptime_min=None,
-                      exptime_max=None,
-                      sca=None ):
+                     subset=None,
+                     path=None,
+                     mjd_min=None,
+                     mjd_max=None,
+                     ra=None,
+                     dec=None,
+                     band=None,
+                     exptime_min=None,
+                     exptime_max=None,
+                     sca=None ):
         params = {}
 
         if ( ra is None ) != ( dec is None ):
@@ -340,7 +340,8 @@ class ImageCollectionOU2024:
                                               band=res['filter'][i],
                                               pointing=res['pointing'][i],
                                               sca=res["sca"][i],
-                                              mjd=res['mjd'][i] )
+                                              mjd=res['mjd'][i],
+                                              format=-1 )
             image.mjd = res['mjd'][i]
             images.append( image )
 
@@ -396,10 +397,10 @@ class ImageCollectionManualFITS:
 
         base_path = pathlib.Path(base_path) if base_path is not None else self.base_path
         if self.threefile:
-            return FITSImageStdHeaders( path=base_path / path, std_imagenames=True )
+            return FITSImageStdHeaders( path=base_path / path, std_imagenames=True, format=-1 )
 
         else:
-            return FITSImage( path=path )
+            return FITSImage( path=path, format=-1 )
 
 
 # ======================================================================
@@ -456,12 +457,8 @@ class ImageCollectionDB:
 
             row = rows[0]
 
-        # Remove things the Image constroctor won't know, fix
-        #   things that need fixing
-        row['path'] = self.base_path / row['filepath']
-        del row['filepath']
+        # Remove things the Image constroctor won't know
         del row['extension']
-        del row['format']
         del row['properties']
         return self.image_class( **row )
 
@@ -478,12 +475,8 @@ class ImageCollectionDB:
 
         images = []
         for row in rows:
-            # Remove things the Image constructor won't know, fix
-            #   things that need fixing
-            row['path'] = self.base_path / row['filepath']
-            del row['filepath']
+            # Remove things the Image constructor won't know
             del row['extension']
-            del row['format']
             del row['properties']
             images.append( self.image_class( **row ) )
 

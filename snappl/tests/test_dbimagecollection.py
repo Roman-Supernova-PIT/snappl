@@ -1,9 +1,7 @@
 import pytest
-import pathlib
 
 from snappl.imagecollection import ImageCollection
 from snappl.image import OpenUniverse2024FITSImage
-from snappl.config import Config
 from snappl.utils import env_as_bool
 
 
@@ -26,8 +24,7 @@ def test_ou2024_find_images( loaded_ou2024_test_l2images, dbclient ):
     assert all( isinstance(i, OpenUniverse2024FITSImage) for i in allimages )
 
     # Test searching by filepath
-    base_path = pathlib.Path( Config.get().value( 'system.ou24.images' ) )
-    images = imcol.find_images( filepath=str( allimages[0].path.relative_to( base_path ) ), dbclient=dbclient )
+    images = imcol.find_images( filepath=str( allimages[0].filepath ), dbclient=dbclient )
     assert len(images) == 1
     assert images[0].id == allimages[0].id
 
@@ -81,7 +78,7 @@ def test_ou2024_get_image( loaded_ou2024_test_l2images, dbclient ):
     img = imcol.get_image( image_id=allimages[0].id, dbclient=dbclient )
     assert img.id == allimages[0].id
 
-    img = imcol.get_image( path=allimages[0].path.relative_to( imcol.base_path ), dbclient=dbclient )
+    img = imcol.get_image( path=allimages[0].filepath, dbclient=dbclient )
     assert img.id == allimages[0].id
 
     img = imcol.get_image( pointing=allimages[0].pointing, sca=allimages[0].sca, band=allimages[0].band,

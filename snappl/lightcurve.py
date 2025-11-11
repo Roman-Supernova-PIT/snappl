@@ -22,7 +22,20 @@ from snappl.dbclient import SNPITDBClient
 
 
 class Lightcurve:
-    """A class to store and save lightcurve data across different SNPIT photometry codes."""
+    """A class to store and save lightcurve data across different SNPIT photometry codes.
+
+    Properties include:
+      * filepath : pathlib.Path ; path *relative to the base path* of the lightcurve file
+      * full_filepath : pathlib.Path ; absolute path on the system to the lightcurve file
+      * base_path : base path for lightcurves; usually will be Config value system.paths.lightcurves
+      * base_dir : synonym for base_path
+      * lightcurve : The actual lightcurve data, an Astropy QTable
+                     (see https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve )
+      * data : synonm for lightcurve
+      * meta : dict, the metadata; synonym for self.lightcurve.meta, or None if the lightcurve data isn't loaded
+               (access the lightcurve property to force it to load)
+
+    """
 
     # I know this dictionary looks stupid, but it might not in the future.
     filename_extensions = { 'parquet': '.parquet',
