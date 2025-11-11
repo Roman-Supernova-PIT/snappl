@@ -1,5 +1,6 @@
 __all__ = [ 'DiaObject', 'DiaObjectOU2024', 'DiaObjectManual' ]
 
+import uuid
 import inspect
 import simplejson
 
@@ -19,8 +20,21 @@ class DiaObject:
     id : UUID; the id of the object if it is in the SNPIT Internal database (or intended to be)
     provenance_id : UUID; the provenance of the object if it is in the SNPIT Internal database (or intended to be)
 
+    name : str; some name assigned by the thing that found it.  These
+           will be heterogeneous, may be duplciated for different
+           objects, and may be None, so don't rely on this property as
+           an identifier.  View it as more a comment field.
+    iauname : str; the IAU or TNS name for the object, if know, and if the field has been populated.
+              Will be None for most objects.
+
     ra : ra in degrees (ICRS)
     dec : dec in degrees (ICRS)
+          The ra/dec position should be considered an _approximate_
+          position only.  It's the position that was saved when the
+          object was first found, which means it was probably well
+          before peak and likely a low S/N detection.  Use
+          get_position() with an appropriate provenance to find a better
+          position for an object (if we've calcaulted one).
 
     mjd_discovery : when the object was first discovered; may be None if unknown (float MJD)
     mjd_peak : peak of the object's lightcurve; may be None if unknown (float MJD)
@@ -42,10 +56,12 @@ class DiaObject:
                  object should have, we should add it as a top-level
                  property, and add that column to the database.)
 
-    Don't instantiate one of these directly.  Instead, use
+    Usually, don't instantiate one of these directly.  Instead, use
     DiaObject.get_object or DiaObject.find_objects.  If you're trying to
     get a manual object, use provenance_tag 'manual' with
-    DiaObject.get_object.
+    DiaObject.get_object.  Only instantiate a DiaObject if you're
+    writing discovery software and want to create a new one to save to
+    the database.
 
     """
 
@@ -59,9 +75,9 @@ class DiaObject:
 
         Properties
         ----------
-          id : UUID or str
-            The id of the diaobject.  Required if you're going to save
-            this to the database later.
+          id : UUID or str, default None.
+            The id of the diaobject.  If you leave this as None
+            (recommended), a new one will be assigned.
 
           provenance_id : UUID or str
             The provenance of the object. Required if you're going to save
@@ -73,14 +89,15 @@ class DiaObject:
           dec : float
             Decimal degrees.
 
-          name : str
+          name : str, defanot None
             A name for the object.  These aren't strictly required to be
             unique, but you should strive to make them unique.
             Normally, saving them will raise an error if you end up with
             more than one object in the same provenance with the same
             name.  Ideally, this is something digestable for humans, but
             if you're lazy, you can make this a string version of id and
-            then you can be sure it will be unique.
+            then you can be sure it will be unique.  You may also just
+            leave it at Hone.
 
           iauname : str, default None
             The IAU / TNS name for the object.  If given, this must be
@@ -113,7 +130,7 @@ class DiaObject:
             Any optional properties you want to save with the object.
 
         """
-        self.id = asUUID(id) if id is not None else None
+        self.id = asUUID(id) if id is not None else uuid.uuid4()
         self.provenance_id = asUUID(provenance_id) if provenance_id is not None else None
         self.ra = float( ra ) if ra is not None else None
         self.dec = float( dec ) if dec is not None else None
