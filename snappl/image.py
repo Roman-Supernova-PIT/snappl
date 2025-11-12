@@ -1,4 +1,4 @@
-__all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'FITSImageOnDisk',
+__all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'CompressedFITSImage', 'FITSImageOnDisk',
             'OpenUniverse2024FITSImage', 'RomanDatamodelImage' ]
 
 import re
@@ -30,6 +30,7 @@ from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, GWCS
 from snappl.utils import asUUID, SNPITJsonEncoder
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
+from snappl.pathedobject import PathedObject
 
 
 # ======================================================================
@@ -38,13 +39,31 @@ from snappl.dbclient import SNPITDBClient
 #   object you instantiate should have its interface defined in this
 #   class.
 
-class Image:
+class Image( PathedObject ):
     """Encapsulates a single 2d image.
 
     Properties inclue the following.  Some of these properties may not
     be defined for some subclasses of Image.
 
-    * path : pathlib.Path; absolute path to the image on disk
+    If possible, avoid using all "path" properties, and instead use the
+    other properties to get access to image data.  Note that "noisepath"
+    and "flagspath" are not defined for all Image subclasses, and will
+    only be defined sometimes for some subclasses (depending on how data
+    is stored).
+
+    * filepath : pathlib.Path ; path *relative to the base path* of the image file. This may just
+                                have the image data itself, or it may be a *base* filepath, or it
+                                may have everything, depending on the subclass.
+                                If you can avoid using this property, do so.  Use .data, etc, instead.
+    * filename : string ; just the name part of filepath (so if filepath is Path("/foo/bar"), name is "bar")
+    * full_filepath : pathlib.Path ; absolute path to file on system.  (Same as base_path / filepath.)
+    * base_path : base path for images; usually will be Config value system.paths.images
+    * base_dir : synonym for base_path
+
+    * path : pathlib.Path; absolute path to the image on disk, sort of, in a complicatd way.
+             HERE FOR BACKWARDS COMPATIBILITY ONLY
+    * name : str; synonym for filename.  HERE FOR BACKWARDS COMPATIBILITY ONLY.
+
     * pointing : int (str?); a unique identifier of the exposure associated with the image
     *            WARNING, this property name will probably change once we fighre out the
     *            right thing from the roman datamodel we want to use
@@ -78,6 +97,17 @@ class Image:
     IMPORTANT NOTE: because of how numpy arrays are indexed, if you want to get
     value of the pixel at (ix, iy), you would do image.data[iy, ix].
 
+    For all implementations, the properties data, noise, and flags are
+    lazy-loaded.  That is, they start empty, but when you access them,
+    an internal buffer gets loaded with that data.  This means it can be
+    very easy for lots of memory to get used without your realizing it.
+    There are a couple of solutions.  The first, is to call Image.free()
+    when you're sure you don't need the data any more, or if you know
+    you want to get rid of it for a while and re-read it from disk
+    later.  The second is just not to access the data, noise, and flags
+    properties, instead use Image.get_data(), and manage the data object
+    lifetime yourself.
+
     """
 
     # How close in degrees should the right- and up- calculated position angles match?
@@ -92,44 +122,60 @@ class Image:
     #  file so all the classes will be defined by the time we get there.)
 
 
-    def __init__( self, path, id=None, provenance_id=None, width=None, height=None,
+    def __init__( self, path=None, filepath=None, base_path=None, base_dir=None,
+                  full_filepath=None, no_base_path=False,
+                  id=None, provenance_id=None, width=None, height=None,
                   pointing=None, sca=None, ra=None, dec=None,
                   ra_corner_00=None, ra_corner_01=None, ra_corner_10=None, ra_corner_11=None,
                   dec_corner_00=None, dec_corner_01=None, dec_corner_10=None, dec_corner_11=None,
                   band=None, mjd=None, position_angle=None, exptime=None, sky_level=None, zeropoint=None,
-                  is_superclass=False, **kwargs ):
+                  format=-1, is_superclass=False, **kwargs ):
         """Instantiate an image.  You probably don't want to do that.
 
         This is an abstract base class that has limited functionality.
         You probably want to instantiate a subclass if you're creating a
-        new image.  If you're trying to get a pre-existing image, then
-        probably what you really want to do is call the get_image()
-        method of an imagecollection.ImageCollection object.
+        new image.
 
-        For all implementations, the properties data, noise, and flags
-        are lazy-loaded.  That is, they start empty, but when you access
-        them, an internal buffer gets loaded with that data.  This means
-        it can be very easy for lots of memory to get used without your
-        realizing it.  There are a couple of solutions.  The first, is
-        to call Image.free() when you're sure you don't need the data
-        any more, or if you know you want to get rid of it for a while
-        and re-read it from disk later.  The second is just not to
-        access the data, noise, and flags properties, instead use
-        Image.get_data(), and manage the data object lifetime yourself.
+        If you're trying to pull an image out of the database, then
+        probably what you really want is to use the Image.get_image or
+        Image.find_images class methods.
+
+        If you're working with non-database images and are trying to get
+        a pre-existing image, then probably what you really want to do
+        is call the get_image() method of an ImageCollection object.
 
         Parameters
         ----------
-          path : str
-            Path to image file, or otherwise some kind of indentifier
-            that allows the object to find the image.  Exactly what
-            this needs to be is subclass-dependent, but it is usually
-            a full absolute path on disk.
+          filepath : str or Path, default None
+            Path of the image relative to the base path for images,
+            unless less no_base_path is True, in which case this is the
+            full absolute path to the image.  For datbase images, you do
+            not want to create a path yourself, but leave it at None and
+            let the class create the filepath.  See PathedObject.
 
-            If you don't know the path, but only know (say) the
-            pointing, band, and sca of an image, then either use the
-            get_image() method of an appropriate ImageCollection instead
-            of instantiating an Image directly, or use the
-            get_image_path() method of an appropriate ImageCollection.
+          full_filepath : str or Path, default None
+            The full path to the image.  If you're using an Image subclass
+            to deal with an image that's not in the database, you probably
+            want to set this to the absolute path of the image, and you
+            probably want to set no_base_path to True, but you might also
+            set base_path yourself and leave no_base_path at False.
+
+          base_path : str or Path, default None
+            Always leave this at None for images associated with
+            database, and the default will be used.  Otherwise, the
+            absolute path of the image is base_path / filepath (which
+            should be exactly the same as full_filepath).  Must be None
+            if no_base_path is True.
+
+          base_dir : str or Path, default None
+            Synonym for base_path
+
+          no_base_path : bool, default False
+            For images associated with the database, leave this at
+            False, and make filepath relative to the base path (which
+            may be system dependent).  For images that aren't associated
+            with the database, you can make this True and set filepath
+            to be just the path to the image.
 
           id : UUID or str that can be converted to UUID, default None
             Database ID of the image.  This is only relevant if the
@@ -143,6 +189,9 @@ class Image:
 
           width, height: int, default None
             The width and height of the image in pixels if known.
+
+          format : int, default -1
+            Index into the table Image._format_def at the bottom of this file.
 
           pointing : int (str?), default None (WARNING: this parameter keyword will change)
           sca: int, default None
@@ -161,13 +210,32 @@ class Image:
             many cases, they will be lazy-loaded from the header.
 
         """
-        self._declare_consumed_kwargs( { 'id', 'provenance_id', 'width', 'height', 'pointing', 'sca', 'ra', 'dec',
+        if path is not None:
+            if full_filepath is not None:
+                # This next error message is a bit of a lie.  It's
+                #   aspirational; use the real thing, not the backwards
+                #   compatible thing.  But, existing code will use path, from
+                #   before full_filepath was defined, and we want it to keep
+                #   working.  If somebody uses both, then they're just wrong,
+                #   so tell them to use the new thing.
+                raise ValueError( "Do not use path, only use full_filepath." )
+            full_filepath = path
+
+        # This has to be set before superclass init because the
+        #   PathedObject init will (indirectly) use it (by calling
+        #   _set_base_path).
+        self._format = format
+
+        super().__init__( filepath=filepath, base_path=base_path, base_dir=base_dir,
+                          full_filepath=full_filepath, no_base_path=no_base_path )
+
+        self._declare_consumed_kwargs( { 'path', 'filepath', 'base_path', 'base_dir',
+                                         'full_filepath', 'no_base_path',
+                                         'id', 'provenance_id', 'width', 'height', 'pointing', 'sca', 'ra', 'dec',
                                          'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                          'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                                          'band', 'mjd', 'position_nagle', 'exptime', 'sky_level', 'zeropoint' } )
         self._verify_all_consumed_kwargs( **kwargs )
-
-        self.path = pathlib.Path( path ) if path is not None else None
 
         self._id = asUUID( id ) if id is not None else None
         self._provenance_id = asUUID( provenance_id ) if provenance_id is not None else None
@@ -216,10 +284,56 @@ class Image:
             # SCLogger.warning( f"{self.__class__.__name__} constructor didn't recognize "
             #                   f"keyword arguments: {unconsumed} " )
 
+
+
+    _image_class_base_path_config_item = None
+
+
+    def _set_base_path( self, base_path=None, no_base_path=False ):
+        # This is unpleasant but the tortured logic is necessary to
+        #  preserve backwards compatibility for Image with what we did
+        #  in early 2025 with how things came in once we started
+        #  defining the database in late 2025.
+        if no_base_path:
+            if base_path is not None:
+                raise ValueError( "Cannot specify a base_path (or base_dir) if no_base_path is True." )
+            self._no_base_path = no_base_path
+            self._base_path = None
+
+        else:
+            if base_path is not None:
+                self._no_base_path = False
+                self._base_path = pathlib.Path( base_path ).resolve()
+
+            else:
+                if self._format not in Image._format_def:
+                    raise ValueError( "Unknown image format {self._format}" )
+                fmtbasepathdef = Image._format_def[ self._format ][ 'base_path_config' ]
+                if fmtbasepathdef is None:
+                    fmtbasepathdef = self._image_class_base_path_config_item
+
+                if fmtbasepathdef is None:
+                    self._no_base_path = True
+                    self._base_path = None
+
+                else:
+                    self._no_base_path = False
+                    self._base_path = pathlib.Path( Config.get().value( fmtbasepathdef ) ).resolve()
+
+
+    # The path property is just for backwards compatibilty
     @property
-    def name( self ):
-        """str; The filename of the image (i.e. the path without the directory)"""
-        return self.path.name if self.path is not None else None
+    def path( self ):
+        return self.full_filepath
+
+    @path.setter
+    def path( self, val ):
+        raise RuntimeError( "You aren't supposed to set path.  If you really need to do this, talk to Rob "
+                            "to find out what you should be doing instead.  It might be painful." )
+
+    @property
+    def name ( self ):
+        return self.filename
 
     @property
     def id( self ):
@@ -845,12 +959,12 @@ class Image:
                                 'Photometry cancelled.' )
             raise
 
-    def save_data( self, which='all', path=None, noisepath=None, flagspath=None, overwrite=False ):
+    def save_data( self, which='all', path=None, imagepath=None, noisepath=None, flagspath=None, overwrite=False ):
         """Same as save; here for backwards compatibility.  Use save."""
         self.save( which=which, path=path, noisepath=noisepath, flagspath=flagspath, overwrite=overwrite )
 
 
-    def save( self, which='all', path=None, noisepath=None, flagspath=None, overwrite=False ):
+    def save( self, which='all', path=None, imagepath=None, noisepath=None, flagspath=None, overwrite=False ):
         """Save the image to its path(s).
 
         May have side-effects on the internal data structure (e.g. FITS
@@ -861,20 +975,27 @@ class Image:
           which : str, default "all"
             One of 'data', 'noise', 'flags', or 'all'
 
+          imagepath : str, default None
+            Full Path to write the image to.  If not specified, will use use
+            self.full_filepath.  Does NOT update any of the path properties of
+            the image.  You can leave this at None, and the path that the
+            Image figured out when it was constructed will be used.  Usually,
+            that's what you should do.
+
           path : str, default None
-            Path to write the image to.  If not specified, will use use
-            self.path.  Does NOT update self.path.
+            A synonym for imagepath.  Do not use.  Here for backwards
+            compatibility.
 
           noisepath : str, default None
-            Path to write the noise image to, if the noise image is
-            stored as a separate image.  (It isn't always; some
-            subclasses have it as a separate part of the data structure
-            that also has the image.)  If None, use an internally stored
-            noisepath.  If that is not set, and noisepath is None, and
-            this isn't a subclass that combines all the data planes into
-            one file, then any noise data array will not be written.
+            Path to write the noise image to, if the noise image is stored as
+            a separate image.  (It isn't always; some subclasses have it as a
+            separate part of the data structure that also has the image.)  If
+            None, use an internally stored noisepath.  If that is not set, and
+            noisepath is None, and this isn't a subclass that combines all the
+            data planes into one file, then any noise data array will not be
+            written.  Usually, you don't want to have to specify this.
 
-          flagspath : str, defanot None
+          flagspath : str, default None
             Path to write the flags image to, similar to noisepath.
 
           overwrite : bool, default False
@@ -907,14 +1028,9 @@ class Image:
         if row['format'] not in Image._format_def:
             raise ValueError( f"Database {image_id} has format {row['format']}, which is unknown." )
         image_class = Image._format_def[ row['format'] ][ 'image_class' ]
-        base_path = pathlib.Path( Config.get().value( Image._format_def[ row['format'] ] [ 'base_path_config' ] ) )
 
-        # Remove things the Image constroctor won't know, fix
-        #   things that need fixing
-        row['path'] = base_path / row['filepath']
-        del row['filepath']
+        # Remove things the Image constroctor won't know
         del row['extension']
-        del row['format']
         del row['properties']
         return image_class( **row )
 
@@ -941,10 +1057,10 @@ class Image:
             The connection to the database.  If None, a new connection
             will be created based on what's it the config.
 
-          path: pathlib.Path or str, default None
-            Relative path of the image to search for.  Usually if you
-            feed it this, you don't want to feed it nay other
-            parameters.
+          filepath: pathlib.Path or str, default None
+            Path of the image (relative to the base path for all images) of
+            the image to search for.  Usually if you feed it this, you don't
+            want to feed it nay other parameters.
 
           mjd_min : float, default None
             Only return images at this mjd or later
@@ -1023,13 +1139,8 @@ class Image:
             if row['format'] not in Image._format_def:
                 raise ValueError( f"Database image {row['id']} has format {row['format']}, which is unknown." )
             image_class = Image._format_def[ row['format'] ][ 'image_class' ]
-            base_path = pathlib.Path( Config.get().value( Image._format_def[ row['format'] ] [ 'base_path_config' ] ) )
-            # Remove things the Image constructor won't know, fix
-            #   things that need fixing
-            row['path'] = base_path / row['filepath']
-            del row['filepath']
+            # Remove things the Image constructor won't know
             del row['extension']
-            del row['format']
             del row['properties']
             images.append( image_class( **row ) )
 
@@ -1132,27 +1243,38 @@ class Numpy2DImage( Image ):
 #
 # (1) Multiple HDUs in one file
 #
-#     In this case, path holds the path to the file, and imagehdu,
-#     nosiehdu, and flagshdu hold the index of the hdu that has the
-#     respective data array.  nosiepath nad flagspath are None.
+#     In this case, filepath holds the path to the file (full_filepath for the
+#     full location), and imagehdu, nosiehdu, and flagshdu hold the index of
+#     the hdu that has the respective data array.  noisepath and flagspath are
+#     None.  If you get the FITS header, you get the header associated with
+#     the imagehdu... which might not be what you want, but oh well.
 #
 # (2) Three separate files
 #
-#     In this case, path, noisepath, and flagspath all point to
-#     single-HDU fits files.  imagehdu, noisehdu, and flagshdu should
-#     all be 0.  (Well, OK.  It's more flexible than that; there are
-#     the files, but you can use an *hdu other than 0 to get the actual
-#     data array.  But, the header might be read from the wrong place.)
+#     In thise case, imagepath, noisepath, and flagspath properties are the
+#     full absolute paths to the image data, noise data, and dq flags
+#     respectively.  Usually, though not necessarily, all of imagehdu,
+#     noisehdu, and flagshdu will be 0, since we are dealing with single-hdu
+#     files.  The filepath property holds *something* relative to the base
+#     path, depending on details, but it might be the image data.  If you
+#     get the header, you get the image file's header.
 #
 # (3) One file with just data
 #     There is no noise or flags, just data.
 #
-# If constructed with std_imagenames=True, then this assumes model (2),
-#   and path should be a _base_ name; the data is in {path}_image.fits,
-#   the noise in {path}_noise.fits, and the flags in {path}_flags.fits.
+# If constructed with std_imagenames=True, then this assumes model (2), and
+#   full_filepath should be a _base_ name; the data is in
+#   {full_filepath}_image.fits, the noise in {full_filepath}_noise.fits, and
+#   the flags in {full_filepath}_flags.fits.
 
 class FITSImage( Numpy2DImage ):
-    """Base class for classes that read FITS images and use an AstropyWCS wcs."""
+    """Base class for classes that read FITS images and uses an AstropyWCS wcs.
+
+    Properties imagepath, noisepath, and flagspath are full paths to where
+    those files actually live on disk.  Generally, they should only be used
+    internally.
+
+    """
 
     def __init__( self, *args, noisepath=None, flagspath=None,
                   imagehdu=0, noisehdu=0, flagshdu=0, header=None, wcs=None,
@@ -1170,6 +1292,7 @@ class FITSImage( Numpy2DImage ):
                              f"not a {type(wcs)}" )
         self._wcs = wcs
 
+        self._std_imagenames = std_imagenames
         if std_imagenames:
             if any( i != 0 for i in ( imagehdu, noisehdu, flagshdu ) ):
                 raise ValueError( "std_imagenames requireds (image|noise|flags)hdu = 0" )
@@ -1179,16 +1302,74 @@ class FITSImage( Numpy2DImage ):
             self.imagehdu = 0
             self.noisehdu = 0
             self.flagshdu = 0
-            self.noisepath = self.path.parent / f"{self.path.name}_noise.fits"
-            self.flagspath = self.path.parent / f"{self.path.name}_flags.fits"
-            self.path = self.path.parent / f"{self.path.name}_image.fits"
 
         else:
-            self.noisepath = pathlib.Path( noisepath ) if noisepath is not None else None
-            self.flagspath = pathlib.Path( flagspath ) if flagspath is not None else None
+            self._noisepath = pathlib.Path( noisepath ) if noisepath is not None else self.imagepath
+            self._flagspath = pathlib.Path( flagspath ) if flagspath is not None else self.imagepath
             self.imagehdu = imagehdu
             self.noisehdu = noisehdu
             self.flagshdu = flagshdu
+
+    @property
+    def path( self ):
+        return self.imagepath
+
+
+    @property
+    def imagepath( self ):
+        if self._std_imagenames:
+            return self.full_filepath.parent / f"{self.full_filepath.name}_image.fits"
+        else:
+            return self.full_filepath
+
+    @imagepath.setter
+    def imagepath( self, val ):
+        if self._std_imagenames:
+            val = str( val )
+            if val[-11:] != '_image.fits':
+                raise ValueError( f"Invalid imagepath {val}" )
+            if self._no_base_path:
+                self.filepath = val[:-11]
+                return
+            val = pathlib.Path( val[:-11] )
+        else:
+            val = pathlib.Path( val )
+
+        if self._no_base_path:
+            relpath = val
+        else:
+            try:
+                relpath = val.relative_to( self.base_path )
+            except ValueError:
+                raise ValueError( f"Invalid imagepath {val}, it's underneath {self.base_path}" )
+
+        self.filepath = relpath
+
+    @property
+    def noisepath( self ):
+        if self._std_imagenames:
+            return self.full_filepath.parent / f"{self.full_filepath.name}_noise.fits"
+        else:
+            return self._noisepath
+
+    @noisepath.setter
+    def noisepath( self, val ):
+        if self._std_imagenames:
+            raise RuntimeError( "Can't set nosiepath for a std_imagenames FITSImage." )
+        self._noisepath = pathlib.Path( val )
+
+    @property
+    def flagspath( self ):
+        if self._std_imagenames:
+            return self.full_filepath.parent / f"{self.full_filepath.name}_flags.fits"
+        else:
+            return self._flagspath
+
+    @flagspath.setter
+    def flagspath( self, val ):
+        if self._std_imagenames:
+            raise RuntimeError( "Can't set flagspath for a std_imagenames FITSImage." )
+        self._flagspath = pathlib.Path( val )
 
 
     @classmethod
@@ -1248,7 +1429,7 @@ class FITSImage( Numpy2DImage ):
         Note that FITSImage and subclasses set self._header here, inside get_fits_header.
         """
         if self._header is None:
-            with fitsio.FITS( self.path ) as f:
+            with fitsio.FITS( self.imagepath ) as f:
                 hdr = f[ self.imagehdu ].read_header()
                 self._header = FITSImage._fitsio_header_to_astropy_header( hdr )
         return self._header
@@ -1299,6 +1480,8 @@ class FITSImage( Numpy2DImage ):
         return self._wcs
 
     def get_data( self, which="all", always_reload=False, cache=False ):
+        """As a side effect, also loads the image header if image data is loaded if cache is True."""
+
         if self._is_cutout:
             raise RuntimeError(
                 "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported."
@@ -1308,7 +1491,7 @@ class FITSImage( Numpy2DImage ):
             raise ValueError(f"Unknown which {which}, must be all, data, noise, or flags")
         which = [ 'data', 'noise', 'flags' ] if which == 'all' else [ which ]
 
-        pathmap = { 'data': self.path,
+        pathmap = { 'data': self.imagepath,
                     'noise': self.noisepath,
                     'flags': self.flagspath }
         hdumap = { 'data': self.imagehdu,
@@ -1322,8 +1505,11 @@ class FITSImage( Numpy2DImage ):
             if always_reload or ( data is None ):
                 with fitsio.FITS( pathmap[plane] ) as f:
                     data = f[ hdumap[plane] ].read()
-                if cache:
-                    setattr( self, prop, data )
+                    if cache:
+                        setattr( self, prop, data )
+                        if plane == 'data':
+                            hdr = f[ hdumap[plane] ].read_header()
+                            self._header = FITSImage._fitsio_header_to_astropy_header( hdr )
             rval.append( data )
 
         return rval
@@ -1364,7 +1550,7 @@ class FITSImage( Numpy2DImage ):
         # https://github.com/spacetelescope/roman_datamodels/blob/main/src/roman_datamodels/dqflags.py
         astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=1)
 
-        snappl_cutout = self.__class__(self.path, width=xsize, height=ysize)
+        snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
         snappl_cutout._data = astropy_cutout.data
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
         snappl_cutout._noise = astropy_noise.data
@@ -1385,7 +1571,7 @@ class FITSImage( Numpy2DImage ):
         y = int( np.floor( y + 0.5 ) )
         return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
 
-    def save( self, which='all', path=None, noisepath=None, flagspath=None,
+    def save( self, which='all', path=None, imagepath=None, noisepath=None, flagspath=None,
               imagehdu=None, noisehdu=None, flagshdu=None, overwrite=False ):
         """Write image to its path.  See Image.save
 
@@ -1393,7 +1579,14 @@ class FITSImage( Numpy2DImage ):
         if replacing WCS keywords in self._header with keywords from the
         current image WCS.
 
+        Currently does not support saving multi-HDU files.  (It will throw an
+        exception if any of imagehdu, noisehdu, or flagshdu aren't 0.)
+
         """
+
+        if ( imagepath is not None ) and ( path is not None ) and ( imagepath != path ):
+            raise ValueError( "Only specify one of imagepath or path, they mean the same thing." )
+        imagepath = imagepath if imagepath is not None else path
 
         saveim = ( which == 'data' ) or ( which == 'all' )
         saveno = ( which == 'noise' ) or ( which == 'all' )
@@ -1406,8 +1599,8 @@ class FITSImage( Numpy2DImage ):
         if ( imagehdu != 0 ) or ( noisehdu != 0 ) or ( flagshdu != 0 ):
             raise NotImplementedError( "We need to implement saving to HDUs other than 0." )
 
-        path = path if path is not None else self.path
-        if saveim and ( path is None ):
+        imagepath = imagepath if imagepath is not None else self.imagepath
+        if saveim and ( imagepath is None ):
             raise RuntimeError( "Can't save data, no path." )
         noisepath = noisepath if noisepath is not None else self.noisepath
         if saveno and ( noisepath is None ):
@@ -1416,14 +1609,18 @@ class FITSImage( Numpy2DImage ):
         if savefl and ( flagspath is None ):
             raise RuntimeError( "Can't save flags, no path." )
 
+        if not all( ( p is None ) or ( p.name[-5:] == '.fits' ) for p in [ imagepath, noisepath, flagspath ] ):
+            raise NotImplementedError( "I don't know how to save compressed files, only files "
+                                       "whose names end in .fits" )
+
         if not overwrite:
-            if ( path.exists() or
+            if ( imagepath.exists() or
                  ( noisepath is not None and noisepath.exists() ) or
                  ( flagspath is not None and flagspath.exists() ) ):
                 raise RuntimeError( "FITSImage.save: overwrite is False, but image file(s) already exist" )
         else:
-            if path.is_file():
-                path.unlink()
+            if imagepath.is_file():
+                imagepath.unlink()
             if ( noisepath is not None ) and ( noisepath.is_file() ):
                 noisepath.unlink()
             if ( flagspath is not None ) and ( flagspath.is_file() ):
@@ -1439,7 +1636,7 @@ class FITSImage( Numpy2DImage ):
         except Exception:
             wcshdr = None
 
-        with fitsio.FITS( path, 'rw' ) as f:
+        with fitsio.FITS( imagepath, 'rw' ) as f:
             f.write( self.data, header=FITSImage._astropy_header_to_fitsio_header( self._header ) )
         if ( noisepath is not None ) and ( self.noise is not None ):
             with fitsio.FITS( noisepath, 'rw' ) as f:
@@ -1660,19 +1857,21 @@ class FITSImageStdHeaders( FITSImage ):
 
 
 
-# ======================================================================
-# This class is poorly named, because FITSImage can already
-#  handle files on disk.
-#
+# =====================================================================
+# A FITS Image that might be compressed (.gz or .bz2, not supporting fpack).
 
-class FITSImageOnDisk( FITSImage ):
+class CompressedFITSImage( FITSImage ):
     """An Image which is may correspond to a compressed file on disk (gz or bz2, not yet supporting fpack).
 
     It *should* be safe to use this anywhere you use a FITSImage.
-    What's differenta bout this is that it has the function
+    What's different about this is that it has the function
     ``uncompressed_version()`` that will create a file in some temp
     directory somewhere that is uncompressed (in case the file needs to
-    be passed to somethign that can't handle compressed images.
+    be passed to something that can't handle compressed images.
+
+    If you don't need to do that, it turns out that FITSImage supports any
+    compressed image format that fitsio supports, so just use that class
+    instead of this one.
 
     """
 
@@ -1680,7 +1879,7 @@ class FITSImageOnDisk( FITSImage ):
         super().__init__( *args, **kwargs )
 
 
-    def uncompressed_version( self, include=[ 'data', 'noise', 'flags' ], base_dir=None ):
+    def uncompressed_version( self, include=[ 'data', 'noise', 'flags' ], temp_dir=None ):
         """Make sure to get a FITSImageOnDisk that's not compressed.
 
         If none of the files for the current FITSImageOnDisk object are
@@ -1696,8 +1895,8 @@ class FITSImageOnDisk( FITSImage ):
             Can include any of 'data', 'noise', 'flags'; which things to
             write.  Ignored if the current image isn't compressed.
 
-          base_dir : Path
-            The path to write the files
+          temp_dir : pathlib.Path, default None
+            The path to write the files.  Defaults to the config value system.temp_dir
 
         Returns
         -------
@@ -1706,13 +1905,13 @@ class FITSImageOnDisk( FITSImage ):
             with the random filenames to which the FITS files were written.
 
         """
-        if all( [ ( ( self.path is None ) or ( self.path.name[-5:] == '.fits' ) ),
+        if all( [ ( ( self.imagepath is None ) or ( self.imagepath.name[-5:] == '.fits' ) ),
                   ( ( self.noisepath is None ) or ( self.noisepath.name[-5:] == '.fits' ) ),
                   ( ( self.flagspath is None ) or ( self.flagspath.name[-5:] == '.fits' ) ) ] ):
             return self
 
-        base_dir = pathlib.Path( base_dir if base_dir is not None
-                                 else Config.get().value( 'photometry.snappl.temp_dir' ) )
+        temp_dir = pathlib.Path( temp_dir if temp_dir is not None
+                                 else Config.get().value( 'system.temp_dir' ) )
         barf = "".join( random.choices( '0123456789abcdef', k=10 ) )
         impath = None
         noisepath = None
@@ -1721,101 +1920,30 @@ class FITSImageOnDisk( FITSImage ):
 
         if 'data' in include:
             hdul = fits.HDUList( [ fits.PrimaryHDU( data=self.data, header=header ) ] )
-            impath = base_dir / f"{barf}_image.fits"
+            impath = ( temp_dir / f"{barf}_image.fits" ).resolve()
             hdul.writeto( impath  )
 
         if 'noise' in include:
             hdul = fits.HDUList( [ fits.PrimaryHDU( data=self.noise, header=fits.header.Header() ) ] )
-            noisepath = base_dir / f"{barf}_noise.fits"
+            noisepath = ( temp_dir / f"{barf}_noise.fits" ).resolve()
             hdul.writeto( noisepath )
 
         if 'flags' in include:
             hdul = fits.HDUList( [ fits.PrimaryHDU( data=self.flags, header=fits.header.Header() ) ] )
-            flagspath = base_dir / f"{barf}_flags.fits"
+            flagspath = ( temp_dir / f"{barf}_flags.fits" ).resolve()
             hdul.writeto( flagspath )
 
-        return FITSImageOnDisk( path=impath, noisepath=noisepath, flagspath=flagspath )
+        return FITSImageOnDisk( no_base_dir=True, full_filepath=impath, noisepath=noisepath, flagspath=flagspath )
 
 
-    def set_header( self, hdr ):
-        if not isinstance( hdr, fits.header.Header ) and hdr is not None:
-            raise TypeError( f"hdr must be a fits.header.Header, not a {type(hdr)}" )
-        self._header = hdr
+# ======================================================================
+# This was the previous name for CompressedFITSImage.
+# It was a terrible name.  It's here for backwards compatibilty.
+#
 
-    def get_data( self, which="all", always_reload=False, cache=False ):
-        if self._is_cutout:
-            raise RuntimeError( "get_data called on a cutout image, this will return the ORIGINAL UNCUT image. "
-                                "Currently not supported.")
-
-        if which not in ( "all", "data", "noise", "flags" ):
-            raise ValueError( f"Unknown which {which}" )
-        toload = [ 'data', 'noise', 'flags' ] if which == "all" else [ which ]
-
-        if not always_reload:
-            if ( 'data' in toload ) and ( self._data is not None ):
-                toload.remove( 'data' )
-                data = self._data
-            if ( 'noise' in toload ) and ( self._noise is not None ):
-                toload.remove( 'noise' )
-                noise = self._noise
-            if ( 'flags' in toload ) and ( self._flags is not None ):
-                toload.remove( 'flags' )
-                flags = self._flags
-
-        if len( toload ) > 0:
-            # If we get here, we know we have to load data.
-
-            # Open the data, and do everything else inside that with just in case
-            #   noise and flags are part of the same FITS image.
-            with fitsio.FITS( self.path ) as imagefits:
-                if "data" in toload:
-                    header = FITSImage._fitsio_header_to_astropy_header( imagefits[ self.imagehdu ].read_header() )
-                    data = imagefits[ self.imagehdu ].read()
-                    if cache:
-                        self._data = data
-                        self._header = header
-
-                if "noise" in toload:
-                    if ( self.noisepath is not None ) and ( self.noisepath != self.path ):
-                        with fitsio.FITS( self.noisepath ) as noisefits:
-                            noise = noisefits[ self.noisehdu ].read()
-                    else:
-                        noise = imagefits[ self.noisehdu ].read()
-                    if cache:
-                        self._noise = noise
-
-                if "flags" in toload:
-                    if ( self.flagspath is not None ) and ( self.flagspath != self.path ):
-                        with fitsio.FITS( self.flagspath ) as flagsfits:
-                            flags = flagsfits[ self.flagshdu ].read()
-                    else:
-                        flags = imagefits[ self.flagshdu ].read()
-                    if cache:
-                        self._flags = flags
-
-        return ( [ data ] if which == "data"
-                 else [ noise ] if which == "noise"
-                 else [ flags ] if which == "flags"
-                 else [ data, noise, flags ] )
-
-
-    def save( self, which="all", overwrite=False,
-                   path=None, imagehdu=0,
-                   noisepath=None, noisehdu=None,
-                   flagspath=None, flagshdu=None ):
-        """Write the data to the file."""
-
-        path = path if path is not None else self.path
-        noisepath = noisepath if noisepath is not None else self.noisepath
-        flagspath = flagspath if flagspath is not None else self.flagspath
-
-        if not all( ( p is None ) or ( p.name[-5:] == '.fits' ) for p in [ path, noisepath, flagspath ] ):
-            raise NotImplementedError( "I don't know how to save compressed files, only files "
-                                       "whose names end in .fits" )
-
-        FITSImage.save( self, which=which, overwrite=overwrite,
-                        path=path, noisepath=noisepath, flagspath=flagspath,
-                        imagehdu=imagehdu, noisehdu=noisehdu, flagshdu=flagshdu )
+class FITSImageOnDisk( CompressedFITSImage ):
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
 
 
 # ======================================================================
@@ -1825,9 +1953,11 @@ class FITSImageOnDisk( FITSImage ):
 #  HDU 2 : ERR (32-bit float)
 #  HDU 3 : DQ (32-bit integer)
 
-class OpenUniverse2024FITSImage( FITSImageOnDisk ):
+class OpenUniverse2024FITSImage( CompressedFITSImage ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs )
+
+    _image_class_base_path_config_item = 'system.ou24.images'
 
     _filenamere = re.compile( r'^Roman_TDS_simple_model_(?P<band>[^_]+)_(?P<pointing>\d+)_(?P<sca>\d+).fits' )
 
@@ -1847,9 +1977,9 @@ class OpenUniverse2024FITSImage( FITSImageOnDisk ):
     def _get_pointing( self ):
         # Irritatingly, the pointing is not in the header.  So, we have to
         #   parse the filename to get the pointing.
-        mat = self._filenamere.search( self.path.name )
+        mat = self._filenamere.search( self.filepath.name )
         if mat is None:
-            raise ValueError( f"Failed to parse {self.path.name} for pointing" )
+            raise ValueError( f"Failed to parse {self.filepath.name} for pointing" )
         self._pointing = int( mat.group( 'pointing' ) )
 
     def _get_sca( self ):
@@ -1974,18 +2104,18 @@ class RomanDatamodelImage( Image ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
-        # We really want to open the image readonly, because otherwise normal use of
-        #   this class will modify the image on disk.  We really don't want to modify
-        #   our input data, and want to be explicit about saving like we are used
-        #   to with FITS files.
-        self._dm = rdm.open( self.path, mode='r' )
-        match = self._detectormatch.search( self._dm.meta.instrument.detector )
+        self._dm = None
+
+
+    # TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !
+
+    def _get_sca( self ):
+        match = self._detectormatch.search( self.dm.meta.instrument.detector )
         if match is None:
-            raise ValueError( f'Failed to parse self._dm.meat.instrument.detector= '
+            raise ValueError( f'Failed to parse self._dm.meta.instrument.detector= '
                               f'"{self._dm.meta.instrument.detector} for "WFInn"' )
         self._sca = int( match.group(1) )
 
-    # TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !
 
     def _get_image_shape( self ):
         # TODO : this must be in the header / meta information somewhere
@@ -2063,7 +2193,6 @@ class RomanDatamodelImage( Image ):
 
     @property
     def dm( self ):
-
         """This property should usually not be used outside of this class."""
         # THOUGHT REQUIRED : worry a little about accessing members of
         #   the dm object and memory getting eaten.  Perhaps implement
@@ -2071,8 +2200,13 @@ class RomanDatamodelImage( Image ):
         #   class, based on feedback from ST people, the only way to free
         #   things is to delete and reopen the self._dm object.  Make sure
         #   to do that carefully if we do that.
+
+        # We really want to open the image readonly, because otherwise normal use of
+        #   this class will modify the image on disk.  We really don't want to modify
+        #   our input data, and want to be explicit about saving like we are used
+        #   to with FITS files.
         if self._dm is None:
-            self._dm = rdm.open( self.input.path )
+            self._dm = rdm.open( self.full_filepath, mode='r' )
         return self._dm
 
     def get_wcs( self, wcsclass=None ):
@@ -2090,9 +2224,13 @@ class RomanDatamodelImage( Image ):
 #   integer, the value gives the image class, the base path config value, and eventually
 #    maybe other information
 
-Image._format_def = { 0 : { 'description': "Unknown",
+Image._format_def = { -1 : { 'description': "Not a database image",
+                             'image_class': None,
+                             'base_path_config': None
+                            },
+                      0 : { 'description': "Unknown",
                             'image_class': Image,
-                            'base_path_config': 'system.paths.images'
+                            'base_path_config': None
                            },
                       1 : { 'description': "OU2024 FITS Image in standard database location",
                             'image_class': OpenUniverse2024FITSImage,

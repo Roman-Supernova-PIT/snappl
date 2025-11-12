@@ -15,22 +15,38 @@ import astropy.units
 
 from snappl.provenance import Provenance
 from snappl.diaobject import DiaObject
+from snappl.pathedobject import PathedObject
 from snappl.logger import SNLogger
 from snappl.utils import asUUID, SNPITJsonEncoder
-from snappl.config import Config
 from snappl.dbclient import SNPITDBClient
 
 
-class Lightcurve:
-    """A class to store and save lightcurve data across different SNPIT photometry codes."""
+class Lightcurve( PathedObject ):
+    """A class to store and save lightcurve data across different SNPIT photometry codes.
+
+    Properties include:
+      * filepath : pathlib.Path ; path *relative to the base path* of the lightcurve file
+      * full_filepath : pathlib.Path ; absolute path on the system to the lightcurve file
+      * base_path : base path for lightcurves; usually will be Config value system.paths.lightcurves
+      * base_dir : synonym for base_path
+      * lightcurve : The actual lightcurve data, an Astropy QTable
+                     (see https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve )
+      * data : synonm for lightcurve
+      * meta : dict, the metadata; synonym for self.lightcurve.meta, or None if the lightcurve data isn't loaded
+               (access the lightcurve property to force it to load)
+
+    """
 
     # I know this dictionary looks stupid, but it might not in the future.
     filename_extensions = { 'parquet': '.parquet',
                             'ecsv': '.ecsv'
                            }
 
+    _base_path_config_item = 'system.paths.lightcurves'
 
-    def __init__(self, id=None, data=None, meta=None, filepath=None, base_dir=None, multiband=False ):
+
+    def __init__(self, id=None, data=None, meta=None, multiband=False,
+                 filepath=None, base_dir=None, base_path=None, full_filepath=None, no_base_path=False ):
         """Instantiate a lightcurve.
 
         Lightcurve file schema are defined here:
@@ -54,7 +70,7 @@ class Lightcurve:
             File path to find the lightcurve, relative to base_dir.  You
             must specify either filepath, or both data and meta.
 
-          base_dir : Path or str, default None
+          base_path : Path or str, default None
             Base directory that filepath is relative to.  If None, will
             use the config value of "system.paths.lightcurves".
 
@@ -127,8 +143,11 @@ class Lightcurve:
 
         """
 
+        super().__init__( filepath=filepath, base_path=base_path, base_dir=base_dir,
+                          full_filepath=full_filepath, no_base_path=no_base_path )
+
         if ( ( ( data is None ) != ( meta is None ) ) or
-             ( ( filepath is not None ) and ( data is not None ) )
+             ( ( self._filepath is not None ) and ( data is not None ) )
             ):
             raise ValueError( "Must specify either filepath, xor (data and meta)." )
 
@@ -148,13 +167,10 @@ class Lightcurve:
                     self.id = match.group(4)
         self.id = asUUID( id ) if id is not None else uuid.uuid4()
 
-        self.base_dir = Config.get().value('system.paths.lightcurves') if base_dir is None else base_dir
-
         self._multiband = multiband
         self._lightcurve = None
-        self._filepath = Path( filepath ) if filepath is not None else None
 
-        if filepath is None:
+        if self._filepath is None:
             self._set_data_and_meta( data, meta )
 
 
@@ -171,23 +187,6 @@ class Lightcurve:
     @property
     def meta( self ):
         return None if self._lightcurve is None else self._lightcurve.meta
-
-
-    @property
-    def filepath( self ):
-        if self._filepath is None:
-            self.generate_filepath()
-        return self._filepath
-
-    @filepath.setter
-    def filepath( self, val ):
-        self._filepath = val
-
-    @property
-    def full_filepath( self, val ):
-        if self._filepath is None:
-            self.generate_filepath()
-        return self.base_dir / self._filepath
 
 
     def _set_data_and_meta( self, data, meta ):

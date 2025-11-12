@@ -7,23 +7,53 @@ import simplejson
 import h5py
 import numpy as np
 
-from snappl.config import Config
 from snappl.provenance import Provenance
 from snappl.diaobject import DiaObject
 from snappl.image import Image
+from snappl.pathedobject import PathedObject
 from snappl.logger import SNLogger
 from snappl.utils import asUUID, SNPITJsonEncoder
 from snappl.dbclient import SNPITDBClient
 
 
-class Spectrum1d:
-    """A class to store and save single-epoch 1d transient spectra."""
+class Spectrum1d( PathedObject ):
+    """A class to store and save single-epoch 1d transient spectra.
+
+       Spectrum1d schema are defined here:
+
+          https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/spectrum_1d
+
+       Properties of a Spectrum1d object include:
+        * filepath : pathlib.Path ; path *relative to the base path* of the spectrum1d file
+        * full_filepath : pathlib.Path ; absolute path on the system to the spectrum1d file
+        * base_path : base path for lightcurves; usually will be Config value system.paths.lightcurves
+        * base_dir : synonym for base_path
+
+        * data_dict : the full dict described the schema wiki page linked above
+        * meta : data_dict['meta']
+        * combined: data_dict['combined']
+        * combined_meta: data_dict['combined']['meta']
+        * combined_data: data_dict['combined']['data']
+        * individual: data_dict['indivdual']
+
+        * id : UUID, the id of the spectrum
+        * provenance_id : UUID, the id of the spectrum's provenance
+        * diaobject_id : UUID, the id of the object for which this is a spectrum
+        * diaobject_position_id : UUID or None, the id of the object's improved position if any
+        * band : str, the band
+        * mjd_start : float, the MJD of the earliest component image
+        * mjd_end : float, the MJD + exposure time (in days) of the latest component image
+        * epoch : integer, the average MJD in millidays (i.e. MJD * 1000) of the comonent image MJDs
+        * images : list of Image, the component images
+
+    """
+
+    _base_path_config_item = 'system.paths.spectra1d'
+
 
     def __init__( self,
                   id=None,
                   data_dict=None,
-                  filepath=None,
-                  base_dir=None,
                   provenance=None,
                   diaobject=None,
                   diaobject_position=None,
@@ -32,32 +62,14 @@ class Spectrum1d:
                   mjd_end=None,
                   epoch=None,
                   no_database=False,
-                  dbclient=None ):
+                  dbclient=None,
+                  filepath=None,
+                  base_dir=None,
+                  base_path=None,
+                  full_filepath=None,
+                  no_base_path=False,
+                 ):
         """Instantiate a Spectrum1d
-
-        Spectrum1d schema are defined here:
-
-           https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/spectrum_1d
-
-        Inside the object, you can get access to parts of the spectrum
-        with the following properties:
-
-           * data_dict : the full dict described on that page
-           * meta : data_dict['meta']
-           * combined: data_dict['combined']
-           * combined_meta: data_dict['combined']['meta']
-           * combined_data: data_dict['combined']['data']
-           * individual: data_dict['indivdual']
-
-           * id : UUID, the id of the spectrum
-           * provenance_id : UUID, the id of the spectrum's provenance
-           * diaobject_id : UUID, the id of the object for which this is a spectrum
-           * diaobject_position_id : UUID or None, the id of the object's improved position if any
-           * band : str, the band
-           * mjd_start : float, the MJD of the earliest component image
-           * mjd_end : float, the MJD + exposure time (in days) of the latest component image
-           * epoch : integer, the average MJD in millidays (i.e. MJD * 1000) of the comonent image MJDs
-           * images : list of Image, the component images
 
         Parameters
         ----------
@@ -99,15 +111,17 @@ class Spectrum1d:
             dictionary returned by that call.  You may also set data_dict['meta']['diaobject_position_id']
 
         """
-        if ( data_dict is None ) and ( filepath is None ):
+        super().__init__( filepath=filepath, base_path=base_path, base_dir=base_dir,
+                          full_filepath=full_filepath, no_base_path=no_base_path )
+        if ( data_dict is None ) and ( self._filepath is None ):
             raise ValueError( "Must specify either data_dict or filepath" )
-        if ( data_dict is not None ) and ( filepath is not None ):
+        if ( data_dict is not None ) and ( self._filepath is not None ):
             SNLogger.warning( "Specifying both data_dict and filepath is bad form." )
 
-        if ( id is None ) and ( filepath is not None ):
+        if ( id is None ) and ( self._filepath is not None ):
             match = re.search( r'([0-9a-f])/([0-9a-f])/([0-9a-f])/'
                                r'([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}).1dspec',
-                               str(filepath) )
+                               str(self._filepath) )
             if match is None:
                 SNLogger.warning( "Could not parse filepath to find spectrum1d id, assigning a new one." )
             else:
@@ -120,8 +134,6 @@ class Spectrum1d:
                     self.id = match.group(4)
         self.id = asUUID( id ) if id is not None else uuid.uuid4()
 
-        self.base_dir = Config.get().value('system.paths.spectra1d') if base_dir is None else base_dir
-        self._filepath = pathlib.Path( filepath ) if filepath is not None else None
         self.provenance_id = ( provenance.id if isinstance( provenance, Provenance )
                                else asUUID( provenance, oknone=True ) )
         self.diaobject_id = ( diaobject.id if isinstance( diaobject, DiaObject )
@@ -230,19 +242,6 @@ class Spectrum1d:
     @property
     def individual( self ):
         return self.data_dict['individual']
-
-    @property
-    def filepath( self ):
-        if self._filepath is None:
-            self.generate_filepath()
-        return self._filepath
-
-    @property
-    def full_filepath( self ):
-        if self._filepath is None:
-            self.generate_filepath()
-        return self.base_dir / self._filepath
-
 
     def generate_filepath( self, filetype='hdf5' ):
         suffixdict = { 'hdf5': 'hdf5' }

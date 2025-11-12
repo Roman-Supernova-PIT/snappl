@@ -1,0 +1,3 @@
+Make database objects that have files associated with them allsubclasses
+of PathedObject, which handles parsing the arguments and providing the
+properties for filepath, base_dir, etc.

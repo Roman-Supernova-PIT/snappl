@@ -52,7 +52,7 @@ def _parse_fits_file( relpath, base_path=None, provid=None ):
                'filepath': str( relpath ),
                'width': width,
                'height': height,
-               'format': 1,
+               'format': 2,
                'mjd': image.mjd,
                'position_angle': image.position_angle,
                'exptime': exptime,
@@ -189,7 +189,9 @@ def main():
     parser.add_argument( '-n', '--nprocs', type=int, default=20,
                          help="Number of processes to run at once [default: 20]" )
     parser.add_argument( '-b', '--basedir', default='/ou2024/RomanTDS/images/simple_model',
-                         help='Base directory.' )
+                         help=( 'Base directory.  WARNING.  If you use a base directory other than '
+                                'what gets mapped to system.ou24.images, then the "format" field '
+                                'of loaded images may not be what you want!' ) )
     parser.add_argument( '-f', '--filelist', default=None,
                          help="File with list of band,pointing,sca" )
     parser.add_argument( '-j', '--just-get-filenames', default=False, action='store_true',

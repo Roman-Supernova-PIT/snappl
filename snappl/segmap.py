@@ -1,29 +1,43 @@
 __all__ = [ 'SegmentationMap' ]
 
 import uuid
-import pathlib
 
 import simplejson
 
 from snappl.dbclient import SNPITDBClient
-from snappl.config import Config
 from snappl.image import OpenUniverse2024FITSImage, FITSImageStdHeaders
 from snappl.provenance import Provenance
+from snappl.pathedobject import PathedObject
 from snappl.utils import SNPITJsonEncoder, asUUID
 
 
-class SegmentationMap:
-    """Encapsulate a single segmentation map."""
+class SegmentationMap( PathedObject ):
+    """Encapsulate a single segmentation map.
+
+    Properties of a SegmentationMap object are:
+
+    * filepath : pathlib.Path ; path *relative to the base path* of the image file of the segmentation map
+    * full_filepath : pathlib.Path ; absolute path to file on system.  (Same as base_path / filepath.)
+    * base_path : base path for images; usually will be Config value system.paths.segmaps
+    * base_dir : synonym for base_path
+    * image : an Image object that holds the actual segmentation map data.  Get the 2d numpy
+              data of segmap s in s.image.data
+
+    """
 
     image_format_to_class = { 1: OpenUniverse2024FITSImage,
                               2: FITSImageStdHeaders
                              }
 
-    def __init__( self, id=None, provenance_id=None, format=None, filepath=None, l2image_id=None ):
+    _base_path_config_item = 'system.paths.segmaps'
+
+    def __init__( self, id=None, provenance_id=None, format=None, l2image_id=None,
+                  filepath=None, base_path=None, base_dir=None, full_filepath=None, no_base_path=False ):
+        super().__init__( filepath=filepath, base_path=base_path, base_dir=base_dir,
+                          full_filepath=full_filepath, no_base_path=no_base_path )
         self.id = asUUID(id) if id is not None else uuid.uuid4()
         self.provenance_id = ( provenance_id.id if isinstance( provenance_id, Provenance)
                                else asUUID(provenance_id) if provenance_id is not None else None )
-        self.filepath = pathlib.Path(filepath) if filepath is not None else None
         self.format = int(format) if format is not None else None
         self.l2image_id = asUUID(l2image_id) if l2image_id is not None else None
 
@@ -37,7 +51,6 @@ class SegmentationMap:
             for corner in [ '00', '01', '10', '11' ]:
                 setattr( self, f'{which}_corner_{corner}', None )
 
-        self.base_path = pathlib.Path( Config.get().value( 'system.paths.segmaps' ) )
 
     @property
     def image( self ):
@@ -52,7 +65,7 @@ class SegmentationMap:
 
         if self.filepath is None:
             raise ValueError( "Can't load image when filepath is None." )
-        fullpath = self.base_path / self.filepath
+        fullpath = self.full_filepath
 
         if self.format in ( 1, 2 ):
             self._image = self.image_format_to_class[self.format]( fullpath, imagehdu=0, noisehdu=None, flagshdu=None )
