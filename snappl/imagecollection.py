@@ -9,7 +9,7 @@ from snappl.http import retry_post
 from snappl.image import Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
-from snappl.utils import asUUID, SNPITJsonEncoder
+from snappl.utils import SNPITJsonEncoder
 
 
 class ImageCollection:
@@ -411,6 +411,8 @@ class ImageCollectionDB:
     #   a l2image to the 'format' field of the image (defined by
     #   Image._format_def; see bottom of image.py).
     image_class_to_format = { 'ou2024': 2,
+                              'ou2024_nativelocation': 2,
+                              'ou2024_stdlocation': 1,
                               'ou2024nov2025': 1
                               }
 
@@ -421,7 +423,7 @@ class ImageCollectionDB:
 
         prov_imclass = self.provenance.params['image_class']
         if prov_imclass not in self.image_class_to_format:
-            raise RuntimeError( "Unknown image_class {image_class}" )
+            raise RuntimeError( "Unknown image_class {image_class} in image provenance" )
         imclass_format = self.image_class_to_format[ prov_imclass ]
         self.image_class = Image._format_def[ imclass_format ]['image_class']
 
@@ -434,10 +436,7 @@ class ImageCollectionDB:
         dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         if image_id is not None:
-            row = dbclient.send( f"/getl2image/{image_id}" )
-            if asUUID(row['provenance_id']) != self.provenance.id:
-                raise ValueError( f"Asked for image {image_id} in provenance {self.provenance.id}, but that image "
-                                  f"actually has provenance {row['provenance_id']}" )
+            return Image.get_image( image_id, dbclient=dbclient )
 
         else:
             if not ( ( path is not None ) or
@@ -457,27 +456,27 @@ class ImageCollectionDB:
 
             row = rows[0]
 
-        # Remove things the Image constroctor won't know
-        del row['extension']
-        del row['properties']
-        return self.image_class( **row )
+            # Remove things the Image constroctor won't know
+            del row['extension']
+            del row['properties']
+            return self.image_class( **row )
 
 
     def get_image_path( self, pointing, band, sca, base_path=None, image_id=None ):
-        raise NotImplementedError( "Not implemented yet, may not be..." )
+        # get_image_path was really put in becasue early software was written only
+        #   for the OU2024 simulations, and an image was uniquely identified by
+        #   pointing/sca/band (and thus a unique path could be detetermined).  Once
+        #   we have provenance (as is the case in the DB), this is no longer true,
+        #   so it's not possible to uniquely identify an image with pointing/band/sca.
+        # (I mean, yes, the collection knows its provenance, so it could query the
+        #   database, but the principle is, early designs were based on the assumption
+        #   that the only image collection they would ever have to work with was that
+        #   one, so they could rely on the properties of that specific collection.
+        #   If we can avoid it, don't backwards-support that way of doing things, but
+        #   encourage things to do it the current way, so don't implement this
+        #   function.)
+        raise NotImplementedError( "get_image_path is invalid for ImageCollectionDB" )
 
 
-    def find_images( self, dbclient=None, **kwargs ):
-        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
-        rows = dbclient.send( f'findl2images/{self.provenance.id}',
-                              data=simplejson.dumps( kwargs, cls=SNPITJsonEncoder ),
-                              headers={'Content-Type': 'application/json'} )
-
-        images = []
-        for row in rows:
-            # Remove things the Image constructor won't know
-            del row['extension']
-            del row['properties']
-            images.append( self.image_class( **row ) )
-
-        return images
+    def find_images( self, **kwargs ):
+        return Image.find_images( provenance=self.provenance, **kwargs )

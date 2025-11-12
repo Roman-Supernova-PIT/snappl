@@ -129,7 +129,7 @@ class Image( PathedObject ):
                   ra_corner_00=None, ra_corner_01=None, ra_corner_10=None, ra_corner_11=None,
                   dec_corner_00=None, dec_corner_01=None, dec_corner_10=None, dec_corner_11=None,
                   band=None, mjd=None, position_angle=None, exptime=None, sky_level=None, zeropoint=None,
-                  format=0, is_superclass=False, **kwargs ):
+                  format=-1, is_superclass=False, **kwargs ):
         """Instantiate an image.  You probably don't want to do that.
 
         This is an abstract base class that has limited functionality.
@@ -190,6 +190,9 @@ class Image( PathedObject ):
           width, height: int, default None
             The width and height of the image in pixels if known.
 
+          format : int, default -1
+            Index into the table Image._format_def at the bottom of this file.
+
           pointing : int (str?), default None (WARNING: this parameter keyword will change)
           sca: int, default None
           ra: float, default None
@@ -218,10 +221,10 @@ class Image( PathedObject ):
                 raise ValueError( "Do not use path, only use full_filepath." )
             full_filepath = path
 
-        # These has to be set before superclass init because the superclass will
-        #  (indirectly) use them (by calling _get_base_path).
+        # This has to be set before superclass init because the
+        #   PathedObject init will (indirectly) use it (by calling
+        #   _set_base_path).
         self._format = format
-        self._image_class_base_path = None
 
         super().__init__( filepath=filepath, base_path=base_path, base_dir=base_dir,
                           full_filepath=full_filepath, no_base_path=no_base_path )
@@ -282,21 +285,41 @@ class Image( PathedObject ):
             #                   f"keyword arguments: {unconsumed} " )
 
 
-    def _get_base_path( self ):
-        if self._no_base_path:
-            return None
 
-        if self._image_class_base_path is None:
-            if self._format not in Image._format_def:
-                raise ValueError( "Unknown image format {self._format}" )
-            fmtdef = Image._format_def[ self._format ][ 'base_path_config' ]
-            if fmtdef is None:
-                self._image_class_base_path = None
-                self._no_base_path = True
+    _image_class_base_path_config_item = None
+
+
+    def _set_base_path( self, base_path=None, no_base_path=False ):
+        # This is unpleasant but the tortured logic is necessary to
+        #  preserve backwards compatibility for Image with what we did
+        #  in early 2025 with how things came in once we started
+        #  defining the database in late 2025.
+        if no_base_path:
+            if base_path is not None:
+                raise ValueError( "Cannot specify a base_path (or base_dir) if no_base_path is True." )
+            self._no_base_path = no_base_path
+            self._base_path = None
+
+        else:
+            if base_path is not None:
+                self._no_base_path = False
+                self._base_path = pathlib.Path( base_path ).resolve()
+
             else:
-                self._image_class_base_path = Config.get().value( fmtdef )
+                if self._format not in Image._format_def:
+                    raise ValueError( "Unknown image format {self._format}" )
+                fmtbasepathdef = Image._format_def[ self._format ][ 'base_path_config' ]
+                if fmtbasepathdef is None:
+                    fmtbasepathdef = self._image_class_base_path_config_item
 
-        return self._image_class_base_path
+                if fmtbasepathdef is None:
+                    self._no_base_path = True
+                    self._base_path = None
+
+                else:
+                    self._no_base_path = False
+                    self._base_path = pathlib.Path( Config.get().value( fmtbasepathdef ) ).resolve()
+
 
     # The path property is just for backwards compatibilty
     @property
@@ -1933,6 +1956,8 @@ class FITSImageOnDisk( CompressedFITSImage ):
 class OpenUniverse2024FITSImage( CompressedFITSImage ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs )
+
+    _image_class_base_path_config_item = 'system.ou24.images'
 
     _filenamere = re.compile( r'^Roman_TDS_simple_model_(?P<band>[^_]+)_(?P<pointing>\d+)_(?P<sca>\d+).fits' )
 
