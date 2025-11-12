@@ -132,6 +132,9 @@ class PathedObject:
                         raise ValueError( f"Error, filepath is {self._filepath}, but given base path {self._base_path} "
                                           f"and full path {full_filepath}, this is inconsistent." )
 
+        elif self._no_base_path:
+            self._filepath = self._filepath.resolve()
+
 
     def _set_base_path( self, base_path=None, no_base_path=False ):
         self._no_base_path = no_base_path
@@ -141,7 +144,7 @@ class PathedObject:
             self._base_path = None
         else:
             self._base_path = pathlib.Path( base_path if base_path is not None else
-                                            Config.get().value( self.__base_path_config_item )
+                                            Config.get().value( self._base_path_config_item )
                                            ).resolve()
 
 

@@ -1,4 +1,4 @@
-__all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'FITSImageOnDisk',
+__all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'CompressedFITSImage', 'FITSImageOnDisk',
             'OpenUniverse2024FITSImage', 'RomanDatamodelImage' ]
 
 import re
@@ -2104,18 +2104,18 @@ class RomanDatamodelImage( Image ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
-        # We really want to open the image readonly, because otherwise normal use of
-        #   this class will modify the image on disk.  We really don't want to modify
-        #   our input data, and want to be explicit about saving like we are used
-        #   to with FITS files.
-        self._dm = rdm.open( self.full_filepath, mode='r' )
-        match = self._detectormatch.search( self._dm.meta.instrument.detector )
+        self._dm = None
+
+
+    # TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !
+
+    def _get_sca( self ):
+        match = self._detectormatch.search( self.dm.meta.instrument.detector )
         if match is None:
-            raise ValueError( f'Failed to parse self._dm.meat.instrument.detector= '
+            raise ValueError( f'Failed to parse self._dm.meta.instrument.detector= '
                               f'"{self._dm.meta.instrument.detector} for "WFInn"' )
         self._sca = int( match.group(1) )
 
-    # TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !
 
     def _get_image_shape( self ):
         # TODO : this must be in the header / meta information somewhere
@@ -2193,7 +2193,6 @@ class RomanDatamodelImage( Image ):
 
     @property
     def dm( self ):
-
         """This property should usually not be used outside of this class."""
         # THOUGHT REQUIRED : worry a little about accessing members of
         #   the dm object and memory getting eaten.  Perhaps implement
@@ -2201,8 +2200,13 @@ class RomanDatamodelImage( Image ):
         #   class, based on feedback from ST people, the only way to free
         #   things is to delete and reopen the self._dm object.  Make sure
         #   to do that carefully if we do that.
+
+        # We really want to open the image readonly, because otherwise normal use of
+        #   this class will modify the image on disk.  We really don't want to modify
+        #   our input data, and want to be explicit about saving like we are used
+        #   to with FITS files.
         if self._dm is None:
-            self._dm = rdm.open( self.input.path )
+            self._dm = rdm.open( self.full_filepath, mode='r' )
         return self._dm
 
     def get_wcs( self, wcsclass=None ):

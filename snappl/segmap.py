@@ -1,18 +1,17 @@
 __all__ = [ 'SegmentationMap' ]
 
 import uuid
-import pathlib
 
 import simplejson
 
 from snappl.dbclient import SNPITDBClient
-from snappl.config import Config
 from snappl.image import OpenUniverse2024FITSImage, FITSImageStdHeaders
 from snappl.provenance import Provenance
+from snappl.pathedobject import PathedObject
 from snappl.utils import SNPITJsonEncoder, asUUID
 
 
-class SegmentationMap:
+class SegmentationMap( PathedObject ):
     """Encapsulate a single segmentation map.
 
     Properties of a SegmentationMap object are:
@@ -30,11 +29,15 @@ class SegmentationMap:
                               2: FITSImageStdHeaders
                              }
 
-    def __init__( self, id=None, provenance_id=None, format=None, filepath=None, l2image_id=None ):
+    _base_path_config_item = 'system.paths.segmaps'
+
+    def __init__( self, id=None, provenance_id=None, format=None, l2image_id=None,
+                  filepath=None, base_path=None, base_dir=None, full_filepath=None, no_base_path=False ):
+        super().__init__( filepath=filepath, base_path=base_path, base_dir=base_dir,
+                          full_filepath=full_filepath, no_base_path=no_base_path )
         self.id = asUUID(id) if id is not None else uuid.uuid4()
         self.provenance_id = ( provenance_id.id if isinstance( provenance_id, Provenance)
                                else asUUID(provenance_id) if provenance_id is not None else None )
-        self.filepath = pathlib.Path(filepath) if filepath is not None else None
         self.format = int(format) if format is not None else None
         self.l2image_id = asUUID(l2image_id) if l2image_id is not None else None
 
@@ -48,11 +51,6 @@ class SegmentationMap:
             for corner in [ '00', '01', '10', '11' ]:
                 setattr( self, f'{which}_corner_{corner}', None )
 
-        self.base_path = pathlib.Path( Config.get().value( 'system.paths.segmaps' ) )
-
-    @property
-    def full_filepath( self ):
-        return self.base_path / self.filepath
 
     @property
     def image( self ):
