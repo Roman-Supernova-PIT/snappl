@@ -6,6 +6,15 @@ FITSImage
 .. autoclass:: FITSImage
    :show-inheritance:
 
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~FITSImage.flagspath
+      ~FITSImage.imagepath
+      ~FITSImage.noisepath
+      ~FITSImage.path
+
    .. rubric:: Methods Summary
 
    .. autosummary::
@@ -17,6 +26,13 @@ FITSImage
       ~FITSImage.get_wcs
       ~FITSImage.save
       ~FITSImage.set_fits_header
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: flagspath
+   .. autoattribute:: imagepath
+   .. autoattribute:: noisepath
+   .. autoattribute:: path
 
    .. rubric:: Methods Documentation
 

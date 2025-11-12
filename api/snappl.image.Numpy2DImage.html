@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Numpy2DImage &#8212; roman_snpit_snappl 0.1.dev1+g815958d5a documentation</title>
+    <title>Numpy2DImage &#8212; roman_snpit_snappl 0.1.dev1+g7a9148e78 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=7d757e60"></script>
+    <script src="../_static/documentation_options.js?v=61eb2865"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -109,32 +109,37 @@
 <p>Instantiate an image.  You probably don’t want to do that.</p>
 <p>This is an abstract base class that has limited functionality.
 You probably want to instantiate a subclass if you’re creating a
-new image.  If you’re trying to get a pre-existing image, then
-probably what you really want to do is call the get_image()
-method of an imagecollection.ImageCollection object.</p>
-<p>For all implementations, the properties data, noise, and flags
-are lazy-loaded.  That is, they start empty, but when you access
-them, an internal buffer gets loaded with that data.  This means
-it can be very easy for lots of memory to get used without your
-realizing it.  There are a couple of solutions.  The first, is
-to call Image.free() when you’re sure you don’t need the data
-any more, or if you know you want to get rid of it for a while
-and re-read it from disk later.  The second is just not to
-access the data, noise, and flags properties, instead use
-Image.get_data(), and manage the data object lifetime yourself.</p>
+new image.</p>
+<p>If you’re trying to pull an image out of the database, then
+probably what you really want is to use the Image.get_image or
+Image.find_images class methods.</p>
+<p>If you’re working with non-database images and are trying to get
+a pre-existing image, then probably what you really want to do
+is call the get_image() method of an ImageCollection object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <p>Path to image file, or otherwise some kind of indentifier
-that allows the object to find the image.  Exactly what
-this needs to be is subclass-dependent, but it is usually
-a full absolute path on disk.</p>
-<p>If you don’t know the path, but only know (say) the
-pointing, band, and sca of an image, then either use the
-get_image() method of an appropriate ImageCollection instead
-of instantiating an Image directly, or use the
-get_image_path() method of an appropriate ImageCollection.</p>
-</p></li>
+<li><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Path of the image relative to the base path for images,
+unless less no_base_path is True, in which case this is the
+full absolute path to the image.  For datbase images, you do
+not want to create a path yourself, but leave it at None and
+let the class create the filepath.  See PathedObject.</p></li>
+<li><p><strong>full_filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – The full path to the image.  If you’re using an Image subclass
+to deal with an image that’s not in the database, you probably
+want to set this to the absolute path of the image, and you
+probably want to set no_base_path to True, but you might also
+set base_path yourself and leave no_base_path at False.</p></li>
+<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Always leave this at None for images associated with
+database, and the default will be used.  Otherwise, the
+absolute path of the image is base_path / filepath (which
+should be exactly the same as full_filepath).  Must be None
+if no_base_path is True.</p></li>
+<li><p><strong>base_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Synonym for base_path</p></li>
+<li><p><strong>no_base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – For images associated with the database, leave this at
+False, and make filepath relative to the base path (which
+may be system dependent).  For images that aren’t associated
+with the database, you can make this True and set filepath
+to be just the path to the image.</p></li>
 <li><p><strong>id</strong> (<em>UUID</em><em> or </em><em>str that can be converted to UUID</em><em>, </em><em>default None</em>) – Database ID of the image.  This is only relevant if the
 image is in the l2image table of the Roman SNPIT internal
 database (but is required in that case).</p></li>
@@ -143,6 +148,7 @@ image is in the l2image table of the Roman SNPIT internal
 database (but is required in that case).</p></li>
 <li><p><strong>width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
 <li><p><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
+<li><p><strong>format</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default -1</em>) – Index into the table Image._format_def at the bottom of this file.</p></li>
 <li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em><em> (</em><em>WARNING: this parameter keyword will change</em><em>)</em>)</p></li>
 <li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>)</p></li>
 <li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>

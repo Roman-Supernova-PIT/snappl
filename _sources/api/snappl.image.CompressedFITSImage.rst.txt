@@ -1,0 +1,17 @@
+CompressedFITSImage
+===================
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: CompressedFITSImage
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~CompressedFITSImage.uncompressed_version
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: uncompressed_version

@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+g815958d5a documentation</title>
+    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+g7a9148e78 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=7d757e60"></script>
+    <script src="../../_static/documentation_options.js?v=61eb2865"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -87,7 +87,7 @@
           <div class="body" role="main">
             
   <h1>Source code for snappl.image</h1><div class="highlight"><pre>
-<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;Image&#39;</span><span class="p">,</span> <span class="s1">&#39;Numpy2DImage&#39;</span><span class="p">,</span> <span class="s1">&#39;FITSImage&#39;</span><span class="p">,</span> <span class="s1">&#39;FITSImageStdHeaders&#39;</span><span class="p">,</span> <span class="s1">&#39;FITSImageOnDisk&#39;</span><span class="p">,</span>
+<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;Image&#39;</span><span class="p">,</span> <span class="s1">&#39;Numpy2DImage&#39;</span><span class="p">,</span> <span class="s1">&#39;FITSImage&#39;</span><span class="p">,</span> <span class="s1">&#39;FITSImageStdHeaders&#39;</span><span class="p">,</span> <span class="s1">&#39;CompressedFITSImage&#39;</span><span class="p">,</span> <span class="s1">&#39;FITSImageOnDisk&#39;</span><span class="p">,</span>
             <span class="s1">&#39;OpenUniverse2024FITSImage&#39;</span><span class="p">,</span> <span class="s1">&#39;RomanDatamodelImage&#39;</span> <span class="p">]</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -119,6 +119,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">asUUID</span><span class="p">,</span> <span class="n">SNPITJsonEncoder</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provenance</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.dbclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITDBClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.pathedobject</span><span class="w"> </span><span class="kn">import</span> <span class="n">PathedObject</span>
 
 
 <span class="c1"># ======================================================================</span>
@@ -129,13 +130,31 @@
 
 <div class="viewcode-block" id="Image">
 <a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Image</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Image</span><span class="p">(</span> <span class="n">PathedObject</span> <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Encapsulates a single 2d image.</span>
 
 <span class="sd">    Properties inclue the following.  Some of these properties may not</span>
 <span class="sd">    be defined for some subclasses of Image.</span>
 
-<span class="sd">    * path : pathlib.Path; absolute path to the image on disk</span>
+<span class="sd">    If possible, avoid using all &quot;path&quot; properties, and instead use the</span>
+<span class="sd">    other properties to get access to image data.  Note that &quot;noisepath&quot;</span>
+<span class="sd">    and &quot;flagspath&quot; are not defined for all Image subclasses, and will</span>
+<span class="sd">    only be defined sometimes for some subclasses (depending on how data</span>
+<span class="sd">    is stored).</span>
+
+<span class="sd">    * filepath : pathlib.Path ; path *relative to the base path* of the image file. This may just</span>
+<span class="sd">                                have the image data itself, or it may be a *base* filepath, or it</span>
+<span class="sd">                                may have everything, depending on the subclass.</span>
+<span class="sd">                                If you can avoid using this property, do so.  Use .data, etc, instead.</span>
+<span class="sd">    * filename : string ; just the name part of filepath (so if filepath is Path(&quot;/foo/bar&quot;), name is &quot;bar&quot;)</span>
+<span class="sd">    * full_filepath : pathlib.Path ; absolute path to file on system.  (Same as base_path / filepath.)</span>
+<span class="sd">    * base_path : base path for images; usually will be Config value system.paths.images</span>
+<span class="sd">    * base_dir : synonym for base_path</span>
+
+<span class="sd">    * path : pathlib.Path; absolute path to the image on disk, sort of, in a complicatd way.</span>
+<span class="sd">             HERE FOR BACKWARDS COMPATIBILITY ONLY</span>
+<span class="sd">    * name : str; synonym for filename.  HERE FOR BACKWARDS COMPATIBILITY ONLY.</span>
+
 <span class="sd">    * pointing : int (str?); a unique identifier of the exposure associated with the image</span>
 <span class="sd">    *            WARNING, this property name will probably change once we fighre out the</span>
 <span class="sd">    *            right thing from the roman datamodel we want to use</span>
@@ -169,6 +188,17 @@
 <span class="sd">    IMPORTANT NOTE: because of how numpy arrays are indexed, if you want to get</span>
 <span class="sd">    value of the pixel at (ix, iy), you would do image.data[iy, ix].</span>
 
+<span class="sd">    For all implementations, the properties data, noise, and flags are</span>
+<span class="sd">    lazy-loaded.  That is, they start empty, but when you access them,</span>
+<span class="sd">    an internal buffer gets loaded with that data.  This means it can be</span>
+<span class="sd">    very easy for lots of memory to get used without your realizing it.</span>
+<span class="sd">    There are a couple of solutions.  The first, is to call Image.free()</span>
+<span class="sd">    when you&#39;re sure you don&#39;t need the data any more, or if you know</span>
+<span class="sd">    you want to get rid of it for a while and re-read it from disk</span>
+<span class="sd">    later.  The second is just not to access the data, noise, and flags</span>
+<span class="sd">    properties, instead use Image.get_data(), and manage the data object</span>
+<span class="sd">    lifetime yourself.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># How close in degrees should the right- and up- calculated position angles match?</span>
@@ -183,44 +213,60 @@
     <span class="c1">#  file so all the classes will be defined by the time we get there.)</span>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">full_filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">pointing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">ra_corner_00</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra_corner_01</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra_corner_10</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra_corner_11</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">dec_corner_00</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec_corner_01</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec_corner_10</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec_corner_11</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">position_angle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exptime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sky_level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zeropoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                  <span class="n">is_superclass</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+                  <span class="nb">format</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">is_superclass</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate an image.  You probably don&#39;t want to do that.</span>
 
 <span class="sd">        This is an abstract base class that has limited functionality.</span>
 <span class="sd">        You probably want to instantiate a subclass if you&#39;re creating a</span>
-<span class="sd">        new image.  If you&#39;re trying to get a pre-existing image, then</span>
-<span class="sd">        probably what you really want to do is call the get_image()</span>
-<span class="sd">        method of an imagecollection.ImageCollection object.</span>
+<span class="sd">        new image.</span>
 
-<span class="sd">        For all implementations, the properties data, noise, and flags</span>
-<span class="sd">        are lazy-loaded.  That is, they start empty, but when you access</span>
-<span class="sd">        them, an internal buffer gets loaded with that data.  This means</span>
-<span class="sd">        it can be very easy for lots of memory to get used without your</span>
-<span class="sd">        realizing it.  There are a couple of solutions.  The first, is</span>
-<span class="sd">        to call Image.free() when you&#39;re sure you don&#39;t need the data</span>
-<span class="sd">        any more, or if you know you want to get rid of it for a while</span>
-<span class="sd">        and re-read it from disk later.  The second is just not to</span>
-<span class="sd">        access the data, noise, and flags properties, instead use</span>
-<span class="sd">        Image.get_data(), and manage the data object lifetime yourself.</span>
+<span class="sd">        If you&#39;re trying to pull an image out of the database, then</span>
+<span class="sd">        probably what you really want is to use the Image.get_image or</span>
+<span class="sd">        Image.find_images class methods.</span>
+
+<span class="sd">        If you&#39;re working with non-database images and are trying to get</span>
+<span class="sd">        a pre-existing image, then probably what you really want to do</span>
+<span class="sd">        is call the get_image() method of an ImageCollection object.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">          path : str</span>
-<span class="sd">            Path to image file, or otherwise some kind of indentifier</span>
-<span class="sd">            that allows the object to find the image.  Exactly what</span>
-<span class="sd">            this needs to be is subclass-dependent, but it is usually</span>
-<span class="sd">            a full absolute path on disk.</span>
+<span class="sd">          filepath : str or Path, default None</span>
+<span class="sd">            Path of the image relative to the base path for images,</span>
+<span class="sd">            unless less no_base_path is True, in which case this is the</span>
+<span class="sd">            full absolute path to the image.  For datbase images, you do</span>
+<span class="sd">            not want to create a path yourself, but leave it at None and</span>
+<span class="sd">            let the class create the filepath.  See PathedObject.</span>
 
-<span class="sd">            If you don&#39;t know the path, but only know (say) the</span>
-<span class="sd">            pointing, band, and sca of an image, then either use the</span>
-<span class="sd">            get_image() method of an appropriate ImageCollection instead</span>
-<span class="sd">            of instantiating an Image directly, or use the</span>
-<span class="sd">            get_image_path() method of an appropriate ImageCollection.</span>
+<span class="sd">          full_filepath : str or Path, default None</span>
+<span class="sd">            The full path to the image.  If you&#39;re using an Image subclass</span>
+<span class="sd">            to deal with an image that&#39;s not in the database, you probably</span>
+<span class="sd">            want to set this to the absolute path of the image, and you</span>
+<span class="sd">            probably want to set no_base_path to True, but you might also</span>
+<span class="sd">            set base_path yourself and leave no_base_path at False.</span>
+
+<span class="sd">          base_path : str or Path, default None</span>
+<span class="sd">            Always leave this at None for images associated with</span>
+<span class="sd">            database, and the default will be used.  Otherwise, the</span>
+<span class="sd">            absolute path of the image is base_path / filepath (which</span>
+<span class="sd">            should be exactly the same as full_filepath).  Must be None</span>
+<span class="sd">            if no_base_path is True.</span>
+
+<span class="sd">          base_dir : str or Path, default None</span>
+<span class="sd">            Synonym for base_path</span>
+
+<span class="sd">          no_base_path : bool, default False</span>
+<span class="sd">            For images associated with the database, leave this at</span>
+<span class="sd">            False, and make filepath relative to the base path (which</span>
+<span class="sd">            may be system dependent).  For images that aren&#39;t associated</span>
+<span class="sd">            with the database, you can make this True and set filepath</span>
+<span class="sd">            to be just the path to the image.</span>
 
 <span class="sd">          id : UUID or str that can be converted to UUID, default None</span>
 <span class="sd">            Database ID of the image.  This is only relevant if the</span>
@@ -234,6 +280,9 @@
 
 <span class="sd">          width, height: int, default None</span>
 <span class="sd">            The width and height of the image in pixels if known.</span>
+
+<span class="sd">          format : int, default -1</span>
+<span class="sd">            Index into the table Image._format_def at the bottom of this file.</span>
 
 <span class="sd">          pointing : int (str?), default None (WARNING: this parameter keyword will change)</span>
 <span class="sd">          sca: int, default None</span>
@@ -252,13 +301,32 @@
 <span class="sd">            many cases, they will be lazy-loaded from the header.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_declare_consumed_kwargs</span><span class="p">(</span> <span class="p">{</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;provenance_id&#39;</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="s1">&#39;pointing&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">full_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># This next error message is a bit of a lie.  It&#39;s</span>
+                <span class="c1">#   aspirational; use the real thing, not the backwards</span>
+                <span class="c1">#   compatible thing.  But, existing code will use path, from</span>
+                <span class="c1">#   before full_filepath was defined, and we want it to keep</span>
+                <span class="c1">#   working.  If somebody uses both, then they&#39;re just wrong,</span>
+                <span class="c1">#   so tell them to use the new thing.</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Do not use path, only use full_filepath.&quot;</span> <span class="p">)</span>
+            <span class="n">full_filepath</span> <span class="o">=</span> <span class="n">path</span>
+
+        <span class="c1"># This has to be set before superclass init because the</span>
+        <span class="c1">#   PathedObject init will (indirectly) use it (by calling</span>
+        <span class="c1">#   _set_base_path).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_format</span> <span class="o">=</span> <span class="nb">format</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="n">filepath</span><span class="o">=</span><span class="n">filepath</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="n">base_path</span><span class="p">,</span> <span class="n">base_dir</span><span class="o">=</span><span class="n">base_dir</span><span class="p">,</span>
+                          <span class="n">full_filepath</span><span class="o">=</span><span class="n">full_filepath</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="n">no_base_path</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_declare_consumed_kwargs</span><span class="p">(</span> <span class="p">{</span> <span class="s1">&#39;path&#39;</span><span class="p">,</span> <span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;base_path&#39;</span><span class="p">,</span> <span class="s1">&#39;base_dir&#39;</span><span class="p">,</span>
+                                         <span class="s1">&#39;full_filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;no_base_path&#39;</span><span class="p">,</span>
+                                         <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;provenance_id&#39;</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="s1">&#39;pointing&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span>
                                          <span class="s1">&#39;ra_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_11&#39;</span><span class="p">,</span>
                                          <span class="s1">&#39;dec_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_11&#39;</span><span class="p">,</span>
                                          <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd&#39;</span><span class="p">,</span> <span class="s1">&#39;position_nagle&#39;</span><span class="p">,</span> <span class="s1">&#39;exptime&#39;</span><span class="p">,</span> <span class="s1">&#39;sky_level&#39;</span><span class="p">,</span> <span class="s1">&#39;zeropoint&#39;</span> <span class="p">}</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_verify_all_consumed_kwargs</span><span class="p">(</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">path</span> <span class="p">)</span> <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span> <span class="nb">id</span> <span class="p">)</span> <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_provenance_id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">provenance_id</span> <span class="p">)</span> <span class="k">if</span> <span class="n">provenance_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
@@ -307,10 +375,56 @@
             <span class="c1"># SCLogger.warning( f&quot;{self.__class__.__name__} constructor didn&#39;t recognize &quot;</span>
             <span class="c1">#                   f&quot;keyword arguments: {unconsumed} &quot; )</span>
 
+
+
+    <span class="n">_image_class_base_path_config_item</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_base_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+        <span class="c1"># This is unpleasant but the tortured logic is necessary to</span>
+        <span class="c1">#  preserve backwards compatibility for Image with what we did</span>
+        <span class="c1">#  in early 2025 with how things came in once we started</span>
+        <span class="c1">#  defining the database in late 2025.</span>
+        <span class="k">if</span> <span class="n">no_base_path</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Cannot specify a base_path (or base_dir) if no_base_path is True.&quot;</span> <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span> <span class="o">=</span> <span class="n">no_base_path</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">base_path</span> <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Unknown image format </span><span class="si">{self._format}</span><span class="s2">&quot;</span> <span class="p">)</span>
+                <span class="n">fmtbasepathdef</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span> <span class="p">][</span> <span class="s1">&#39;base_path_config&#39;</span> <span class="p">]</span>
+                <span class="k">if</span> <span class="n">fmtbasepathdef</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">fmtbasepathdef</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_class_base_path_config_item</span>
+
+                <span class="k">if</span> <span class="n">fmtbasepathdef</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">fmtbasepathdef</span> <span class="p">)</span> <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+
+    <span class="c1"># The path property is just for backwards compatibilty</span>
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;str; The filename of the image (i.e. the path without the directory)&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">path</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span>
+
+    <span class="nd">@path</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;You aren&#39;t supposed to set path.  If you really need to do this, talk to Rob &quot;</span>
+                            <span class="s2">&quot;to find out what you should be doing instead.  It might be painful.&quot;</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span> <span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">id</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
@@ -965,7 +1079,7 @@
 
 <div class="viewcode-block" id="Image.save_data">
 <a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.save_data">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">save_data</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_data</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">imagepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Same as save; here for backwards compatibility.  Use save.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">(</span> <span class="n">which</span><span class="o">=</span><span class="n">which</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="n">noisepath</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="n">flagspath</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span> <span class="p">)</span></div>
 
@@ -973,7 +1087,7 @@
 
 <div class="viewcode-block" id="Image.save">
 <a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.save">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">imagepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the image to its path(s).</span>
 
 <span class="sd">        May have side-effects on the internal data structure (e.g. FITS</span>
@@ -984,20 +1098,27 @@
 <span class="sd">          which : str, default &quot;all&quot;</span>
 <span class="sd">            One of &#39;data&#39;, &#39;noise&#39;, &#39;flags&#39;, or &#39;all&#39;</span>
 
+<span class="sd">          imagepath : str, default None</span>
+<span class="sd">            Full Path to write the image to.  If not specified, will use use</span>
+<span class="sd">            self.full_filepath.  Does NOT update any of the path properties of</span>
+<span class="sd">            the image.  You can leave this at None, and the path that the</span>
+<span class="sd">            Image figured out when it was constructed will be used.  Usually,</span>
+<span class="sd">            that&#39;s what you should do.</span>
+
 <span class="sd">          path : str, default None</span>
-<span class="sd">            Path to write the image to.  If not specified, will use use</span>
-<span class="sd">            self.path.  Does NOT update self.path.</span>
+<span class="sd">            A synonym for imagepath.  Do not use.  Here for backwards</span>
+<span class="sd">            compatibility.</span>
 
 <span class="sd">          noisepath : str, default None</span>
-<span class="sd">            Path to write the noise image to, if the noise image is</span>
-<span class="sd">            stored as a separate image.  (It isn&#39;t always; some</span>
-<span class="sd">            subclasses have it as a separate part of the data structure</span>
-<span class="sd">            that also has the image.)  If None, use an internally stored</span>
-<span class="sd">            noisepath.  If that is not set, and noisepath is None, and</span>
-<span class="sd">            this isn&#39;t a subclass that combines all the data planes into</span>
-<span class="sd">            one file, then any noise data array will not be written.</span>
+<span class="sd">            Path to write the noise image to, if the noise image is stored as</span>
+<span class="sd">            a separate image.  (It isn&#39;t always; some subclasses have it as a</span>
+<span class="sd">            separate part of the data structure that also has the image.)  If</span>
+<span class="sd">            None, use an internally stored noisepath.  If that is not set, and</span>
+<span class="sd">            noisepath is None, and this isn&#39;t a subclass that combines all the</span>
+<span class="sd">            data planes into one file, then any noise data array will not be</span>
+<span class="sd">            written.  Usually, you don&#39;t want to have to specify this.</span>
 
-<span class="sd">          flagspath : str, defanot None</span>
+<span class="sd">          flagspath : str, default None</span>
 <span class="sd">            Path to write the flags image to, similar to noisepath.</span>
 
 <span class="sd">          overwrite : bool, default False</span>
@@ -1033,14 +1154,9 @@
         <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Database </span><span class="si">{</span><span class="n">image_id</span><span class="si">}</span><span class="s2"> has format </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, which is unknown.&quot;</span> <span class="p">)</span>
         <span class="n">image_class</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">[</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="p">][</span> <span class="s1">&#39;image_class&#39;</span> <span class="p">]</span>
-        <span class="n">base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">[</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="p">]</span> <span class="p">[</span> <span class="s1">&#39;base_path_config&#39;</span> <span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
 
-        <span class="c1"># Remove things the Image constroctor won&#39;t know, fix</span>
-        <span class="c1">#   things that need fixing</span>
-        <span class="n">row</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_path</span> <span class="o">/</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
-        <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
+        <span class="c1"># Remove things the Image constroctor won&#39;t know</span>
         <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;extension&#39;</span><span class="p">]</span>
-        <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span>
         <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">image_class</span><span class="p">(</span> <span class="o">**</span><span class="n">row</span> <span class="p">)</span></div>
 
@@ -1070,10 +1186,10 @@
 <span class="sd">            The connection to the database.  If None, a new connection</span>
 <span class="sd">            will be created based on what&#39;s it the config.</span>
 
-<span class="sd">          path: pathlib.Path or str, default None</span>
-<span class="sd">            Relative path of the image to search for.  Usually if you</span>
-<span class="sd">            feed it this, you don&#39;t want to feed it nay other</span>
-<span class="sd">            parameters.</span>
+<span class="sd">          filepath: pathlib.Path or str, default None</span>
+<span class="sd">            Path of the image (relative to the base path for all images) of</span>
+<span class="sd">            the image to search for.  Usually if you feed it this, you don&#39;t</span>
+<span class="sd">            want to feed it nay other parameters.</span>
 
 <span class="sd">          mjd_min : float, default None</span>
 <span class="sd">            Only return images at this mjd or later</span>
@@ -1152,13 +1268,8 @@
             <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Database image </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> has format </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, which is unknown.&quot;</span> <span class="p">)</span>
             <span class="n">image_class</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">[</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="p">][</span> <span class="s1">&#39;image_class&#39;</span> <span class="p">]</span>
-            <span class="n">base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span><span class="p">[</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="p">]</span> <span class="p">[</span> <span class="s1">&#39;base_path_config&#39;</span> <span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
-            <span class="c1"># Remove things the Image constructor won&#39;t know, fix</span>
-            <span class="c1">#   things that need fixing</span>
-            <span class="n">row</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_path</span> <span class="o">/</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
-            <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span>
+            <span class="c1"># Remove things the Image constructor won&#39;t know</span>
             <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;extension&#39;</span><span class="p">]</span>
-            <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span>
             <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span>
             <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">image_class</span><span class="p">(</span> <span class="o">**</span><span class="n">row</span> <span class="p">)</span> <span class="p">)</span>
 
@@ -1269,29 +1380,40 @@
 <span class="c1">#</span>
 <span class="c1"># (1) Multiple HDUs in one file</span>
 <span class="c1">#</span>
-<span class="c1">#     In this case, path holds the path to the file, and imagehdu,</span>
-<span class="c1">#     nosiehdu, and flagshdu hold the index of the hdu that has the</span>
-<span class="c1">#     respective data array.  nosiepath nad flagspath are None.</span>
+<span class="c1">#     In this case, filepath holds the path to the file (full_filepath for the</span>
+<span class="c1">#     full location), and imagehdu, nosiehdu, and flagshdu hold the index of</span>
+<span class="c1">#     the hdu that has the respective data array.  noisepath and flagspath are</span>
+<span class="c1">#     None.  If you get the FITS header, you get the header associated with</span>
+<span class="c1">#     the imagehdu... which might not be what you want, but oh well.</span>
 <span class="c1">#</span>
 <span class="c1"># (2) Three separate files</span>
 <span class="c1">#</span>
-<span class="c1">#     In this case, path, noisepath, and flagspath all point to</span>
-<span class="c1">#     single-HDU fits files.  imagehdu, noisehdu, and flagshdu should</span>
-<span class="c1">#     all be 0.  (Well, OK.  It&#39;s more flexible than that; there are</span>
-<span class="c1">#     the files, but you can use an *hdu other than 0 to get the actual</span>
-<span class="c1">#     data array.  But, the header might be read from the wrong place.)</span>
+<span class="c1">#     In thise case, imagepath, noisepath, and flagspath properties are the</span>
+<span class="c1">#     full absolute paths to the image data, noise data, and dq flags</span>
+<span class="c1">#     respectively.  Usually, though not necessarily, all of imagehdu,</span>
+<span class="c1">#     noisehdu, and flagshdu will be 0, since we are dealing with single-hdu</span>
+<span class="c1">#     files.  The filepath property holds *something* relative to the base</span>
+<span class="c1">#     path, depending on details, but it might be the image data.  If you</span>
+<span class="c1">#     get the header, you get the image file&#39;s header.</span>
 <span class="c1">#</span>
 <span class="c1"># (3) One file with just data</span>
 <span class="c1">#     There is no noise or flags, just data.</span>
 <span class="c1">#</span>
-<span class="c1"># If constructed with std_imagenames=True, then this assumes model (2),</span>
-<span class="c1">#   and path should be a _base_ name; the data is in {path}_image.fits,</span>
-<span class="c1">#   the noise in {path}_noise.fits, and the flags in {path}_flags.fits.</span>
+<span class="c1"># If constructed with std_imagenames=True, then this assumes model (2), and</span>
+<span class="c1">#   full_filepath should be a _base_ name; the data is in</span>
+<span class="c1">#   {full_filepath}_image.fits, the noise in {full_filepath}_noise.fits, and</span>
+<span class="c1">#   the flags in {full_filepath}_flags.fits.</span>
 
 <div class="viewcode-block" id="FITSImage">
 <a class="viewcode-back" href="../../api/snappl.image.FITSImage.html#snappl.image.FITSImage">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FITSImage</span><span class="p">(</span> <span class="n">Numpy2DImage</span> <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for classes that read FITS images and use an AstropyWCS wcs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for classes that read FITS images and uses an AstropyWCS wcs.</span>
+
+<span class="sd">    Properties imagepath, noisepath, and flagspath are full paths to where</span>
+<span class="sd">    those files actually live on disk.  Generally, they should only be used</span>
+<span class="sd">    internally.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">imagehdu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">noisehdu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">flagshdu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1309,6 +1431,7 @@
                              <span class="sa">f</span><span class="s2">&quot;not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">wcs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">wcs</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_std_imagenames</span> <span class="o">=</span> <span class="n">std_imagenames</span>
         <span class="k">if</span> <span class="n">std_imagenames</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">any</span><span class="p">(</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span> <span class="n">imagehdu</span><span class="p">,</span> <span class="n">noisehdu</span><span class="p">,</span> <span class="n">flagshdu</span> <span class="p">)</span> <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;std_imagenames requireds (image|noise|flags)hdu = 0&quot;</span> <span class="p">)</span>
@@ -1318,16 +1441,74 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">imagehdu</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">noisehdu</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flagshdu</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_noise.fits&quot;</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">flagspath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_flags.fits&quot;</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_image.fits&quot;</span>
 
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">noisepath</span> <span class="p">)</span> <span class="k">if</span> <span class="n">noisepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">flagspath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">flagspath</span> <span class="p">)</span> <span class="k">if</span> <span class="n">flagspath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_noisepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">noisepath</span> <span class="p">)</span> <span class="k">if</span> <span class="n">noisepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagepath</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_flagspath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">flagspath</span> <span class="p">)</span> <span class="k">if</span> <span class="n">flagspath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagepath</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">imagehdu</span> <span class="o">=</span> <span class="n">imagehdu</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">noisehdu</span> <span class="o">=</span> <span class="n">noisehdu</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flagshdu</span> <span class="o">=</span> <span class="n">flagshdu</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">path</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagepath</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">imagepath</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_std_imagenames</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_image.fits&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span>
+
+    <span class="nd">@imagepath</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">imagepath</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_std_imagenames</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="o">-</span><span class="mi">11</span><span class="p">:]</span> <span class="o">!=</span> <span class="s1">&#39;_image.fits&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Invalid imagepath </span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">filepath</span> <span class="o">=</span> <span class="n">val</span><span class="p">[:</span><span class="o">-</span><span class="mi">11</span><span class="p">]</span>
+                <span class="k">return</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">val</span><span class="p">[:</span><span class="o">-</span><span class="mi">11</span><span class="p">]</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span><span class="p">:</span>
+            <span class="n">relpath</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">relpath</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span> <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Invalid imagepath </span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s2">, it&#39;s underneath </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_path</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filepath</span> <span class="o">=</span> <span class="n">relpath</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">noisepath</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_std_imagenames</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_noise.fits&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noisepath</span>
+
+    <span class="nd">@noisepath</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">noisepath</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_std_imagenames</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Can&#39;t set nosiepath for a std_imagenames FITSImage.&quot;</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_noisepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flagspath</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_std_imagenames</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_flags.fits&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flagspath</span>
+
+    <span class="nd">@flagspath</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flagspath</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_std_imagenames</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Can&#39;t set flagspath for a std_imagenames FITSImage.&quot;</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flagspath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
 
 
     <span class="nd">@classmethod</span>
@@ -1392,7 +1573,7 @@
 <span class="sd">        Note that FITSImage and subclasses set self._header here, inside get_fits_header.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">fitsio</span><span class="o">.</span><span class="n">FITS</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">fitsio</span><span class="o">.</span><span class="n">FITS</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagepath</span> <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">hdr</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagehdu</span> <span class="p">]</span><span class="o">.</span><span class="n">read_header</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="n">FITSImage</span><span class="o">.</span><span class="n">_fitsio_header_to_astropy_header</span><span class="p">(</span> <span class="n">hdr</span> <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header</span></div>
@@ -1449,6 +1630,8 @@
 <div class="viewcode-block" id="FITSImage.get_data">
 <a class="viewcode-back" href="../../api/snappl.image.FITSImage.html#snappl.image.FITSImage.get_data">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">always_reload</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;As a side effect, also loads the image header if image data is loaded if cache is True.&quot;&quot;&quot;</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_cutout</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="s2">&quot;get_data called on a cutout image, this will return the ORIGINAL UNCUT image. Currently not supported.&quot;</span>
@@ -1458,7 +1641,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown which </span><span class="si">{</span><span class="n">which</span><span class="si">}</span><span class="s2">, must be all, data, noise, or flags&quot;</span><span class="p">)</span>
         <span class="n">which</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;noise&#39;</span><span class="p">,</span> <span class="s1">&#39;flags&#39;</span> <span class="p">]</span> <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span> <span class="k">else</span> <span class="p">[</span> <span class="n">which</span> <span class="p">]</span>
 
-        <span class="n">pathmap</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+        <span class="n">pathmap</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagepath</span><span class="p">,</span>
                     <span class="s1">&#39;noise&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span><span class="p">,</span>
                     <span class="s1">&#39;flags&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagspath</span> <span class="p">}</span>
         <span class="n">hdumap</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagehdu</span><span class="p">,</span>
@@ -1472,8 +1655,11 @@
             <span class="k">if</span> <span class="n">always_reload</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
                 <span class="k">with</span> <span class="n">fitsio</span><span class="o">.</span><span class="n">FITS</span><span class="p">(</span> <span class="n">pathmap</span><span class="p">[</span><span class="n">plane</span><span class="p">]</span> <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                     <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span> <span class="n">hdumap</span><span class="p">[</span><span class="n">plane</span><span class="p">]</span> <span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-                    <span class="nb">setattr</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">data</span> <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">data</span> <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">plane</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
+                            <span class="n">hdr</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span> <span class="n">hdumap</span><span class="p">[</span><span class="n">plane</span><span class="p">]</span> <span class="p">]</span><span class="o">.</span><span class="n">read_header</span><span class="p">()</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="n">FITSImage</span><span class="o">.</span><span class="n">_fitsio_header_to_astropy_header</span><span class="p">(</span> <span class="n">hdr</span> <span class="p">)</span>
             <span class="n">rval</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">data</span> <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">rval</span></div>
@@ -1517,7 +1703,7 @@
         <span class="c1"># https://github.com/spacetelescope/roman_datamodels/blob/main/src/roman_datamodels/dqflags.py</span>
         <span class="n">astropy_flags</span> <span class="o">=</span> <span class="n">Cutout2D</span><span class="p">(</span><span class="n">flags</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">ysize</span><span class="p">,</span> <span class="n">xsize</span><span class="p">),</span> <span class="n">wcs</span><span class="o">=</span><span class="n">apwcs</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="n">snappl_cutout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">xsize</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">ysize</span><span class="p">)</span>
+        <span class="n">snappl_cutout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">full_filepath</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">xsize</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">ysize</span><span class="p">)</span>
         <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">astropy_cutout</span><span class="o">.</span><span class="n">data</span>
         <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">wcs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">AstropyWCS</span><span class="p">(</span> <span class="n">astropy_cutout</span><span class="o">.</span><span class="n">wcs</span> <span class="p">)</span>
         <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">astropy_noise</span><span class="o">.</span><span class="n">data</span>
@@ -1544,7 +1730,7 @@
 
 <div class="viewcode-block" id="FITSImage.save">
 <a class="viewcode-back" href="../../api/snappl.image.FITSImage.html#snappl.image.FITSImage.save">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">imagepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
               <span class="n">imagehdu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noisehdu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flagshdu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Write image to its path.  See Image.save</span>
 
@@ -1552,7 +1738,14 @@
 <span class="sd">        if replacing WCS keywords in self._header with keywords from the</span>
 <span class="sd">        current image WCS.</span>
 
+<span class="sd">        Currently does not support saving multi-HDU files.  (It will throw an</span>
+<span class="sd">        exception if any of imagehdu, noisehdu, or flagshdu aren&#39;t 0.)</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">imagepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">imagepath</span> <span class="o">!=</span> <span class="n">path</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Only specify one of imagepath or path, they mean the same thing.&quot;</span> <span class="p">)</span>
+        <span class="n">imagepath</span> <span class="o">=</span> <span class="n">imagepath</span> <span class="k">if</span> <span class="n">imagepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">path</span>
 
         <span class="n">saveim</span> <span class="o">=</span> <span class="p">(</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span> <span class="p">)</span>
         <span class="n">saveno</span> <span class="o">=</span> <span class="p">(</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;noise&#39;</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span> <span class="p">)</span>
@@ -1565,8 +1758,8 @@
         <span class="k">if</span> <span class="p">(</span> <span class="n">imagehdu</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">noisehdu</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">flagshdu</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;We need to implement saving to HDUs other than 0.&quot;</span> <span class="p">)</span>
 
-        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>
-        <span class="k">if</span> <span class="n">saveim</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
+        <span class="n">imagepath</span> <span class="o">=</span> <span class="n">imagepath</span> <span class="k">if</span> <span class="n">imagepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagepath</span>
+        <span class="k">if</span> <span class="n">saveim</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">imagepath</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Can&#39;t save data, no path.&quot;</span> <span class="p">)</span>
         <span class="n">noisepath</span> <span class="o">=</span> <span class="n">noisepath</span> <span class="k">if</span> <span class="n">noisepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span>
         <span class="k">if</span> <span class="n">saveno</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">noisepath</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
@@ -1575,14 +1768,18 @@
         <span class="k">if</span> <span class="n">savefl</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">flagspath</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Can&#39;t save flags, no path.&quot;</span> <span class="p">)</span>
 
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span> <span class="p">(</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span> <span class="o">==</span> <span class="s1">&#39;.fits&#39;</span> <span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">imagepath</span><span class="p">,</span> <span class="n">noisepath</span><span class="p">,</span> <span class="n">flagspath</span> <span class="p">]</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;I don&#39;t know how to save compressed files, only files &quot;</span>
+                                       <span class="s2">&quot;whose names end in .fits&quot;</span> <span class="p">)</span>
+
         <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
-            <span class="k">if</span> <span class="p">(</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">or</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="n">imagepath</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">or</span>
                  <span class="p">(</span> <span class="n">noisepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">noisepath</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="p">)</span> <span class="ow">or</span>
                  <span class="p">(</span> <span class="n">flagspath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">flagspath</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="p">)</span> <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;FITSImage.save: overwrite is False, but image file(s) already exist&quot;</span> <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-                <span class="n">path</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">imagepath</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                <span class="n">imagepath</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
             <span class="k">if</span> <span class="p">(</span> <span class="n">noisepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">noisepath</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="p">):</span>
                 <span class="n">noisepath</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
             <span class="k">if</span> <span class="p">(</span> <span class="n">flagspath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">flagspath</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="p">):</span>
@@ -1598,7 +1795,7 @@
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">wcshdr</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="k">with</span> <span class="n">fitsio</span><span class="o">.</span><span class="n">FITS</span><span class="p">(</span> <span class="n">path</span><span class="p">,</span> <span class="s1">&#39;rw&#39;</span> <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">fitsio</span><span class="o">.</span><span class="n">FITS</span><span class="p">(</span> <span class="n">imagepath</span><span class="p">,</span> <span class="s1">&#39;rw&#39;</span> <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">FITSImage</span><span class="o">.</span><span class="n">_astropy_header_to_fitsio_header</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="p">)</span> <span class="p">)</span>
         <span class="k">if</span> <span class="p">(</span> <span class="n">noisepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">noise</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
             <span class="k">with</span> <span class="n">fitsio</span><span class="o">.</span><span class="n">FITS</span><span class="p">(</span> <span class="n">noisepath</span><span class="p">,</span> <span class="s1">&#39;rw&#39;</span> <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -1827,21 +2024,23 @@
 
 
 
-<span class="c1"># ======================================================================</span>
-<span class="c1"># This class is poorly named, because FITSImage can already</span>
-<span class="c1">#  handle files on disk.</span>
-<span class="c1">#</span>
+<span class="c1"># =====================================================================</span>
+<span class="c1"># A FITS Image that might be compressed (.gz or .bz2, not supporting fpack).</span>
 
-<div class="viewcode-block" id="FITSImageOnDisk">
-<a class="viewcode-back" href="../../api/snappl.image.FITSImageOnDisk.html#snappl.image.FITSImageOnDisk">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">FITSImageOnDisk</span><span class="p">(</span> <span class="n">FITSImage</span> <span class="p">):</span>
+<div class="viewcode-block" id="CompressedFITSImage">
+<a class="viewcode-back" href="../../api/snappl.image.CompressedFITSImage.html#snappl.image.CompressedFITSImage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CompressedFITSImage</span><span class="p">(</span> <span class="n">FITSImage</span> <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An Image which is may correspond to a compressed file on disk (gz or bz2, not yet supporting fpack).</span>
 
 <span class="sd">    It *should* be safe to use this anywhere you use a FITSImage.</span>
-<span class="sd">    What&#39;s differenta bout this is that it has the function</span>
+<span class="sd">    What&#39;s different about this is that it has the function</span>
 <span class="sd">    ``uncompressed_version()`` that will create a file in some temp</span>
 <span class="sd">    directory somewhere that is uncompressed (in case the file needs to</span>
-<span class="sd">    be passed to somethign that can&#39;t handle compressed images.</span>
+<span class="sd">    be passed to something that can&#39;t handle compressed images.</span>
+
+<span class="sd">    If you don&#39;t need to do that, it turns out that FITSImage supports any</span>
+<span class="sd">    compressed image format that fitsio supports, so just use that class</span>
+<span class="sd">    instead of this one.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1849,9 +2048,9 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
 
 
-<div class="viewcode-block" id="FITSImageOnDisk.uncompressed_version">
-<a class="viewcode-back" href="../../api/snappl.image.FITSImageOnDisk.html#snappl.image.FITSImageOnDisk.uncompressed_version">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">uncompressed_version</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">[</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;noise&#39;</span><span class="p">,</span> <span class="s1">&#39;flags&#39;</span> <span class="p">],</span> <span class="n">base_dir</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<div class="viewcode-block" id="CompressedFITSImage.uncompressed_version">
+<a class="viewcode-back" href="../../api/snappl.image.CompressedFITSImage.html#snappl.image.CompressedFITSImage.uncompressed_version">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uncompressed_version</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">[</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;noise&#39;</span><span class="p">,</span> <span class="s1">&#39;flags&#39;</span> <span class="p">],</span> <span class="n">temp_dir</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Make sure to get a FITSImageOnDisk that&#39;s not compressed.</span>
 
 <span class="sd">        If none of the files for the current FITSImageOnDisk object are</span>
@@ -1867,8 +2066,8 @@
 <span class="sd">            Can include any of &#39;data&#39;, &#39;noise&#39;, &#39;flags&#39;; which things to</span>
 <span class="sd">            write.  Ignored if the current image isn&#39;t compressed.</span>
 
-<span class="sd">          base_dir : Path</span>
-<span class="sd">            The path to write the files</span>
+<span class="sd">          temp_dir : pathlib.Path, default None</span>
+<span class="sd">            The path to write the files.  Defaults to the config value system.temp_dir</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1877,13 +2076,13 @@
 <span class="sd">            with the random filenames to which the FITS files were written.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span> <span class="p">[</span> <span class="p">(</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span> <span class="o">==</span> <span class="s1">&#39;.fits&#39;</span> <span class="p">)</span> <span class="p">),</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span> <span class="p">[</span> <span class="p">(</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagepath</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagepath</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span> <span class="o">==</span> <span class="s1">&#39;.fits&#39;</span> <span class="p">)</span> <span class="p">),</span>
                   <span class="p">(</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span> <span class="o">==</span> <span class="s1">&#39;.fits&#39;</span> <span class="p">)</span> <span class="p">),</span>
                   <span class="p">(</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagspath</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagspath</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span> <span class="o">==</span> <span class="s1">&#39;.fits&#39;</span> <span class="p">)</span> <span class="p">)</span> <span class="p">]</span> <span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span>
 
-        <span class="n">base_dir</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">base_dir</span> <span class="k">if</span> <span class="n">base_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                                 <span class="k">else</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;photometry.snappl.temp_dir&#39;</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="n">temp_dir</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">temp_dir</span> <span class="k">if</span> <span class="n">temp_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                                 <span class="k">else</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.temp_dir&#39;</span> <span class="p">)</span> <span class="p">)</span>
         <span class="n">barf</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">random</span><span class="o">.</span><span class="n">choices</span><span class="p">(</span> <span class="s1">&#39;0123456789abcdef&#39;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span> <span class="p">)</span> <span class="p">)</span>
         <span class="n">impath</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">noisepath</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1892,111 +2091,34 @@
 
         <span class="k">if</span> <span class="s1">&#39;data&#39;</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
             <span class="n">hdul</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">(</span> <span class="p">[</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">header</span> <span class="p">)</span> <span class="p">]</span> <span class="p">)</span>
-            <span class="n">impath</span> <span class="o">=</span> <span class="n">base_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">barf</span><span class="si">}</span><span class="s2">_image.fits&quot;</span>
+            <span class="n">impath</span> <span class="o">=</span> <span class="p">(</span> <span class="n">temp_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">barf</span><span class="si">}</span><span class="s2">_image.fits&quot;</span> <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
             <span class="n">hdul</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span> <span class="n">impath</span>  <span class="p">)</span>
 
         <span class="k">if</span> <span class="s1">&#39;noise&#39;</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
             <span class="n">hdul</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">(</span> <span class="p">[</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">noise</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">fits</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span> <span class="p">)</span> <span class="p">]</span> <span class="p">)</span>
-            <span class="n">noisepath</span> <span class="o">=</span> <span class="n">base_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">barf</span><span class="si">}</span><span class="s2">_noise.fits&quot;</span>
+            <span class="n">noisepath</span> <span class="o">=</span> <span class="p">(</span> <span class="n">temp_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">barf</span><span class="si">}</span><span class="s2">_noise.fits&quot;</span> <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
             <span class="n">hdul</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span> <span class="n">noisepath</span> <span class="p">)</span>
 
         <span class="k">if</span> <span class="s1">&#39;flags&#39;</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
             <span class="n">hdul</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">(</span> <span class="p">[</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">fits</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span> <span class="p">)</span> <span class="p">]</span> <span class="p">)</span>
-            <span class="n">flagspath</span> <span class="o">=</span> <span class="n">base_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">barf</span><span class="si">}</span><span class="s2">_flags.fits&quot;</span>
+            <span class="n">flagspath</span> <span class="o">=</span> <span class="p">(</span> <span class="n">temp_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">barf</span><span class="si">}</span><span class="s2">_flags.fits&quot;</span> <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
             <span class="n">hdul</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span> <span class="n">flagspath</span> <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">FITSImageOnDisk</span><span class="p">(</span> <span class="n">path</span><span class="o">=</span><span class="n">impath</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="n">noisepath</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="n">flagspath</span> <span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="FITSImageOnDisk.set_header">
-<a class="viewcode-back" href="../../api/snappl.image.FITSImageOnDisk.html#snappl.image.FITSImageOnDisk.set_header">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">set_header</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">hdr</span> <span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">fits</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">Header</span> <span class="p">)</span> <span class="ow">and</span> <span class="n">hdr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;hdr must be a fits.header.Header, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">hdr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="n">hdr</span></div>
-
-
-<div class="viewcode-block" id="FITSImageOnDisk.get_data">
-<a class="viewcode-back" href="../../api/snappl.image.FITSImageOnDisk.html#snappl.image.FITSImageOnDisk.get_data">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">always_reload</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_cutout</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;get_data called on a cutout image, this will return the ORIGINAL UNCUT image. &quot;</span>
-                                <span class="s2">&quot;Currently not supported.&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">which</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;noise&quot;</span><span class="p">,</span> <span class="s2">&quot;flags&quot;</span> <span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Unknown which </span><span class="si">{</span><span class="n">which</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
-        <span class="n">toload</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;noise&#39;</span><span class="p">,</span> <span class="s1">&#39;flags&#39;</span> <span class="p">]</span> <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span> <span class="k">else</span> <span class="p">[</span> <span class="n">which</span> <span class="p">]</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">always_reload</span><span class="p">:</span>
-            <span class="k">if</span> <span class="p">(</span> <span class="s1">&#39;data&#39;</span> <span class="ow">in</span> <span class="n">toload</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
-                <span class="n">toload</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span> <span class="s1">&#39;data&#39;</span> <span class="p">)</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
-            <span class="k">if</span> <span class="p">(</span> <span class="s1">&#39;noise&#39;</span> <span class="ow">in</span> <span class="n">toload</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
-                <span class="n">toload</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span> <span class="s1">&#39;noise&#39;</span> <span class="p">)</span>
-                <span class="n">noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span>
-            <span class="k">if</span> <span class="p">(</span> <span class="s1">&#39;flags&#39;</span> <span class="ow">in</span> <span class="n">toload</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
-                <span class="n">toload</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span> <span class="s1">&#39;flags&#39;</span> <span class="p">)</span>
-                <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span>
-
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="n">toload</span> <span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="c1"># If we get here, we know we have to load data.</span>
-
-            <span class="c1"># Open the data, and do everything else inside that with just in case</span>
-            <span class="c1">#   noise and flags are part of the same FITS image.</span>
-            <span class="k">with</span> <span class="n">fitsio</span><span class="o">.</span><span class="n">FITS</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="p">)</span> <span class="k">as</span> <span class="n">imagefits</span><span class="p">:</span>
-                <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">in</span> <span class="n">toload</span><span class="p">:</span>
-                    <span class="n">header</span> <span class="o">=</span> <span class="n">FITSImage</span><span class="o">.</span><span class="n">_fitsio_header_to_astropy_header</span><span class="p">(</span> <span class="n">imagefits</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagehdu</span> <span class="p">]</span><span class="o">.</span><span class="n">read_header</span><span class="p">()</span> <span class="p">)</span>
-                    <span class="n">data</span> <span class="o">=</span> <span class="n">imagefits</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagehdu</span> <span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="n">header</span>
-
-                <span class="k">if</span> <span class="s2">&quot;noise&quot;</span> <span class="ow">in</span> <span class="n">toload</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="p">):</span>
-                        <span class="k">with</span> <span class="n">fitsio</span><span class="o">.</span><span class="n">FITS</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span> <span class="p">)</span> <span class="k">as</span> <span class="n">noisefits</span><span class="p">:</span>
-                            <span class="n">noise</span> <span class="o">=</span> <span class="n">noisefits</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisehdu</span> <span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">noise</span> <span class="o">=</span> <span class="n">imagefits</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisehdu</span> <span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">noise</span>
-
-                <span class="k">if</span> <span class="s2">&quot;flags&quot;</span> <span class="ow">in</span> <span class="n">toload</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagspath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagspath</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="p">):</span>
-                        <span class="k">with</span> <span class="n">fitsio</span><span class="o">.</span><span class="n">FITS</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagspath</span> <span class="p">)</span> <span class="k">as</span> <span class="n">flagsfits</span><span class="p">:</span>
-                            <span class="n">flags</span> <span class="o">=</span> <span class="n">flagsfits</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagshdu</span> <span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">flags</span> <span class="o">=</span> <span class="n">imagefits</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagshdu</span> <span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">flags</span>
-
-        <span class="k">return</span> <span class="p">(</span> <span class="p">[</span> <span class="n">data</span> <span class="p">]</span> <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s2">&quot;data&quot;</span>
-                 <span class="k">else</span> <span class="p">[</span> <span class="n">noise</span> <span class="p">]</span> <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s2">&quot;noise&quot;</span>
-                 <span class="k">else</span> <span class="p">[</span> <span class="n">flags</span> <span class="p">]</span> <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s2">&quot;flags&quot;</span>
-                 <span class="k">else</span> <span class="p">[</span> <span class="n">data</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">flags</span> <span class="p">]</span> <span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="FITSImageOnDisk.save">
-<a class="viewcode-back" href="../../api/snappl.image.FITSImageOnDisk.html#snappl.image.FITSImageOnDisk.save">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                   <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">imagehdu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                   <span class="n">noisepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noisehdu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                   <span class="n">flagspath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flagshdu</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write the data to the file.&quot;&quot;&quot;</span>
-
-        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>
-        <span class="n">noisepath</span> <span class="o">=</span> <span class="n">noisepath</span> <span class="k">if</span> <span class="n">noisepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisepath</span>
-        <span class="n">flagspath</span> <span class="o">=</span> <span class="n">flagspath</span> <span class="k">if</span> <span class="n">flagspath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagspath</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span> <span class="p">(</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span> <span class="o">==</span> <span class="s1">&#39;.fits&#39;</span> <span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">path</span><span class="p">,</span> <span class="n">noisepath</span><span class="p">,</span> <span class="n">flagspath</span> <span class="p">]</span> <span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;I don&#39;t know how to save compressed files, only files &quot;</span>
-                                       <span class="s2">&quot;whose names end in .fits&quot;</span> <span class="p">)</span>
-
-        <span class="n">FITSImage</span><span class="o">.</span><span class="n">save</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="n">which</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span>
-                        <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="n">noisepath</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="n">flagspath</span><span class="p">,</span>
-                        <span class="n">imagehdu</span><span class="o">=</span><span class="n">imagehdu</span><span class="p">,</span> <span class="n">noisehdu</span><span class="o">=</span><span class="n">noisehdu</span><span class="p">,</span> <span class="n">flagshdu</span><span class="o">=</span><span class="n">flagshdu</span> <span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">FITSImageOnDisk</span><span class="p">(</span> <span class="n">no_base_dir</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">full_filepath</span><span class="o">=</span><span class="n">impath</span><span class="p">,</span> <span class="n">noisepath</span><span class="o">=</span><span class="n">noisepath</span><span class="p">,</span> <span class="n">flagspath</span><span class="o">=</span><span class="n">flagspath</span> <span class="p">)</span></div>
 </div>
+
+
+
+<span class="c1"># ======================================================================</span>
+<span class="c1"># This was the previous name for CompressedFITSImage.</span>
+<span class="c1"># It was a terrible name.  It&#39;s here for backwards compatibilty.</span>
+<span class="c1">#</span>
+
+<div class="viewcode-block" id="FITSImageOnDisk">
+<a class="viewcode-back" href="../../api/snappl.image.FITSImageOnDisk.html#snappl.image.FITSImageOnDisk">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FITSImageOnDisk</span><span class="p">(</span> <span class="n">CompressedFITSImage</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span></div>
 
 
 
@@ -2009,9 +2131,11 @@
 
 <div class="viewcode-block" id="OpenUniverse2024FITSImage">
 <a class="viewcode-back" href="../../api/snappl.image.OpenUniverse2024FITSImage.html#snappl.image.OpenUniverse2024FITSImage">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">OpenUniverse2024FITSImage</span><span class="p">(</span> <span class="n">FITSImageOnDisk</span> <span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OpenUniverse2024FITSImage</span><span class="p">(</span> <span class="n">CompressedFITSImage</span> <span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">imagehdu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noisehdu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">flagshdu</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+    <span class="n">_image_class_base_path_config_item</span> <span class="o">=</span> <span class="s1">&#39;system.ou24.images&#39;</span>
 
     <span class="n">_filenamere</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span> <span class="sa">r</span><span class="s1">&#39;^Roman_TDS_simple_model_(?P&lt;band&gt;[^_]+)_(?P&lt;pointing&gt;\d+)_(?P&lt;sca&gt;\d+).fits&#39;</span> <span class="p">)</span>
 
@@ -2031,9 +2155,9 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_pointing</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="c1"># Irritatingly, the pointing is not in the header.  So, we have to</span>
         <span class="c1">#   parse the filename to get the pointing.</span>
-        <span class="n">mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filenamere</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span> <span class="p">)</span>
+        <span class="n">mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filenamere</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="o">.</span><span class="n">name</span> <span class="p">)</span>
         <span class="k">if</span> <span class="n">mat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Failed to parse </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> for pointing&quot;</span> <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Failed to parse </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> for pointing&quot;</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">mat</span><span class="o">.</span><span class="n">group</span><span class="p">(</span> <span class="s1">&#39;pointing&#39;</span> <span class="p">)</span> <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_sca</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
@@ -2161,18 +2285,18 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
-        <span class="c1"># We really want to open the image readonly, because otherwise normal use of</span>
-        <span class="c1">#   this class will modify the image on disk.  We really don&#39;t want to modify</span>
-        <span class="c1">#   our input data, and want to be explicit about saving like we are used</span>
-        <span class="c1">#   to with FITS files.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span> <span class="o">=</span> <span class="n">rdm</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span> <span class="p">)</span>
-        <span class="n">match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detectormatch</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">detector</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+    <span class="c1"># TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_sca</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detectormatch</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">detector</span> <span class="p">)</span>
         <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;Failed to parse self._dm.meat.instrument.detector= &#39;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;Failed to parse self._dm.meta.instrument.detector= &#39;</span>
                               <span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">detector</span><span class="si">}</span><span class="s1"> for &quot;WFInn&quot;&#39;</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
 
-    <span class="c1"># TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_image_shape</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="c1"># TODO : this must be in the header / meta information somewhere</span>
@@ -2253,7 +2377,6 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">dm</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;This property should usually not be used outside of this class.&quot;&quot;&quot;</span>
         <span class="c1"># THOUGHT REQUIRED : worry a little about accessing members of</span>
         <span class="c1">#   the dm object and memory getting eaten.  Perhaps implement</span>
@@ -2261,8 +2384,13 @@
         <span class="c1">#   class, based on feedback from ST people, the only way to free</span>
         <span class="c1">#   things is to delete and reopen the self._dm object.  Make sure</span>
         <span class="c1">#   to do that carefully if we do that.</span>
+
+        <span class="c1"># We really want to open the image readonly, because otherwise normal use of</span>
+        <span class="c1">#   this class will modify the image on disk.  We really don&#39;t want to modify</span>
+        <span class="c1">#   our input data, and want to be explicit about saving like we are used</span>
+        <span class="c1">#   to with FITS files.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span> <span class="o">=</span> <span class="n">rdm</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">path</span> <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span> <span class="o">=</span> <span class="n">rdm</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span> <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dm</span>
 
 <div class="viewcode-block" id="RomanDatamodelImage.get_wcs">
@@ -2284,9 +2412,13 @@
 <span class="c1">#   integer, the value gives the image class, the base path config value, and eventually</span>
 <span class="c1">#    maybe other information</span>
 
-<span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">0</span> <span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s2">&quot;Unknown&quot;</span><span class="p">,</span>
+<span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span> <span class="o">=</span> <span class="p">{</span> <span class="o">-</span><span class="mi">1</span> <span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s2">&quot;Not a database image&quot;</span><span class="p">,</span>
+                             <span class="s1">&#39;image_class&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                             <span class="s1">&#39;base_path_config&#39;</span><span class="p">:</span> <span class="kc">None</span>
+                            <span class="p">},</span>
+                      <span class="mi">0</span> <span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s2">&quot;Unknown&quot;</span><span class="p">,</span>
                             <span class="s1">&#39;image_class&#39;</span><span class="p">:</span> <span class="n">Image</span><span class="p">,</span>
-                            <span class="s1">&#39;base_path_config&#39;</span><span class="p">:</span> <span class="s1">&#39;system.paths.images&#39;</span>
+                            <span class="s1">&#39;base_path_config&#39;</span><span class="p">:</span> <span class="kc">None</span>
                            <span class="p">},</span>
                       <span class="mi">1</span> <span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s2">&quot;OU2024 FITS Image in standard database location&quot;</span><span class="p">,</span>
                             <span class="s1">&#39;image_class&#39;</span><span class="p">:</span> <span class="n">OpenUniverse2024FITSImage</span><span class="p">,</span>

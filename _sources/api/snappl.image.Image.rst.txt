@@ -27,6 +27,7 @@ Image
       ~Image.mjd
       ~Image.name
       ~Image.noise
+      ~Image.path
       ~Image.pointing
       ~Image.position_angle
       ~Image.provenance_id
@@ -77,6 +78,7 @@ Image
    .. autoattribute:: mjd
    .. autoattribute:: name
    .. autoattribute:: noise
+   .. autoattribute:: path
    .. autoattribute:: pointing
    .. autoattribute:: position_angle
    .. autoattribute:: provenance_id
