@@ -181,6 +181,10 @@ class ImageCollection:
     def find_images( self, **kwargs ):
         """Find images.
 
+        Note: if you're using the 'snpitdb' image collection, this is
+        the same as using the class method Image.find_images.  See the
+        docstring there.
+
         Parameters
         ----------
           path: pathlib.Path or str, default None
@@ -446,7 +450,8 @@ class ImageCollectionDB:
             data = { k: v for k, v in zip( ['filepath', 'pointing', 'band', 'sca' ],
                                            [path, pointing, band, sca ] )
                      if v is not None }
-            rows = dbclient.send( f"/findl2images/{self.provenance.id}",
+            data['provenance_id'] = self.provenance.id
+            rows = dbclient.send( "/findl2images",
                                   data=simplejson.dumps( data, cls=SNPITJsonEncoder ),
                                   headers={'Content-Type': 'application/json'} )
             if len(rows) == 0:
@@ -479,4 +484,8 @@ class ImageCollectionDB:
 
 
     def find_images( self, **kwargs ):
+        """For ImageCollectionDB, this is just calls the class method Image.find_images().
+
+        (It uses the provenance with which this ImageCollection was constructed.
+        """
         return Image.find_images( provenance=self.provenance, **kwargs )

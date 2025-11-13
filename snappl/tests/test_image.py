@@ -1,14 +1,18 @@
 import pytest
 import pathlib
+import numbers
 
 import numpy as np
 import astropy
 import astropy.io.fits
 import fitsio.header
 
-from snappl.image import FITSImage
+import snappl.db.db
+from snappl.image import Image, FITSImage
 from snappl.wcs import AstropyWCS, GalsimWCS
 from snappl.psf import PSF
+from snappl.provenance import Provenance
+from snappl.config import Config
 
 
 # ======================================================================
@@ -26,6 +30,101 @@ def test_position_angle( ou2024image_module ):
     assert ang1 == pytest.approx( ang2, abs=0.75 )
     compang = ( ang1 + ang2 ) / 2.
     assert ou2024image_module.position_angle == pytest.approx( compang, abs=0.01 )
+
+
+def test_get_and_find_image( loaded_ou2024_test_l2images, dbclient ):
+    prov = Provenance.get_provs_for_tag( 'dbou2024_test', process='import_ou2024_l2images' )
+    with snappl.db.db.DBCon( dictcursor=True ) as dbcon:
+        images = dbcon.execute( "SELECT * FROM l2image WHERE provenance_id=%(provid)s", {'provid': prov.id} )
+
+    def check_image( image, imagedict ):
+        # Make sure the properties got loaded from the database
+        # (This is why we are checking the underscore properties,
+        # so the lazy-loading won't get hit.)
+        # (sky_level and zeropoint aren't in the database, so don't check those.)
+        assert image.id == imagedict['id']
+        assert image.full_filepath == ( pathlib.Path( Config.get().value( 'system.ou24.images' ) )
+                                        / imagedict['filepath'] )
+        for prop in ( 'width', 'height', 'pointing', 'sca', 'ra', 'dec',
+                      'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
+                      'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
+                      'band', 'mjd', 'position_angle', 'exptime' ):
+            if isinstance( imagedict[prop], numbers.Real ) and not isinstance( imagedict[prop], numbers.Integral ):
+                assert getattr( image, f'_{prop}' ) == pytest.approx( imagedict[prop], rel=1e-7 )
+                assert getattr( image, prop ) == pytest.approx( imagedict[prop], rel=1e-7 )
+            else:
+                assert getattr( image, f'_{prop}' ) == imagedict[prop]
+                assert getattr( image, prop ) == imagedict[prop]
+
+    im = Image.get_image( images[0]['id'] )
+    check_image( im, images[0] )
+
+    # Try a bunch of find images combinations
+
+    for provargs in [ { 'provenance': images[0]['provenance_id'] },
+                      { 'provenance_tag': 'dbou2024_test', 'process': 'import_ou2024_l2images' } ]:
+        ims = Image.find_images( pointing=38645, sca=15, **provargs )
+        assert len(ims) == 1
+        ims = Image.find_images( pointing=38645, sca=15, band='Y106', **provargs )
+        assert len(ims) == 1
+        ims = Image.find_images( pointing=38645, sca=15, band='R062', **provargs )
+        assert len(ims) == 0
+        ims = Image.find_images( band='Y106', **provargs )
+        assert len(ims) == 8
+
+        ims = Image.find_images( ra=7.5, dec=-44.92, **provargs )
+        assert len(ims) == 1
+        assert ims[0].pointing == 13205
+        assert ims[0].sca == 1
+        ims = Image.find_images( ra=7.50, dec=-44.75, **provargs )
+        assert len(ims) == 4
+        ims = Image.find_images( ra=7.55, dec=-44.81, **provargs )
+        assert len(ims) == 8
+
+        ims = Image.find_images( ra_min=7.52, **provargs )
+        assert len(ims) == 5
+        assert all( i.ra >= 7.52 for i in ims )
+        ims = Image.find_images( ra_min=7.52, ra_max=7.54, **provargs )
+        assert len(ims) == 3
+        assert all( i.ra >= 7.52 for i in ims )
+        assert all( i.ra <= 7.54 for i in ims )
+        ims = Image.find_images( ra_min=7.52, ra_max=7.54, dec_min=-44.85, dec_max=-44.8, **provargs )
+        assert len(ims) == 1
+        assert ims[0].pointing == 19009
+
+        ims = Image.find_images( mjd_min=62450., mjd_max=62470., **provargs )
+        assert len(ims) == 2
+        assert all( i.mjd >= 62450. and i.mjd <= 62470. for i in ims )
+
+        ims = Image.find_images( position_angle_min=20., position_angle_max=120., **provargs )
+        assert len(ims) == 3
+        assert all( i.position_angle >= 20. and i.position_angle <= 120. for i in ims )
+
+        # Look at order_by, limit, and offset
+        ims = Image.find_images( order_by='mjd', **provargs )
+        assert len(ims) == 8
+        mjds = [ i.mjd for i in ims ]
+        mjds.sort()
+        assert mjds == [ i.mjd for i in ims ]
+        pas = [ i.position_angle for i in ims ]
+        pas.sort()
+        assert pas != [ i.position_angle for i in ims ]
+        ims = Image.find_images( order_by='position_angle', **provargs )
+        assert len(ims) == 8
+        pas = [ i.position_angle for i in ims ]
+        pas.sort()
+        assert pas == [ i.position_angle for i in ims ]
+        ims = Image.find_images( order_by='position_angle', limit=2, **provargs )
+        assert len(ims) == 2
+        assert pas[0:2] == [ i.position_angle for i in ims ]
+        ims = Image.find_images( order_by='position_angle', limit=2, offset=2, **provargs )
+        assert len(ims) == 2
+        assert pas[2:4] == [ i.position_angle for i in ims ]
+
+    with pytest.raises( ValueError, match=( r'Must specify either provenance, or both of provenance_tag and process; '
+                                            r'cannot specify both provenance and provenance_tag' ) ):
+        Image.find_images( provenance=images[0]['provenance_id'],
+                           provenance_tag='dbou2024_test', process='import_ou2024_l2images' )
 
 
 # ======================================================================
