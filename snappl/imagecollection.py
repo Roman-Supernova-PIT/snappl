@@ -450,7 +450,7 @@ class ImageCollectionDB:
             data = { k: v for k, v in zip( ['filepath', 'pointing', 'band', 'sca' ],
                                            [path, pointing, band, sca ] )
                      if v is not None }
-            data['provenance_id'] = self.provenance.id
+            data['provenance'] = self.provenance.id
             rows = dbclient.send( "/findl2images",
                                   data=simplejson.dumps( data, cls=SNPITJsonEncoder ),
                                   headers={'Content-Type': 'application/json'} )
