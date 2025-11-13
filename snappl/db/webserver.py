@@ -461,91 +461,38 @@ class GetL2Image( BaseView ):
 # ======================================================================
 
 class FindL2Images( BaseView ):
-    def do_the_things( self, provid ):
+    def do_the_things( self ):
+        equalses = { 'id', 'pointing', 'sca', 'band', 'filepath', 'format' }
+        minmaxes = { 'ra', 'dec', 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
+                     'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
+                     'width', 'height', 'mjd', 'exptime', 'position_angle' }
+        allowed_keys = { 'provenance', 'provenance_tag', 'process', 'order_by', 'limit', 'offset' }
+        allowed_keys = allowed_keys.union( equalses )
+        allowed_keys = allowed_keys.union( minmaxes )
+        data = self.check_json_keys( set(), allowed_keys, minmax_keys=minmaxes )
+
         q = sql.SQL( "SELECT * FROM l2image WHERE " )
-        conditions = [ 'provenance_id=%(provid)s' ]
-        subdict = { 'provid': provid }
 
-        if flask.request.is_json:
-            data = flask.request.json
+        with db.DBCon( dictcursor=True ) as dbcon:
+            data, provid = self.get_provenance_id( data, dbcon=dbcon )
+            conditions = [ sql.SQL( "provenance_id=%(provid)s" ) ]
+            subdict = { 'provid': provid }
 
-            orderby = []
-            limit = None
-            offset = None
-            if 'order_by' in data:
-                orderby = data['order_by']
-                if not isinstance( orderby, list ):
-                    orderby = [ orderby ]
-                del data['order_by']
-            if 'limit' in data:
-                limit = int( data['limit'] )
-                del data['limit']
-            if 'offset' in data:
-                offset = int( data['offset'] )
-                del data['offset']
-
-            if ( 'ra' in data ) or ( 'dec' in data ):
-                # 'ra' and 'dec' are supposed to be "includes this".
-                #
-                # THINKING AHEAD : this poly query doesn't use the q3c index
-                # As the number of images get large, we should look at performance.
-                # We many need to do this in two steps, which would mean using
-                # a temp table.  First step would use regular indexes on the
-                # eight corner variables and use LEAST and GREATEST with ra and dec.
-                # Then, a second query would use the poly query on the temp table
-                # resulting from that first query.  (Or maybe you can do it all
-                # with clever nested queries.)
-                #
-                if not ( ( 'ra' in data ) and ( 'dec' in data ) ):
-                    return "Error, if you specify ra or dec, you must specify both", 500
-                conditions.append( "q3c_poly_query( %(ra)s, %(dec)s, "
-                                   "ARRAY[ ra_corner_00, dec_corner_00, ra_corner_01, dec_corner_01, "
-                                   "       ra_corner_11, dec_corner_11, ra_corner_10, dec_corner_10 ] )" )
-                subdict.update( { 'ra': data['ra'], 'dec': data['dec'] } )
-                del data['ra']
-                del data['dec']
-
-            for kw in [ 'pointing', 'sca', 'band', 'filepath' ]:
-                if kw in data:
-                    conditions.append( f"{kw}=%({kw})s" )
-                    subdict[kw] = data[kw] if data[kw] is not None else None
-                    del data[kw]
-
-            for kw in [ 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
-                        'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
-                        'width', 'height', 'mjd', 'position_angle', 'exptime' ]:
-                if kw in data:
-                    conditions.append( f"{kw}=%({kw})s" )
-                    subdict[kw] = data[kw] if data[kw] is not None else None
-                    del data[kw]
-                for edge, op in zip( [ 'min', 'max' ], [ '>=', '<=' ] ):
-                    if f'{kw}_{edge}' in data and data[f'{kw}_{edge}'] is not None:
-                        conditions.append( f"{kw} {op} %({kw}_{edge})s" )
-                        subdict[f'{kw}_{edge}'] = data[f'{kw}_{edge}']
-                        del data[f'{kw}_{edge}']
-
+            ( data,
+              conditions,
+              subdict,
+              finalclause ) = self.make_sql_conditions( data,
+                                                        equalses=equalses,
+                                                        minmaxes=minmaxes,
+                                                        cornerpolypairs=[ ('ra', 'dec') ],
+                                                        conditions=conditions,
+                                                        subdict=subdict
+                                                       )
             if len(data) != 0:
                 return f"Error, unknown parameters: {data.keys()}", 500
 
-        q += sql.SQL( ' AND '.join( conditions ) )
-
-        if len( orderby ) > 0:
-            q += sql.SQL( " ORDER BY " )
-            comma = ""
-            for o in orderby:
-                q += sql.SQL( f"{comma}{{orderby}}" ).format( orderby=sql.Identifier(o) )
-                comma = ","
-        if limit is not None:
-            q += sql.SQL( " LIMIT %(limit)s" )
-            subdict['limit'] = limit
-        if offset is not None:
-            q += sql.SQL( " OFFSET %(offset)s" )
-            subdict['offset'] = offset
-
-        with db.DBCon( dictcursor=True ) as dbcon:
-            rows = dbcon.execute( q, subdict )
-
-        return rows
+            q += conditions + finalclause
+            return dbcon.execute( q, subdict )
 
 
 # ======================================================================
@@ -676,35 +623,32 @@ class GetLightcurve( BaseView ):
 
 class FindLightcurves( BaseView ):
     def do_the_things( self ):
-        if not flask.request.is_json:
-            return "Expected lightcurve search data in json POST, didn't get any.", 500
+        equalses = { 'band', 'filepath', 'diaobject_id', 'diaobject_position_id' }
+        minmaxes = set()
+        allowed_keys = { 'provenance', 'provenance_tag', 'process', 'order_by', 'limit', 'offset' }
+        allowed_keys = allowed_keys.union( equalses )
+        allowed_keys = allowed_keys.union( minmaxes )
+        data = self.check_json_keys( set(), allowed_keys, minmax_keys=minmaxes )
 
-        conditions = []
-
-        data = flask.request.json
-        q = "SELECT l.* FROM lightcurve l "
-        subdict = {}
-
-        if 'provenance_id' in data:
-            conditions.append( "l.provenance_id=%(provid)s" )
-            subdict['provid'] = data['provenance_id']
-        else:
-            if ( 'provenance_tag' not in data ) or ( 'process' not in data ):
-                return "Must pass either provenance_id, or both of provenance_tag and process", 500
-            q += "INNER JOIN provenance_tag t ON l.provenance_id=t.provenance_id "
-            conditions.append( "t.tag=%(tag)s" )
-            conditions.append( "t.process=%(process)s" )
-            subdict.update( { 'tag': data['provenance_tag'], 'process': data['process'] } )
-
-        for thing in [ 'diaobject_id', 'band' ]:
-            if thing in data:
-                conditions.append( f"l.{thing}=%({thing})s" )
-                subdict[thing] = data[thing]
-
-        if len(conditions) > 0:
-            q += " WHERE " + " AND ".join( conditions )
+        q = sql.SQL( "SELECT l.* FROM lightcurve l WHERE " )
 
         with db.DBCon( dictcursor=True ) as dbcon:
+            data, provid = self.get_provenance_id( data, dbcon=dbcon )
+            conditions = [ sql.SQL( "provenance_id=%(provid)s" ) ]
+            subdict = { 'provid': provid }
+
+            ( data,
+              conditions,
+              subdict,
+              finalclause ) = self.make_sql_conditions( data,
+                                                        equalses,
+                                                        minmaxes=minmaxes,
+                                                        conditions=conditions,
+                                                        subdict=subdict )
+            if len( data ) != 0:
+                return f"Error, unknown parameters: {data.keys()}", 500
+
+            q += conditions + finalclause
             return dbcon.execute( q, subdict )
 
 
@@ -794,7 +738,7 @@ urls = {
     "/savediaobjectposition": SaveDiaObjectPosition,
 
     "/getl2image/<imageid>": GetL2Image,
-    "/findl2images/<provid>": FindL2Images,
+    "/findl2images": FindL2Images,
 
     "/savesegmap": SaveSegmentationMap,
     "/getsegmap/<segmapid>": GetSegmentationMap,

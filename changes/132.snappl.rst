@@ -1,0 +1,1 @@
+Write tests for Image.get_image and Image.find_images, some webserver.py refactoring

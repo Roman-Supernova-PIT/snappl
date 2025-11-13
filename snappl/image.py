@@ -1074,6 +1074,10 @@ class Image( PathedObject ):
           dec: float, default None
             Only return images that containe this dec
 
+          ra_min, ra_max, dec_min, dec_max : float, default None
+            Only return images whose nominal central RA/dec are
+            greater/lesser than the specified limits.
+
           band: str, default None
             Only include images from this band
 
@@ -1114,23 +1118,24 @@ class Image( PathedObject ):
         """
         dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
-        # Figure out the provenance id
-        provenance_id = provenance.id if isinstance( provenance, Provenance ) else asUUID( provenance, oknone=True )
+        kwargs = kwargs.copy()
+        if provenance is not None:
+            if isinstance( provenance, Provenance ):
+                kwargs[ 'provenance' ] = provenance.id
+            else:
+                kwargs[ 'provenance' ] = asUUID( provenance )
         if provenance_tag is not None:
             if process is None:
                 raise ValueError( "Must specify process with provenance_tag" )
-            prov = Provenance.get_provs_for_tag( provenance_tag, process, dbclient=dbclient )
-            if ( provenance_id is not None ) and ( prov.id != provenance_id ):
-                raise ValueError( f"You asked for provenance {provenance_id}, provenance_tag {provenance_tag}, "
-                                  f"and process {process}, but that tag/process corresponds to provenance "
-                                  f"{prov.id}" )
-            provenance_id = prov.id
-        if provenance_id is None:
-            raise ValueError( "Must specify either provenance, or both of provenance_tag and process." )
+            kwargs[ 'provenance_tag' ] = provenance_tag
+            kwargs[ 'process' ] = process
+        if ( 'provenance' in kwargs ) == ( 'provenance_tag' in kwargs ):
+            raise ValueError( "Must specify either provenance, or both of provenance_tag and process; "
+                              "cannot specify both provenance and provenance_tag" )
 
         # Find things
 
-        rows = dbclient.send( f"/findl2images/{provenance_id}",
+        rows = dbclient.send( "/findl2images",
                               data=simplejson.dumps( kwargs, cls=SNPITJsonEncoder ),
                               headers={'Content-Type': 'application/json'} )
 

@@ -462,8 +462,8 @@ class Lightcurve( PathedObject ):
 
 
     @classmethod
-    def find_lightcurves( cls, diaobject, provenance=None, provenance_tag=None, process=None, band=None,
-                          dbclient=None ):
+    def find_lightcurves( cls, diaobject=None, provenance=None, provenance_tag=None, process=None,
+                          dbclient=None, **kwargs ):
         """Find lightcurves for an object.
 
         You may get back multiple lightcurves if you don't specify a band.
@@ -508,26 +508,25 @@ class Lightcurve( PathedObject ):
 
         dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
-        params = {}
-
+        kwargs = kwargs.copy()
         if provenance is not None:
             if isinstance( provenance, Provenance ):
-                params['provenance_id'] = provenance.id
+                kwargs[ 'provenance' ] = provenance.id
             else:
-                params['provenance_id'] = asUUID( provenance )
-        else:
-            if ( provenance_tag is None ) or ( process is None ):
-                raise ValueError( "You must pass either provenance, or both of provenance_tag and process" )
-            params['provenance_tag'] = provenance_tag
-            params['process'] = process
+                kwargs[ 'provenance' ] = asUUID( provenance )
+        if provenance_tag is not None:
+            if process is None:
+                raise ValueError( "Must specify process with provenance_tag" )
+            kwargs[ 'provenance_tag' ] = provenance_tag
+            kwargs[ 'process' ] = process
+        if ( 'provenance' in kwargs ) == ( 'provenance_tag' in kwargs ):
+            raise ValueError( "Must specify either provenance, or both of provenance_tag and process; "
+                              "cannot specify both provenance and provenance_tag" )
 
         if diaobject is not None:
-            params['diaobject_id'] = diaobject.id if isinstance( diaobject, DiaObject ) else asUUID( diaobject )
+            kwargs['diaobject_id'] = diaobject.id if isinstance( diaobject, DiaObject ) else asUUID( diaobject )
 
-        if band is not None:
-            params['band'] = band
-
-        senddata = simplejson.dumps( params, cls=SNPITJsonEncoder )
+        senddata = simplejson.dumps( kwargs, cls=SNPITJsonEncoder )
         reses = dbclient.send( "/findlightcurves", data=senddata, headers={'Content-Type': 'application/json'} )
 
         lightcurves = []
