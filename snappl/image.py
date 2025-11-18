@@ -1889,11 +1889,8 @@ class CompressedFITSImage( FITSImage ):
     def uncompressed_version( self, include=[ 'data', 'noise', 'flags' ], temp_dir=None ):
         """Make sure to get a FITSImageOnDisk that's not compressed.
 
-        If none of the files for the current FITSImageOnDisk object are
-        compressed, just return this object.
-
-        Otherwise, will write out up to three single-HDU FITS files in
-        base_dir (which defaults to photometry.snappl.temp_dir from the
+        will write out up to three single-HDU FITS files in
+        temp_dir (which defaults to photometry.snappl.temp_dir from the
         config).
 
         Parameters
@@ -1912,11 +1909,6 @@ class CompressedFITSImage( FITSImage ):
             with the random filenames to which the FITS files were written.
 
         """
-        if all( [ ( ( self.imagepath is None ) or ( self.imagepath.name[-5:] == '.fits' ) ),
-                  ( ( self.noisepath is None ) or ( self.noisepath.name[-5:] == '.fits' ) ),
-                  ( ( self.flagspath is None ) or ( self.flagspath.name[-5:] == '.fits' ) ) ] ):
-            return self
-
         temp_dir = pathlib.Path( temp_dir if temp_dir is not None
                                  else Config.get().value( 'system.temp_dir' ) )
         barf = "".join( random.choices( '0123456789abcdef', k=10 ) )
