@@ -1557,6 +1557,7 @@ class FITSImage( Numpy2DImage ):
 
         snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
         snappl_cutout._data = astropy_cutout.data
+        snappl_cutout._header = self.get_fits_header()
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
         snappl_cutout._noise = astropy_noise.data
         snappl_cutout._flags = astropy_flags.data
@@ -1565,17 +1566,18 @@ class FITSImage( Numpy2DImage ):
         snappl_cutout._height = astropy_cutout.data.shape[0]
 
         # TODO : fix _ra* and _dec* fields, they're all WRONG
-        
+
         for prop in [ '_pointing', '_sca', '_band', '_mjd', '_position_angle', '_exptime', '_sky_level', '_zeropoint',
                       '_ra', '_dec',
                       '_ra_corner_00', '_ra_corner_01', '_ra_corner_10', '_ra_corner_11',
                       '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
-            snappl_coutout.setattr( getattr( self, prop ) )
-        
+            setattr( snappl_cutout, prop, getattr( self, prop ) )
+
         return snappl_cutout
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
         """See Image.get_ra_dec_cutout
+
 
         The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
         """
