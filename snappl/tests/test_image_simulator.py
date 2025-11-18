@@ -176,6 +176,10 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
             aperflux.append( res['aperture_sum'][0] )
             apererr.append( res['aperture_sum_err'][0] )
 
+        # Uncomment this next line to pause if you want to save the
+        # images; They'll all get deleted at the end of the test.
+        # import pdb; pdb.set_trace()
+
         fig, ax = pyplot.subplots()
         ax.errorbar( kwargs['mjds'], np.array(aperflux) - np.array(fluxen), apererr, linestyle='none', marker='s',
                      color='red', label='5-pix radius aperture' )

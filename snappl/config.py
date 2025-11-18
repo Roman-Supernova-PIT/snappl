@@ -31,35 +31,46 @@ class Config:
 
     USAGE
 
-    1. Instantiate a config object with
+    1. Instantiate a config object with::
 
            confobj = Config.get()
 
-       or
+       or::
 
            confobj = Config.get(filename)
 
        in the former case, it will get the default file (see below).
-       IMPORTANT : Do NOT instantiate a config item with "config=Config()".
+       IMPORTANT : Do NOT instantiate a config item with ``config=Config()``.
 
        The default file: normally, the default file is specified in the
-       environment variable SNPIT_CONFIG.  The first time you call
-       Config.get() without any arguments, it will set the default
+       environment variable ``SNPIT_CONFIG``.  The first time you call
+       ``Config.get()`` without any arguments, it will set the default
        config to be what it read from the file pointed to by
-       $SNPIT_CONFIG, and return that config.  You can subvert this by
-       calling Config.get(filename,setdefault=True).  In that case, it
-       will read the file in filename, and set the config there to be
-       the default config that you'll thereafter get when calling
-       Config.get() without any arguments.
+       ``$SNPIT_CONFIG``, and return that config.  You can subvert this
+       by calling ``Config.get(filename,setdefault=True)``.  In that
+       case, it will read the file in filename, and set the config there
+       to be the default config that you'll thereafter get when calling
+       ``Config.get()`` without any arguments.
+
+       If the config file has a lot of levels to it, and you are only
+       intersted in a subset, you can do::
+
+           confobj = Config.get( prefix='toplevel.midlevel' )
+
+       Thereafter, if you do ``Config.value('sublevel.value')``, it will
+       be equivalent to having done
+       ``Config.value('toplevel.midlevel.sublevel.value')`` on an object
+       you get with just ``Config.get()``.
+
 
     2. (Optional.)  You can set things up so that (almost) anything in
        the config can be overridden on the command line.  You must be
        using argparse for this to work.  First, instantiate your
-       argparse.ArgumentParser object and add your own arguments.  Next,
-       call the augment_argparse() method of your config object.  Run
-       the parse_args() method of your ArgumentParser, and then pass the
-       return value to the parse_args() method of your config object.
-       For example::
+       ``argparse.ArgumentParser`` object and add your own arguments.
+       Next, call the ``augment_argparse()`` method of your ``Config``
+       object.  Run the ``parse_args()`` method of your
+       ``ArgumentParser``, and then pass the return value to the
+       ``parse_args()`` method of your ``Config`` object.  For example::
 
          from snappl.config import Config
          import argparse
@@ -72,7 +83,7 @@ class Config:
          args = parser.parse_args()
          cfg.parse_args( args )
 
-       Config.augment_argparse will add all of the "leaf node" config
+       ``Config.augment_argparse`` will add all of the "leaf node" config
        options as config arguments, using the fieldspec (see (3) below),
        replacing "." with "-".  Exception: if there is a list, it will
        not work down into the list, but will replace the whole list with
@@ -114,9 +125,10 @@ class Config:
              single_file: false
              name_convention: "{inst_name}_{date}_{time}_{section_id}_{band}_{im_type}_{prov_hash:.6s}"
 
-       then confobj.value("storage.images.format") will return
-       "fits". You can also ask configobj.value for higher levels.  For
-       example, config.value("storage.images") will return a dictionary::
+       then ``confobj.value("storage.images.format")`` will return
+       ``"fits"``. You can also ask ``configobj.value`` for higher
+       levels.  For example, ``config.value("storage.images")`` will
+       return a dictionary::
 
           { "format": "fits",
             "single_file": False,
@@ -145,7 +157,7 @@ class Config:
 
     When reading a config file, it is processed as follows:
 
-    The "current working config" starts as an empty dictionary ({}).
+    The "current working config" starts as an empty dictionary (``{}``).
     When everything is done, it can be a big messy hierarchy.  Each key
     of the top level dictionary can have a value that is a scalar, a
     list, or a dictionary.  The structure is recursive; each element of
@@ -153,7 +165,7 @@ class Config:
     associated with each key in each dictionary can itself be a scalar,
     a list, or a dictionary.
 
-    A config file can have several special keys:
+    A config file can have several special keys::
 
         preloads
         replaceable_preloads
@@ -175,33 +187,33 @@ class Config:
     all of this is very complicated, so to be safe you may wish to never
     use any of the special keys other than "preloads" and "augments".
 
-    preloads is a list of files which are read first, in order, to make
+    ``preloads`` is a list of files which are read first, in order, to make
       a config dictionary (called the "preload config dictionary").
       Files later in the list *augment* the config info from files
       earlier in the list.  This config dictionary is set aside for the
       time being.
 
-    replaceable_preloads is list of files read next, in order, to make
+    ``replaceable_preloads`` is list of files read next, in order, to make
       a new config dictionary (called the "working config dictionary").
       Files later in the list *destructive_append* files earlier in
       the list.
 
     The current file is parsed next.  It does a *destructive_append* on
-      the working config dictionary (which will just be {} if there
+      the working config dictionary (which will just be ``{}`` if there
       aren't any replaceable_prelaods).  Then, the working config
       dictionary *augments* the preload config dictionary, and the
       result is the new working config dictionary.
 
-    augments is a list of files read next, in order.  Each one
+    ``augments`` is a list of files read next, in order.  Each one
       *augments* the current working dictionary.
 
-    overrides is a list of files read next, in order.  Each one
+    ``overrides`` is a list of files read next, in order.  Each one
       *overrides* the current working dictionary.
 
-    destructive_appends is a list of files read next, in order.  Each
+    ``destructive_appends`` is a list of files read next, in order.  Each
       one does a *destructive_append* on the current working dictionary.
 
-    appends is a list of files read last.  Each one *appends* to the
+    ``appends`` is a list of files read last.  Each one *appends* to the
       current working dictionary.
 
     Any file that's read can itself have the special keys indicating
@@ -219,7 +231,7 @@ class Config:
     Above, the words "destructive_augment", "augment", "override", and
     "append" were used to describe how to combine information from two
     different files.  Exactly what happens is complicated; if you
-    *really* want to know, see
+    *really* want to know, see the source code of::
 
       util/config.py::Config._merge_trees()
 
@@ -354,7 +366,7 @@ class Config:
 
 
     @staticmethod
-    def get( configfile=None, setdefault=None, static=True, reread=False, clone=None ):
+    def get( configfile=None, setdefault=None, prefix=None, static=True, reread=False, clone=None ):
         """Returns a Config object.
 
         Parameters
@@ -391,6 +403,35 @@ class Config:
             set it to the session default, then call
             Config.get(setdefault=False), and question your life
             choices.
+
+        prefix : string, default None
+
+            If not None, then all calls to the .value() and .set_value()
+            methods of the config object will add this string (followed
+            by a .) to the string you actually pass.  So, for instance,
+            if your config file consists of::
+
+              toplevel:
+                midlevel1:
+                  sublevel1:
+                    val1: 1
+                    val2: 2
+                  sublevel2:
+                    str1: cat
+                    str2: kitten
+                midlevel2:
+                  foo: bar
+
+            then, if you did::
+
+               cfg = Config.get( prefix='toplevel.midlevel1' )
+
+            then ``cfg.value('sublevel1.val1')`` would return ``1``, and
+            ``cfg.value('sublevel1.val2')`` would return ``2``.  This is
+            here as a convenience to save you from typing a bunch of
+            extra stuff when within one function you only need part of
+            the config hierarchy.
+
 
         static : bool, default True
             If True (the default), then you get one of the config object
@@ -446,34 +487,56 @@ class Config:
         if clone is not None:
             if configfile is not None:
                 raise ValueError( "Only specify one of clone or configfile." )
-            return Config( clone=clone, _ok_to_call=True )
+            cfg = Config( clone=clone, _ok_to_call=True )
 
-        if configfile is None:
-            if Config._default is not None:
-                configfile = Config._default
-            else:
-                if Config._default_default is None:
-                    raise RuntimeError( 'No default config defined yet; run Config.init(configfile)' )
-                configfile = Config._default_default
-                if setdefault is None:
-                    setdefault = True
-
-        configfile = str( pathlib.Path(configfile).resolve() )
-
-        if setdefault:
-            Config._default = configfile
-
-        if reread or ( configfile not in Config._configs ):
-            cfg = Config( configfile=configfile, _ok_to_call=True )
-            if static or ( not reread ):
-                Config._configs[configfile] = cfg
-            else:
-                cfg._static = False
         else:
-            if static:
-                cfg = Config._configs[configfile]
+            if configfile is None:
+                if Config._default is not None:
+                    configfile = Config._default
+                else:
+                    if Config._default_default is None:
+                        raise RuntimeError( 'No default config defined yet; run Config.init(configfile)' )
+                    configfile = Config._default_default
+                    if setdefault is None:
+                        setdefault = True
+
+            configfile = str( pathlib.Path(configfile).resolve() )
+
+            if setdefault:
+                Config._default = configfile
+
+            if reread or ( configfile not in Config._configs ):
+                cfg = Config( configfile=configfile, _ok_to_call=True )
+                if static or ( not reread ):
+                    Config._configs[configfile] = cfg
+                else:
+                    cfg._static = False
             else:
-                cfg = Config( clone=Config._configs[configfile], _ok_to_call=True )
+                if static:
+                    cfg = Config._configs[configfile]
+                else:
+                    cfg = Config( clone=Config._configs[configfile], _ok_to_call=True )
+
+        # prefix is a little scary.  It's not going to use its own _data array;
+        #   rather, it's going to use the parent config's data array, so if
+        #   either is modified, the changes are reflected in both.  (This should
+        #   usually only be possible in cloned configs, unless the user has
+        #   been naughty and mucked about with the _static property.)
+        if prefix is not None:
+            if ( not isinstance( prefix, str ) ) or ( len( prefix ) == 0 ):
+                raise TypeError( f"prefix must be a str of lengt ≥ 1, not a {type(prefix)}" )
+            if prefix[-1] == '.':
+                raise ValueError( 'prefix must not end in "."' )
+            val = cfg.value( prefix )
+            if ( not isinstance( val, dict ) ) and ( not isinstance( val, list ) ):
+                raise ValueError( f"\"{prefix}\" is an invalid prefix: it doesn't point to a "
+                                  f"sub-list or sub-dictionary in the config structure." )
+            parentcfg = cfg
+            cfg = Config( _ok_to_call=True )
+            cfg._data = None
+            cfg._parentconfig = parentcfg
+            cfg._prefix = prefix
+            cfg._static = parentcfg._static
 
         return cfg
 
@@ -510,74 +573,82 @@ class Config:
             raise RuntimeError( "Don't instantiate a Config directly; use configobj=Config.get(...)." )
 
         self._static = True
-
-        if ( clone is None ) == ( configfile is None ):
-            raise ValueError( "Must specify exactly one of configfile or clone" )
+        self._parentconfig = None
+        self._prefix = None
 
         if clone is not None:
             if not isinstance( clone, Config ):
                 raise TypeError( f"Clone must be a Config, not a {type(clone)}" )
-            self._data = copy.deepcopy( clone._data )
+            if clone._parentconfig is not None:
+                data = clone._parentconfig.value( clone._prefix )
+                if not isinstance( data, dict ):
+                    raise TypeError( "Cannot clone a config whose top level element is a list "
+                                     "(this may happen when using a config created with a prefix)" )
+                self._data = copy.deepcopy( data  )
+            else:
+                self._data = copy.deepcopy( clone._data )
             self._static = False
             return
 
         self._data = {}
-        self._path = pathlib.Path( configfile ).resolve()
 
-        files_read = set() if files_read is None else files_read
-        if self._path in files_read:
-            raise RuntimeError( f"Config file {self._path} was read more than once!  Circular dependencies!" )
-        files_read.add( self._path )
+        if configfile is not None:
+            self._path = pathlib.Path( configfile ).resolve()
 
-        try:
-            SNLogger.debug( f"Loading config file {self._path}" )
-            curfiledata = yaml.safe_load( open(self._path) )
-            if curfiledata is None:
-                # Empty file, so self._data can stay as {}
-                return
-            if not isinstance( curfiledata, dict ):
-                raise RuntimeError( f"Config file {configfile} doesn't have yaml I like." )
+            files_read = set() if files_read is None else files_read
+            if self._path in files_read:
+                raise RuntimeError( f"Config file {self._path} was read more than once!  Circular dependencies!" )
+            files_read.add( self._path )
 
-            imports = { 'preloads': [], 'replaceable_preloads': [], 'augments': [],
-                        'overrides': [], 'destructive_appends': [], 'appends': [] }
-            for importfile in imports.keys():
-                if importfile in curfiledata:
-                    if not isinstance( imports[importfile], list ):
-                        raise TypeError( f'{importfile} must be a list' )
-                    imports[importfile] = curfiledata[importfile]
-                    del curfiledata[importfile]
+            try:
+                SNLogger.debug( f"Loading config file {self._path}" )
+                curfiledata = yaml.safe_load( open(self._path) )
+                if curfiledata is None:
+                    # Empty file, so self._data can stay as {}
+                    return
+                if not isinstance( curfiledata, dict ):
+                    raise RuntimeError( f"Config file {configfile} doesn't have yaml I like." )
 
-            preloaddict = {}
-            for preloadfile in imports['preloads']:
-                cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True )
-                preloaddict = self._merge_trees( '', preloaddict, cfg._data, mode='augment' )
+                imports = { 'preloads': [], 'replaceable_preloads': [], 'augments': [],
+                            'overrides': [], 'destructive_appends': [], 'appends': [] }
+                for importfile in imports.keys():
+                    if importfile in curfiledata:
+                        if not isinstance( imports[importfile], list ):
+                            raise TypeError( f'{importfile} must be a list' )
+                        imports[importfile] = curfiledata[importfile]
+                        del curfiledata[importfile]
 
-            workingdict = {}
-            for preloadfile in imports['replaceable_preloads']:
-                cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True )
-                workingdict = self._merge_trees( '', workingdict, cfg._data, mode='destructive_append' )
+                preloaddict = {}
+                for preloadfile in imports['preloads']:
+                    cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True )
+                    preloaddict = self._merge_trees( '', preloaddict, cfg._data, mode='augment' )
 
-            workingdict = self._merge_trees( '', workingdict, curfiledata, mode='destructive_append' )
-            self._data = self._merge_trees( '', preloaddict, workingdict, mode='augment' )
+                workingdict = {}
+                for preloadfile in imports['replaceable_preloads']:
+                    cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True )
+                    workingdict = self._merge_trees( '', workingdict, cfg._data, mode='destructive_append' )
 
-            for augmentfile in imports['augments']:
-                self._merge_file( augmentfile, 'augment', files_read=files_read )
+                workingdict = self._merge_trees( '', workingdict, curfiledata, mode='destructive_append' )
+                self._data = self._merge_trees( '', preloaddict, workingdict, mode='augment' )
 
-            for overridefile in imports['overrides']:
-                self._merge_file( overridefile, 'override', files_read=files_read )
+                for augmentfile in imports['augments']:
+                    self._merge_file( augmentfile, 'augment', files_read=files_read )
 
-            for appendfile in imports['destructive_appends']:
-                self._merge_file( appendfile, 'destructive_append', files_read=files_read )
+                for overridefile in imports['overrides']:
+                    self._merge_file( overridefile, 'override', files_read=files_read )
 
-            for appendfile in imports['appends']:
-                self._merge_file( appendfile, mode='append', files_read=files_read )
+                for appendfile in imports['destructive_appends']:
+                    self._merge_file( appendfile, 'destructive_append', files_read=files_read )
 
-        except Exception as e:
-            SNLogger.exception( f'Exception trying to load config from {configfile}' )
-            raise e
+                for appendfile in imports['appends']:
+                    self._merge_file( appendfile, mode='append', files_read=files_read )
+
+            except Exception as e:
+                SNLogger.exception( f'Exception trying to load config from {configfile}' )
+                raise e
 
 
-    def value( self, field, default=NoValue(), struct=None ):
+    def value( self, field=None, default=NoValue(), struct=None ):
         """Get a value from the config structure.
 
 
@@ -615,6 +686,10 @@ class Config:
            subtree; for instance configobj.value( "dict1.dict2" ) would
            return the dictionary { "sub1": "2level1", "sub2": "2level2" }.
 
+           If this is None, return the entire config tree as a
+           dictionary (or, if working with a confg created with prefix=,
+           maybe a list).
+
         default: object, default NoValue instance
             Used internally, don't muck with this.
 
@@ -633,8 +708,20 @@ class Config:
 
         """
 
-        _, _, value = self._parent_key_and_value( field, parent=None, struct=struct, default=default )
-        return value
+        if field is None:
+            if self._parentconfig is not None:
+                return self._parentconfig.value( self._prefix )
+            else:
+                return self._data
+
+        else:
+            cfg = self
+            if self._parentconfig is not None:
+                cfg = self._parentconfig
+                field = f'{self._prefix}{f".{field}" if field is not None else ""}'
+
+            _, _, value = cfg._parent_key_and_value( field, parent=None, struct=struct, default=default )
+            return value
 
 
     def set_value( self, field, value, structpass=None, appendlists=False ):
@@ -666,6 +753,11 @@ class Config:
         necessary.
 
         """
+
+        if self._parentconfig is not None:
+            field = f'{self._prefix}{f".{field}" if field is not None else ""}'
+            self._parentconfig.set_value( field, value, structpass=structpass, appendlists=appendlists )
+            return
 
         if self._static:
             raise RuntimeError( "Not permitted to modify static Config object." )
@@ -703,7 +795,7 @@ class Config:
 
             if isinstance( structpass.struct, list ):
                 structchuck.struct = {} if nextifield is None else []
-                self.set_value( ".".join(fields[1:], value, structchuck, appendlists=appendlists ) )
+                self.set_value( ".".join(fields[1:]), value, structchuck, appendlists=appendlists )
                 if appendlists:
                     if ifield is None:
                         raise TypeError( "Tried to add a non-integer field to a list" )
@@ -733,6 +825,9 @@ class Config:
 
 
     def _parent_key_and_value( self, field, parent=None, struct=None, fullfield=None, default=NoValue ):
+        if ( self._parentconfig is not None ) or ( self._prefix is not None ):
+            raise RuntimeError( "This should never happen." )
+
         fullfield = fullfield if fullfield is not None else field
         if struct is None:
             struct = self._data
@@ -804,6 +899,11 @@ class Config:
         Use this this with great care.
 
         """
+        if self._parentconfig is not None:
+            field = f'{self._prefix}{f".{field}" if field is not None else ""}'
+            self._parentconfig.delete_field( field, missing_ok=True )
+            return
+
         if self._static:
             raise RuntimeError( "Not permitted to modify static Config object." )
 
@@ -879,6 +979,9 @@ class Config:
 
 
     def _pathify( self, fname ):
+        if ( self._parentconfig is not None ) or ( self._prefix is not None ):
+            raise RuntimeError( "This should never happen." )
+
         fname = pathlib.Path( fname )
         if fname.is_absolute():
             return fname
@@ -887,6 +990,9 @@ class Config:
 
 
     def _merge_file( self, path, mode, files_read=None ):
+        if ( self._parentconfig is not None ) or ( self._prefix is not None ):
+            raise RuntimeError( "This should never happen." )
+
         files_read = { self._path } if files_read is None else files_read
         cfg = Config( self._pathify(path), files_read=files_read, _ok_to_call=True )
         self._data = self._merge_trees( '', self._data, cfg._data, mode=mode )
@@ -895,7 +1001,6 @@ class Config:
     @staticmethod
     def _merge_trees( keyword, left, right, mode='augment', parentpath='' ):
         """Internal usage, do not call."""
-
         ppath = f"{parentpath}." if len(parentpath) > 0 else ""
         errkeyword = f'{ppath}{keyword}'
 
@@ -952,6 +1057,9 @@ class Config:
             Used internally for recursion.
 
         """
+        if ( self._parentconfig is not None ) or ( self._prefix is not None ):
+            raise RuntimeError( "This should never happen." )
+
         _dict = self._data if _dict is None else _dict
 
         for key, val in _dict.items():
@@ -992,6 +1100,9 @@ class Config:
             Used internally for recursion
 
         """
+        if ( self._parentconfig is not None ) or ( self._prefix is not None ):
+            raise RuntimeError( "This should never happen." )
+
         _dict = self._data if _dict is None else _dict
 
         for key, val in _dict.items():
