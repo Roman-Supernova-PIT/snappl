@@ -158,3 +158,56 @@ def test_gaussian_psf():
     assert stamp.sum() == pytest.approx( 1.0, rel=1e-7 )
     assert cx == pytest.approx( 5.5, abs=0.01 )
     assert cy == pytest.approx( 5.5, abs=0.01 )
+
+def test_varying_gaussian_psf():
+    vgpsf = PSF.get_psf_object("varying_gaussian", sigmax=1, sigmay=1, stamp_size=23, sca_size = 23)
+    stamp = vgpsf.get_stamp(x=11, y=11, x0=11, y0=11)
+    assert stamp.shape == (23, 23)
+
+    middle = 23//2
+
+    mom2y = (np.arange(-middle, middle+1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle+1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    assert mom2x == pytest.approx(1.08, abs=0.01)
+    assert mom2y == pytest.approx(1.08, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=23, y=11, x0=23, y0=11)
+    mom2y = (np.arange(-middle, middle+1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle+1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=23 is 1.05
+    assert mom2x == pytest.approx(1.08 * 1.05**2, abs=0.01)
+    assert mom2y == pytest.approx(1.08, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=11, y=23, x0=11, y0=23)
+    mom2y = (np.arange(-middle, middle + 1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle + 1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=23 is 1.05
+    assert mom2x == pytest.approx(1.08, abs=0.01)
+    assert mom2y == pytest.approx(1.08 * 1.05**2, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=23, y=23, x0=23, y0=23)
+    mom2y = (np.arange(-middle, middle + 1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle + 1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=23 is 1.05
+    assert mom2x == pytest.approx(1.08 * 1.05**2, abs=0.01)
+    assert mom2y == pytest.approx(1.08 * 1.05**2, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=2, y=11, x0=2, y0=11)
+    mom2y = (np.arange(-middle, middle + 1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle + 1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=2 is 0.95869
+    assert mom2x == pytest.approx(1.08 * 0.95869565**2, abs=0.01)
+    assert mom2y == pytest.approx(1.08, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=2, y=2, x0=2, y0=2)
+    mom2y = (np.arange(-middle, middle + 1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle + 1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=2 is 0.95869
+    assert mom2x == pytest.approx(1.08 * 0.95869565**2, abs=0.01)
+    assert mom2y == pytest.approx(1.08 * 0.95869565**2, abs=0.01)

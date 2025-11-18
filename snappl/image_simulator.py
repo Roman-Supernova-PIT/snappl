@@ -298,7 +298,7 @@ class ImageSimulator:
                   max_star_magnitude=28.,
                   alpha=1.,
                   nstars=200,
-                  psf_class='gaussian',
+                  psf_class=None,
                   psf_kwargs=[],
                   no_star_noise=False,
                   basename='simimage',
