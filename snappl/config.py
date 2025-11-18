@@ -426,8 +426,8 @@ class Config:
 
                cfg = Config.get( prefix='toplevel.midlevel1' )
 
-            then `cfg.value('sublevel1.val1')` would return `1`, and
-            `cfg.value('sublevel1.val2')` would return `2`.  This is
+            then ``cfg.value('sublevel1.val1')`` would return ``1``, and
+            ``cfg.value('sublevel1.val2')`` would return ``2``.  This is
             here as a convenience to save you from typing a bunch of
             extra stuff when within one function you only need part of
             the config hierarchy.
