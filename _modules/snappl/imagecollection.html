@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.imagecollection &#8212; roman_snpit_snappl 0.1.dev1+gea7f809d5 documentation</title>
+    <title>snappl.imagecollection &#8212; roman_snpit_snappl 0.1.dev1+g475afefac documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=d1fb6843"></script>
+    <script src="../../_static/documentation_options.js?v=4310dfbd"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -282,6 +282,10 @@
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollection.html#snappl.imagecollection.ImageCollection.find_images">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">find_images</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find images.</span>
+
+<span class="sd">        Note: if you&#39;re using the &#39;snpitdb&#39; image collection, this is</span>
+<span class="sd">        the same as using the class method Image.find_images.  See the</span>
+<span class="sd">        docstring there.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -578,7 +582,8 @@
             <span class="n">data</span> <span class="o">=</span> <span class="p">{</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span> <span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;pointing&#39;</span><span class="p">,</span> <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span> <span class="p">],</span>
                                            <span class="p">[</span><span class="n">path</span><span class="p">,</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span> <span class="p">]</span> <span class="p">)</span>
                      <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">}</span>
-            <span class="n">rows</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;/findl2images/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;provenance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="s2">&quot;/findl2images&quot;</span><span class="p">,</span>
                                   <span class="n">data</span><span class="o">=</span><span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="n">data</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">SNPITJsonEncoder</span> <span class="p">),</span>
                                   <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">}</span> <span class="p">)</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -617,6 +622,10 @@
 <div class="viewcode-block" id="ImageCollectionDB.find_images">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollectionDB.html#snappl.imagecollection.ImageCollectionDB.find_images">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">find_images</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;For ImageCollectionDB, this is just calls the class method Image.find_images().</span>
+
+<span class="sd">        (It uses the provenance with which this ImageCollection was constructed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Image</span><span class="o">.</span><span class="n">find_images</span><span class="p">(</span> <span class="n">provenance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span></div>
 </div>
 
