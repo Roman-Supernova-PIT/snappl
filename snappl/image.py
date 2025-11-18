@@ -1557,15 +1557,27 @@ class FITSImage( Numpy2DImage ):
 
         snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
         snappl_cutout._data = astropy_cutout.data
+        snappl_cutout._header = self.get_fits_header()
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
         snappl_cutout._noise = astropy_noise.data
         snappl_cutout._flags = astropy_flags.data
         snappl_cutout._is_cutout = True
+        snappl_cutout._width = astropy_cutout.data.shape[1]
+        snappl_cutout._height = astropy_cutout.data.shape[0]
+
+        # TODO : fix _ra* and _dec* fields, they're all WRONG
+
+        for prop in [ '_pointing', '_sca', '_band', '_mjd', '_position_angle', '_exptime', '_sky_level', '_zeropoint',
+                      '_ra', '_dec',
+                      '_ra_corner_00', '_ra_corner_01', '_ra_corner_10', '_ra_corner_11',
+                      '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
+            setattr( snappl_cutout, prop, getattr( self, prop ) )
 
         return snappl_cutout
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
         """See Image.get_ra_dec_cutout
+
 
         The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
         """
@@ -1641,14 +1653,16 @@ class FITSImage( Numpy2DImage ):
         except Exception:
             wcshdr = None
 
+        imghdr = None if self._header is None else FITSImage._astropy_header_to_fitsio_header( self._header )
+        justwcshdr = None if wcshdr is None else FITSImage._astropy_header_to_fitsio_header( self._header )
         with fitsio.FITS( imagepath, 'rw' ) as f:
-            f.write( self.data, header=FITSImage._astropy_header_to_fitsio_header( self._header ) )
+            f.write( self.data, header=imghdr )
         if ( noisepath is not None ) and ( self.noise is not None ):
             with fitsio.FITS( noisepath, 'rw' ) as f:
-                f.write( self.noise, header=FITSImage._astropy_header_to_fitsio_header( wcshdr ) )
+                f.write( self.noise, header=justwcshdr )
         if ( self.flagspath is not None ) and ( self.flags is not None ):
             with fitsio.FITS( flagspath, 'rw' ) as f:
-                f.write( self.flags, header=FITSImage._astropy_header_to_fitsio_header( wcshdr ) )
+                f.write( self.flags, header=justwcshdr )
 
 
 # ======================================================================
@@ -1889,11 +1903,8 @@ class CompressedFITSImage( FITSImage ):
     def uncompressed_version( self, include=[ 'data', 'noise', 'flags' ], temp_dir=None ):
         """Make sure to get a FITSImageOnDisk that's not compressed.
 
-        If none of the files for the current FITSImageOnDisk object are
-        compressed, just return this object.
-
-        Otherwise, will write out up to three single-HDU FITS files in
-        base_dir (which defaults to photometry.snappl.temp_dir from the
+        will write out up to three single-HDU FITS files in
+        temp_dir (which defaults to photometry.snappl.temp_dir from the
         config).
 
         Parameters
@@ -1903,7 +1914,7 @@ class CompressedFITSImage( FITSImage ):
             write.  Ignored if the current image isn't compressed.
 
           temp_dir : pathlib.Path, default None
-            The path to write the files.  Defaults to the config value system.temp_dir
+            The path to write the files.  Defaults to the config value system.paths.temp_dir
 
         Returns
         -------
@@ -1912,13 +1923,8 @@ class CompressedFITSImage( FITSImage ):
             with the random filenames to which the FITS files were written.
 
         """
-        if all( [ ( ( self.imagepath is None ) or ( self.imagepath.name[-5:] == '.fits' ) ),
-                  ( ( self.noisepath is None ) or ( self.noisepath.name[-5:] == '.fits' ) ),
-                  ( ( self.flagspath is None ) or ( self.flagspath.name[-5:] == '.fits' ) ) ] ):
-            return self
-
         temp_dir = pathlib.Path( temp_dir if temp_dir is not None
-                                 else Config.get().value( 'system.temp_dir' ) )
+                                 else Config.get().value( 'system.paths.temp_dir' ) )
         barf = "".join( random.choices( '0123456789abcdef', k=10 ) )
         impath = None
         noisepath = None
@@ -1940,7 +1946,7 @@ class CompressedFITSImage( FITSImage ):
             flagspath = ( temp_dir / f"{barf}_flags.fits" ).resolve()
             hdul.writeto( flagspath )
 
-        return CompressedFITSImage( no_base_dir=True, full_filepath=impath, noisepath=noisepath, flagspath=flagspath )
+        return CompressedFITSImage( full_filepath=impath, noisepath=noisepath, flagspath=flagspath )
 
 
 # ======================================================================
