@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>snappl.spectrum1d &#8212; roman_snpit_snappl 0.1.dev1+gea7f809d5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../_static/documentation_options.js?v=d1fb6843"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../database_schema.html">Database Schema</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for snappl.spectrum1d</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">simplejson</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provenance</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.diaobject</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiaObject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.pathedobject</span><span class="w"> </span><span class="kn">import</span> <span class="n">PathedObject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNLogger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">asUUID</span><span class="p">,</span> <span class="n">SNPITJsonEncoder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.dbclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITDBClient</span>
+
+
+<div class="viewcode-block" id="Spectrum1d">
+<a class="viewcode-back" href="../../api/snappl.spectrum1d.Spectrum1d.html#snappl.spectrum1d.Spectrum1d">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Spectrum1d</span><span class="p">(</span> <span class="n">PathedObject</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class to store and save single-epoch 1d transient spectra.</span>
+
+<span class="sd">       Spectrum1d schema are defined here:</span>
+
+<span class="sd">          https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/spectrum_1d</span>
+
+<span class="sd">       Properties of a Spectrum1d object include:</span>
+<span class="sd">        * filepath : pathlib.Path ; path *relative to the base path* of the spectrum1d file</span>
+<span class="sd">        * full_filepath : pathlib.Path ; absolute path on the system to the spectrum1d file</span>
+<span class="sd">        * base_path : base path for lightcurves; usually will be Config value system.paths.lightcurves</span>
+<span class="sd">        * base_dir : synonym for base_path</span>
+
+<span class="sd">        * data_dict : the full dict described the schema wiki page linked above</span>
+<span class="sd">        * meta : data_dict[&#39;meta&#39;]</span>
+<span class="sd">        * combined: data_dict[&#39;combined&#39;]</span>
+<span class="sd">        * combined_meta: data_dict[&#39;combined&#39;][&#39;meta&#39;]</span>
+<span class="sd">        * combined_data: data_dict[&#39;combined&#39;][&#39;data&#39;]</span>
+<span class="sd">        * individual: data_dict[&#39;indivdual&#39;]</span>
+
+<span class="sd">        * id : UUID, the id of the spectrum</span>
+<span class="sd">        * provenance_id : UUID, the id of the spectrum&#39;s provenance</span>
+<span class="sd">        * diaobject_id : UUID, the id of the object for which this is a spectrum</span>
+<span class="sd">        * diaobject_position_id : UUID or None, the id of the object&#39;s improved position if any</span>
+<span class="sd">        * band : str, the band</span>
+<span class="sd">        * mjd_start : float, the MJD of the earliest component image</span>
+<span class="sd">        * mjd_end : float, the MJD + exposure time (in days) of the latest component image</span>
+<span class="sd">        * epoch : integer, the average MJD in millidays (i.e. MJD * 1000) of the comonent image MJDs</span>
+<span class="sd">        * images : list of Image, the component images</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_base_path_config_item</span> <span class="o">=</span> <span class="s1">&#39;system.paths.spectra1d&#39;</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span>
+                  <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">data_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">diaobject</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">diaobject_position</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">mjd_start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">mjd_end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">epoch</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">no_database</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">base_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">full_filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">no_base_path</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate a Spectrum1d</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          id : UUID or str or NOne</span>
+<span class="sd">            ID of this lightcurve.  If None, one will be generated, and</span>
+<span class="sd">            thereafter aavilable in the id property.</span>
+
+<span class="sd">          data_dict : dict</span>
+<span class="sd">            Must follow the format on</span>
+
+<span class="sd">              https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/spectrum_1d</span>
+
+<span class="sd">            You must give one of data_dict or filepath; it is bad form</span>
+<span class="sd">            to specify both.</span>
+
+<span class="sd">          filepath : Path or str, default None</span>
+<span class="sd">            File path to find the lightcurve, realtive to base dir.  You</span>
+<span class="sd">            must specify either data_dict or filepath; it is bad form to</span>
+<span class="sd">            specify both.</span>
+
+<span class="sd">          base_dir: Path or str, default None</span>
+<span class="sd">            Base directory that filepath is relative to.  If None (which</span>
+<span class="sd">            is what you want if you&#39;re writing things to the database),</span>
+<span class="sd">            will use the config value of &quot;system.paths.spectra1d&quot;.</span>
+
+<span class="sd">          provenance: Provenance or UUID or str or None</span>
+<span class="sd">            The provenance of this lightcurve.  You may also set</span>
+<span class="sd">            data_dict[&#39;meta&#39;][&#39;provenance_id&#39;] to the UUID of the</span>
+<span class="sd">            provenance instead of passing it here.</span>
+
+<span class="sd">          diaobject: DiaObject or UUID or str or None</span>
+<span class="sd">            The DiaObject this is a spectrum for.  You may also set</span>
+<span class="sd">            data_dict[&#39;meta&#39;][&#39;diaobject_id&#39;] to the UUID of the</span>
+<span class="sd">            diaboject instead of passing it here.</span>
+
+<span class="sd">          diaobject_position_id: dict or UUID or str or None</span>
+<span class="sd">            Either the improved position as returned form</span>
+<span class="sd">            DiaObject.get_position(), or the value of the id from the</span>
+<span class="sd">            dictionary returned by that call.  You may also set data_dict[&#39;meta&#39;][&#39;diaobject_position_id&#39;]</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="n">filepath</span><span class="o">=</span><span class="n">filepath</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="n">base_path</span><span class="p">,</span> <span class="n">base_dir</span><span class="o">=</span><span class="n">base_dir</span><span class="p">,</span>
+                          <span class="n">full_filepath</span><span class="o">=</span><span class="n">full_filepath</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="n">no_base_path</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="n">data_dict</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must specify either data_dict or filepath&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="n">data_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="n">SNLogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span> <span class="s2">&quot;Specifying both data_dict and filepath is bad form.&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="sa">r</span><span class="s1">&#39;([0-9a-f])/([0-9a-f])/([0-9a-f])/&#39;</span>
+                               <span class="sa">r</span><span class="s1">&#39;([0-9a-f]</span><span class="si">{8}</span><span class="s1">-?[0-9a-f]</span><span class="si">{4}</span><span class="s1">-?[0-9a-f]</span><span class="si">{4}</span><span class="s1">-?[0-9a-f]</span><span class="si">{4}</span><span class="s1">-?[0-9a-f]</span><span class="si">{12}</span><span class="s1">).1dspec&#39;</span><span class="p">,</span>
+                               <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span><span class="p">)</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span> <span class="s2">&quot;Could not parse filepath to find spectrum1d id, assigning a new one.&quot;</span> <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span> <span class="p">[</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">4</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                          <span class="k">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">!=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">4</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
+                          <span class="k">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">!=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">4</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="p">]</span> <span class="p">):</span>
+                    <span class="n">SNLogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span> <span class="s2">&quot;filepath didn&#39;t have consistent directory and filename, cannot parse &quot;</span>
+                                      <span class="s2">&quot;spectrum1d id from it, assigning a new one&quot;</span> <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span> <span class="nb">id</span> <span class="p">)</span> <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">provenance_id</span> <span class="o">=</span> <span class="p">(</span> <span class="n">provenance</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">Provenance</span> <span class="p">)</span>
+                               <span class="k">else</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">oknone</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diaobject_id</span> <span class="o">=</span> <span class="p">(</span> <span class="n">diaobject</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">diaobject</span><span class="p">,</span> <span class="n">DiaObject</span> <span class="p">)</span>
+                              <span class="k">else</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">diaobject</span><span class="p">,</span> <span class="n">oknone</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diaobject_position_id</span> <span class="o">=</span> <span class="p">(</span> <span class="n">asUUID</span><span class="p">(</span><span class="n">diaobject_position</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">diaobject_position</span><span class="p">,</span> <span class="nb">dict</span> <span class="p">)</span>
+                                       <span class="k">else</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">diaobject_position</span><span class="p">,</span> <span class="n">oknone</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">no_database</span> <span class="o">=</span> <span class="n">no_database</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_band</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_start</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_end</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoch</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_images</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">data_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_data_dict</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">band</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_band</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fill_props</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_band</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mjd_start</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_start</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fill_props</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_start</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mjd_end</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_end</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fill_props</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_end</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">epoch</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_epoch</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fill_props</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">images</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fill_props</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fill_props</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fills self.images, self.band, self.mjd_start, self.mjd_end, and self.epoch based on data_dict.&quot;&quot;&quot;</span>
+
+        <span class="n">imageids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;image_id&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">individual</span>  <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="nb">set</span><span class="p">(</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span> <span class="p">)</span> <span class="o">!=</span> <span class="n">imageids</span> <span class="p">):</span>
+            <span class="c1"># Have to reload images:</span>
+            <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_images</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">imid</span> <span class="ow">in</span> <span class="n">imageids</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">get_image</span><span class="p">(</span> <span class="n">imid</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">image</span><span class="p">,</span> <span class="n">Image</span> <span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Didn&#39;t get an Image back from Image.get_image; this should not happen.&quot;</span> <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+                    <span class="n">SNLogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Spectrum1d.save_to_db failed to get image </span><span class="si">{</span><span class="n">imid</span><span class="si">}</span><span class="s2"> from the database:</span><span class="se">\n</span><span class="si">{</span><span class="n">ex</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+                    <span class="k">raise</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">image</span> <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">mjd</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">exptime</span> <span class="o">/</span> <span class="mf">3600.</span> <span class="o">/</span> <span class="mf">24.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoch</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span> <span class="nb">sum</span><span class="p">([</span> <span class="n">i</span><span class="o">.</span><span class="n">mjd</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span> <span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span> <span class="n">i</span><span class="o">.</span><span class="n">band</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">band</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Images have inconsistent bands!&quot;</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_band</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">band</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_dict</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Can&#39;t find the data&quot;</span> <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_data</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span>
+
+    <span class="nd">@data_dict</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_dict</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">meta</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">combined</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">combined_meta</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">combined_data</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">individual</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Spectrum1d.generate_filepath">
+<a class="viewcode-back" href="../../api/snappl.spectrum1d.Spectrum1d.html#snappl.spectrum1d.Spectrum1d.generate_filepath">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_filepath</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">filetype</span><span class="o">=</span><span class="s1">&#39;hdf5&#39;</span> <span class="p">):</span>
+        <span class="n">suffixdict</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;hdf5&#39;</span><span class="p">:</span> <span class="s1">&#39;hdf5&#39;</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">filetype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">suffixdict</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Unknown filetype </span><span class="si">{</span><span class="n">filetype</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="n">subdir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">basename</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">provenance_id</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">subdir</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">subdir</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">subdir</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s1">_1dspec.</span><span class="si">{</span><span class="n">suffixdict</span><span class="p">[</span><span class="n">filetype</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_data_dict</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">diaobject</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">diaobject_position</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies and sets the data dict.  Makes a copy, so will not mung the passed object.&quot;&quot;&quot;</span>
+
+        <span class="n">provenance</span> <span class="o">=</span> <span class="n">provenance</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">Provenance</span> <span class="p">)</span> <span class="k">else</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">oknone</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+        <span class="n">diaobject</span> <span class="o">=</span> <span class="n">diaobject</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">diaobject</span><span class="p">,</span> <span class="n">DiaObject</span><span class="p">)</span> <span class="k">else</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">diaobject</span><span class="p">,</span> <span class="n">oknone</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+        <span class="n">diaobject_position</span> <span class="o">=</span> <span class="p">(</span> <span class="n">diaobject_position</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">diaobject_position</span><span class="p">,</span> <span class="nb">dict</span> <span class="p">)</span>
+                               <span class="k">else</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">diaobject_position</span><span class="p">,</span> <span class="n">oknone</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span> <span class="p">)</span>
+
+        <span class="n">provenance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance_id</span> <span class="k">if</span> <span class="n">provenance</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">provenance</span>
+        <span class="n">diaobject</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diaobject_id</span> <span class="k">if</span> <span class="n">diaobject</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">diaobject_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diaobject_position_id</span> <span class="k">if</span> <span class="n">diaobject_position</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">data_dict</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span> <span class="n">data_dict</span> <span class="p">)</span>
+
+        <span class="c1"># Basic type checking</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">,</span> <span class="nb">dict</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;data_dict must be a dict, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data_dict</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span> <span class="n">data_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="p">)</span> <span class="o">!=</span> <span class="p">{</span> <span class="s1">&#39;meta&#39;</span><span class="p">,</span> <span class="s1">&#39;combined&#39;</span><span class="p">,</span> <span class="s1">&#39;individual&#39;</span> <span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;data_dict must have keys &#39;meta&#39;, &#39;combined&#39;, and &#39;individual&#39;&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">],</span> <span class="nb">dict</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;data_dict[&#39;meta&#39;] must be a dict, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">],</span> <span class="nb">dict</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;data_dict[&#39;combined&#39;] must be a dict, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="p">)</span> <span class="o">!=</span> <span class="p">{</span> <span class="s1">&#39;meta&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span> <span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;data_dict[&#39;combined&#39;] must have keys &#39;meta&#39; and &#39;data&#39;&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">],</span> <span class="nb">list</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;data_dict[&#39;individual&#39;] must be a list, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="k">for</span> <span class="n">indiv</span> <span class="ow">in</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">indiv</span><span class="p">,</span> <span class="nb">dict</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;elements of the data_dict[&#39;individual&#39;] list must be dicts, but at least one is &quot;</span>
+                                 <span class="sa">f</span><span class="s2">&quot;a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">indiv</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">set</span><span class="p">(</span> <span class="n">indiv</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="p">)</span> <span class="o">!=</span> <span class="p">{</span> <span class="s1">&#39;meta&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span> <span class="p">}:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Each dict in the data_dict[&#39;individual&#39;] list must have keys &#39;meta&#39; and &#39;data&#39;&quot;</span> <span class="p">)</span>
+
+        <span class="c1"># Make sure the ids and provenances are all there</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_database</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">prop</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span> <span class="p">[</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;provenance_id&#39;</span><span class="p">,</span> <span class="s1">&#39;diaobject_id&#39;</span><span class="p">,</span> <span class="s1">&#39;diaobject_position_id&#39;</span> <span class="p">],</span>
+                                  <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">diaobject</span><span class="p">,</span> <span class="n">diaobject_position</span> <span class="p">]</span> <span class="p">):</span>
+                <span class="k">if</span> <span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]:</span>
+                    <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="n">prop</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># This weird way of doing things is so that we will get the same error</span>
+                    <span class="c1">#   message if there&#39;s a uuid mismatch, or if asUUID fails.</span>
+                    <span class="c1"># diaobject_position_id is the only one that can be None</span>
+                    <span class="n">_ok</span> <span class="o">=</span> <span class="p">(</span> <span class="p">(</span> <span class="p">(</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">prop</span> <span class="o">==</span> <span class="s1">&#39;diaobject_position_id&#39;</span> <span class="p">)</span> <span class="p">)</span>
+                            <span class="ow">or</span>
+                            <span class="p">(</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="n">prop</span><span class="p">]</span> <span class="p">)</span> <span class="o">==</span> <span class="n">val</span> <span class="p">)</span>
+                           <span class="p">)</span>
+                    <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="n">prop</span><span class="p">]</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="n">prop</span><span class="p">],</span> <span class="n">oknone</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Property </span><span class="si">{</span><span class="n">prop</span><span class="si">}</span><span class="s2"> in data_dict[&#39;meta&#39;] has value </span><span class="si">{</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="n">prop</span><span class="p">]</span><span class="si">}</span><span class="s2">, &quot;</span>
+                                      <span class="sa">f</span><span class="s2">&quot;doesn&#39;t match expected value </span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+
+            <span class="c1"># Make sure the self attributes are set</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">provenance_id</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">diaobject_id</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;diaobject_id&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">diaobject_position_id</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;diaobject_position_id&#39;</span><span class="p">]</span>
+
+        <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;band&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;band&#39;</span> <span class="ow">in</span> <span class="n">data_dict</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">filepath</span> <span class="p">)</span>
+
+        <span class="c1"># Make sure that if there&#39;s an nfiles in meta, it is right</span>
+        <span class="k">if</span> <span class="s1">&#39;nfiles&#39;</span> <span class="ow">in</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;meta&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;nfiles&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;You have nfiles=</span><span class="si">{</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;nfiles&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> in meta, but the individual list &quot;</span>
+                                  <span class="sa">f</span><span class="s2">&quot;is length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;nfiles&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">]</span> <span class="p">)</span>
+
+        <span class="c1"># Make sure that we have an image_id for all the individual files</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_database</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">indiv_dict</span> <span class="ow">in</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="s1">&#39;image_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">indiv_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;All &#39;individual&#39; dictionaries must have an image_id key&quot;</span> <span class="p">)</span>
+                <span class="c1"># Make sure it uuidifies</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">indiv_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;image_id&#39;</span><span class="p">]</span> <span class="p">)</span>
+
+        <span class="c1"># TODO VERIFY DATA FORMAT</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span> <span class="o">=</span> <span class="n">data_dict</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_database</span><span class="p">:</span>
+            <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fill_props</span><span class="p">(</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+
+
+<div class="viewcode-block" id="Spectrum1d.write_file">
+<a class="viewcode-back" href="../../api/snappl.spectrum1d.Spectrum1d.html#snappl.spectrum1d.Spectrum1d.write_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_file</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes the file</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          filepath : str or pathlib.Path, default None</span>
+<span class="sd">            The full path to write the file to.  If None, then will use</span>
+<span class="sd">            the base_path and filepath passed at object construction, or</span>
+<span class="sd">            if those were None, will generate a standard filepath used</span>
+<span class="sd">            for the database files.  If you&#39;re writing to the database,</span>
+<span class="sd">            you usually want this to be None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">filepath</span> <span class="p">)</span> <span class="k">if</span> <span class="n">filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span>
+        <span class="n">filepath</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span> <span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span> <span class="p">)</span> <span class="k">as</span> <span class="n">h5f</span><span class="p">:</span>
+            <span class="n">topgrp</span> <span class="o">=</span> <span class="n">h5f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span> <span class="s2">&quot;spectrum1d&quot;</span> <span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">val</span><span class="p">,</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span> <span class="p">):</span>
+                    <span class="n">topgrp</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">topgrp</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Empty</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">)</span>
+
+            <span class="n">combined</span> <span class="o">=</span> <span class="n">topgrp</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span> <span class="s2">&quot;combined&quot;</span> <span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">val</span><span class="p">,</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span> <span class="p">):</span>
+                    <span class="n">combined</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">combined</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Empty</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">)</span>
+            <span class="n">combined</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span> <span class="s1">&#39;lamb&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;lamb&#39;</span><span class="p">]</span> <span class="p">)</span>
+            <span class="n">combined</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span> <span class="s1">&#39;flam&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;flam&#39;</span><span class="p">]</span> <span class="p">)</span>
+            <span class="n">combined</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span> <span class="s1">&#39;func&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;func&#39;</span><span class="p">]</span> <span class="p">)</span>
+            <span class="n">combined</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span> <span class="s1">&#39;count&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;count&#39;</span><span class="p">]</span> <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">dex</span><span class="p">,</span> <span class="n">indiv</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">]</span> <span class="p">):</span>
+                <span class="n">indivgrp</span> <span class="o">=</span> <span class="n">topgrp</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;individual_</span><span class="si">{</span><span class="n">dex</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">indiv</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">val</span><span class="p">,</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span> <span class="p">):</span>
+                        <span class="n">indivgrp</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">indivgrp</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Empty</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">)</span>
+                <span class="n">indivgrp</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span> <span class="s1">&#39;lamb&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">indiv</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;lamb&#39;</span><span class="p">]</span> <span class="p">)</span>
+                <span class="n">indivgrp</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span> <span class="s1">&#39;flam&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">indiv</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;flam&#39;</span><span class="p">]</span> <span class="p">)</span>
+                <span class="n">indivgrp</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span> <span class="s1">&#39;func&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">indiv</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;func&#39;</span><span class="p">]</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spectrum1d.read_data">
+<a class="viewcode-back" href="../../api/snappl.spectrum1d.Spectrum1d.html#snappl.spectrum1d.Spectrum1d.read_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_data</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads the file.</span>
+
+<span class="sd">        Populates self._data_dict</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          filepath : str or pathlib.Path, default None</span>
+<span class="sd">            The full path to write the file to.  If None, then will use</span>
+<span class="sd">            the base_path and filepath passed at object construction.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">filepath</span> <span class="p">)</span> <span class="k">if</span> <span class="n">filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;meta&#39;</span><span class="p">:</span> <span class="p">{},</span>
+                            <span class="s1">&#39;combined&#39;</span><span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;meta&#39;</span><span class="p">:</span> <span class="p">{},</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">{}</span> <span class="p">},</span>
+                            <span class="s1">&#39;individual&#39;</span><span class="p">:</span> <span class="p">[]</span> <span class="p">}</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span> <span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span> <span class="p">)</span> <span class="k">as</span> <span class="n">h5f</span><span class="p">:</span>
+            <span class="n">topgrp</span> <span class="o">=</span> <span class="n">h5f</span><span class="p">[</span><span class="s1">&#39;spectrum1d&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span> <span class="n">topgrp</span><span class="o">.</span><span class="n">attrs</span> <span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Empty</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">combgrp</span> <span class="o">=</span> <span class="n">topgrp</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span> <span class="n">combgrp</span><span class="o">.</span><span class="n">attrs</span> <span class="p">)</span>
+            <span class="n">tmpd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">tmpd</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">tmpd</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Empty</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">):</span>
+                    <span class="n">tmpd</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;lamb&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">combgrp</span><span class="p">[</span><span class="s1">&#39;lamb&#39;</span><span class="p">][:]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;flam&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">combgrp</span><span class="p">[</span><span class="s1">&#39;flam&#39;</span><span class="p">][:]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;func&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">combgrp</span><span class="p">[</span><span class="s1">&#39;func&#39;</span><span class="p">][:]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;combined&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;count&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">combgrp</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">][:]</span>
+
+            <span class="c1"># Figure out how many individuals there are</span>
+            <span class="n">nkeys</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">topgrp</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">mat</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="sa">r</span><span class="s1">&#39;^individual_(\d+)$&#39;</span><span class="p">,</span> <span class="n">key</span> <span class="p">)</span>
+                <span class="k">if</span> <span class="n">mat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">nkeys</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span> <span class="n">nkeys</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">+</span><span class="mi">1</span> <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">indivdex</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nkeys</span><span class="p">):</span>
+                <span class="n">indiv</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">indivgrp</span> <span class="o">=</span> <span class="n">topgrp</span><span class="p">[</span> <span class="sa">f</span><span class="s1">&#39;individual_</span><span class="si">{</span><span class="n">indivdex</span><span class="si">}</span><span class="s1">&#39;</span> <span class="p">]</span>
+                <span class="n">indiv</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span> <span class="n">indivgrp</span><span class="o">.</span><span class="n">attrs</span> <span class="p">)</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">indiv</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">indiv</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Empty</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">):</span>
+                        <span class="n">indiv</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span>  <span class="kc">None</span>
+                <span class="n">indiv</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;lamb&#39;</span><span class="p">:</span> <span class="n">indivgrp</span><span class="p">[</span><span class="s1">&#39;lamb&#39;</span><span class="p">][:],</span>
+                                  <span class="s1">&#39;flam&#39;</span><span class="p">:</span> <span class="n">indivgrp</span><span class="p">[</span><span class="s1">&#39;flam&#39;</span><span class="p">][:],</span>
+                                  <span class="s1">&#39;func&#39;</span><span class="p">:</span> <span class="n">indivgrp</span><span class="p">[</span><span class="s1">&#39;func&#39;</span><span class="p">][:]</span> <span class="p">}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_data_dict</span><span class="p">[</span><span class="s1">&#39;individual&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">indiv</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_database</span><span class="p">:</span>
+            <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fill_props</span><span class="p">(</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Spectrum1d.save_to_db">
+<a class="viewcode-back" href="../../api/snappl.spectrum1d.Spectrum1d.html#snappl.spectrum1d.Spectrum1d.save_to_db">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_to_db</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save spectrum to db.</span>
+
+<span class="sd">        Parmaters</span>
+<span class="sd">        ---------</span>
+<span class="sd">          write : bool, default False</span>
+<span class="sd">            If write=True, then also write the file.  If not, then you</span>
+<span class="sd">            must call write_file() first.  (If you call write() and then</span>
+<span class="sd">            call this with write=True, you&#39;ll get a file exists error.)</span>
+
+<span class="sd">          dbclient : SNPITDBClient, default None</span>
+<span class="sd">            The connection to the database web server.  If None, a new</span>
+<span class="sd">            one will be made that logs you in using the information in</span>
+<span class="sd">            Config.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          dict : the row of the database saved, for informational purposes</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_database</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Can&#39;t save a no_database spectrum to the database.&quot;</span> <span class="p">)</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fill_props</span><span class="p">(</span> <span class="n">dbclient</span><span class="o">=</span><span class="n">dbclient</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">write</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_file</span><span class="p">()</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                 <span class="s1">&#39;provenance_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance_id</span><span class="p">,</span>
+                 <span class="s1">&#39;diaobject_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">diaobject_id</span><span class="p">,</span>
+                 <span class="s1">&#39;diaobject_position_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">diaobject_position_id</span><span class="p">,</span>
+                 <span class="s1">&#39;band&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">band</span><span class="p">,</span>
+                 <span class="s1">&#39;filepath&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="p">,</span>
+                 <span class="s1">&#39;mjd_start&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_start</span><span class="p">,</span>
+                 <span class="s1">&#39;mjd_end&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mjd_end</span><span class="p">,</span>
+                 <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_epoch</span> <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="s2">&quot;savespectrum1d&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="n">data</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">SNPITJsonEncoder</span> <span class="p">),</span>
+                              <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">}</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spectrum1d.get_spectrum1d">
+<a class="viewcode-back" href="../../api/snappl.spectrum1d.Spectrum1d.html#snappl.spectrum1d.Spectrum1d.get_spectrum1d">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_spectrum1d</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">spectrum1d_id</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a Specrum1d from the database.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          spectrum1d_id : UUID or str that can be converted to a UUID</span>
+<span class="sd">            The id of the spectrum to fetch.</span>
+
+<span class="sd">          dbclient : SNPITDBClient or None</span>
+<span class="sd">            The connection to the database web server.  If None, a new</span>
+<span class="sd">            one will be made that logs you in using the information in</span>
+<span class="sd">            Config.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          Spectrum1d</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;getspectrum1d/</span><span class="si">{</span><span class="n">spectrum1d_id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="c1"># Adjust the return dict to what&#39;s expected by Spectrum1d.__init__()</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;provenance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;diaobject&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;diaobject_id&#39;</span><span class="p">]</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;diaobject_position&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;diaobject_position_id&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;diaobject_id&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;diaobject_position_id&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Spectrum1d</span><span class="p">(</span> <span class="o">**</span><span class="n">result</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spectrum1d.find_spectra">
+<a class="viewcode-back" href="../../api/snappl.spectrum1d.Spectrum1d.html#snappl.spectrum1d.Spectrum1d.find_spectra">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_spectra</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">diaobject</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search the database for spectra.</span>
+
+<span class="sd">        Must pass either provenance, or both of (provenance_tag and</span>
+<span class="sd">        process).  All the rest are optional; omitted parameters will</span>
+<span class="sd">        just not be used to filter the list of returned spectra.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">          provenance : Provenance or UUID or str, default None</span>
+<span class="sd">            The Provenance, or the id of the Provenacne, of the</span>
+<span class="sd">            lightcurve you want.  You must pass either provenance or</span>
+<span class="sd">            provenance_tag.  (If you pass both, provenance_tag will be</span>
+<span class="sd">            ignored).</span>
+
+<span class="sd">          provenance_tag : str, default None</span>
+<span class="sd">            The provenance tag used to find the provenance of the</span>
+<span class="sd">            lightcurves you want.  Ignored if provenance is not None.</span>
+<span class="sd">            Requires process.</span>
+
+<span class="sd">          process : str, default None</span>
+<span class="sd">            The process used together with provenance_tag to find the</span>
+<span class="sd">            provenance of the lightcurves you want.  Required if</span>
+<span class="sd">            provenance_tag is not None.</span>
+
+<span class="sd">          dbclient : SNPITDBClient or None</span>
+<span class="sd">            The connection to the database (optional).  If you don&#39;t</span>
+<span class="sd">            pass one, will use the cached connection, or will make a new</span>
+<span class="sd">            one based on what&#39;s in the config.</span>
+
+<span class="sd">          diaobject : DiaObject or UUID or str or None</span>
+<span class="sd">            The DiaObject, or the ID of the object, you want spectra for.</span>
+
+<span class="sd">          band : str</span>
+<span class="sd">            The band of the images that went into the spectrum</span>
+
+<span class="sd">          mjd_start, mjd_end : float The earliesr mjd, and latest mjd,</span>
+<span class="sd">            of the individual images that went into the exposure.</span>
+<span class="sd">            (mjd_end is actually the mjd of the final image, plus it&#39;s</span>
+<span class="sd">            exposure time converted to days).</span>
+
+<span class="sd">          mjd_start_min, mjd_start_max, mjd_end_min, mjd_end_max : float</span>
+<span class="sd">            Use these if you want to search a range of times.</span>
+
+<span class="sd">          order_by: str or list, default None</span>
+<span class="sd">            By default, the returned images are not sorted in any</span>
+<span class="sd">            particular way.  Put a keyword here to sort by that value</span>
+<span class="sd">            (or by those values).  Options include &#39;id&#39;,</span>
+<span class="sd">            &#39;provenance_id&#39;, &#39;pointing&#39;, &#39;sca&#39;, &#39;ra&#39;, &#39;dec&#39;, &#39;filepath&#39;,</span>
+<span class="sd">            &#39;width&#39;, &#39;height&#39;, &#39;mjd&#39;, &#39;exptime&#39;.  Not all of these are</span>
+<span class="sd">            necessarily useful, and some of them may be null for many</span>
+<span class="sd">            objects in the database.</span>
+
+<span class="sd">          limit : int, default None</span>
+<span class="sd">            Only return this many objects at most.</span>
+
+<span class="sd">          offset : int, default None</span>
+<span class="sd">            Useful with limit and order_by ; offset the returned value</span>
+<span class="sd">            by this many entries.  You can make repeated calls to</span>
+<span class="sd">            find_objects to get subsets of objects by passing the same</span>
+<span class="sd">            order_by and limit, but different offsets each time, to</span>
+<span class="sd">            slowly build up a list.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">          List of spectra</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+        <span class="k">if</span> <span class="n">provenance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">provenance</span><span class="p">,</span> <span class="n">Provenance</span> <span class="p">):</span>
+                <span class="n">params</span><span class="p">[</span><span class="s1">&#39;provenance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">provenance</span><span class="o">.</span><span class="n">id</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">params</span><span class="p">[</span><span class="s1">&#39;provenance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">provenance</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="n">provenance_tag</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">process</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;You must pass either provenance, or both of provenance_tag and process&quot;</span> <span class="p">)</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;provenance_tag&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">provenance_tag</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;process&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">process</span>
+
+        <span class="k">if</span> <span class="n">diaobject</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;diaobject_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diaobject</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">diaobject</span><span class="p">,</span> <span class="n">DiaObject</span> <span class="p">)</span> <span class="k">else</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">diaobject</span> <span class="p">)</span>
+
+        <span class="n">reses</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="s2">&quot;/findspectra1d&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span> <span class="n">params</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">SNPITJsonEncoder</span> <span class="p">),</span>
+                               <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">}</span> <span class="p">)</span>
+        <span class="n">spectra1d</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">reses</span><span class="p">:</span>
+            <span class="c1"># Worm things around to work for kwargs to __init__</span>
+            <span class="n">res</span><span class="p">[</span><span class="s1">&#39;provenance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span>
+            <span class="n">res</span><span class="p">[</span><span class="s1">&#39;diaobject&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;diaobject_id&#39;</span><span class="p">]</span>
+            <span class="n">res</span><span class="p">[</span><span class="s1">&#39;diaobject_position&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;diaobject_position_id&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;diaobject_id&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;diaobject_position_id&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span>
+            <span class="n">spectra1d</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">Spectrum1d</span><span class="p">(</span> <span class="o">**</span><span class="n">res</span> <span class="p">)</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">spectra1d</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2025, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

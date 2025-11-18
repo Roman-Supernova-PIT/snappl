@@ -1,0 +1,57 @@
+Spectrum1d
+==========
+
+.. currentmodule:: snappl.spectrum1d
+
+.. autoclass:: Spectrum1d
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~Spectrum1d.band
+      ~Spectrum1d.combined
+      ~Spectrum1d.combined_data
+      ~Spectrum1d.combined_meta
+      ~Spectrum1d.data_dict
+      ~Spectrum1d.epoch
+      ~Spectrum1d.images
+      ~Spectrum1d.individual
+      ~Spectrum1d.meta
+      ~Spectrum1d.mjd_end
+      ~Spectrum1d.mjd_start
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~Spectrum1d.find_spectra
+      ~Spectrum1d.generate_filepath
+      ~Spectrum1d.get_spectrum1d
+      ~Spectrum1d.read_data
+      ~Spectrum1d.save_to_db
+      ~Spectrum1d.write_file
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: band
+   .. autoattribute:: combined
+   .. autoattribute:: combined_data
+   .. autoattribute:: combined_meta
+   .. autoattribute:: data_dict
+   .. autoattribute:: epoch
+   .. autoattribute:: images
+   .. autoattribute:: individual
+   .. autoattribute:: meta
+   .. autoattribute:: mjd_end
+   .. autoattribute:: mjd_start
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: find_spectra
+   .. automethod:: generate_filepath
+   .. automethod:: get_spectrum1d
+   .. automethod:: read_data
+   .. automethod:: save_to_db
+   .. automethod:: write_file

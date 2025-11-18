@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.config &#8212; roman_snpit_snappl 0.1.dev1+g7a9148e78 documentation</title>
+    <title>snappl.config &#8212; roman_snpit_snappl 0.1.dev1+gea7f809d5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=61eb2865"></script>
+    <script src="../../_static/documentation_options.js?v=d1fb6843"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -128,35 +128,46 @@
 
 <span class="sd">    USAGE</span>
 
-<span class="sd">    1. Instantiate a config object with</span>
+<span class="sd">    1. Instantiate a config object with::</span>
 
 <span class="sd">           confobj = Config.get()</span>
 
-<span class="sd">       or</span>
+<span class="sd">       or::</span>
 
 <span class="sd">           confobj = Config.get(filename)</span>
 
 <span class="sd">       in the former case, it will get the default file (see below).</span>
-<span class="sd">       IMPORTANT : Do NOT instantiate a config item with &quot;config=Config()&quot;.</span>
+<span class="sd">       IMPORTANT : Do NOT instantiate a config item with ``config=Config()``.</span>
 
 <span class="sd">       The default file: normally, the default file is specified in the</span>
-<span class="sd">       environment variable SNPIT_CONFIG.  The first time you call</span>
-<span class="sd">       Config.get() without any arguments, it will set the default</span>
+<span class="sd">       environment variable ``SNPIT_CONFIG``.  The first time you call</span>
+<span class="sd">       ``Config.get()`` without any arguments, it will set the default</span>
 <span class="sd">       config to be what it read from the file pointed to by</span>
-<span class="sd">       $SNPIT_CONFIG, and return that config.  You can subvert this by</span>
-<span class="sd">       calling Config.get(filename,setdefault=True).  In that case, it</span>
-<span class="sd">       will read the file in filename, and set the config there to be</span>
-<span class="sd">       the default config that you&#39;ll thereafter get when calling</span>
-<span class="sd">       Config.get() without any arguments.</span>
+<span class="sd">       ``$SNPIT_CONFIG``, and return that config.  You can subvert this</span>
+<span class="sd">       by calling ``Config.get(filename,setdefault=True)``.  In that</span>
+<span class="sd">       case, it will read the file in filename, and set the config there</span>
+<span class="sd">       to be the default config that you&#39;ll thereafter get when calling</span>
+<span class="sd">       ``Config.get()`` without any arguments.</span>
+
+<span class="sd">       If the config file has a lot of levels to it, and you are only</span>
+<span class="sd">       intersted in a subset, you can do::</span>
+
+<span class="sd">           confobj = Config.get( prefix=&#39;toplevel.midlevel&#39; )</span>
+
+<span class="sd">       Thereafter, if you do ``Config.value(&#39;sublevel.value&#39;)``, it will</span>
+<span class="sd">       be equivalent to having done</span>
+<span class="sd">       ``Config.value(&#39;toplevel.midlevel.sublevel.value&#39;)`` on an object</span>
+<span class="sd">       you get with just ``Config.get()``.</span>
+
 
 <span class="sd">    2. (Optional.)  You can set things up so that (almost) anything in</span>
 <span class="sd">       the config can be overridden on the command line.  You must be</span>
 <span class="sd">       using argparse for this to work.  First, instantiate your</span>
-<span class="sd">       argparse.ArgumentParser object and add your own arguments.  Next,</span>
-<span class="sd">       call the augment_argparse() method of your config object.  Run</span>
-<span class="sd">       the parse_args() method of your ArgumentParser, and then pass the</span>
-<span class="sd">       return value to the parse_args() method of your config object.</span>
-<span class="sd">       For example::</span>
+<span class="sd">       ``argparse.ArgumentParser`` object and add your own arguments.</span>
+<span class="sd">       Next, call the ``augment_argparse()`` method of your ``Config``</span>
+<span class="sd">       object.  Run the ``parse_args()`` method of your</span>
+<span class="sd">       ``ArgumentParser``, and then pass the return value to the</span>
+<span class="sd">       ``parse_args()`` method of your ``Config`` object.  For example::</span>
 
 <span class="sd">         from snappl.config import Config</span>
 <span class="sd">         import argparse</span>
@@ -169,7 +180,7 @@
 <span class="sd">         args = parser.parse_args()</span>
 <span class="sd">         cfg.parse_args( args )</span>
 
-<span class="sd">       Config.augment_argparse will add all of the &quot;leaf node&quot; config</span>
+<span class="sd">       ``Config.augment_argparse`` will add all of the &quot;leaf node&quot; config</span>
 <span class="sd">       options as config arguments, using the fieldspec (see (3) below),</span>
 <span class="sd">       replacing &quot;.&quot; with &quot;-&quot;.  Exception: if there is a list, it will</span>
 <span class="sd">       not work down into the list, but will replace the whole list with</span>
@@ -211,9 +222,10 @@
 <span class="sd">             single_file: false</span>
 <span class="sd">             name_convention: &quot;{inst_name}_{date}_{time}_{section_id}_{band}_{im_type}_{prov_hash:.6s}&quot;</span>
 
-<span class="sd">       then confobj.value(&quot;storage.images.format&quot;) will return</span>
-<span class="sd">       &quot;fits&quot;. You can also ask configobj.value for higher levels.  For</span>
-<span class="sd">       example, config.value(&quot;storage.images&quot;) will return a dictionary::</span>
+<span class="sd">       then ``confobj.value(&quot;storage.images.format&quot;)`` will return</span>
+<span class="sd">       ``&quot;fits&quot;``. You can also ask ``configobj.value`` for higher</span>
+<span class="sd">       levels.  For example, ``config.value(&quot;storage.images&quot;)`` will</span>
+<span class="sd">       return a dictionary::</span>
 
 <span class="sd">          { &quot;format&quot;: &quot;fits&quot;,</span>
 <span class="sd">            &quot;single_file&quot;: False,</span>
@@ -242,7 +254,7 @@
 
 <span class="sd">    When reading a config file, it is processed as follows:</span>
 
-<span class="sd">    The &quot;current working config&quot; starts as an empty dictionary ({}).</span>
+<span class="sd">    The &quot;current working config&quot; starts as an empty dictionary (``{}``).</span>
 <span class="sd">    When everything is done, it can be a big messy hierarchy.  Each key</span>
 <span class="sd">    of the top level dictionary can have a value that is a scalar, a</span>
 <span class="sd">    list, or a dictionary.  The structure is recursive; each element of</span>
@@ -250,7 +262,7 @@
 <span class="sd">    associated with each key in each dictionary can itself be a scalar,</span>
 <span class="sd">    a list, or a dictionary.</span>
 
-<span class="sd">    A config file can have several special keys:</span>
+<span class="sd">    A config file can have several special keys::</span>
 
 <span class="sd">        preloads</span>
 <span class="sd">        replaceable_preloads</span>
@@ -272,33 +284,33 @@
 <span class="sd">    all of this is very complicated, so to be safe you may wish to never</span>
 <span class="sd">    use any of the special keys other than &quot;preloads&quot; and &quot;augments&quot;.</span>
 
-<span class="sd">    preloads is a list of files which are read first, in order, to make</span>
+<span class="sd">    ``preloads`` is a list of files which are read first, in order, to make</span>
 <span class="sd">      a config dictionary (called the &quot;preload config dictionary&quot;).</span>
 <span class="sd">      Files later in the list *augment* the config info from files</span>
 <span class="sd">      earlier in the list.  This config dictionary is set aside for the</span>
 <span class="sd">      time being.</span>
 
-<span class="sd">    replaceable_preloads is list of files read next, in order, to make</span>
+<span class="sd">    ``replaceable_preloads`` is list of files read next, in order, to make</span>
 <span class="sd">      a new config dictionary (called the &quot;working config dictionary&quot;).</span>
 <span class="sd">      Files later in the list *destructive_append* files earlier in</span>
 <span class="sd">      the list.</span>
 
 <span class="sd">    The current file is parsed next.  It does a *destructive_append* on</span>
-<span class="sd">      the working config dictionary (which will just be {} if there</span>
+<span class="sd">      the working config dictionary (which will just be ``{}`` if there</span>
 <span class="sd">      aren&#39;t any replaceable_prelaods).  Then, the working config</span>
 <span class="sd">      dictionary *augments* the preload config dictionary, and the</span>
 <span class="sd">      result is the new working config dictionary.</span>
 
-<span class="sd">    augments is a list of files read next, in order.  Each one</span>
+<span class="sd">    ``augments`` is a list of files read next, in order.  Each one</span>
 <span class="sd">      *augments* the current working dictionary.</span>
 
-<span class="sd">    overrides is a list of files read next, in order.  Each one</span>
+<span class="sd">    ``overrides`` is a list of files read next, in order.  Each one</span>
 <span class="sd">      *overrides* the current working dictionary.</span>
 
-<span class="sd">    destructive_appends is a list of files read next, in order.  Each</span>
+<span class="sd">    ``destructive_appends`` is a list of files read next, in order.  Each</span>
 <span class="sd">      one does a *destructive_append* on the current working dictionary.</span>
 
-<span class="sd">    appends is a list of files read last.  Each one *appends* to the</span>
+<span class="sd">    ``appends`` is a list of files read last.  Each one *appends* to the</span>
 <span class="sd">      current working dictionary.</span>
 
 <span class="sd">    Any file that&#39;s read can itself have the special keys indicating</span>
@@ -316,7 +328,7 @@
 <span class="sd">    Above, the words &quot;destructive_augment&quot;, &quot;augment&quot;, &quot;override&quot;, and</span>
 <span class="sd">    &quot;append&quot; were used to describe how to combine information from two</span>
 <span class="sd">    different files.  Exactly what happens is complicated; if you</span>
-<span class="sd">    *really* want to know, see</span>
+<span class="sd">    *really* want to know, see the source code of::</span>
 
 <span class="sd">      util/config.py::Config._merge_trees()</span>
 
@@ -456,7 +468,7 @@
 <div class="viewcode-block" id="Config.get">
 <a class="viewcode-back" href="../../api/snappl.config.Config.html#snappl.config.Config.get">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span> <span class="n">configfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">setdefault</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">static</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reread</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">clone</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span> <span class="n">configfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">setdefault</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">static</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reread</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">clone</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a Config object.</span>
 
 <span class="sd">        Parameters</span>
@@ -493,6 +505,35 @@
 <span class="sd">            set it to the session default, then call</span>
 <span class="sd">            Config.get(setdefault=False), and question your life</span>
 <span class="sd">            choices.</span>
+
+<span class="sd">        prefix : string, default None</span>
+
+<span class="sd">            If not None, then all calls to the .value() and .set_value()</span>
+<span class="sd">            methods of the config object will add this string (followed</span>
+<span class="sd">            by a .) to the string you actually pass.  So, for instance,</span>
+<span class="sd">            if your config file consists of::</span>
+
+<span class="sd">              toplevel:</span>
+<span class="sd">                midlevel1:</span>
+<span class="sd">                  sublevel1:</span>
+<span class="sd">                    val1: 1</span>
+<span class="sd">                    val2: 2</span>
+<span class="sd">                  sublevel2:</span>
+<span class="sd">                    str1: cat</span>
+<span class="sd">                    str2: kitten</span>
+<span class="sd">                midlevel2:</span>
+<span class="sd">                  foo: bar</span>
+
+<span class="sd">            then, if you did::</span>
+
+<span class="sd">               cfg = Config.get( prefix=&#39;toplevel.midlevel1&#39; )</span>
+
+<span class="sd">            then ``cfg.value(&#39;sublevel1.val1&#39;)`` would return ``1``, and</span>
+<span class="sd">            ``cfg.value(&#39;sublevel1.val2&#39;)`` would return ``2``.  This is</span>
+<span class="sd">            here as a convenience to save you from typing a bunch of</span>
+<span class="sd">            extra stuff when within one function you only need part of</span>
+<span class="sd">            the config hierarchy.</span>
+
 
 <span class="sd">        static : bool, default True</span>
 <span class="sd">            If True (the default), then you get one of the config object</span>
@@ -548,34 +589,56 @@
         <span class="k">if</span> <span class="n">clone</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">configfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Only specify one of clone or configfile.&quot;</span> <span class="p">)</span>
-            <span class="k">return</span> <span class="n">Config</span><span class="p">(</span> <span class="n">clone</span><span class="o">=</span><span class="n">clone</span><span class="p">,</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+            <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="n">clone</span><span class="o">=</span><span class="n">clone</span><span class="p">,</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">configfile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">Config</span><span class="o">.</span><span class="n">_default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">configfile</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">_default</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">Config</span><span class="o">.</span><span class="n">_default_default</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s1">&#39;No default config defined yet; run Config.init(configfile)&#39;</span> <span class="p">)</span>
-                <span class="n">configfile</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">_default_default</span>
-                <span class="k">if</span> <span class="n">setdefault</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">setdefault</span> <span class="o">=</span> <span class="kc">True</span>
-
-        <span class="n">configfile</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">configfile</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span> <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">setdefault</span><span class="p">:</span>
-            <span class="n">Config</span><span class="o">.</span><span class="n">_default</span> <span class="o">=</span> <span class="n">configfile</span>
-
-        <span class="k">if</span> <span class="n">reread</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">configfile</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Config</span><span class="o">.</span><span class="n">_configs</span> <span class="p">):</span>
-            <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="n">configfile</span><span class="o">=</span><span class="n">configfile</span><span class="p">,</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
-            <span class="k">if</span> <span class="n">static</span> <span class="ow">or</span> <span class="p">(</span> <span class="ow">not</span> <span class="n">reread</span> <span class="p">):</span>
-                <span class="n">Config</span><span class="o">.</span><span class="n">_configs</span><span class="p">[</span><span class="n">configfile</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfg</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">cfg</span><span class="o">.</span><span class="n">_static</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">static</span><span class="p">:</span>
-                <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">_configs</span><span class="p">[</span><span class="n">configfile</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">configfile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">Config</span><span class="o">.</span><span class="n">_default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">configfile</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">_default</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">Config</span><span class="o">.</span><span class="n">_default_default</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s1">&#39;No default config defined yet; run Config.init(configfile)&#39;</span> <span class="p">)</span>
+                    <span class="n">configfile</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">_default_default</span>
+                    <span class="k">if</span> <span class="n">setdefault</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">setdefault</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">configfile</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">configfile</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span> <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">setdefault</span><span class="p">:</span>
+                <span class="n">Config</span><span class="o">.</span><span class="n">_default</span> <span class="o">=</span> <span class="n">configfile</span>
+
+            <span class="k">if</span> <span class="n">reread</span> <span class="ow">or</span> <span class="p">(</span> <span class="n">configfile</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Config</span><span class="o">.</span><span class="n">_configs</span> <span class="p">):</span>
+                <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="n">configfile</span><span class="o">=</span><span class="n">configfile</span><span class="p">,</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+                <span class="k">if</span> <span class="n">static</span> <span class="ow">or</span> <span class="p">(</span> <span class="ow">not</span> <span class="n">reread</span> <span class="p">):</span>
+                    <span class="n">Config</span><span class="o">.</span><span class="n">_configs</span><span class="p">[</span><span class="n">configfile</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfg</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cfg</span><span class="o">.</span><span class="n">_static</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="n">clone</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">_configs</span><span class="p">[</span><span class="n">configfile</span><span class="p">],</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+                <span class="k">if</span> <span class="n">static</span><span class="p">:</span>
+                    <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">_configs</span><span class="p">[</span><span class="n">configfile</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="n">clone</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">_configs</span><span class="p">[</span><span class="n">configfile</span><span class="p">],</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+
+        <span class="c1"># prefix is a little scary.  It&#39;s not going to use its own _data array;</span>
+        <span class="c1">#   rather, it&#39;s going to use the parent config&#39;s data array, so if</span>
+        <span class="c1">#   either is modified, the changes are reflected in both.  (This should</span>
+        <span class="c1">#   usually only be possible in cloned configs, unless the user has</span>
+        <span class="c1">#   been naughty and mucked about with the _static property.)</span>
+        <span class="k">if</span> <span class="n">prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">prefix</span><span class="p">,</span> <span class="nb">str</span> <span class="p">)</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="nb">len</span><span class="p">(</span> <span class="n">prefix</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;prefix must be a str of lengt ≥ 1, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="n">prefix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;.&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s1">&#39;prefix must not end in &quot;.&quot;&#39;</span> <span class="p">)</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">prefix</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">val</span><span class="p">,</span> <span class="nb">dict</span> <span class="p">)</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">val</span><span class="p">,</span> <span class="nb">list</span> <span class="p">)</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2"> is an invalid prefix: it doesn&#39;t point to a &quot;</span>
+                                  <span class="sa">f</span><span class="s2">&quot;sub-list or sub-dictionary in the config structure.&quot;</span> <span class="p">)</span>
+            <span class="n">parentcfg</span> <span class="o">=</span> <span class="n">cfg</span>
+            <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="o">=</span> <span class="n">parentcfg</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">_static</span> <span class="o">=</span> <span class="n">parentcfg</span><span class="o">.</span><span class="n">_static</span>
 
         <span class="k">return</span> <span class="n">cfg</span></div>
 
@@ -613,76 +676,84 @@
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Don&#39;t instantiate a Config directly; use configobj=Config.get(...).&quot;</span> <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_static</span> <span class="o">=</span> <span class="kc">True</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">clone</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="o">==</span> <span class="p">(</span> <span class="n">configfile</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must specify exactly one of configfile or clone&quot;</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="n">clone</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">clone</span><span class="p">,</span> <span class="n">Config</span> <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Clone must be a Config, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">clone</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span> <span class="n">clone</span><span class="o">.</span><span class="n">_data</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="n">clone</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">clone</span><span class="o">.</span><span class="n">_parentconfig</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">clone</span><span class="o">.</span><span class="n">_prefix</span> <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">data</span><span class="p">,</span> <span class="nb">dict</span> <span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Cannot clone a config whose top level element is a list &quot;</span>
+                                     <span class="s2">&quot;(this may happen when using a config created with a prefix)&quot;</span> <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span> <span class="n">data</span>  <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span> <span class="n">clone</span><span class="o">.</span><span class="n">_data</span> <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_static</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">return</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">configfile</span> <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
 
-        <span class="n">files_read</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span> <span class="k">if</span> <span class="n">files_read</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">files_read</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="ow">in</span> <span class="n">files_read</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Config file </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="si">}</span><span class="s2"> was read more than once!  Circular dependencies!&quot;</span> <span class="p">)</span>
-        <span class="n">files_read</span><span class="o">.</span><span class="n">add</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">configfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">configfile</span> <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
 
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Loading config file </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
-            <span class="n">curfiledata</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">)</span> <span class="p">)</span>
-            <span class="k">if</span> <span class="n">curfiledata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># Empty file, so self._data can stay as {}</span>
-                <span class="k">return</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">curfiledata</span><span class="p">,</span> <span class="nb">dict</span> <span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Config file </span><span class="si">{</span><span class="n">configfile</span><span class="si">}</span><span class="s2"> doesn&#39;t have yaml I like.&quot;</span> <span class="p">)</span>
+            <span class="n">files_read</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span> <span class="k">if</span> <span class="n">files_read</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">files_read</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="ow">in</span> <span class="n">files_read</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Config file </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="si">}</span><span class="s2"> was read more than once!  Circular dependencies!&quot;</span> <span class="p">)</span>
+            <span class="n">files_read</span><span class="o">.</span><span class="n">add</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="p">)</span>
 
-            <span class="n">imports</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;preloads&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;replaceable_preloads&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;augments&#39;</span><span class="p">:</span> <span class="p">[],</span>
-                        <span class="s1">&#39;overrides&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;destructive_appends&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;appends&#39;</span><span class="p">:</span> <span class="p">[]</span> <span class="p">}</span>
-            <span class="k">for</span> <span class="n">importfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">importfile</span> <span class="ow">in</span> <span class="n">curfiledata</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">imports</span><span class="p">[</span><span class="n">importfile</span><span class="p">],</span> <span class="nb">list</span> <span class="p">):</span>
-                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">importfile</span><span class="si">}</span><span class="s1"> must be a list&#39;</span> <span class="p">)</span>
-                    <span class="n">imports</span><span class="p">[</span><span class="n">importfile</span><span class="p">]</span> <span class="o">=</span> <span class="n">curfiledata</span><span class="p">[</span><span class="n">importfile</span><span class="p">]</span>
-                    <span class="k">del</span> <span class="n">curfiledata</span><span class="p">[</span><span class="n">importfile</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Loading config file </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+                <span class="n">curfiledata</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">)</span> <span class="p">)</span>
+                <span class="k">if</span> <span class="n">curfiledata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># Empty file, so self._data can stay as {}</span>
+                    <span class="k">return</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">curfiledata</span><span class="p">,</span> <span class="nb">dict</span> <span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Config file </span><span class="si">{</span><span class="n">configfile</span><span class="si">}</span><span class="s2"> doesn&#39;t have yaml I like.&quot;</span> <span class="p">)</span>
 
-            <span class="n">preloaddict</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">preloadfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;preloads&#39;</span><span class="p">]:</span>
-                <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pathify</span><span class="p">(</span><span class="n">preloadfile</span><span class="p">),</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span><span class="p">,</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
-                <span class="n">preloaddict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_trees</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">preloaddict</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;augment&#39;</span> <span class="p">)</span>
+                <span class="n">imports</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;preloads&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;replaceable_preloads&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;augments&#39;</span><span class="p">:</span> <span class="p">[],</span>
+                            <span class="s1">&#39;overrides&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;destructive_appends&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;appends&#39;</span><span class="p">:</span> <span class="p">[]</span> <span class="p">}</span>
+                <span class="k">for</span> <span class="n">importfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">importfile</span> <span class="ow">in</span> <span class="n">curfiledata</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">imports</span><span class="p">[</span><span class="n">importfile</span><span class="p">],</span> <span class="nb">list</span> <span class="p">):</span>
+                            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">importfile</span><span class="si">}</span><span class="s1"> must be a list&#39;</span> <span class="p">)</span>
+                        <span class="n">imports</span><span class="p">[</span><span class="n">importfile</span><span class="p">]</span> <span class="o">=</span> <span class="n">curfiledata</span><span class="p">[</span><span class="n">importfile</span><span class="p">]</span>
+                        <span class="k">del</span> <span class="n">curfiledata</span><span class="p">[</span><span class="n">importfile</span><span class="p">]</span>
 
-            <span class="n">workingdict</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">preloadfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;replaceable_preloads&#39;</span><span class="p">]:</span>
-                <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pathify</span><span class="p">(</span><span class="n">preloadfile</span><span class="p">),</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span><span class="p">,</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
-                <span class="n">workingdict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_trees</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">workingdict</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;destructive_append&#39;</span> <span class="p">)</span>
+                <span class="n">preloaddict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">preloadfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;preloads&#39;</span><span class="p">]:</span>
+                    <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pathify</span><span class="p">(</span><span class="n">preloadfile</span><span class="p">),</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span><span class="p">,</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+                    <span class="n">preloaddict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_trees</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">preloaddict</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;augment&#39;</span> <span class="p">)</span>
 
-            <span class="n">workingdict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_trees</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">workingdict</span><span class="p">,</span> <span class="n">curfiledata</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;destructive_append&#39;</span> <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_trees</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">preloaddict</span><span class="p">,</span> <span class="n">workingdict</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;augment&#39;</span> <span class="p">)</span>
+                <span class="n">workingdict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">preloadfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;replaceable_preloads&#39;</span><span class="p">]:</span>
+                    <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pathify</span><span class="p">(</span><span class="n">preloadfile</span><span class="p">),</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span><span class="p">,</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+                    <span class="n">workingdict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_trees</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">workingdict</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;destructive_append&#39;</span> <span class="p">)</span>
 
-            <span class="k">for</span> <span class="n">augmentfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;augments&#39;</span><span class="p">]:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_file</span><span class="p">(</span> <span class="n">augmentfile</span><span class="p">,</span> <span class="s1">&#39;augment&#39;</span><span class="p">,</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span> <span class="p">)</span>
+                <span class="n">workingdict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_trees</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">workingdict</span><span class="p">,</span> <span class="n">curfiledata</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;destructive_append&#39;</span> <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_trees</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">preloaddict</span><span class="p">,</span> <span class="n">workingdict</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;augment&#39;</span> <span class="p">)</span>
 
-            <span class="k">for</span> <span class="n">overridefile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;overrides&#39;</span><span class="p">]:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_file</span><span class="p">(</span> <span class="n">overridefile</span><span class="p">,</span> <span class="s1">&#39;override&#39;</span><span class="p">,</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span> <span class="p">)</span>
+                <span class="k">for</span> <span class="n">augmentfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;augments&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_merge_file</span><span class="p">(</span> <span class="n">augmentfile</span><span class="p">,</span> <span class="s1">&#39;augment&#39;</span><span class="p">,</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span> <span class="p">)</span>
 
-            <span class="k">for</span> <span class="n">appendfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;destructive_appends&#39;</span><span class="p">]:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_file</span><span class="p">(</span> <span class="n">appendfile</span><span class="p">,</span> <span class="s1">&#39;destructive_append&#39;</span><span class="p">,</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span> <span class="p">)</span>
+                <span class="k">for</span> <span class="n">overridefile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;overrides&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_merge_file</span><span class="p">(</span> <span class="n">overridefile</span><span class="p">,</span> <span class="s1">&#39;override&#39;</span><span class="p">,</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span> <span class="p">)</span>
 
-            <span class="k">for</span> <span class="n">appendfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;appends&#39;</span><span class="p">]:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_file</span><span class="p">(</span> <span class="n">appendfile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span> <span class="p">)</span>
+                <span class="k">for</span> <span class="n">appendfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;destructive_appends&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_merge_file</span><span class="p">(</span> <span class="n">appendfile</span><span class="p">,</span> <span class="s1">&#39;destructive_append&#39;</span><span class="p">,</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span> <span class="p">)</span>
 
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">SNLogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;Exception trying to load config from </span><span class="si">{</span><span class="n">configfile</span><span class="si">}</span><span class="s1">&#39;</span> <span class="p">)</span>
-            <span class="k">raise</span> <span class="n">e</span>
+                <span class="k">for</span> <span class="n">appendfile</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">[</span><span class="s1">&#39;appends&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_merge_file</span><span class="p">(</span> <span class="n">appendfile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span> <span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;Exception trying to load config from </span><span class="si">{</span><span class="n">configfile</span><span class="si">}</span><span class="s1">&#39;</span> <span class="p">)</span>
+                <span class="k">raise</span> <span class="n">e</span>
 
 
 <div class="viewcode-block" id="Config.value">
 <a class="viewcode-back" href="../../api/snappl.config.Config.html#snappl.config.Config.value">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">NoValue</span><span class="p">(),</span> <span class="n">struct</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">NoValue</span><span class="p">(),</span> <span class="n">struct</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a value from the config structure.</span>
 
 
@@ -720,6 +791,10 @@
 <span class="sd">           subtree; for instance configobj.value( &quot;dict1.dict2&quot; ) would</span>
 <span class="sd">           return the dictionary { &quot;sub1&quot;: &quot;2level1&quot;, &quot;sub2&quot;: &quot;2level2&quot; }.</span>
 
+<span class="sd">           If this is None, return the entire config tree as a</span>
+<span class="sd">           dictionary (or, if working with a confg created with prefix=,</span>
+<span class="sd">           maybe a list).</span>
+
 <span class="sd">        default: object, default NoValue instance</span>
 <span class="sd">            Used internally, don&#39;t muck with this.</span>
 
@@ -738,8 +813,20 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parent_key_and_value</span><span class="p">(</span> <span class="n">field</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="n">struct</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span> <span class="p">)</span>
-        <span class="k">return</span> <span class="n">value</span></div>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cfg</span> <span class="o">=</span> <span class="bp">self</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="si">}{</span><span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">field</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="si">}</span><span class="s1">&#39;</span>
+
+            <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">_parent_key_and_value</span><span class="p">(</span> <span class="n">field</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="n">struct</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span> <span class="p">)</span>
+            <span class="k">return</span> <span class="n">value</span></div>
 
 
 
@@ -774,6 +861,11 @@
 <span class="sd">        necessary.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">field</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="si">}{</span><span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">field</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span> <span class="n">field</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">structpass</span><span class="o">=</span><span class="n">structpass</span><span class="p">,</span> <span class="n">appendlists</span><span class="o">=</span><span class="n">appendlists</span> <span class="p">)</span>
+            <span class="k">return</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_static</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Not permitted to modify static Config object.&quot;</span> <span class="p">)</span>
@@ -811,7 +903,7 @@
 
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">structpass</span><span class="o">.</span><span class="n">struct</span><span class="p">,</span> <span class="nb">list</span> <span class="p">):</span>
                 <span class="n">structchuck</span><span class="o">.</span><span class="n">struct</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">nextifield</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">value</span><span class="p">,</span> <span class="n">structchuck</span><span class="p">,</span> <span class="n">appendlists</span><span class="o">=</span><span class="n">appendlists</span> <span class="p">)</span> <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">:]),</span> <span class="n">value</span><span class="p">,</span> <span class="n">structchuck</span><span class="p">,</span> <span class="n">appendlists</span><span class="o">=</span><span class="n">appendlists</span> <span class="p">)</span>
                 <span class="k">if</span> <span class="n">appendlists</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">ifield</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Tried to add a non-integer field to a list&quot;</span> <span class="p">)</span>
@@ -842,6 +934,9 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_parent_key_and_value</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fullfield</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">NoValue</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;This should never happen.&quot;</span> <span class="p">)</span>
+
         <span class="n">fullfield</span> <span class="o">=</span> <span class="n">fullfield</span> <span class="k">if</span> <span class="n">fullfield</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">field</span>
         <span class="k">if</span> <span class="n">struct</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">struct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
@@ -915,6 +1010,11 @@
 <span class="sd">        Use this this with great care.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">field</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="si">}{</span><span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">field</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span><span class="o">.</span><span class="n">delete_field</span><span class="p">(</span> <span class="n">field</span><span class="p">,</span> <span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
+            <span class="k">return</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_static</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Not permitted to modify static Config object.&quot;</span> <span class="p">)</span>
 
@@ -991,6 +1091,9 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_pathify</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">fname</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;This should never happen.&quot;</span> <span class="p">)</span>
+
         <span class="n">fname</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">fname</span> <span class="p">)</span>
         <span class="k">if</span> <span class="n">fname</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span>
             <span class="k">return</span> <span class="n">fname</span>
@@ -999,6 +1102,9 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_merge_file</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">files_read</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;This should never happen.&quot;</span> <span class="p">)</span>
+
         <span class="n">files_read</span> <span class="o">=</span> <span class="p">{</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="p">}</span> <span class="k">if</span> <span class="n">files_read</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">files_read</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pathify</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">files_read</span><span class="o">=</span><span class="n">files_read</span><span class="p">,</span> <span class="n">_ok_to_call</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_trees</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span> <span class="p">)</span>
@@ -1007,7 +1113,6 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_merge_trees</span><span class="p">(</span> <span class="n">keyword</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;augment&#39;</span><span class="p">,</span> <span class="n">parentpath</span><span class="o">=</span><span class="s1">&#39;&#39;</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal usage, do not call.&quot;&quot;&quot;</span>
-
         <span class="n">ppath</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parentpath</span><span class="si">}</span><span class="s2">.&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parentpath</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
         <span class="n">errkeyword</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ppath</span><span class="si">}{</span><span class="n">keyword</span><span class="si">}</span><span class="s1">&#39;</span>
 
@@ -1066,6 +1171,9 @@
 <span class="sd">            Used internally for recursion.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;This should never happen.&quot;</span> <span class="p">)</span>
+
         <span class="n">_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="k">if</span> <span class="n">_dict</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_dict</span>
 
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -1109,6 +1217,9 @@
 <span class="sd">            Used internally for recursion</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parentconfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;This should never happen.&quot;</span> <span class="p">)</span>
+
         <span class="n">_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="k">if</span> <span class="n">_dict</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_dict</span>
 
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
