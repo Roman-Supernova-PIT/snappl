@@ -1900,7 +1900,7 @@ class CompressedFITSImage( FITSImage ):
             write.  Ignored if the current image isn't compressed.
 
           temp_dir : pathlib.Path, default None
-            The path to write the files.  Defaults to the config value system.temp_dir
+            The path to write the files.  Defaults to the config value system.paths.temp_dir
 
         Returns
         -------
@@ -1910,7 +1910,7 @@ class CompressedFITSImage( FITSImage ):
 
         """
         temp_dir = pathlib.Path( temp_dir if temp_dir is not None
-                                 else Config.get().value( 'system.temp_dir' ) )
+                                 else Config.get().value( 'system.paths.temp_dir' ) )
         barf = "".join( random.choices( '0123456789abcdef', k=10 ) )
         impath = None
         noisepath = None
