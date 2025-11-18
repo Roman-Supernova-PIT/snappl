@@ -8,24 +8,27 @@ snappl API
 
 .. automodapi:: snappl.config
 
-.. automodapi:: snappl.logger
-
-.. automodapi:: snappl.utils
-
 .. automodapi:: snappl.dbclient
 
-.. automodapi:: snappl.provenance
+.. automodapi:: snappl.diaobject
 
 .. automodapi:: snappl.http
 
-.. automodapi:: snappl.diaobject
+.. automodapi:: snappl.logger
 
 .. automodapi:: snappl.imagecollection
 
 .. automodapi:: snappl.image
 
-.. automodapi:: snappl.wcs
+.. automodapi:: snappl.provenance
 
 .. automodapi:: snappl.psf
 
 .. automodapi:: snappl.sed
+
+.. automodapi:: snappl.spectrum1d
+
+.. automodapi:: snappl.wcs
+
+.. automodapi:: snappl.utils
+
