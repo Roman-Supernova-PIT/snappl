@@ -1965,8 +1965,8 @@ class FITSImageOnDisk( CompressedFITSImage ):
 #  HDU 3 : DQ (32-bit integer)
 
 class OpenUniverse2024FITSImage( CompressedFITSImage ):
-    def __init__( self, *args, **kwargs ):
-        super().__init__( *args, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs )
+    def __init__( self, *args, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs ):
+        super().__init__( *args, imagehdu=imagehdu, noisehdu=noisehdu, flagshdu=flagshdu, **kwargs )
 
     _image_class_base_path_config_item = 'system.ou24.images'
 
