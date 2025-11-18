@@ -37,6 +37,17 @@ def cfg():
     assert cfgpath not in Config._configs
     cfgobj = Config.get( _rundir / "config_test_data/test.yaml" )
     assert cfgpath in Config._configs
+    assert Config._default is None
+    return cfgobj
+
+
+@pytest.fixture
+def cfg_default():
+    cfgpath = str( _rundir / "config_test_data/test.yaml" )
+    assert cfgpath not in Config._configs
+    cfgobj = Config.get( _rundir / "config_test_data/test.yaml", setdefault=True )
+    assert cfgpath in Config._configs
+    assert Config._default == cfgpath
     return cfgobj
 
 
@@ -521,3 +532,39 @@ def test_reread( cfg ):
     assert newcfg.value( 'mainscalar1' ) == 'main1'
     assert Config._configs[cfgpath].value( 'mainscalar1' ) == 'main1'
     assert newcfg is Config._configs[cfgpath]
+
+
+def test_prefix( cfg_default ):
+    cfg = Config.get( prefix='nest' )
+    assert cfg.value( 'nest1.0.nest1a.val' ) == 'foo'
+    assert cfg.value( 'nest2.val' ) == 'bar'
+
+    cfg2 = Config.get( clone=cfg, prefix='nest2' )
+    assert cfg2.value( 'val' ) == 'bar'
+    assert cfg2.value() == { 'val': 'bar' }
+
+    cfg = Config.get( prefix='nest.nest1' )
+    assert cfg.value( '0.nest1a.val' ) == 'foo'
+    assert cfg.value( '1' ) == 42
+
+    with pytest.raises( TypeError, match="Cannot clone a config whose top level element is a list" ):
+        _ = Config.get( clone=cfg )
+
+    with pytest.raises( ValueError, match="\"nest.nest2.val\" is an invalid prefix: it doesn't point" ):
+        _ = Config.get( prefix='nest.nest2.val' )
+
+    cfg = Config.get( clone=cfg_default, prefix='nest.nest2' )
+    cfg.set_value( 'kitten', 'ferocious' )
+    assert cfg.value( 'kitten' ) == 'ferocious'
+    assert cfg.value() == { 'val': 'bar', 'kitten': 'ferocious' }
+    # Clones don't modify parents
+    with pytest.raises( ValueError, match=r"Can't find field nest.nest2.kitten" ):
+        assert cfg_default.value( 'nest.nest2.kitten' ) == 'ferocious'
+
+    # Naughty : not supposed to modify the _static value of config objects.
+    # Doing it here for the test.
+    cfg_default._static = False
+    cfg = Config.get( prefix='nest.nest1' )
+    cfg.set_value( '0.nest1a.val', 'kitten' )
+    assert cfg.value( '0.nest1a.val' ) == 'kitten'
+    assert cfg_default.value( 'nest.nest1.0.nest1a.val' ) == 'kitten'

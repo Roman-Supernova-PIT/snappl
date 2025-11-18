@@ -1933,7 +1933,7 @@ class CompressedFITSImage( FITSImage ):
             flagspath = ( temp_dir / f"{barf}_flags.fits" ).resolve()
             hdul.writeto( flagspath )
 
-        return FITSImageOnDisk( no_base_dir=True, full_filepath=impath, noisepath=noisepath, flagspath=flagspath )
+        return CompressedFITSImage( no_base_dir=True, full_filepath=impath, noisepath=noisepath, flagspath=flagspath )
 
 
 # ======================================================================
