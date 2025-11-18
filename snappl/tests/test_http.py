@@ -1,5 +1,5 @@
 import pytest
-from snappl.http import retry_post
+from snappl.http_snappl import retry_post
 
 
 def test_retry_post( dbclient ):

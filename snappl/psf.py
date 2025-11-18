@@ -1800,7 +1800,7 @@ class VaryingGaussianPSF( GaussianPSF ):
     where image_center_x and image_center_y are the center of the SCA (2044 pixels).
     """
 
-    def __init__(self, sca_size = 4088, base_sigma_x=1, base_sigma_y=1, linear_coefficient = 0.1,
+    def __init__(self, sca_size = 256, base_sigma_x=1, base_sigma_y=1, linear_coefficient = 0.1,
                _parent_class=False, **kwargs):
         """Create an object that renders a spatially varying Gaussian PSF.
 

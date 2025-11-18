@@ -1682,8 +1682,9 @@ class FITSImageStdHeaders( FITSImage ):
         if self._header is None:
             try:
                 self._header = FITSImage.get_fits_header( self )
-            except Exception:
+            except Exception as e:
                 self._header = fits.header.Header()
+                SNLogger.debug(f"Error reading header: {e}")
         return self._header
 
 
@@ -1774,7 +1775,6 @@ class FITSImageStdHeaders( FITSImage ):
 
     def _get_mjd( self ):
         hdr = self.get_fits_header()
-        SNLogger.debug(f"header: {hdr}")
         SNLogger.debug(f"Getting MJD from header keyword {self._header_kws['mjd']}")
         self._mjd = float( hdr[ self._header_kws['mjd'] ] )
 
