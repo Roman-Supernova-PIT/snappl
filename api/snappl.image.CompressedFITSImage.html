@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>CompressedFITSImage &#8212; roman_snpit_snappl 0.1.dev1+g475afefac documentation</title>
+    <title>CompressedFITSImage &#8212; roman_snpit_snappl 0.1.dev1+g6e4ba6e89 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=4310dfbd"></script>
+    <script src="../_static/documentation_options.js?v=a462c94e"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -187,17 +187,15 @@ many cases, they will be lazy-loaded from the header.</p></li>
 <dt class="sig sig-object py" id="snappl.image.CompressedFITSImage.uncompressed_version">
 <span class="sig-name descname"><span class="pre">uncompressed_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['data',</span> <span class="pre">'noise',</span> <span class="pre">'flags']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#CompressedFITSImage.uncompressed_version"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.CompressedFITSImage.uncompressed_version" title="Link to this definition">¶</a></dt>
 <dd><p>Make sure to get a FITSImageOnDisk that’s not compressed.</p>
-<p>If none of the files for the current FITSImageOnDisk object are
-compressed, just return this object.</p>
-<p>Otherwise, will write out up to three single-HDU FITS files in
-base_dir (which defaults to photometry.snappl.temp_dir from the
+<p>will write out up to three single-HDU FITS files in
+temp_dir (which defaults to photometry.snappl.temp_dir from the
 config).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>include</strong> (<em>sequence</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Can include any of ‘data’, ‘noise’, ‘flags’; which things to
 write.  Ignored if the current image isn’t compressed.</p></li>
-<li><p><strong>temp_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – The path to write the files.  Defaults to the config value system.temp_dir</p></li>
+<li><p><strong>temp_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – The path to write the files.  Defaults to the config value system.paths.temp_dir</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
