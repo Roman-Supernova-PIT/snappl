@@ -95,6 +95,7 @@ def saved_gratuitous_spectrum( gratuitous_spectrum, dbclient ):
     try:
         spec.save_to_db( write=True )
         spec._fill_props()
+        import pdb; pdb.set_trace()
         yield spec
     finally:
         spec.full_filepath.unlink( missing_ok=True )
