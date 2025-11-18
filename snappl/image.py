@@ -1641,14 +1641,16 @@ class FITSImage( Numpy2DImage ):
         except Exception:
             wcshdr = None
 
+        imghdr = None if self._header is None else FITSImage._astropy_header_to_fitsio_header( self._header )
+        justwcshdr = None if wcshdr is None else FITSImage._astropy_header_to_fitsio_header( self._header )
         with fitsio.FITS( imagepath, 'rw' ) as f:
-            f.write( self.data, header=FITSImage._astropy_header_to_fitsio_header( self._header ) )
+            f.write( self.data, header=imghdr )
         if ( noisepath is not None ) and ( self.noise is not None ):
             with fitsio.FITS( noisepath, 'rw' ) as f:
-                f.write( self.noise, header=FITSImage._astropy_header_to_fitsio_header( wcshdr ) )
+                f.write( self.noise, header=justwcshdr )
         if ( self.flagspath is not None ) and ( self.flags is not None ):
             with fitsio.FITS( flagspath, 'rw' ) as f:
-                f.write( self.flags, header=FITSImage._astropy_header_to_fitsio_header( wcshdr ) )
+                f.write( self.flags, header=justwcshdr )
 
 
 # ======================================================================
