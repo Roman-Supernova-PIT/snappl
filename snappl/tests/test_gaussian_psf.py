@@ -159,6 +159,7 @@ def test_gaussian_psf():
     assert cx == pytest.approx( 5.5, abs=0.01 )
     assert cy == pytest.approx( 5.5, abs=0.01 )
 
+
 def test_varying_gaussian_psf():
     vgpsf = PSF.get_psf_object("varying_gaussian", sigmax=1, sigmay=1, stamp_size=23, sca_size = 23)
     stamp = vgpsf.get_stamp(x=11, y=11, x0=11, y0=11)

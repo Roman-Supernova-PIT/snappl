@@ -1745,8 +1745,6 @@ class GaussianPSF( PSF ):
 
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
-        print("Generating Gaussian PSF stamp with sigmax =", self.sigmax,
-              ", sigmay =", self.sigmay, ", theta (deg) =", self.theta * 180./np.pi)
 
         midpix = int( np.floor( self.stamp_size / 2 ) )
         xc = int( np.floor(x + 0.5 ) )
@@ -1808,7 +1806,7 @@ class VaryingGaussianPSF( GaussianPSF ):
 
         Parameters
         ----------
-          sca_size : int, default 4088
+          sca_size : int, default 256
             The size of one SCA in pixels. Used to calculate how σ_x and σ_y vary
             across the image.
 
@@ -1830,8 +1828,6 @@ class VaryingGaussianPSF( GaussianPSF ):
     def get_stamp(self, x=None, y=None, x0=None, y0=None, flux=1.):
         self.sigmax=self.base_sigma_x + (x - (self.sca_size / 2)) * self.linear_coefficient / self.sca_size
         self.sigmay=self.base_sigma_y + (y - (self.sca_size / 2)) * self.linear_coefficient / self.sca_size
-        print("sigma x", self.sigmax)
-        print("sigma y", self.sigmay)
         gPSF = PSF.get_psf_object( "gaussian", sigmax=self.sigmax, sigmay=self.sigmay, theta=self.theta,
                                   stamp_size=self.stamp_size )
         return gPSF.get_stamp(x=x, y=y, x0=x0, y0=y0, flux=flux)

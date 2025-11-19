@@ -1794,7 +1794,6 @@ class FITSImageStdHeaders( FITSImage ):
 
     def _get_mjd( self ):
         hdr = self.get_fits_header()
-        SNLogger.debug(f"Getting MJD from header keyword {self._header_kws['mjd']}")
         self._mjd = float( hdr[ self._header_kws['mjd'] ] )
 
     @property
