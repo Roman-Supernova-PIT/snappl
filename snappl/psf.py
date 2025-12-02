@@ -1352,7 +1352,7 @@ class ou24PSF_slow( PSF ):
                     self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
 
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
-            point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, rmutils.bpass )
+            point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, rmutils.bpass )
             # TODO : make sure that rmutils.getPSF wants 1-indexed positions (which we assume here).
             # (This is not that big a deal, because the PSF is not going to vary significantly
             # over 1 pixel.)
@@ -1379,7 +1379,7 @@ class ou24PSF_slow( PSF ):
 
             self._stamps[(x, y, stampx, stampy)] = stamp.array
 
-        return self._stamps[(x, y, stampx, stampy)]
+        return self._stamps[(x, y, stampx, stampy)] * flux
 
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
