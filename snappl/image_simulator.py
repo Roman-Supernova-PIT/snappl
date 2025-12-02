@@ -35,7 +35,9 @@ class ImageSimulatorPointSource:
 
         x0 = int( np.floor( x + 0.5 ) )
         y0 = int( np.floor( y + 0.5 ) )
+        SNLogger.debug("Flux in render_stamp: {:.2f}".format(flux))
         stamp = self.psf.get_stamp( x, y, x0=x0, y0=y0, flux=flux )
+        SNLogger.debug("Max stamp value: {:.2f}".format(np.max(stamp)))
         var = np.zeros( stamp.shape )
         if noisy:
             if rng is None:
@@ -132,7 +134,9 @@ class ImageSimulatorTransient( ImageSimulatorPointSource ):
 
 
     def render_transient( self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None ):
+        SNLogger.debug( f"Rendering transient at mjd {mjd}" )
         if ( mjd <= self.start_mjd ) or ( mjd >= self.end_mjd ):
+            SNLogger.debug( f"Transient is not active at mjd {mjd}" )
             return None, None, None, None
 
         peakflux = 10 ** ( ( self.peak_mag - zeropoint ) / -2.5 )
@@ -169,7 +173,7 @@ class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""
 
     def __init__( self, width=4088, height=4088, ra=0., dec=0., rotation=0., basename='simulated_image',
-                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60. ):
+                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., pointing=1000 ):
 
         if basename is None:
             raise ValueError( "Must pass a basename" )
@@ -198,7 +202,7 @@ class ImageSimulatorImage:
         self.image.zeropoint = zeropoint
         self.image.band = band
         self.image.sca = sca
-        self.image.pointing = int( 100 * mjd )
+        self.image.pointing = pointing
         self.image.exptime = exptime
 
     def render_sky( self, skymean, skysigma, rng=None ):
@@ -313,6 +317,7 @@ class ImageSimulator:
                   sky_level=[10.],
                   band='R062',
                   sca=1,
+                  pointing=1000,
                   exptime=60.,
                   transient_ra=None,
                   transient_dec=None,
@@ -383,9 +388,13 @@ class ImageSimulator:
         self.nstars = nstars
         self.psf_class = psf_class
         self.psf_kwargs = psf_kwargs
+        SNLogger.debug( f"PSF kwargs: {self.psf_kwargs}" )
         self.no_star_noise = no_star_noise
         self.band = band
         self.sca = sca
+        self.pointing = pointing
+        self.psf_kwargs.append( f"pointing={self.pointing}" )
+        self.psf_kwargs.append( f"sca={self.sca}" )
         self.exptime = exptime
         self.transient_ra = transient_ra
         self.transient_dec = transient_dec
