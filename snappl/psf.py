@@ -1250,7 +1250,7 @@ class ou24PSF_slow( PSF ):
 
     """
 
-    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True,
+    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=False, # this needs to be an option somehow
                    n_photons=1000000, _parent_class=False, **kwargs
                  ):
         super().__init__( _parent_class=True, **kwargs )
@@ -1310,6 +1310,7 @@ class ou24PSF_slow( PSF ):
             using rmutils.getLocalWCS.
 
         """
+        SNLogger.debug(f"Getting stamp at position x={x}, y={y}, x0={x0}, y0={y0}, flux={flux}, seed={seed}")
 
         # If a position is not given, assume the middle of the SCA
         #   (within 1/2 pixel; by default, we want to make x and y
@@ -1355,7 +1356,7 @@ class ou24PSF_slow( PSF ):
                     self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
 
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
-            point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, rmutils.bpass )
+            point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, rmutils.bpass )
             # TODO : make sure that rmutils.getPSF wants 1-indexed positions (which we assume here).
             # (This is not that big a deal, because the PSF is not going to vary significantly
             # over 1 pixel.)
@@ -1371,6 +1372,7 @@ class ou24PSF_slow( PSF ):
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
             if self.include_photonOps:
+                SNLogger.debug("Drawing image with photon shooting")
                 point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
@@ -1380,9 +1382,10 @@ class ou24PSF_slow( PSF ):
                 psf.drawImage(rmutils.bpass, method="no_pixel", center=center,
                               use_true_center=True, image=stamp, wcs=self._wcs)
 
+            SNLogger.debug(f"MAx value in stamp array {np.max(stamp.array)}")
             self._stamps[(x, y, stampx, stampy)] = stamp.array
 
-        return self._stamps[(x, y, stampx, stampy)]
+        return self._stamps[(x, y, stampx, stampy)] * flux
 
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
