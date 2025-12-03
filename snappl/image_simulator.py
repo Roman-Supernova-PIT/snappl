@@ -9,6 +9,7 @@ import multiprocessing
 import numpy as np
 import astropy.wcs
 
+from snappl.config import Config
 from snappl.logger import SNLogger
 from snappl.utils import isSequence
 from snappl.psf import PSF
@@ -173,25 +174,39 @@ class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""
 
     def __init__( self, width=4088, height=4088, ra=0., dec=0., rotation=0., basename='simulated_image',
-                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., pointing=1000 ):
+                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., pointing=1000, use_roman_wcs=True):
 
         if basename is None:
             raise ValueError( "Must pass a basename" )
 
         rotation = rotation * np.pi / 180.
         wcsdict = { 'CTYPE1': 'RA---TAN',
-                    'CTYPE2': 'DEC--TAN',
-                    'NAXIS1': width,
-                    'NAXIS2': height,
-                    'CRPIX1': width / 2. + 1,
-                    'CRPIX2': height / 2. + 1,
-                    'CRVAL1': ra,
-                    'CRVAL2': dec,
-                    'CD1_1': pixscale / 3600. * np.cos( rotation ),
-                    'CD1_2': pixscale / 3600. * np.sin( rotation ),
-                    'CD2_1': -pixscale / 3600. * np.sin( rotation ),
-                    'CD2_2': pixscale / 3600. * np.cos( rotation )
-                   }
+                        'CTYPE2': 'DEC--TAN',
+                        'NAXIS1': width,
+                        'NAXIS2': height,
+                        'CRPIX1': width / 2. + 1,
+                        'CRPIX2': height / 2. + 1,
+                        'CRVAL1': ra,
+                        'CRVAL2': dec,
+                        'CD1_1': pixscale / 3600. * np.cos( rotation ),
+                        'CD1_2': pixscale / 3600. * np.sin( rotation ),
+                        'CD2_1': -pixscale / 3600. * np.sin( rotation ),
+                        'CD2_2': pixscale / 3600. * np.cos( rotation )
+                    }
+
+        if use_roman_wcs:
+            assert pointing is not None, "Pointing must be specified when using Roman WCS"
+            assert sca is not None, "SCA must be specified when using Roman WCS"
+            from roman_imsim.utils import roman_utils
+            config_file = Config.get().value( 'system.ou24.config_file' )
+            rmutils = roman_utils(config_file, pointing, sca)
+            wcsdict_galsim = dict(rmutils.getWCS().header)
+            wcsdict['CD1_1'] = wcsdict_galsim['CD1_1']
+            wcsdict['CD1_2'] = wcsdict_galsim['CD1_2']
+            wcsdict['CD2_1'] = wcsdict_galsim['CD2_1']
+            wcsdict['CD2_2'] = wcsdict_galsim['CD2_2']
+
+
         self.image = FITSImageStdHeaders( data=np.zeros( ( height, width ), dtype=np.float32 ),
                                           noise=np.zeros( ( height, width ), dtype=np.float32 ),
                                           flags=np.zeros( ( height, width ), dtype=np.int16 ),
