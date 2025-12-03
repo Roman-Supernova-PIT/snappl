@@ -454,6 +454,7 @@ class ImageSimulator:
                                           rotation=self.imdata['rots'][i], basename=self.basename,
                                           zeropoint=self.imdata['zps'][i], mjd=self.imdata['mjds'][i],
                                           pixscale=self.pixscale, band=self.band, sca=self.sca, exptime=self.exptime )
+            SNLogger.debug("Image object created with pointing %s and sca %s", image.image.pointing, image.image.sca)
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
             image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise )
             image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise )

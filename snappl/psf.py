@@ -1253,6 +1253,7 @@ class ou24PSF_slow( PSF ):
     def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True,
                    n_photons=1000000, _parent_class=False, **kwargs
                  ):
+
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'sed', 'config_file', 'size', 'include_photonOps', 'n_photons' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
@@ -1310,6 +1311,7 @@ class ou24PSF_slow( PSF ):
             using rmutils.getLocalWCS.
 
         """
+        SNLogger.debug("Getting ou24PSF_slow stamp at x=%s, y=%s, x0=%s, y0=%s", x, y, x0, y0)
 
         # If a position is not given, assume the middle of the SCA
         #   (within 1/2 pixel; by default, we want to make x and y
@@ -1331,8 +1333,9 @@ class ou24PSF_slow( PSF ):
             raise ValueError( f"PSF would be rendered at ({stampx},{stampy}), which is too far off of the "
                               f"edge of a {self.stamp_size}-pixel stamp." )
 
-
+        SNLogger.debug("Initializing ou24PSF_slow with pointing %s and sca %s", self._pointing, self._sca)
         if (x, y, stampx, stampy) not in self._stamps:
+            SNLogger.debug(f"Rendering new stamp for {(x, y, stampx, stampy)} with pointing {self._pointing} and sca {self._sca}")
             rmutils = roman_utils( self.config_file, self._pointing, self._sca )
             if seed is not None:
                 rmutils.rng = galsim.BaseDeviate( seed )
@@ -1344,6 +1347,9 @@ class ou24PSF_slow( PSF ):
 
             if self._image is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )
+                SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
+                SNLogger.debug( f"ou24PSF_slow wcs fetched at: {x+1, y+1}" )
+                SNLogger.debug( f"ou24PSF_slow wcs: {self._wcs}" )
             else:
                 image_wcs = self._image.get_wcs()
                 if image_wcs is None:
@@ -1353,9 +1359,11 @@ class ou24PSF_slow( PSF ):
                 else:
                     SNLogger.debug(f"Using the WCS from the image passed to {self.__class__.__name__}.")
                     self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
+                    SNLogger.debug( f"ou24PSF_slow wcs fetched at: {x+1, y+1}" )
+                    SNLogger.debug( f"ou24PSF_slow wcs: {self._wcs}" )
 
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
-            point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, rmutils.bpass )
+            point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, rmutils.bpass )
             # TODO : make sure that rmutils.getPSF wants 1-indexed positions (which we assume here).
             # (This is not that big a deal, because the PSF is not going to vary significantly
             # over 1 pixel.)
@@ -1381,8 +1389,9 @@ class ou24PSF_slow( PSF ):
                               use_true_center=True, image=stamp, wcs=self._wcs)
 
             self._stamps[(x, y, stampx, stampy)] = stamp.array
-
-        return self._stamps[(x, y, stampx, stampy)]
+        else:
+          SNLogger.debug(f"Using cached stamp for {(x, y, stampx, stampy)}")
+        return self._stamps[(x, y, stampx, stampy)] * flux
 
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
@@ -1422,6 +1431,7 @@ class ou24PSF( ou24PSF_slow ):
         if self._image is None:
             SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
             self._wcs = self._rmutils.getLocalWCS( x0+1, y0+1 )
+
         else:
             image_wcs = self._image.get_wcs()
             if image_wcs is None:
