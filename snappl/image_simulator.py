@@ -463,6 +463,7 @@ class ImageSimulator:
             static_source = None
 
         for i in range( len( self.imdata['mjds'] ) ):
+
             SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
             image =  ImageSimulatorImage( self.width, self.height,
                                           ra=self.imdata['ras'][i], dec=self.imdata['decs'][i],
