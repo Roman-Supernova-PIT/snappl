@@ -1248,7 +1248,7 @@ class ou24PSF_slow( PSF ):
     """
 
     def __init__( self, sed=None, config_file=None, size=201,
-                   n_photons=1000000, _parent_class=False,  _include_photonOps=True, **kwargs
+                   n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
                  ):
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'sed', 'config_file', 'size', '_include_photonOps', 'n_photons' ] )
@@ -1363,7 +1363,7 @@ class ou24PSF_slow( PSF ):
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
             center = galsim.PositionD(stampx+1, stampy+1)
-            # Note: self.include_photonOps is a bool that states whether we are
+            # Note: self._include_photonOps is a bool that states whether we are
             #  shooting photons or not, photon_ops is the actual map (not sure
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
@@ -1384,7 +1384,7 @@ class ou24PSF_slow( PSF ):
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
 class ou24PSF( ou24PSF_slow ):
-    """Wrap the roman_imsim PSFs, only more efficiently (we hoipe) than ou24PSF_slow.
+    """Wrap the roman_imsim PSFs, only more efficiently (we hope) than ou24PSF_slow.
 
     TODO: document what is different, what is cached.
 
@@ -1522,6 +1522,20 @@ class ou24PSF( ou24PSF_slow ):
             self._stamps[(x, y, stampx, stampy)] = self._stamp.array
 
         return self._stamps[(x, y, stampx, stampy)]
+
+
+class ou24PSF_photonshoot( ou24PSF ):
+    """ The ou24 PSF but with photon shooting turned on."""
+
+    def __init__(self, _parent_class=False, **kwargs):
+        super().__init__(_parent_class=True, _include_photonOps = True, **kwargs)
+
+
+class ou24PSF_photonshoot( ou24PSF_slow ):
+    """ The ou24 slow PSF but with photon shooting turned on."""
+
+    def __init__(self, _parent_class=False, **kwargs):
+        super().__init__(_parent_class=True, _include_photonOps = True, **kwargs)
 
 # class ou24PSF( OversampledImagePSF ):
 #     """An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.
