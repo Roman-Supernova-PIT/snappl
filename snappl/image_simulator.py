@@ -18,18 +18,17 @@ from snappl.wcs import AstropyWCS
 
 
 class ImageSimulatorPointSource:
-    def __init__( self, ra=None, dec=None, psf=None ):
-        if any( i is None for i in [ ra, dec, psf ] ):
-            raise ValueError( "ImageSimulatorPointSource (or subclass) requires all of [ ra, dec, psf ]" )
+    def __init__( self, ra=None, dec=None):
+        if any( i is None for i in [ ra, dec ] ):
+            raise ValueError( "ImageSimulatorPointSource (or subclass) requires all of [ ra, dec ]" )
         self.ra = ra
         self.dec = dec
-        self.psf = psf
 
 
-    def render_stamp( self, width, height, x, y, flux, zeropoint=None, gain=1., noisy=True, rng=None ):
+    def render_stamp( self, width, height, x, y, flux, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
 
-        if ( ( x < -self.psf.stamp_size ) or ( x > height + self.psf.stamp_size ) or
-             ( y < -self.psf.stamp_size ) or ( y > width + self.psf.stamp_size )
+        if ( ( x <  psf.stamp_size ) or ( x > height + psf.stamp_size ) or
+             ( y <  psf.stamp_size ) or ( y > width + psf.stamp_size )
             ):
             # No part of the stamp will be on the image, so don't bother rendering
             return None, None, None, None
@@ -37,7 +36,7 @@ class ImageSimulatorPointSource:
         x0 = int( np.floor( x + 0.5 ) )
         y0 = int( np.floor( y + 0.5 ) )
         SNLogger.debug("Flux in render_stamp: {:.2f}".format(flux))
-        stamp = self.psf.get_stamp( x, y, x0=x0, y0=y0, flux=flux )
+        stamp = psf.get_stamp( x, y, x0=x0, y0=y0, flux=flux )
         SNLogger.debug("Max stamp value: {:.2f}".format(np.max(stamp)))
         var = np.zeros( stamp.shape )
         if noisy:
@@ -85,15 +84,15 @@ class ImageSimulationStar( ImageSimulatorPointSource ):
         self.mag = mag
 
 
-    def render_star( self, width, height, x, y, zeropoint=None, gain=1., noisy=True, rng=None ):
+    def render_star( self, width, height, x, y, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
         flux = 10 ** ( ( self.mag - zeropoint ) / -2.5 )
         return self.render_stamp( width, height, x, y, flux, zeropoint=zeropoint, gain=gain,
-                                  noisy=noisy, rng=rng )
+                                  noisy=noisy, rng=rng, psf = psf )
 
-
-    def add_to_image( self, image, varimage, x, y, zeropoint=None, gain=1., noisy=True, rng=None ):
+    def add_to_image( self, image, varimage, x, y, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
         stamp, var, imcoords, stampcoords =  self.render_star( image.shape[1], image.shape[0], x, y,
-                                                               zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng )
+                                                               zeropoint=zeropoint, gain=gain, noisy=noisy,
+                                                               rng=rng, psf = psf )
         if stamp is not None:
             ix0, ix1, iy0, iy1 = imcoords
             sx0, sx1, sy0, sy1 = stampcoords
@@ -103,10 +102,9 @@ class ImageSimulationStar( ImageSimulatorPointSource ):
 
 
 class ImageSimulatorStarCollection:
-    def __init__( self, psf, ra=None, dec=None, fieldrad=None, m0=None, m1=None, alpha=None, nstars=None, rng=None ):
+    def __init__( self, ra=None, dec=None, fieldrad=None, m0=None, m1=None, alpha=None, nstars=None, rng=None ):
         if rng is None:
             self.rng = np.random.default_rng()
-        self.psf = psf
 
         stars = []
         norm = ( alpha + 1 ) / ( m1 ** (alpha + 1) - m0 ** (alpha + 1) )
@@ -118,7 +116,7 @@ class ImageSimulatorStarCollection:
             starra = ra + dra / np.cos( dec * np.pi / 180 )
             stardec = dec + ddec
             starm = ( ( alpha + 1 ) / norm * rng.random() + ( m0 ** (alpha + 1) ) ) ** ( 1. / (alpha+1) )
-            stars.append( ImageSimulationStar( ra=starra, dec=stardec, mag=starm, psf=self.psf ) )
+            stars.append( ImageSimulationStar( ra=starra, dec=stardec, mag=starm ) )
 
         self.stars = stars
 
@@ -134,7 +132,7 @@ class ImageSimulatorTransient( ImageSimulatorPointSource ):
         self.end_mjd = end_mjd
 
 
-    def render_transient( self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None ):
+    def render_transient( self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
         SNLogger.debug( f"Rendering transient at mjd {mjd}" )
         if ( mjd <= self.start_mjd ) or ( mjd >= self.end_mjd ):
             SNLogger.debug( f"Transient is not active at mjd {mjd}" )
@@ -150,7 +148,7 @@ class ImageSimulatorTransient( ImageSimulatorPointSource ):
         SNLogger.debug( f"Adding transient with mag {mag:.2f} (flux {flux:.0f}) at mjd {mjd}" )
 
         return self.render_stamp( width, height, x, y, flux, zeropoint=zeropoint, gain=gain,
-                                  noisy=noisy, rng=rng )
+                                  noisy=noisy, rng=rng, psf = psf )
 
 
 class ImageSimulatorStaticSource(ImageSimulatorPointSource):
@@ -161,20 +159,20 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
             raise ValueError("ImageSimulatorStaticSource requires a magnitude")
         self.mag = mag
 
-    def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None):
+    def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None, psf = None):
 
         flux = 10 ** ((self.mag - zeropoint) / -2.5)
         SNLogger.debug(f"Adding transient with mag {self.mag:.2f} (flux {flux:.0f}) on mjd {mjd}")
 
         # To start, we are hardcoding that static sources are just point sources.
-        return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng)
+        return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng, psf = psf)
 
 
 class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""
 
     def __init__( self, width=4088, height=4088, ra=0., dec=0., rotation=0., basename='simulated_image',
-                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., pointing=1000, use_roman_wcs=True):
+                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., pointing=1000, use_roman_wcs=False): #use_roman_wcs needs a param
 
         if basename is None:
             raise ValueError( "Must pass a basename" )
@@ -227,7 +225,7 @@ class ImageSimulatorImage:
         self.image.data += rng.normal( skymean, skysigma, size=self.image.data.shape )
         self.image.noise += np.full( self.image.noise.shape, skysigma**2 )
 
-    def add_stars( self, stars, rng=None, noisy=False, numprocs=12 ):
+    def add_stars( self, stars, rng=None, noisy=False, numprocs=12, psf = None ):
         if rng is None:
             rng = np.random.default_rng()
 
@@ -252,7 +250,7 @@ class ImageSimulatorImage:
                 x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                 try:
                     data = star.render_star( self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                             zeropoint=self.image.zeropoint, rng=rng, noisy=noisy )
+                                             zeropoint=self.image.zeropoint, rng=rng, noisy=noisy, psf = psf )
                     add_star_to_image( i, data )
                 except Exception as ex:
                     omg( ex )
@@ -262,7 +260,7 @@ class ImageSimulatorImage:
                     x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                     doer = functools.partial( star.render_star,
                                               self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                              zeropoint=self.image.zeropoint, rng=rng, noisy=noisy )
+                                              zeropoint=self.image.zeropoint, rng=rng, noisy=noisy, psf = psf )
                     callback = functools.partial( add_star_to_image, i )
                     pool.apply_async( doer, callback=callback, error_callback=omg )
                 pool.close()
@@ -272,7 +270,7 @@ class ImageSimulatorImage:
             raise RuntimeError( "Bad things have happened." )
 
 
-    def add_transient( self, transient, rng=None, noisy=False ):
+    def add_transient( self, transient, rng=None, noisy=False, psf = None ):
         if rng is None:
             rng = np.random.default_rng()
 
@@ -281,14 +279,14 @@ class ImageSimulatorImage:
         ( stamp, var,
           imcoords, stampcoords ) = transient.render_transient( self.image.data.shape[1], self.image.data.shape[0],
                                                                 x, y, self.image.mjd, zeropoint=self.image.zeropoint,
-                                                                rng=rng, noisy=noisy )
+                                                                rng=rng, noisy=noisy, psf = psf )
         if stamp is not None:
             ix0, ix1, iy0, iy1 = imcoords
             sx0, sx1, sy0, sy1 = stampcoords
             self.image.data[ iy0:iy1, ix0:ix1 ] += stamp[ sy0:sy1, sx0:sx1 ]
             self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
 
-    def add_static_source( self, static_source, rng=None, noisy = False ):
+    def add_static_source( self, static_source, rng=None, noisy = False, psf = None ):
         if static_source is not None:
             if rng is None:
                 rng = np.random.default_rng()
@@ -300,7 +298,7 @@ class ImageSimulatorImage:
                                                                             self.image.data.shape[0],
                                                                         x, y, self.image.mjd,
                                                                         zeropoint=self.image.zeropoint,
-                                                                        rng=rng, noisy=noisy)
+                                                                        rng=rng, noisy=noisy, psf = psf)
             if stamp is not None:
                 ix0, ix1, iy0, iy1 = imcoords
                 sx0, sx1, sy0, sy1 = stampcoords
@@ -445,25 +443,24 @@ class ImageSimulator:
                     kwargs[ mat.group(1) ] = float( mat.group(2) )
                 except ValueError:
                     kwargs[ mat.group(1) ] = mat.group(2)
-        psf = PSF.get_psf_object( self.psf_class, **kwargs )
 
-        stars = ImageSimulatorStarCollection( psf=psf, ra=self.star_center_ra, dec=self.star_center_dec,
+        stars = ImageSimulatorStarCollection( ra=self.star_center_ra, dec=self.star_center_dec,
                                               fieldrad=self.star_sky_radius,
                                               m0=self.min_star_magnitude, m1=self.max_star_magnitude,
                                               alpha=self.alpha, nstars=self.nstars, rng=star_rng )
 
         transient = ImageSimulatorTransient( ra=self.transient_ra, dec=self.transient_dec,
-                                             psf=psf, peak_mag=self.transient_peak_mag,
+                                             peak_mag=self.transient_peak_mag,
                                              peak_mjd=self.transient_peak_mjd, start_mjd=self.transient_start_mjd,
                                              end_mjd=self.transient_end_mjd )
         if all ( i is not None for i in [ self.static_source_ra, self.static_source_dec, self.static_source_mag ] ):
             static_source = ImageSimulatorStaticSource( ra=self.static_source_ra, dec=self.static_source_dec,
-                                                    psf=psf, mag=self.static_source_mag )
+                                                    mag=self.static_source_mag )
         else:
             static_source = None
 
         for i in range( len( self.imdata['mjds'] ) ):
-
+            psf = PSF.get_psf_object(self.psf_class, **kwargs)
             SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
             image =  ImageSimulatorImage( self.width, self.height,
                                           ra=self.imdata['ras'][i], dec=self.imdata['decs'][i],
@@ -472,9 +469,9 @@ class ImageSimulator:
                                           pixscale=self.pixscale, band=self.band, sca=self.sca, exptime=self.exptime )
             SNLogger.debug("Image object created with pointing %s and sca %s", image.image.pointing, image.image.sca)
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
-            image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise )
-            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise )
-            image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise)
+            image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise, psf = psf )
+            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf = psf )
+            image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise, psf = psf)
             image.image.noise = np.sqrt( image.image.noise )
             SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
             image.image.save( overwrite=self.overwrite )

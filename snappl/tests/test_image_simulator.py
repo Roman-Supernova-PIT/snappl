@@ -47,7 +47,7 @@ def test_image_simulator_one_transient_image():
         image = FITSImageStdHeaders( f'{fnamebase}_{kwargs["mjds"][0]:7.1f}', std_imagenames=True )
         assert image.mjd == pytest.approx( kwargs['mjds'][0], abs=0.0001 )
         assert image.sca == 1
-        assert image.pointing == int( 100 * kwargs['mjds'][0] )
+        assert image.pointing == 1000
         assert image.band == 'R062'
         assert image.image_shape == ( kwargs['height'], kwargs['width'] )
         wcs = image.get_wcs()
