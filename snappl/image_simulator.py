@@ -210,8 +210,6 @@ class ImageSimulatorImage:
             wcsdict['CD2_2'] = wcsdict_galsim['CD2_2']
             SNLogger.debug("Roman WCS CD matrix: %s", wcsdict["CD1_1"])
 
-        import pdb; pdb.set_trace()
-
 
         self.image = FITSImageStdHeaders( data=np.zeros( ( height, width ), dtype=np.float32 ),
                                           noise=np.zeros( ( height, width ), dtype=np.float32 ),

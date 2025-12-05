@@ -106,8 +106,6 @@ def test_image_simulator_one_transient_image():
         image = FITSImageStdHeaders(f"{fnamebase}_{kwargs['mjds'][0]:7.1f}", std_imagenames=True)
         # Since only the CD matrix is modified, the central pixel should be the same
         wcs = image.get_wcs()
-        import pdb; pdb.set_trace()
-        print(dir(wcs))
         x, y = wcs.world_to_pixel(kwargs["transient_ra"], kwargs["transient_dec"])
         x0 = int(np.floor(x + 0.5))
         y0 = int(np.floor(y + 0.5))
