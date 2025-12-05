@@ -9,6 +9,8 @@ import multiprocessing
 import numpy as np
 import astropy.wcs
 
+from roman_imsim.utils import roman_utils
+
 from snappl.config import Config
 from snappl.logger import SNLogger
 from snappl.utils import isSequence
@@ -87,12 +89,12 @@ class ImageSimulationStar( ImageSimulatorPointSource ):
     def render_star( self, width, height, x, y, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
         flux = 10 ** ( ( self.mag - zeropoint ) / -2.5 )
         return self.render_stamp( width, height, x, y, flux, zeropoint=zeropoint, gain=gain,
-                                  noisy=noisy, rng=rng, psf = psf )
+                                  noisy=noisy, rng=rng, psf=psf )
 
     def add_to_image( self, image, varimage, x, y, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
         stamp, var, imcoords, stampcoords =  self.render_star( image.shape[1], image.shape[0], x, y,
                                                                zeropoint=zeropoint, gain=gain, noisy=noisy,
-                                                               rng=rng, psf = psf )
+                                                               rng=rng, psf=psf )
         if stamp is not None:
             ix0, ix1, iy0, iy1 = imcoords
             sx0, sx1, sy0, sy1 = stampcoords
@@ -148,7 +150,7 @@ class ImageSimulatorTransient( ImageSimulatorPointSource ):
         SNLogger.debug( f"Adding transient with mag {mag:.2f} (flux {flux:.0f}) at mjd {mjd}" )
 
         return self.render_stamp( width, height, x, y, flux, zeropoint=zeropoint, gain=gain,
-                                  noisy=noisy, rng=rng, psf = psf )
+                                  noisy=noisy, rng=rng, psf=psf )
 
 
 class ImageSimulatorStaticSource(ImageSimulatorPointSource):
@@ -165,14 +167,16 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
         SNLogger.debug(f"Adding transient with mag {self.mag:.2f} (flux {flux:.0f}) on mjd {mjd}")
 
         # To start, we are hardcoding that static sources are just point sources.
-        return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng, psf = psf)
+        return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng,
+                                 psf=psf)
 
 
 class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""
 
     def __init__( self, width=4088, height=4088, ra=0., dec=0., rotation=0., basename='simulated_image',
-                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., pointing=1000, use_roman_wcs=False): #use_roman_wcs needs a param
+                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., pointing=1000,
+                  use_roman_wcs=False):
 
         if basename is None:
             raise ValueError( "Must pass a basename" )
@@ -191,18 +195,22 @@ class ImageSimulatorImage:
                         'CD2_1': -pixscale / 3600. * np.sin( rotation ),
                         'CD2_2': pixscale / 3600. * np.cos( rotation )
                     }
-
+        SNLogger.debug("use_roman_wcs: %s", use_roman_wcs)
         if use_roman_wcs:
+            SNLogger.debug("Using Roman WCS to simulate image.")
             assert pointing is not None, "Pointing must be specified when using Roman WCS"
             assert sca is not None, "SCA must be specified when using Roman WCS"
-            from roman_imsim.utils import roman_utils
             config_file = Config.get().value( 'system.ou24.config_file' )
             rmutils = roman_utils(config_file, pointing, sca)
             wcsdict_galsim = dict(rmutils.getWCS().header)
+            SNLogger.debug("Roman WCS CD matrix: %s", wcsdict["CD1_1"])
             wcsdict['CD1_1'] = wcsdict_galsim['CD1_1']
             wcsdict['CD1_2'] = wcsdict_galsim['CD1_2']
             wcsdict['CD2_1'] = wcsdict_galsim['CD2_1']
             wcsdict['CD2_2'] = wcsdict_galsim['CD2_2']
+            SNLogger.debug("Roman WCS CD matrix: %s", wcsdict["CD1_1"])
+
+        import pdb; pdb.set_trace()
 
 
         self.image = FITSImageStdHeaders( data=np.zeros( ( height, width ), dtype=np.float32 ),
@@ -250,7 +258,7 @@ class ImageSimulatorImage:
                 x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                 try:
                     data = star.render_star( self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                             zeropoint=self.image.zeropoint, rng=rng, noisy=noisy, psf = psf )
+                                             zeropoint=self.image.zeropoint, rng=rng, noisy=noisy, psf=psf )
                     add_star_to_image( i, data )
                 except Exception as ex:
                     omg( ex )
@@ -260,7 +268,7 @@ class ImageSimulatorImage:
                     x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                     doer = functools.partial( star.render_star,
                                               self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                              zeropoint=self.image.zeropoint, rng=rng, noisy=noisy, psf = psf )
+                                              zeropoint=self.image.zeropoint, rng=rng, noisy=noisy, psf=psf )
                     callback = functools.partial( add_star_to_image, i )
                     pool.apply_async( doer, callback=callback, error_callback=omg )
                 pool.close()
@@ -279,7 +287,7 @@ class ImageSimulatorImage:
         ( stamp, var,
           imcoords, stampcoords ) = transient.render_transient( self.image.data.shape[1], self.image.data.shape[0],
                                                                 x, y, self.image.mjd, zeropoint=self.image.zeropoint,
-                                                                rng=rng, noisy=noisy, psf = psf )
+                                                                rng=rng, noisy=noisy, psf=psf )
         if stamp is not None:
             ix0, ix1, iy0, iy1 = imcoords
             sx0, sx1, sy0, sy1 = stampcoords
@@ -298,7 +306,7 @@ class ImageSimulatorImage:
                                                                             self.image.data.shape[0],
                                                                         x, y, self.image.mjd,
                                                                         zeropoint=self.image.zeropoint,
-                                                                        rng=rng, noisy=noisy, psf = psf)
+                                                                        rng=rng, noisy=noisy, psf=psf)
             if stamp is not None:
                 ix0, ix1, iy0, iy1 = imcoords
                 sx0, sx1, sy0, sy1 = stampcoords
@@ -344,7 +352,8 @@ class ImageSimulator:
                   static_source_dec=None,
                   static_source_mag=None,
                   no_static_source_noise=False,
-                  numprocs=12 ):
+                  numprocs=12,
+                  use_roman_wcs=False ):
 
         self.mjds = mjds if mjds is not None else np.arange( 60000., 60065., 5. )
 
@@ -401,13 +410,10 @@ class ImageSimulator:
         self.nstars = nstars
         self.psf_class = psf_class
         self.psf_kwargs = psf_kwargs
-        SNLogger.debug( f"PSF kwargs: {self.psf_kwargs}" )
         self.no_star_noise = no_star_noise
         self.band = band
-        self.sca = sca
-        self.pointing = pointing
-        self.psf_kwargs.append( f"pointing={self.pointing}" )
-        self.psf_kwargs.append( f"sca={self.sca}" )
+        self.sca =  [sca] if not isSequence(sca) else sca
+        self.pointing =[pointing] if not isSequence(pointing) else pointing
         self.exptime = exptime
         self.transient_ra = transient_ra
         self.transient_dec = transient_dec
@@ -420,6 +426,7 @@ class ImageSimulator:
         self.static_source_dec = static_source_dec
         self.static_source_mag = static_source_mag
         self.no_static_source_noise = no_static_source_noise
+        self.use_roman_wcs = use_roman_wcs
 
         self.overwrite = overwrite
         self.numprocs = numprocs
@@ -460,18 +467,21 @@ class ImageSimulator:
             static_source = None
 
         for i in range( len( self.imdata['mjds'] ) ):
+            kwargs["pointing"] = self.pointing[i]
+            kwargs["sca"] = self.sca[i]
             psf = PSF.get_psf_object(self.psf_class, **kwargs)
             SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
             image =  ImageSimulatorImage( self.width, self.height,
                                           ra=self.imdata['ras'][i], dec=self.imdata['decs'][i],
                                           rotation=self.imdata['rots'][i], basename=self.basename,
                                           zeropoint=self.imdata['zps'][i], mjd=self.imdata['mjds'][i],
-                                          pixscale=self.pixscale, band=self.band, sca=self.sca, exptime=self.exptime )
+                                          pixscale=self.pixscale, band=self.band, sca=self.sca[i], exptime=self.exptime,
+                                          pointing=self.pointing[i], use_roman_wcs=self.use_roman_wcs )
             SNLogger.debug("Image object created with pointing %s and sca %s", image.image.pointing, image.image.sca)
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
-            image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise, psf = psf )
-            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf = psf )
-            image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise, psf = psf)
+            image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise, psf=psf )
+            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf=psf )
+            image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise, psf=psf)
             image.image.noise = np.sqrt( image.image.noise )
             SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
             image.image.save( overwrite=self.overwrite )
@@ -524,8 +534,11 @@ def main():
                          help="Image sky level (default: 10. for all)" )
     parser.add_argument( '-f', '--band', '--filter', default="R062",
                          help="Stuck in the BAND Header in the images (default R062)." )
-    parser.add_argument( '--sca', default=1,
-                         help="Stuck in the SCA Header in the images (default 1)" )
+    parser.add_argument( '--sca', default=1, nargs='+',
+                         help="Stuck in the SCA Header in the images and used for OU24 PSF calculations (default 1)" )
+    parser.add_argument( '--pointing', default=1000, nargs='+',
+                         help="Stuck in the pointing Header in the images and "
+                         "used for OU24 PSF calculations (default 1000)" )
     parser.add_argument( '--exptime', default=60.,
                          help="Stuck in the EXPTIME Header in the images (default 60)" )
 
@@ -556,6 +569,10 @@ def main():
     parser.add_argument( '--numprocs', type=int, default=12, help="Number of star rendering processes (default 12)" )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
                          help="Overwrite any existing images with the same filename." )
+
+    parser.add_argument( '--use-roman-wcs', action='store_true', default=False,
+                         help="Use WCS CD matrix determined from Roman SCA/Pointing instead of generic WCS." )
+
 
 
     args = parser.parse_args()
