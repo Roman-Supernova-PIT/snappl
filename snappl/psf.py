@@ -1247,11 +1247,11 @@ class ou24PSF_slow( PSF ):
 
     """
 
-    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True,
-                   n_photons=1000000, _parent_class=False, **kwargs
+    def __init__( self, sed=None, config_file=None, size=201,
+                   n_photons=1000000, _parent_class=False,  _include_photonOps=True, **kwargs
                  ):
         super().__init__( _parent_class=True, **kwargs )
-        self._consumed_args.update( [ 'sed', 'config_file', 'size', 'include_photonOps', 'n_photons' ] )
+        self._consumed_args.update( [ 'sed', 'config_file', 'size', '_include_photonOps', 'n_photons' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         if ( self._pointing is None ) or ( self._sca is None ):
@@ -1276,7 +1276,7 @@ class ou24PSF_slow( PSF ):
         self.sca_size = 4088
         self._x = self.sca_size // 2 if self._x is None else self._x
         self._y = self.sca_size // 2 if self._y is None else self._y
-        self.include_photonOps = include_photonOps
+        self._include_photonOps = _include_photonOps
         self.n_photons = n_photons
         self._stamps = {}
 
@@ -1357,7 +1357,7 @@ class ou24PSF_slow( PSF ):
             # (This is not that big a deal, because the PSF is not going to vary significantly
             # over 1 pixel.)
             photon_ops = [ rmutils.getPSF( x+1, y+1, pupil_bin=8 ) ]
-            if self.include_photonOps:
+            if self._include_photonOps:
                 photon_ops += rmutils.photon_ops
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
@@ -1367,7 +1367,7 @@ class ou24PSF_slow( PSF ):
             #  shooting photons or not, photon_ops is the actual map (not sure
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
-            if self.include_photonOps:
+            if self._include_photonOps:
                 point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
