@@ -1336,6 +1336,7 @@ class ou24PSF_slow( PSF ):
 
 
         if (x, y, stampx, stampy) not in self._stamps:
+            SNLogger.debug("configfile = " + str(self.config_file))
             rmutils = roman_utils( self.config_file, self._pointing, self._sca )
             if seed is not None:
                 rmutils.rng = galsim.BaseDeviate( seed )
@@ -1373,13 +1374,22 @@ class ou24PSF_slow( PSF ):
             #  shooting photons or not, photon_ops is the actual map (not sure
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
+
+            # Note from Cole, it seems like the photon ops method is achromatic, but the other method is using a
+            # chromatic object. I am not currently sure if this matters.
+
             if self._include_photonOps:
+                SNLogger.debug(f"point type {type(point)}")
                 point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
 
             else:
+                SNLogger.debug("flux pre convolution = " + str(point.calculateFlux(rmutils.bpass)))
                 psf = galsim.Convolve(point, photon_ops[0])
+                psf = psf.withFlux(1, bandpass = rmutils.bpass)
+                SNLogger.debug(f"psf type {type(psf)}")
+                SNLogger.debug("flux post convolution = " + str(psf.calculateFlux(rmutils.bpass)))
                 psf.drawImage(rmutils.bpass, method="no_pixel", center=center,
                               use_true_center=True, image=stamp, wcs=self._wcs)
 
