@@ -1250,7 +1250,7 @@ class ou24PSF_slow( PSF ):
 
     """
 
-    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True,
+    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=False,
                    n_photons=1000000, _parent_class=False, **kwargs
                  ):
 

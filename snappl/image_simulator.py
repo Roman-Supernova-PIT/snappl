@@ -412,6 +412,12 @@ class ImageSimulator:
         self.band = band
         self.sca =  [sca] if not isSequence(sca) else sca
         self.pointing =[pointing] if not isSequence(pointing) else pointing
+        if len(self.sca) == 1:
+            self.sca = [ self.sca[0] for _ in self.imdata['mjds'] ]
+            SNLogger.debug("Using same SCA for all images: %s", self.sca)
+        if len(self.pointing) == 1:
+            self.pointing = [ self.pointing[0] for _ in self.imdata['mjds'] ]
+            SNLogger.debug("Using same pointing for all images: %s", self.pointing)
         self.exptime = exptime
         self.transient_ra = transient_ra
         self.transient_dec = transient_dec
@@ -464,10 +470,13 @@ class ImageSimulator:
         else:
             static_source = None
 
+        SNLogger.debug(f"psf class: {self.psf_class}, psf kwargs: {kwargs}")
         for i in range( len( self.imdata['mjds'] ) ):
             kwargs["pointing"] = self.pointing[i]
             kwargs["sca"] = self.sca[i]
+
             psf = PSF.get_psf_object(self.psf_class, **kwargs)
+            SNLogger.debug(f"Using PSF class {type(psf)} for image simulation.")
             SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
             image =  ImageSimulatorImage( self.width, self.height,
                                           ra=self.imdata['ras'][i], dec=self.imdata['decs'][i],
