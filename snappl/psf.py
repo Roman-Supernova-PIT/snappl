@@ -124,6 +124,12 @@ class PSF:
         if psfclass == "gaussian":
             return GaussianPSF( _called_from_get_psf_object=True, **kwargs )
 
+        if psfclass == "ou24PSF_slow_photonshoot":
+            return ou24PSF_slow_photonshoot( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "ou24PSF_photonshoot":
+            return ou24PSF_photonshoot(_called_from_get_psf_object=True, **kwargs)
+
         raise ValueError( f"Unknown PSF class {psfclass}" )
 
 
@@ -1500,7 +1506,7 @@ class ou24PSF( ou24PSF_slow ):
                 self._rmutils.rng = galsim.BaseDeviate( seed )
 
             photon_ops = [ self._psf ]
-            if self.include_photonOps:
+            if self._include_photonOps:
                 photon_ops += self._rmutils.photon_ops
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
@@ -1510,7 +1516,7 @@ class ou24PSF( ou24PSF_slow ):
             #  shooting photons or not, photon_ops is the actual map (not sure
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
-            if self.include_photonOps:
+            if self._include_photonOps:
                 self._point.drawImage(self._rmutils.bpass, method='phot', rng=self._rmutils.rng, photon_ops=photon_ops,
                                       n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                       center=center, use_true_center=True, image=self._stamp)
@@ -1531,7 +1537,7 @@ class ou24PSF_photonshoot( ou24PSF ):
         super().__init__(_parent_class=True, _include_photonOps = True, **kwargs)
 
 
-class ou24PSF_photonshoot( ou24PSF_slow ):
+class ou24PSF_slow_photonshoot( ou24PSF_slow ):
     """ The ou24 slow PSF but with photon shooting turned on."""
 
     def __init__(self, _parent_class=False, **kwargs):
