@@ -1352,7 +1352,7 @@ class ou24PSF_slow( PSF ):
                     self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
 
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
-            point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, rmutils.bpass )
+            point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, rmutils.bpass )
             # TODO : make sure that rmutils.getPSF wants 1-indexed positions (which we assume here).
             # (This is not that big a deal, because the PSF is not going to vary significantly
             # over 1 pixel.)
@@ -1379,7 +1379,7 @@ class ou24PSF_slow( PSF ):
 
             self._stamps[(x, y, stampx, stampy)] = stamp.array
 
-        return self._stamps[(x, y, stampx, stampy)]
+        return self._stamps[(x, y, stampx, stampy)] * flux
 
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
@@ -1431,7 +1431,7 @@ class ou24PSF( ou24PSF_slow ):
         SNLogger.debug( f"ou24PSF wcs fetched at: {x0, y0}" )
         SNLogger.debug( f"ou24PSF wcs: {self._wcs}" )
         self._stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
-        self._point = ( galsim.DeltaFunction() * self.sed ).withFlux( flux, self._rmutils.bpass )
+        self._point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, self._rmutils.bpass )
         self._convolved_psf = galsim.Convolve(self._point, self._psf)
         # This is only used to ensure the user isn't trying to move the PSF around
         self._stored_x0 = x0
@@ -1521,7 +1521,7 @@ class ou24PSF( ou24PSF_slow ):
 
             self._stamps[(x, y, stampx, stampy)] = self._stamp.array
 
-        return self._stamps[(x, y, stampx, stampy)]
+        return self._stamps[(x, y, stampx, stampy)] * flux
 
 # class ou24PSF( OversampledImagePSF ):
 #     """An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.
