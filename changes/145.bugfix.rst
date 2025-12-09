@@ -1,0 +1,2 @@
+Fixing bugs introduced in recent releases, that weren't found because
+some Image classes don't yet have tests.
