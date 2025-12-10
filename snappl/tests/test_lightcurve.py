@@ -213,7 +213,7 @@ def test_get_by_id( ou2024_test_lightcurve_saved, dbclient ):
     assert isinstance( ltcv.lightcurve, QTable )
     assert isinstance( ltcv._lightcurve, QTable )
 
-    with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500: No lightcurve with id" ):
+    with pytest.raises( RuntimeError, match="Error response from server: No lightcurve with id" ):
         ltcv = Lightcurve.get_by_id( uuid.uuid4(), dbclient=dbclient )
 
 

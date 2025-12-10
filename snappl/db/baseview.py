@@ -240,9 +240,9 @@ class BaseView( flask.views.View ):
 
     def dispatch_request( self, *args, **kwargs ):
         if not self.check_auth():
-            return "Not logged in", 500
+            return "Not logged in", 422
         if ( self._admin_required ) and ( not self.user.isadmin ):
-            return "Action requires admin", 500
+            return "Action requires admin", 422
         try:
             retval = self.do_the_things( *args, **kwargs )
             # Can't just use the default JSON handling, because it
@@ -263,4 +263,4 @@ class BaseView( flask.views.View ):
             # traceback.print_exc( file=sio )
             # SNLogger.debug( sio.getvalue() )
             SNLogger.exception( str(ex) )
-            return str(ex), 500
+            return str(ex), 422

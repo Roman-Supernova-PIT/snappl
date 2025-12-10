@@ -418,7 +418,7 @@ tyOci9saPPfI1bNnKD202zsCAwEAAQ==
 
 @pytest.fixture( scope="session" )
 def dbclient( dbuser ):
-    return SNPITDBClient.get( verify=False, retries=1 )
+    return SNPITDBClient.get( verify=False, retries=1, retrysleep=1.1 )
 
 
 @pytest.fixture( scope="module" )
