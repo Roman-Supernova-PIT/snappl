@@ -169,7 +169,7 @@ class Config:
 
     SUBSTITUTION
 
-    Any scalar value that has ${somethign} in it will have ${something}
+    Any scalar value that has ${something} in it will have ${something}
     replaced.  The replacement will first look to see if in the current
     tree there is a config value that matches something; if so, then
     that is replaced.  (This is for internal references.)  Failing that,
