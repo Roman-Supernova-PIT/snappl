@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g0e95c857c documentation</title>
+    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+gfae61f144 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=ac16176a"></script>
+    <script src="../../_static/documentation_options.js?v=42978c01"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -99,6 +99,7 @@
 <span class="c1"># common library imports</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">scipy.integrate</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.signal</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 
 <span class="c1"># astro library imports</span>
@@ -201,6 +202,9 @@
 
         <span class="k">if</span> <span class="n">psfclass</span> <span class="o">==</span> <span class="s2">&quot;OversampledImagePSF&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">OversampledImagePSF</span><span class="p">(</span> <span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">psfclass</span> <span class="o">==</span> <span class="s2">&quot;Sampling_OversampledImagePSF&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Sampling_OversampledImagePSF</span><span class="p">(</span> <span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">psfclass</span> <span class="o">==</span> <span class="s2">&quot;YamlSerialized_OversampledImagePSF&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">YamlSerialized_OversampledImagePSF</span><span class="p">(</span> <span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
@@ -669,6 +673,16 @@
 <span class="sd">        non-zero fractional parts!  TODO: fix this.... but then also fix</span>
 <span class="sd">        any code that depends on that behavior.</span>
 
+<span class="sd">        WARNING: If you do get_stamp() for one of these PSFs, if your</span>
+<span class="sd">        PSF is intrinsically undersampled on the image, the PSF you get</span>
+<span class="sd">        back will probably not be properly normalized!  This *is* the</span>
+<span class="sd">        PSF you want to use with photutils photometry (I THINK... VERIFY</span>
+<span class="sd">        THIS), but it&#39;s NOT the PSF that you want to use for things like</span>
+<span class="sd">        scene modelling.  For scene modelling, use OversampledImagePSF,</span>
+<span class="sd">        which convoles before downsampling.</span>
+
+<span class="sd">        See Issue #157.</span>
+
 <span class="sd">        Parmaeters</span>
 <span class="sd">        ----------</span>
 <span class="sd">          data : 2d numpy array; required</span>
@@ -944,8 +958,12 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">OversampledImagePSF</span><span class="p">(</span> <span class="n">PSF</span> <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A PSF stored internally in an image which is (possibly) oversampled.</span>
 
-<span class="sd">    get_stamp will then interpolate the internally stored oversampled</span>
-<span class="sd">    image to get an source-image-scale sampled PSF using an</span>
+<span class="sd">    This one requires an odd integral oversampling factor.  If your PSF</span>
+<span class="sd">    is not intrinsically undersampled, you may be able to get away with</span>
+<span class="sd">    using the faster and more flexible Sampling_OversampledImagePSF.</span>
+
+<span class="sd">    get_stamp will tophat-convolve and interpolate the internally stored</span>
+<span class="sd">    oversampled image to get an source-image-scale sampled PSF using an</span>
 <span class="sd">    interpolation algorithm that&#39;s close to what PSFex uses.</span>
 
 <span class="sd">    The internally stored data array is a copy of what is passed.  So,</span>
@@ -957,11 +975,12 @@
 <span class="sd">    if you change elements of data thereafter, it will *not* be</span>
 <span class="sd">    reflected in the data array stored inside OversampledImagePSF.)</span>
 
-<span class="sd">    BIG PROBLEM : the interpolation used does a very bad job when the</span>
-<span class="sd">    PSF is intrnsically undersampled, that is, on the original image the</span>
-<span class="sd">    FWHM is not at least a couple of pixels.  (TODO: explore how the</span>
-<span class="sd">    algorithm does with PSFex-extracted PSFs on undersampled data, since</span>
-<span class="sd">    the algorithm here was written for and tested with PSFex PSFs.)  See Issue #30.</span>
+<span class="sd">    If you have an oversampled image PSF, this is the class that you</span>
+<span class="sd">    want to use for things like scene modelling.</span>
+
+<span class="sd">    WARNING : I don&#39;t think using these PSFs with get_stamp() will do</span>
+<span class="sd">    the right thing with photutils for intrinsically undersampled PSFs</span>
+<span class="sd">    (e.g. a Gaussian with σ=0.3pix).  See Issue #157.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1032,7 +1051,7 @@
 <span class="sd">            after making the OversampledImagePSF, it won&#39;t be reflected</span>
 <span class="sd">            inside the OversampledImagePSF.</span>
 
-<span class="sd">          oversample_factor: float, default 1.</span>
+<span class="sd">          oversample_factor: float, default 1, must be odd</span>
 <span class="sd">            There are this many pixels along one axis in data for one</span>
 <span class="sd">            pixel in the original image.  Doesn&#39;t have to be an integer</span>
 <span class="sd">            (e.g. if you used PSFex to find the PSF, it usually won&#39;t</span>
@@ -1061,6 +1080,17 @@
 <span class="sd">          object of type cls</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Just require the size to be odd, and the oversample factor to be odd,</span>
+        <span class="c1">#  so we don&#39;t have to get hung up over conventions about how things are</span>
+        <span class="c1">#  centered.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">enforce_odd</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;Non-odd-sized PSFs aren&#39;t supported.&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">oversample_factor</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">oversample_factor</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;For OversampledImagePSF, oversample_factor must be an integer.&quot;</span> <span class="p">)</span>
+        <span class="n">oversample_factor</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">oversample_factor</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">oversample_factor</span> <span class="o">%</span><span class="mi">2</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;For OversampledImagePSF, oversample_factor must be odd.&quot;</span> <span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_consumed_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="p">[</span> <span class="s1">&#39;oversample_factor&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;enforce_odd&#39;</span><span class="p">,</span> <span class="s1">&#39;normalize&#39;</span> <span class="p">]</span> <span class="p">)</span>
@@ -1105,15 +1135,7 @@
         <span class="n">sz</span> <span class="o">+=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">sz</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
         <span class="k">return</span> <span class="n">sz</span>
 
-
-<div class="viewcode-block" id="OversampledImagePSF.get_stamp">
-<a class="viewcode-back" href="../../api/snappl.psf.OversampledImagePSF.html#snappl.psf.OversampledImagePSF.get_stamp">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_stamp</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.</span> <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;See PSF.get_stamp for documentation</span>
-
-<span class="sd">        --&gt; CURRENTLY BROKEN FOR UNDERSAMPLED PSFs.  See Issue #30.</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_determine_stamp_coordinates</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
         <span class="c1"># (x, y) is the position on the image for which we want to render the PSF.</span>
         <span class="n">x</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span>
         <span class="n">y</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span>
@@ -1137,6 +1159,9 @@
         <span class="n">natxfrac</span> <span class="o">=</span> <span class="n">natx</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span>
         <span class="n">natyfrac</span> <span class="o">=</span> <span class="n">naty</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span>
 
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">natxfrac</span><span class="p">,</span> <span class="n">natyfrac</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interpolate_to_stamp</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">oversampled_data</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">natxfrac</span><span class="p">,</span> <span class="n">natyfrac</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.</span> <span class="p">):</span>
         <span class="c1"># Interpolate the PSF using Lanczos resampling:</span>
         <span class="c1">#     https://en.wikipedia.org/wiki/Lanczos_resampling</span>
         <span class="c1">#</span>
@@ -1146,7 +1171,7 @@
         <span class="c1"># That&#39;s also where the factor a=4 comes from</span>
         <span class="n">a</span> <span class="o">=</span> <span class="mi">4</span>
 
-        <span class="n">psfwid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">oversampled_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">psfwid</span> <span class="o">=</span> <span class="n">oversampled_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">stampwid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span>
 
         <span class="n">psfdex1d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span> <span class="o">-</span><span class="p">(</span> <span class="n">psfwid</span><span class="o">//</span><span class="mi">2</span><span class="p">),</span> <span class="n">psfwid</span><span class="o">//</span><span class="mi">2</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span> <span class="p">)</span>
@@ -1168,7 +1193,7 @@
         <span class="n">ysincvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sinc</span><span class="p">(</span> <span class="n">ysincarg</span> <span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sinc</span><span class="p">(</span> <span class="n">ysincarg</span><span class="o">/</span><span class="n">a</span> <span class="p">)</span>
         <span class="n">ysincvals</span><span class="p">[</span> <span class="p">(</span> <span class="n">ysincarg</span> <span class="o">&gt;</span> <span class="n">a</span> <span class="p">)</span> <span class="o">|</span> <span class="p">(</span> <span class="n">ysincarg</span> <span class="o">&lt;</span> <span class="o">-</span><span class="n">a</span> <span class="p">)</span> <span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
         <span class="n">tenpro</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span> <span class="n">ysincvals</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span> <span class="n">xsincvals</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span> <span class="n">axes</span><span class="o">=</span><span class="mi">0</span> <span class="p">)[</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span> <span class="p">]</span>
-        <span class="n">clip</span> <span class="o">=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">oversampled_data</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span> <span class="p">]</span> <span class="o">*</span> <span class="n">tenpro</span> <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span> <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span> <span class="p">)</span>
+        <span class="n">clip</span> <span class="o">=</span> <span class="p">(</span> <span class="n">oversampled_data</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span> <span class="p">]</span> <span class="o">*</span> <span class="n">tenpro</span> <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span> <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span> <span class="p">)</span>
 
         <span class="c1"># Keeping the code below, because the code above is inpenetrable, and it&#39;s trying to</span>
         <span class="c1">#   do the same thing as the code below.</span>
@@ -1202,7 +1227,24 @@
         <span class="c1"># flux is included then the oversampled PSF image sums to 1.)</span>
         <span class="n">clip</span> <span class="o">*=</span> <span class="n">flux</span> <span class="o">*</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">oversample_factor</span> <span class="o">**</span> <span class="mi">2</span> <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">clip</span></div>
+        <span class="k">return</span> <span class="n">clip</span>
+
+
+<div class="viewcode-block" id="OversampledImagePSF.get_stamp">
+<a class="viewcode-back" href="../../api/snappl.psf.OversampledImagePSF.html#snappl.psf.OversampledImagePSF.get_stamp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stamp</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;See PSF.get_stamp for documentation.&quot;&quot;&quot;</span>
+
+        <span class="c1"># TODO : caching</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">natxfrac</span><span class="p">,</span> <span class="n">natyfrac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_determine_stamp_coordinates</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">oversampled_data</span> <span class="p">)</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_oversamp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_oversamp</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span> <span class="p">)</span> <span class="o">/</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_oversamp</span> <span class="o">**</span> <span class="mi">2</span> <span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span> <span class="n">data</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interpolate_to_stamp</span><span class="p">(</span> <span class="n">data</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">natxfrac</span><span class="p">,</span> <span class="n">natyfrac</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="n">flux</span> <span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="OversampledImagePSF.getImagePSF">
@@ -1232,6 +1274,48 @@
         <span class="k">return</span> <span class="n">photutils</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">ImagePSF</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stamp</span><span class="p">(),</span> <span class="n">x_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_x</span><span class="p">,</span> <span class="n">y_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="p">)</span></div>
 </div>
 
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Sampling_OversampledImagePSF</span><span class="p">(</span> <span class="n">OversampledImagePSF</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Like OversmapledImagePSF, but samples instead of convoles.</span>
+
+<span class="sd">    Skips the step of doing convolutions before resampling the PSF when</span>
+<span class="sd">    sampling from the oversampled scale to the image scale.  This is</span>
+<span class="sd">    faster, but fails badly for undersampled PSFs.</span>
+
+<span class="sd">    Whereas OversampledImagePSF requires, always, an odd-shaped PSF, and</span>
+<span class="sd">    an integral odd oversample factor, this one can handle real</span>
+<span class="sd">    oversample factors.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">oversample_factor</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_odd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">_parent_class</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;See OversampledImagePSF for docs.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Explicitly calling the PSF init here because we do not want</span>
+        <span class="c1">#   to hit the error conditions that are in OversampledImagePSF</span>
+        <span class="n">PSF</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_consumed_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="p">[</span> <span class="s1">&#39;oversample_factor&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;enforce_odd&#39;</span><span class="p">,</span> <span class="s1">&#39;normalize&#39;</span> <span class="p">]</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_warn_unknown_kwargs</span><span class="p">(</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="n">_parent_class</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must supply both x and y&quot;</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_oversamp</span> <span class="o">=</span> <span class="n">oversample_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enforce_odd</span> <span class="o">=</span> <span class="n">enforce_odd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_normalize</span> <span class="o">=</span> <span class="n">normalize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oversampled_data</span> <span class="o">=</span> <span class="n">data</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stamp</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;See PSF.get_stamp for documentation</span>
+
+<span class="sd">        Will perform poorly for undersampled PSFs.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">natxfrac</span><span class="p">,</span> <span class="n">natyfrac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_determine_stamp_coordinates</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interpolate_to_stamp</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">oversampled_data</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">natxfrac</span><span class="p">,</span> <span class="n">natyfrac</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="n">flux</span> <span class="p">)</span>
 
 
 <div class="viewcode-block" id="YamlSerialized_OversampledImagePSF">
@@ -1624,8 +1708,8 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">x0</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stored_x0</span> <span class="ow">or</span> <span class="n">y0</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stored_y0</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ou24PSF.get_stamp called with x0 or y0 that does not match the x0 or y0 used&quot;</span>
-                                  <span class="s2">&quot;to initialize the PSF object. If you want to recreate the PSF object, use &quot;</span>
-                                  <span class="s2">&quot;ou24PSF_slow instead.&quot;</span><span class="p">)</span>
+                                 <span class="s2">&quot;to initialize the PSF object. If you want to recreate the PSF object, use &quot;</span>
+                                 <span class="s2">&quot;ou24PSF_slow instead.&quot;</span><span class="p">)</span>
 
         <span class="n">stampx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x0</span> <span class="p">)</span>
         <span class="n">stampy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span> <span class="n">y</span> <span class="o">-</span> <span class="n">y0</span> <span class="p">)</span>

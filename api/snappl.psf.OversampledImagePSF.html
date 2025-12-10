@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>OversampledImagePSF &#8212; roman_snpit_snappl 0.1.dev1+g0e95c857c documentation</title>
+    <title>OversampledImagePSF &#8212; roman_snpit_snappl 0.1.dev1+gfae61f144 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=ac16176a"></script>
+    <script src="../_static/documentation_options.js?v=42978c01"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -106,8 +106,11 @@
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">OversampledImagePSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">oversample_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enforce_odd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_parent_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#OversampledImagePSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.OversampledImagePSF" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="snappl.psf.PSF.html#snappl.psf.PSF" title="snappl.psf.PSF"><code class="xref py py-class docutils literal notranslate"><span class="pre">PSF</span></code></a></p>
 <p>A PSF stored internally in an image which is (possibly) oversampled.</p>
-<p>get_stamp will then interpolate the internally stored oversampled
-image to get an source-image-scale sampled PSF using an
+<p>This one requires an odd integral oversampling factor.  If your PSF
+is not intrinsically undersampled, you may be able to get away with
+using the faster and more flexible Sampling_OversampledImagePSF.</p>
+<p>get_stamp will tophat-convolve and interpolate the internally stored
+oversampled image to get an source-image-scale sampled PSF using an
 interpolation algorithm that’s close to what PSFex uses.</p>
 <p>The internally stored data array is a copy of what is passed.  So,
 if you have an OversampledImagePSF oipsf and do:</p>
@@ -117,11 +120,11 @@ if you have an OversampledImagePSF oipsf and do:</p>
 <p>it does not work the way you’d usually expect for arrays.  (That is,
 if you change elements of data thereafter, it will <em>not</em> be
 reflected in the data array stored inside OversampledImagePSF.)</p>
-<p>BIG PROBLEM : the interpolation used does a very bad job when the
-PSF is intrnsically undersampled, that is, on the original image the
-FWHM is not at least a couple of pixels.  (TODO: explore how the
-algorithm does with PSFex-extracted PSFs on undersampled data, since
-the algorithm here was written for and tested with PSFex PSFs.)  See Issue #30.</p>
+<p>If you have an oversampled image PSF, this is the class that you
+want to use for things like scene modelling.</p>
+<p>WARNING : I don’t think using these PSFs with get_stamp() will do
+the right thing with photutils for intrinsically undersampled PSFs
+(e.g. a Gaussian with σ=0.3pix).  See Issue #157.</p>
 <p>Make an OversampledImagePSF.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -213,7 +216,7 @@ data, so if you change elements of the array you passed
 after making the OversampledImagePSF, it won’t be reflected
 inside the OversampledImagePSF.</p>
 </p></li>
-<li><p><strong>oversample_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default 1.</em>) – There are this many pixels along one axis in data for one
+<li><p><strong>oversample_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default 1</em><em>, </em><em>must be odd</em>) – There are this many pixels along one axis in data for one
 pixel in the original image.  Doesn’t have to be an integer
 (e.g. if you used PSFex to find the PSF, it usually won’t
 be— though if you used PSFex to find the PSF, really we
@@ -256,7 +259,7 @@ and you want to trust subclases to do the Right Thing.</p></li>
 <td><p>Return a photutils.psf.ImagePSF model.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.OversampledImagePSF.get_stamp" title="snappl.psf.OversampledImagePSF.get_stamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stamp</span></code></a>([x, y, x0, y0, flux])</p></td>
-<td><p>See PSF.get_stamp for documentation</p></td>
+<td><p>See PSF.get_stamp for documentation.</p></td>
 </tr>
 </tbody>
 </table>
@@ -287,8 +290,7 @@ and you want to trust subclases to do the Right Thing.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.psf.OversampledImagePSF.get_stamp">
 <span class="sig-name descname"><span class="pre">get_stamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#OversampledImagePSF.get_stamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.OversampledImagePSF.get_stamp" title="Link to this definition">¶</a></dt>
-<dd><p>See PSF.get_stamp for documentation</p>
-<p>–&gt; CURRENTLY BROKEN FOR UNDERSAMPLED PSFs.  See Issue #30.</p>
+<dd><p>See PSF.get_stamp for documentation.</p>
 </dd></dl>
 
 </dd></dl>
