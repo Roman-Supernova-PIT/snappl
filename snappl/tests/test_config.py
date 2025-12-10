@@ -568,3 +568,15 @@ def test_prefix( cfg_default ):
     cfg.set_value( '0.nest1a.val', 'kitten' )
     assert cfg.value( '0.nest1a.val' ) == 'kitten'
     assert cfg_default.value( 'nest.nest1.0.nest1a.val' ) == 'kitten'
+
+
+def test_substitutions():
+    cfg = Config.get( 'config_test_data/test_sub.yaml' )
+    assert cfg.value( 'pre.forwardsub' ) == 'Echelle'
+    assert cfg.value( 'pre.blownaway' ) == 'blownaway_by_override'
+    assert cfg.value( 'pre.prelist.2' ) == os.environ.get( 'HOME' )
+    assert cfg.value( 'top.gratuitous_list.2.homedir' ) == os.environ.get( 'HOME' )
+    assert cfg.value( 'top.backwardsub' ) == 'from_pre'
+    assert cfg.value( 'top.backwardsub_list0' ) == 'pre_backwardsub1'
+    assert cfg.value( 'top.backwardsub_list1' ) == 'pre_backwardsub2'
+    assert cfg.value( 'top.forwardsub' ) == 'from_override'
