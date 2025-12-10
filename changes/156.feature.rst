@@ -1,0 +1,1 @@
+Support internal references and environment variable substitution in config
