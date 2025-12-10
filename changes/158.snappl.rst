@@ -1,0 +1,1 @@
+Put in convolution in get_stamp for OversampledImagePSF so the stamps come out right.
