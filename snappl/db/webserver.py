@@ -143,7 +143,7 @@ class GetProvenance( BaseProvenance ):
                     return { 'status': f'No provenance for tag {provid} and process {process}' }
             if len(rows) > 1:
                 return ( f"Database corruption!  More than one provenance {provid}"
-                         f"{'' if process is None else f' for process {process}'}!" ), 500
+                         f"{'' if process is None else f' for process {process}'}!" ), 422
             prov = { cols[i]: rows[0][i] for i in range( len(cols) ) }
             self.get_upstreams( prov, con )
 
@@ -155,7 +155,7 @@ class GetProvenance( BaseProvenance ):
 class CreateProvenance( BaseProvenance ):
     def do_the_things( self ):
         if not flask.request.is_json:
-            return "Expected JSON payoad", 500
+            return "Expected JSON payoad", 422
         data = flask.request.json
 
         if 'upstreams' in data:
@@ -191,7 +191,7 @@ class CreateProvenance( BaseProvenance ):
                                    "VALUES (%(down)s,%(up)s)",
                                    { 'down': prov.id, 'up': uid } )
             elif not existok:
-                return f"Error, provenance {data['id']} already exists", 500
+                return f"Error, provenance {data['id']} already exists", 422
 
             if tag is not None:
                 self.tag_provenance( dbcon, tag, data['process'], data['id'], replace=replace_tag )
@@ -234,9 +234,9 @@ class GetDiaObject( BaseView ):
             rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': diaobjectid } )
 
         if len(rows) > 1:
-            return f"Database corruption; multiple diaobjects with id {diaobjectid}", 500
+            return f"Database corruption; multiple diaobjects with id {diaobjectid}", 422
         elif len(rows) == 0:
-            return f"Object not found: {diaobjectid}", 500
+            return f"Object not found: {diaobjectid}", 422
         else:
             return rows[0]
 
@@ -276,7 +276,7 @@ class FindDiaObjects( BaseView ):
                                                         subdict=subdict
                                                        )
             if len(data) != 0:
-                return f"Error, unknown parameters: {list(data.keys())}", 500
+                return f"Error, unknown parameters: {list(data.keys())}", 422
 
             q += conditions + finalclause
             return dbcon.execute( q, subdict )
@@ -287,7 +287,7 @@ class FindDiaObjects( BaseView ):
 class SaveDiaObject( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
-            return "Expected diaobject data in json POST data, didn't get any.", 500
+            return "Expected diaobject data in json POST data, didn't get any.", 422
 
         data = flask.request.json
         needed_keys = { 'provenance_id', 'ra', 'dec', 'mjd_discovery' }
@@ -295,9 +295,9 @@ class SaveDiaObject( BaseView ):
                          'mjd_end', 'properties', 'association_radius' }.union( needed_keys )
         passed_keys = set( data.keys() )
         if not passed_keys.issubset( allowed_keys ):
-            return f"Unknown keys: {passed_keys - allowed_keys}", 500
+            return f"Unknown keys: {passed_keys - allowed_keys}", 422
         if not needed_keys.issubset( passed_keys ):
-            return f"Missing required keys: {needed_keys - passed_keys}", 500
+            return f"Missing required keys: {needed_keys - passed_keys}", 422
         if any( data[i] is None for i in needed_keys ):
             return f"None of the necessary keys can be None: {needed_keys}"
 
@@ -317,7 +317,7 @@ class SaveDiaObject( BaseView ):
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
             if len(rows) != 0:
-                return f"diaobject id {data['id']} already exists!", 500
+                return f"diaobject id {data['id']} already exists!", 422
 
             dbcon.execute( "LOCK TABLE diaobject" )
 
@@ -344,7 +344,7 @@ class SaveDiaObject( BaseView ):
                                       { 'name': data['name'], 'prov': data['provenance_id'] } )
                 if len(rows) > 0:
                     return ( f"diaobject with name {data['name']} in provenance {data['provenance_id']} "
-                             f"already exists!", 500 )
+                             f"already exists!", 422 )
 
             if oldobj is not None:
                 # TODO THIS IS TERRIBLE RIGHT NOW!
@@ -368,9 +368,9 @@ class SaveDiaObject( BaseView ):
                 dbcon.execute( q, data )
                 rows = dbcon.execute( "SELECT * FROM diaobject WHERE id=%(id)s", { 'id': data['id'] } )
                 if len(rows) == 0:
-                    return f"Error, saved diaobject {data['id']}, but it's not showing up in the database", 500
+                    return f"Error, saved diaobject {data['id']}, but it's not showing up in the database", 422
                 elif len(rows) > 1:
-                    return f"Database corruption, more than one diaobject with id={data['id']}", 500
+                    return f"Database corruption, more than one diaobject with id={data['id']}", 422
                 else:
                     dbcon.commit()
                     return rows[0]
@@ -386,14 +386,14 @@ class GetDiaObjectPosition( BaseView ):
                                       "WHERE provenance_id=%(provid)s AND diaobject_id=%(objid)s",
                                       { 'provid': provid, 'objid': diaobjectid } )
                 if len(rows) == 0:
-                    return "No postion for diaobject {diaobjectid} in with position provenance {provid}", 500
+                    return "No postion for diaobject {diaobjectid} in with position provenance {provid}", 422
                 return rows[0]
 
             if not flask.request.is_json:
-                return "getdiaobjectposition/<provid> requires JSON POST data", 500
+                return "getdiaobjectposition/<provid> requires JSON POST data", 422
             data = flask.request.json
             if 'diaobject_ids' not in data:
-                return "getdiaobjectposition/<provid> requres diaobject_ids in POST JSON dict", 500
+                return "getdiaobjectposition/<provid> requres diaobject_ids in POST JSON dict", 422
 
             rows = dbcon.execute( "SELECT * FROM diaobject_position "
                                   "WHERE provenance_id=%(provid)s AND diaobject_id=ANY(%(objids)s)",
@@ -406,16 +406,16 @@ class GetDiaObjectPosition( BaseView ):
 class SaveDiaObjectPosition( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
-            return "Expected diaobject position data in json POST data, didn't get any.", 500
+            return "Expected diaobject position data in json POST data, didn't get any.", 422
 
         data = flask.request.json
         needed_keys = { 'provenance_id', 'diaobject_id', 'ra', 'dec' }
         allowed_keys = { 'id', 'ra_err', 'dec_err', 'ra_dec_covar' }.union( needed_keys )
         passed_keys = set( data.keys() )
         if not passed_keys.issubset( allowed_keys ):
-            return f"Unknown keys: {passed_keys - allowed_keys}", 500
+            return f"Unknown keys: {passed_keys - allowed_keys}", 422
         if not needed_keys.issubset( passed_keys ):
-            return f"Missing required keys: {passed_keys - needed_keys}", 500
+            return f"Missing required keys: {passed_keys - needed_keys}", 422
         if any( data[i] is None for i in needed_keys ):
             return f"None of the necessary keys can be None: {needed_keys}"
 
@@ -425,7 +425,7 @@ class SaveDiaObjectPosition( BaseView ):
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': data['provenance_id'] } )
             if len(rows) == 0:
-                return f"Unknown provenance {data['provenance_id']}", 500
+                return f"Unknown provenance {data['provenance_id']}", 422
 
             dbcon.execute( "LOCK TABLE diaobject_position" )
 
@@ -434,7 +434,7 @@ class SaveDiaObjectPosition( BaseView ):
                                   { 'objid': data['diaobject_id'], 'provid': data['provenance_id'] } )
             if len(rows) != 0:
                 return ( f"Object {data['diaobject_id']} already has a position "
-                         f"with provenance {data['provenance_id']}" ), 500
+                         f"with provenance {data['provenance_id']}" ), 422
 
             pos = db.DiaObjectPosition( dbcon=dbcon, **data )
             # This insert will commit, which will end the transaction
@@ -451,9 +451,9 @@ class GetL2Image( BaseView ):
             rows = dbcon.execute( "SELECT * FROM l2image WHERE id=%(id)s", { 'id': imageid } )
 
         if len( rows ) > 1:
-            return f"Database corruption: multiple l2image with id {imageid}", 500
+            return f"Database corruption: multiple l2image with id {imageid}", 422
         elif len( rows ) == 0:
-            return f"L2image not found: {imageid}", 500
+            return f"L2image not found: {imageid}", 422
         else:
             return rows[0]
 
@@ -489,7 +489,7 @@ class FindL2Images( BaseView ):
                                                         subdict=subdict
                                                        )
             if len(data) != 0:
-                return f"Error, unknown parameters: {data.keys()}", 500
+                return f"Error, unknown parameters: {data.keys()}", 422
 
             q += conditions + finalclause
             return dbcon.execute( q, subdict )
@@ -500,7 +500,7 @@ class FindL2Images( BaseView ):
 class SaveSegmentationMap( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
-            return "Expected segmeap info in json POST< didn't get any.", 500
+            return "Expected segmap info in json POST; didn't get any.", 422
 
         needed_keys = { 'id', 'provenance_id', 'band', 'ra', 'dec', 'filepath', 'format' }
         for which in [ 'ra', 'dec' ]:
@@ -528,9 +528,9 @@ class GetSegmentationMap( BaseView ):
             rows = dbcon.execute( "SELECT * FROM segmap WHERE id=%(id)s", {'id': segmapid} )
 
         if len(rows) == 0:
-            return f"Segmentation map {segmapid} not found.", 500
+            return f"Segmentation map {segmapid} not found.", 422
         elif len(rows) > 1:
-            return f"Database corruption, multiple segmaps with id {segmapid}.  This should never happen.", 500
+            return f"Database corruption, multiple segmaps with id {segmapid}.  This should never happen.", 422
         else:
             return rows[0]
 
@@ -565,7 +565,7 @@ class FindSegmentationMap( BaseView ):
                                                         subdict=subdict
                                                        )
             if len(data) != 0:
-                return f"Error, unknown parameters: {data.keys()}", 500
+                return f"Error, unknown parameters: {data.keys()}", 422
 
             q += conditions + finalclause
             return dbcon.execute( q, subdict )
@@ -576,20 +576,20 @@ class FindSegmentationMap( BaseView ):
 class SaveLightcurve( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
-            return "Expected lightcurve info in json POST, didn't get any.", 500
+            return "Expected lightcurve info in json POST, didn't get any.", 422
 
         data = flask.request.json
         needed_keys = { 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id', 'band', 'filepath' }
         passed_keys = set( data.keys() )
         if not passed_keys.issubset( needed_keys ):
-            return f"Unknown keys: {passed_keys - needed_keys}", 500
+            return f"Unknown keys: {passed_keys - needed_keys}", 422
         if not needed_keys.issubset( passed_keys ):
-            return f"Missing required keys: {needed_keys - passed_keys}", 500
+            return f"Missing required keys: {needed_keys - passed_keys}", 422
 
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': data['provenance_id'] } )
             if len(rows) == 0:
-                return f"Unknown provenance {data['provenance_id']}", 500
+                return f"Unknown provenance {data['provenance_id']}", 422
 
             dbcon.execute( ( "INSERT INTO lightcurve(id, provenance_id, diaobject_id, "
                              "  diaobject_position_id, band, filepath) "
@@ -600,7 +600,7 @@ class SaveLightcurve( BaseView ):
 
             res = dbcon.execute( "SELECT * FROM lightcurve WHERE id=%(id)s", {'id': data['id']} )
             if len(res) == 0:
-                return "Something went wrong, lightcurve not saved to database", 500
+                return "Something went wrong, lightcurve not saved to database", 422
 
         return res[0]
 
@@ -612,9 +612,9 @@ class GetLightcurve( BaseView ):
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM lightcurve WHERE id=%(id)s", { 'id': ltcvid } )
             if len(rows) == 0:
-                return f"No lightcurve with id {ltcvid}", 500
+                return f"No lightcurve with id {ltcvid}", 422
             elif len(rows) > 1:
-                return f"Multiple lightcurves with id {ltcvid}; this should never happen.", 500
+                return f"Multiple lightcurves with id {ltcvid}; this should never happen.", 422
             else:
                 return rows[0]
 
@@ -646,7 +646,7 @@ class FindLightcurves( BaseView ):
                                                         conditions=conditions,
                                                         subdict=subdict )
             if len( data ) != 0:
-                return f"Error, unknown parameters: {data.keys()}", 500
+                return f"Error, unknown parameters: {data.keys()}", 422
 
             q += conditions + finalclause
             return dbcon.execute( q, subdict )
@@ -679,9 +679,9 @@ class GetSpectrum1d( BaseView ):
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': spectrumid} )
             if len(rows) == 0:
-                return f"No spectrum1d with id {spectrumid}", 500
+                return f"No spectrum1d with id {spectrumid}", 422
             elif len(rows) > 1:
-                return f"Multiple spectrum1d with id {spectrumid}; this should never happen.", 500
+                return f"Multiple spectrum1d with id {spectrumid}; this should never happen.", 422
             else:
                 return rows[0]
 
@@ -710,7 +710,7 @@ class FindSpectra1d( BaseView ):
                                                                                    conditions=conditions,
                                                                                    subdict=subdict )
             if len(data) != 0:
-                return f"Error, unknown parametrs: {data.keys()}", 500
+                return f"Error, unknown parametrs: {data.keys()}", 422
 
             q += conditions + finalclause
             return dbcon.execute( q, subdict )

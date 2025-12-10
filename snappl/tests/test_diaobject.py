@@ -1,5 +1,6 @@
 import pytest
 import uuid
+import time
 
 from snappl.diaobject import DiaObject
 from snappl.provenance import Provenance
@@ -256,17 +257,21 @@ def test_save_diaobject( test_object_provenance, dbclient ):
         assert retval['properties'] != diaobj2.properties
         assert retval['ndetected'] == 2
         # Make sure that an object of the given id wasn't saved
-        with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500.*Object not found" ):
+        t0 = time.perf_counter()
+        with pytest.raises( RuntimeError, match="Error response from server: Object not found" ):
             DiaObject.get_object( diaobject_id=diaobj2.id, dbclient=dbclient )
+        assert time.perf_counter() - t0 < 0.2
         # Make sure if we get the object back it has ndetected=2
         foundobj = DiaObject.get_object( provenance=test_object_provenance, diaobject_id=diaobj.id, dbclient=dbclient )
         assert foundobj.ndetected == 2
 
         # Make sure we can't save the same name/provenance twice
-        with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500.*diaobject with name Fred" ):
+        t0 = time.perf_counter()
+        with pytest.raises( RuntimeError, match="Error response from server:.*diaobject with name Fred" ):
             diaobj3 = DiaObject( **kwargs3 )
             diaobj3.name = diaobj.name
             diaobj3.save_object( dbclient=dbclient )
+        assert time.perf_counter() - t0 < 0.2
 
         # Test lack of association
         diaobj3 = DiaObject( **kwargs3 )
@@ -286,15 +291,19 @@ def test_save_diaobject( test_object_provenance, dbclient ):
             tmp['id'] = objids[-1]
             tmp[omit] = None
             diaobj = DiaObject( **tmp )
-            with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500: Missing required keys" ):
+            t0 = time.perf_counter()
+            with pytest.raises( RuntimeError, match="Error response from server: Missing required keys" ):
                 diaobj.save_object( dbclient=dbclient )
+            assert time.perf_counter() - t0 < 0.2
 
             tmp = kwargs.copy()
             objids.append( uuid.uuid4() )
             tmp['id'] = objids[-1]
             del tmp[omit]
-            with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500: Missing required keys" ):
+            t0 = time.perf_counter()
+            with pytest.raises( RuntimeError, match="Error response from server: Missing required keys" ):
                 diaobj.save_object( dbclient=dbclient )
+            assert time.perf_counter() - t0 < 0.2
 
     finally:
         with DBCon() as dbcon:
