@@ -1,4 +1,5 @@
 import pytest
+import time
 
 from snappl.db.db import DBCon
 from snappl.provenance import Provenance
@@ -53,8 +54,10 @@ def test_create_get_provenance( dbclient ):
         assert set( r['id'] for r in res ) == { str(downstream.id) }
 
         # Can't tag a provenance where the process is already tagged as such
-        with pytest.raises( RuntimeError, match=( '^Failed to connect.*already exists a provenance' ), ):
+        t0 = time.perf_counter()
+        with pytest.raises( RuntimeError, match=( '^Error response from server.*already exists a provenance' ), ):
             res = dbclient.send( f"tagprovenance/kaglorky/proc3/{wayupstream.id}", retries=1 )
+        assert time.perf_counter() - t0 < 0.2
 
         # But can replace it if we tell it to
         res = dbclient.send( f"tagprovenance/kaglorky/proc3/{wayupstream.id}/1")
