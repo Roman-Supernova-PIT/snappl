@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Config &#8212; roman_snpit_snappl 0.1.dev1+ge05a48f5b documentation</title>
+    <title>Config &#8212; roman_snpit_snappl 0.1.dev1+g0e95c857c documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=a9d1fab1"></script>
+    <script src="../_static/documentation_options.js?v=ac16176a"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -103,7 +103,7 @@
 <h1>Config<a class="headerlink" href="#config" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.config.Config">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.config.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files_read</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ok_to_call</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.config.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files_read</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ok_to_call</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_recursed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/config.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.config.Config" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Interface for yaml config file.</p>
 <blockquote>
@@ -240,6 +240,40 @@ list, or a dictionary.  The structure is recursive; each element of
 each list can be a scalar, a list, or a dictionary, and the value
 associated with each key in each dictionary can itself be a scalar,
 a list, or a dictionary.</p>
+<p>SUBSTITUTION</p>
+<p>Any scalar value that has ${something} in it will have ${something}
+replaced.  The replacement will first look to see if in the current
+tree there is a config value that matches something; if so, then
+that is replaced.  (This is for internal references.)  Failing that,
+it will try to find the environment variable something.  If it
+exists, then that is replaced.</p>
+<p>It will iterate through this repeatedly until nothing changes.
+(Thought required: it’s possible somebody could set up an infinite
+loop with the right config variables doing this….  Should perhaps
+put in circular reference detection, but for now there will just be
+a limit to the number of iterations.)  That way, you can have
+something reference another config option which in turn references
+an env var, and at the end it will all work.</p>
+<p>Note that something must only consist of characters in the range
+a-z, A-Z, 0-9, and _ (which is standard for environment variables),
+plus . (for back references).  If you’ve named a config option you
+want to refer to with something else (e.g. using α or é), you’re
+SOL.  Likewise if you have env vars named that way.
+So, for example, if you have this config file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>top:
+  sub1:
+    val1: ${HOME}
+  thing: ${top.sub1.val1}
+</pre></div>
+</div>
+<p>And your homedirectory is <code class="docutils literal notranslate"><span class="pre">/home/you</span></code>, then after config parsing
+is done, .value(‘top.sub1.val1’) and .value(‘top.thing’) will both
+return <code class="docutils literal notranslate"><span class="pre">/home/you</span></code>.</p>
+<p>This substitution is done at the end, after all includes have been
+pulled in, so “forward references” are possible, though I would
+recommend avoiding using that as you’re just likely to confuse
+yourself.  Keep it simple.</p>
+<p>INCLUDES: SPECIAL KEYS</p>
 <p>A config file can have several special keys:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">preloads</span>
 <span class="n">replaceable_preloads</span>
