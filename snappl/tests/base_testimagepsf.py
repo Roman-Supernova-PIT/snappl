@@ -105,8 +105,7 @@ class BaseTestImagePSF:
         assert clip.shape == ( 29, 29 )
         assert clip.sum() == pytest.approx( 1, abs=0.005 )
         # UGLY.  A test runonly for one sub class.
-        if self.__class__.__name__ == "TestSampling_OVersampledImagePSF" :
-            assert False
+        if self.__class__.__name__ == "TestSampling_OversampledImagePSF" :
             expectedgauss = np.exp( -( clipx[np.newaxis,:]**2 + clipy[:,np.newaxis]**2 ) / ( 2. * sigma**2 ) )
             expectedgauss /= expectedgauss.sum()
             # Doing an absolute, not a relative, comparison because where the gaussian is
