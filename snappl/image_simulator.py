@@ -9,9 +9,6 @@ import multiprocessing
 import numpy as np
 import astropy.wcs
 
-from roman_imsim.utils import roman_utils
-
-from snappl.config import Config
 from snappl.logger import SNLogger
 from snappl.utils import isSequence
 from snappl.psf import PSF
