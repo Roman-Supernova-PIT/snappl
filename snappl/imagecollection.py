@@ -5,7 +5,7 @@ import pathlib
 import simplejson
 
 from snappl.config import Config
-from snappl.http import retry_post
+from snappl.snappl_http import retry_post
 from snappl.image import Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient

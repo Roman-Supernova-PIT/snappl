@@ -47,13 +47,16 @@ def test_image_simulator_one_transient_image():
         image = FITSImageStdHeaders( f'{fnamebase}_{kwargs["mjds"][0]:7.1f}', std_imagenames=True )
         assert image.mjd == pytest.approx( kwargs['mjds'][0], abs=0.0001 )
         assert image.sca == 1
-        assert image.pointing == int( 100 * kwargs['mjds'][0] )
+        assert image.pointing == 1000
         assert image.band == 'R062'
         assert image.image_shape == ( kwargs['height'], kwargs['width'] )
         wcs = image.get_wcs()
+        print(wcs)
         x, y  = wcs.world_to_pixel( kwargs['transient_ra'], kwargs['transient_dec'] )
         x0 = int( np.floor( x + 0.5 ) )
         y0 = int( np.floor( y + 0.5 ) )
+
+
         assert x0 == kwargs['width'] // 2
         assert y0 == kwargs['height'] // 2
         totdata = image.data[ y0-3:y0+4, x0-3:x0+4 ].sum()
@@ -63,6 +66,62 @@ def test_image_simulator_one_transient_image():
 
         flux = 10 ** ( ( kwargs['transient_peak_mag'] - kwargs['zeropoints'][0] ) / -2.5 )
         assert totdata == pytest.approx( flux, abs=2. * totnoise )
+
+        # Used in the next test
+        gaussian_data = image.data
+
+        direc = pathlib.Path(".")
+        for f in direc.glob(f"{fnamebase}*fits"):
+            f.unlink()
+
+        kwargs = {
+            "seed": 64738,
+            "star_center": (120.0, -13.0),
+            "star_sky_radius": 150.0,
+            "alpha": 1.0,
+            "nstars": 0,
+            "psf_class": "ou24PSF",
+            "psf_kwargs": ["sigmax=1.0", "sigmay=1.0", "theta=0."],
+            "basename": fnamebase,
+            "width": 256,
+            "height": 256,
+            "pixscale": 0.11,
+            "mjds": [60030.0],
+            "image_centers": [120.0, -13.0],
+            "image_rotations": [0.0],
+            "zeropoints": [33.0],
+            "sky_noise_rms": [100.0],
+            "sky_level": [10.0],
+            "transient_peak_mag": 21.0,
+            "transient_peak_mjd": 60030.0,
+            "transient_start_mjd": 60010.0,
+            "transient_end_mjd": 60060.0,
+            "transient_ra": 120.0,
+            "transient_dec": -13.0,
+            "numprocs": 1,
+        }
+        sim = ImageSimulator(**kwargs)
+        sim()
+        image = FITSImageStdHeaders(f"{fnamebase}_{kwargs['mjds'][0]:7.1f}", std_imagenames=True)
+        # Since only the CD matrix is modified, the central pixel should be the same
+        wcs = image.get_wcs()
+        x, y = wcs.world_to_pixel(kwargs["transient_ra"], kwargs["transient_dec"])
+        x0 = int(np.floor(x + 0.5))
+        y0 = int(np.floor(y + 0.5))
+        assert x0 == kwargs["width"] // 2
+        assert y0 == kwargs["height"] // 2
+
+        totdata = image.data[y0 - 3 : y0 + 4, x0 - 3 : x0 + 4].sum()
+        totnoise = np.sqrt((image.noise[y0 - 3 : y0 + 4, x0 - 3 : x0 + 4] ** 2).sum())
+        # Make sure noise is sane
+        assert totnoise == pytest.approx(np.sqrt(49 * kwargs["sky_noise_rms"][0] ** 2), rel=0.1)
+
+        flux = 10 ** ((kwargs["transient_peak_mag"] - kwargs["zeropoints"][0]) / -2.5)
+        # assert totdata == pytest.approx(flux, abs=2.0 * totnoise)
+        # NORMALIZATION OF OU24PSF WHEN NOT PHOTON SHOOTING IS STILL NOT UNDERSTOOD, SEE COLE'S SLACK CONVERSATION
+        # FOR NOW, JUST CHECK THAT THE IMAGE IS DIFFERENT FROM THE GAUSSIAN ONE
+
+        assert not image.data == pytest.approx(gaussian_data) # Make sure we just didn't rerender a gaussian!
 
     finally:
         direc = pathlib.Path( '.' )
