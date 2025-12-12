@@ -1387,10 +1387,9 @@ class ou24PSF_slow( PSF ):
             else:
                 SNLogger.debug("flux pre convolution = " + str(point.calculateFlux(rmutils.bpass)))
                 psf = galsim.Convolve(point, photon_ops[0])
-                psf = psf.withFlux(1, bandpass = rmutils.bpass)
                 SNLogger.debug(f"psf type {type(psf)}")
                 SNLogger.debug("flux post convolution = " + str(psf.calculateFlux(rmutils.bpass)))
-                psf.drawImage(rmutils.bpass, method="no_pixel", center=center,
+                psf.drawImage(rmutils.bpass, method="auto", center=center,
                               use_true_center=True, image=stamp, wcs=self._wcs)
 
             self._stamps[(x, y, stampx, stampy)] = stamp.array
@@ -1532,7 +1531,7 @@ class ou24PSF( ou24PSF_slow ):
                                       center=center, use_true_center=True, image=self._stamp)
 
             else:
-                self._convolved_psf.drawImage(self._rmutils.bpass, method="no_pixel", center=center,
+                self._convolved_psf.drawImage(self._rmutils.bpass, method="auto", center=center,
                                               use_true_center=True, image=self._stamp, wcs=self._wcs)
 
             self._stamps[(x, y, stampx, stampy)] = self._stamp.array

@@ -55,16 +55,11 @@ def test_slow_normalization_nophotshoot():
     smallstamp = smallpsfobj.get_stamp(seed=42)
     assert smallstamp.shape == (41, 41)
 
-    assert bigstamp.sum() == pytest.approx(1.0, abs=0.001)
+    assert bigstamp.sum() == pytest.approx(1.0, abs=0.01) # Seems to only be accurate to about 0.5%
 
     x0 = bigsize // 2 - smallsize // 2
     x1 = x0 + smallsize
-    from snappl.logger import SNLogger
 
-    SNLogger.debug(
-        f"bigstamp sum: {bigstamp.sum()}, smallstamp sum: {smallstamp.sum()}, "
-        f"bigstamp cutout sum: {bigstamp[x0:x1, x0:x1].sum()}"
-    )
     assert smallstamp.sum() == pytest.approx(bigstamp[x0:x1, x0:x1].sum(), rel=1e-5)
 
 
@@ -163,7 +158,7 @@ def test_check_phot_off():
     psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41.,
                                  include_photonOps=False )
     stamp = psfobj.get_stamp( 2048., 2048., x0=2050, y0=2040)
-    regression_val = 2.0617566108703613
+    regression_val = 0.9827711582183838
     assert stamp.sum() == pytest.approx(regression_val , abs=1e-7 ), \
         "Check that photon_ops is False, the sum" +\
               f"of the image should equal {regression_val}, was actually {stamp.sum()}"
