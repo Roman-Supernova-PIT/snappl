@@ -18,10 +18,10 @@ def test_slow_normalization():
     # seeds.
     bigsize = 201
     smallsize = 41
-    bigpsfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=bigsize )
+    bigpsfobj = PSF.get_psf_object("ou24PSF_slow", pointing=6, sca=17, size=bigsize, include_photonOps=True)
     bigstamp = bigpsfobj.get_stamp( seed=42 )
     assert bigstamp.shape == ( 201, 201 )
-    smallpsfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=smallsize )
+    smallpsfobj = PSF.get_psf_object("ou24PSF_slow", pointing=6, sca=17, size=smallsize, include_photonOps=True)
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
@@ -36,7 +36,8 @@ def test_slow_normalization():
 
 
 def test_slow_get_stamp():
-    psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41. )
+    psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41, include_photonOps=True )
+    # This kwarg can removed once snappl PR 153 is merged.
     assert isinstance( psfobj, snappl.psf.ou24PSF_slow )
 
     # It's slow getting galsim PSFs with photon ops, so we're not going to
@@ -143,10 +144,12 @@ def test_normalization():
     # seeds.
     bigsize = 201
     smallsize = 41
-    bigpsfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=bigsize)
+    bigpsfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=bigsize, include_photonOps=True)
+    # This kwarg can be removed once PR 153 is merged.
     bigstamp = bigpsfobj.get_stamp(seed=42)
     assert bigstamp.shape == (201, 201)
-    smallpsfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=smallsize)
+    smallpsfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=smallsize, include_photonOps=True)
+    # This kwarg can be removed once PR 153 is merged.
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
@@ -164,7 +167,8 @@ def test_get_stamp():
     # Note that in this test I have to re-call get_psf_object each time I want to make a stamp,
     # because the fast version of ou24PSF is not designed to allow x0 or y0 to change.
 
-    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0, include_photonOps=True)
+    # This kwarg can removed once snappl PR 153 is merged.
     assert isinstance(psfobj, snappl.psf.ou24PSF)
 
     # It's slow getting galsim PSFs with photon ops, so we're not going to
@@ -189,7 +193,8 @@ def test_get_stamp():
     #   doesn't come out quite precise when the thing is offset
     #   this much.
 
-    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0, include_photonOps=True)
+    # This kwarg can removed once snappl PR 153 is merged.
     stamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
@@ -220,7 +225,8 @@ def test_get_stamp():
     # Try a PSF centered between two pixels.  Because of how we
     #   define 0.5 behavior in PSF.get_stamp, this should be
     #   centered to the *left* of the center of the image.
-    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0, include_photonOps=True)
+    # This kwarg can removed once snappl PR 153 is merged.
     stamp = psfobj.get_stamp(2048.5, 2048.0, seed=42)
     assert stamp.shape == (41, 41)
     assert stamp.sum() == pytest.approx(0.986, abs=0.001)
@@ -234,7 +240,8 @@ def test_get_stamp():
     # The PSF center should be at -1.5, +2.5 pixels
     # relative to the stamp center... but then
     # offset because of the asymmetry of the roman PSF.
-    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0, include_photonOps=True)
+    # This kwarg can removed once snappl PR 153 is merged.
     stamp = psfobj.get_stamp(2048.5, 2048.5, x0=2050, y0=2046, seed=42)
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
