@@ -1,0 +1,22 @@
+preloads:
+  - test_sub_preload.yaml
+overrides:
+  - test_sub_override.yaml
+
+top:
+  kitten: Echelle
+  gratuitous_list:
+    - zero
+    - one
+    - foo: bar
+      homedir: ${HOME}
+
+  backwardsub: ${pre.backwardsub}
+  backwardsub_list0: ${pre.prelist.0}
+  backwardsub_list1: ${pre.prelist.1}
+    
+  forwardsub: ${override.thing}
+  
+
+
+  

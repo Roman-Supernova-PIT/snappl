@@ -4,6 +4,8 @@ import argparse
 import copy
 import numbers
 import os
+import io
+import re
 import pathlib
 import types
 import yaml
@@ -164,6 +166,47 @@ class Config:
     each list can be a scalar, a list, or a dictionary, and the value
     associated with each key in each dictionary can itself be a scalar,
     a list, or a dictionary.
+
+    SUBSTITUTION
+
+    Any scalar value that has ${something} in it will have ${something}
+    replaced.  The replacement will first look to see if in the current
+    tree there is a config value that matches something; if so, then
+    that is replaced.  (This is for internal references.)  Failing that,
+    it will try to find the environment variable something.  If it
+    exists, then that is replaced.
+
+    It will iterate through this repeatedly until nothing changes.
+    (Thought required: it's possible somebody could set up an infinite
+    loop with the right config variables doing this....  Should perhaps
+    put in circular reference detection, but for now there will just be
+    a limit to the number of iterations.)  That way, you can have
+    something reference another config option which in turn references
+    an env var, and at the end it will all work.
+
+    Note that something must only consist of characters in the range
+    a-z, A-Z, 0-9, and _ (which is standard for environment variables),
+    plus . (for back references).  If you've named a config option you
+    want to refer to with something else (e.g. using α or é), you're
+    SOL.  Likewise if you have env vars named that way.
+    So, for example, if you have this config file::
+
+      top:
+        sub1:
+          val1: ${HOME}
+        thing: ${top.sub1.val1}
+
+    And your homedirectory is ``/home/you``, then after config parsing
+    is done, .value('top.sub1.val1') and .value('top.thing') will both
+    return ``/home/you``.
+
+    This substitution is done at the end, after all includes have been
+    pulled in, so "forward references" are possible, though I would
+    recommend avoiding using that as you're just likely to confuse
+    yourself.  Keep it simple.
+
+
+    INCLUDES: SPECIAL KEYS
 
     A config file can have several special keys::
 
@@ -348,6 +391,9 @@ class Config:
     _default = None
     _configs = {}
 
+    # Used in substitutions
+    _subre = re.compile( r'(?P<fullsub>\$\{(?P<subvar>[A-Za-z0-9_\.]+)\})' )
+    _maxsubiterations = 10
 
     @staticmethod
     def init( configfile=None, setdefault=None ):
@@ -549,7 +595,7 @@ class Config:
     #    that case, files_read should have been initialized to
     #    a new set.  But it wasn't!  WTF?  Doing the "None"
     #    thing as a workaround.
-    def __init__( self, configfile=None, clone=None, files_read=None, _ok_to_call=False ):
+    def __init__( self, configfile=None, clone=None, files_read=None, _ok_to_call=False, _recursed=False ):
         """Don't directly instantiate a Config object, call static method Config.get().
 
         Parameters
@@ -620,12 +666,12 @@ class Config:
 
                 preloaddict = {}
                 for preloadfile in imports['preloads']:
-                    cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True )
+                    cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True, _recursed=True )
                     preloaddict = self._merge_trees( '', preloaddict, cfg._data, mode='augment' )
 
                 workingdict = {}
                 for preloadfile in imports['replaceable_preloads']:
-                    cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True )
+                    cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True, _recursed=True )
                     workingdict = self._merge_trees( '', workingdict, cfg._data, mode='destructive_append' )
 
                 workingdict = self._merge_trees( '', workingdict, curfiledata, mode='destructive_append' )
@@ -642,6 +688,17 @@ class Config:
 
                 for appendfile in imports['appends']:
                     self._merge_file( appendfile, mode='append', files_read=files_read )
+
+                if not _recursed:
+                    _changed, subs, _notfound = self._perform_substitutions()
+                    if len(subs) > 0:
+                        sio = io.StringIO()
+                        sio.write( "Config substitutions performed:\n" )
+                        for sub in subs:
+                            sio.write( f"Value of {sub[0]} replaced to {sub[1]}\n" )
+                        SNLogger.debug( sio.getvalue() )
+                    else:
+                        SNLogger.debug( "No substitutions performed." )
 
             except Exception as e:
                 SNLogger.exception( f'Exception trying to load config from {configfile}' )
@@ -994,7 +1051,7 @@ class Config:
             raise RuntimeError( "This should never happen." )
 
         files_read = { self._path } if files_read is None else files_read
-        cfg = Config( self._pathify(path), files_read=files_read, _ok_to_call=True )
+        cfg = Config( self._pathify(path), files_read=files_read, _ok_to_call=True, _recursed=True )
         self._data = self._merge_trees( '', self._data, cfg._data, mode=mode )
 
 
@@ -1038,6 +1095,78 @@ class Config:
         raise RuntimeError( f"Error combining key {errkeyword} with mode {mode}; left is a {type(left)} "
                             f"and right is a {type(right)}" )
 
+
+    def _one_substitution( self, val ):
+        if not isinstance( val, str ):
+            return NoValue()
+
+        mat = Config._subre.search( val )
+        if mat is None:
+            return NoValue()
+        else:
+            fullsub = mat.group( 'fullsub' )
+            subvar = mat.group( 'subvar' )
+
+            try:
+                replacement = self.value( subvar )
+            except Exception:
+                if os.environ.get( subvar ) is None:
+                    return NotFoundValue()
+                replacement = os.environ.get( subvar )
+
+            return val.replace( fullsub, replacement )
+
+
+    def _perform_substitutions( self, tree=None, prefix="" ):
+        toplevel = tree is None
+        tree = self._data if tree is None else tree
+
+        iterations = 0
+        niterations = Config._maxsubiterations if toplevel else 1
+        changed = True
+        subs = []
+        notfound = []
+
+        while ( iterations < niterations ) and ( changed or ( len(notfound) > 0 ) ):
+            iterations += 1
+            changed = False
+            notfound = []
+
+            if isinstance( tree, (list, dict) ):
+                iterthing = tree.keys() if isinstance( tree, dict ) else range( len(tree) )
+                for key in iterthing:
+                    if isinstance( tree[key], (list, dict) ):
+                        thischanged, thesesubs, thesenotfound = self._perform_substitutions( tree=tree[key],
+                                                                                             prefix=f"{prefix}{key}." )
+                        changed = changed or thischanged
+                        subs.extend( thesesubs )
+                        notfound.extend( thesenotfound )
+                    else:
+                        replacement = self._one_substitution( tree[key] )
+                        if isinstance( replacement, NotFoundValue ):
+                            notfound.append( tree[key] )
+                        elif not isinstance( replacement, NoValue ):
+                            subs.append( ( f"{prefix}{key}", replacement ) )
+                            tree[key] = replacement
+                            changed = True
+            else:
+                raise ValueError( f"Mal-formed config tree; got a {type(tree)} where expecting a dict or list.  "
+                                  f"If your config file has a dictionary at the top level, as it's supposed to, "
+                                  f"you should never see this error." )
+
+
+        if toplevel and ( len(notfound) > 0 ):
+            strio = io.StringIO()
+            strio.write( f"Substitution fail; the following replacements "
+                         f"weren't found after {iterations} iterations:\n" )
+            for missing in notfound:
+                strio.write( f"    {missing}\n" )
+            raise RuntimeError( strio.getvalue() )
+
+        if toplevel and changed and ( iterations >= niterations ):
+            raise RuntimeError( f"Substitution fail; still hasn't converged after {iterations} iterations." )
+
+        return changed, subs, notfound
 
 
     def augment_argparse( self, parser, path='', _dict=None ):

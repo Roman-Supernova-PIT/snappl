@@ -1,0 +1,8 @@
+pre:
+  forwardsub: ${top.kitten}
+  backwardsub: from_pre
+  blownaway: ${top.kitten}
+  prelist:
+    - pre_backwardsub1
+    - pre_backwardsub2
+    - ${top.gratuitous_list.2.homedir}
