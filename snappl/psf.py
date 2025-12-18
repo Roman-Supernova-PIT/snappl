@@ -1816,41 +1816,13 @@ class GaussianPSF( PSF ):
 
         return stamp
 
-    # def sersic_2d(self, yrel, xrel, R, n, flux):
-    #     """Sersic profile in 2D,  normalzied to a flux of 1.  The Sersic profile is defined as:
-    #     I(r) = exp(-b * ((r/R)^(1/n) - 1)) where b is a function of n.  The value of b is
-    #     calculated using the approximation from Ciotti and Bertin (1999).
-
-    #     Inputs:
-    #     yrel, xrel: float, relative positions from the center of the galaxy in pixels
-    #     R: float, half-light radius of the galaxy in pixels
-    #     n: float, Sersic index (1 is exponential, 4 is de Vaucouleurs)
-
-    #     Returns:
-    #     The flux density at (xrel, yrel) in the Sersic profile with half-light radius R and index n.
-    #     """
-    #     #r = np.sqrt(yrel**2 + xrel**2)
-    #     #b = 2*n - 1/2 + 4 / (405 * n) + 46 / (25515 * n**2) + 131 / (1148175 * n**3) - 2194697 / (30690717750 * n**4)
-    #     # See equation 18 in L. Ciotti & G. Bertin: Analytical properties of the R 1/m law
-    #     # https://arxiv.org/pdf/astro-ph/9911078
-
-    #     from scipy.special import gammaincinv
-    #     from astropy.modeling.functional_models import Sersic2D
-
-    #     b = gammaincinv(2.0 * n, 0.5)
-    #     amp = flux * b ** (2 * n) / (R**2 * 2 *np.pi * n * np.exp(b) * scipy.special.gamma(2*n))
-
-    #     sersic = Sersic2D(amplitude=amp, r_eff=R, n=n)
-    #     flux_density = sersic(xrel, yrel)
-
-    #     #total_lum = 1 * R**2 * 2 * np.pi * n * scipy.special.gamma(2*n) / (b**(2*n))  # Total luminosity of the galaxy
-
-    #     # See equation 4 in the above paper.
-
-    #     return flux_density
 
     def get_galaxy_stamp(self, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
                          bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
+
+        """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution."""
+        SNLogger.debug("bulge_R, bulge_n, disk_R, disk_n: ")
+        SNLogger.debug(f"{bulge_R}, {type(bulge_n)}, {disk_R}, {disk_n}")
         midpix = int( np.floor( self.stamp_size / 2 ) )
         xc = int( np.floor(x + 0.5 ) )
         yc = int( np.floor(y + 0.5 ) )
@@ -1870,28 +1842,19 @@ class GaussianPSF( PSF ):
         xxrel, yyrel = np.meshgrid(xrel, yrel)
         # The same mesh but now the x value is zeroed at the center of where the galaxy is being centered
 
-        # xx_rel_to_center = ixx - midpix
-        # yy_rel_to_center = iyy - midpix
-        # The same mesh but now the x value is zeroed at the center of the stamp
-        #psf_stamp = self._gauss(yy_rel_to_center.ravel(), xx_rel_to_center.ravel())
-        #psf_stamp /= np.sum(psf_stamp)  # Renormalize the PSF to have flux = 1
-        #psf_stamp = psf_stamp.reshape(yy_rel_to_center.shape)
         psf_stamp = self.get_stamp(x=self.stamp_size//2, y=self.stamp_size//2,)
 
-        # profile_stamp = self.sersic_2d(yy_rel, xx_rel, R=bulge_R, n=bulge_n, flux = 1/2) + \
-        #                 self.sersic_2d(yy_rel, xx_rel, R=disk_R, n=disk_n, flux = 1/2 )
 
         # Prepare and evaluate the profile
-
+        # Create a galaxy profile from a bulge + disk model
 
         b_bulge = gammaincinv(2.0 * bulge_n, 0.5)
 
-        # Divide the flux equally between bulge and disk
+        # Divide the flux equally between bulge and disk, so flux --> flux / 2
         bulge_amp = flux/2 * b_bulge**(2*bulge_n) /\
            (2 * np.pi * bulge_n * scipy.special.gamma(2*bulge_n) * np.exp(b_bulge) * bulge_R**2)
         # The above is inverting the formula for total flux of a sersic profile, see
         # http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
-
         bulge_amp /= oversamp**2
         sers_bulge = Sersic2D(amplitude=bulge_amp, r_eff=bulge_R, n=bulge_n)
 
@@ -1903,11 +1866,8 @@ class GaussianPSF( PSF ):
 
         profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
 
-
-
-        #profile_stamp = sers(xxrel, yyrel)
-
-        profile_stamp,_,_,_= binned_statistic_2d(
+        # Downsample to image resolution
+        profile_stamp, _, _, _= binned_statistic_2d(
                 x=ixx.flatten(),
                 y=iyy.flatten(),
                 values=profile_stamp.flatten(),
@@ -1918,26 +1878,6 @@ class GaussianPSF( PSF ):
 
         profile_stamp = profile_stamp.reshape(self.stamp_size, self.stamp_size)
 
-        # A bulge + disk model for a galaxy
-        SNLogger.debug("profile stamp sum: " + str(np.sum(profile_stamp)))
-        #psf_stamp /= np.sum(psf_stamp)  # Renormalize the PSF to have flux = 1
-
-
-        #convolved = scipy.signal.convolve2d(psf_stamp, profile_stamp, mode="same", boundary="symm")
         convolved = scipy.signal.convolve2d(profile_stamp, psf_stamp, mode="same", boundary="symm")
-        SNLogger.debug("convolved stamp sum: " + str(np.sum(convolved)))
 
-
-        # # The following assumes all the pixels have the same area. Is this correct?
-        # convolved_integrated, _, _, _ = binned_statistic_2d(
-        #     x=ixx.flatten(),
-        #     y=iyy.flatten(),
-        #     values=convolved.flatten(),
-        #     statistic="sum",
-        #     bins=self.stamp_size,
-        #     range=[[-0.5, self.stamp_size - 0.5], [-0.5, self.stamp_size - 0.5]],
-        # )
-        # convolved_integrated /=  oversamp**2 # dx = 1/oversamp and dy = 1/oversamp so the
-        # # area of each bin is 1/oversamp^2
-        # convolved_integrated *= flux # Give the correct flux
         return convolved

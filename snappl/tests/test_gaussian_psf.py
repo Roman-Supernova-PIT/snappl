@@ -162,7 +162,7 @@ def test_gaussian_psf():
 
 
 def test_galaxy_stamp():
-    gpsf = PSF.get_psf_object("gaussian", x=0, y=0, band="R062", stamp_size = 31)
+    gpsf = PSF.get_psf_object("gaussian", x=0, y=0, band="R062", stamp_size = 71)
     # Test centering
     for x in [1000.0, 1000.25, 1000.5]:
         for y in [1000.0, 1000.25, 1000.5]:
