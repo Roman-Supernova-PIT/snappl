@@ -1882,18 +1882,30 @@ class GaussianPSF( PSF ):
         #                 self.sersic_2d(yy_rel, xx_rel, R=disk_R, n=disk_n, flux = 1/2 )
 
         # Prepare and evaluate the profile
-        flux = 100
-        r_eff = 2
-        n = 3
-        b = gammaincinv(2.0 * n, 0.5)
 
-        amp = flux * b**(2*n) / (2 * np.pi * n * scipy.special.gamma(2*n) * np.exp(b) * r_eff**2)
+
+        b_bulge = gammaincinv(2.0 * bulge_n, 0.5)
+
+        # Divide the flux equally between bulge and disk
+        bulge_amp = flux/2 * b_bulge**(2*bulge_n) /\
+           (2 * np.pi * bulge_n * scipy.special.gamma(2*bulge_n) * np.exp(b_bulge) * bulge_R**2)
         # The above is inverting the formula for total flux of a sersic profile, see
         # http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
 
-        amp /= oversamp**2
-        sers = Sersic2D(amplitude=amp, r_eff=r_eff, n=n)
-        profile_stamp = sers(xxrel, yyrel)
+        bulge_amp /= oversamp**2
+        sers_bulge = Sersic2D(amplitude=bulge_amp, r_eff=bulge_R, n=bulge_n)
+
+        b_disk = gammaincinv(2.0 * disk_n, 0.5)
+        disk_amp = flux/2 * b_disk**(2*disk_n) /\
+           (2 * np.pi * disk_n * scipy.special.gamma(2*disk_n) * np.exp(b_disk) * disk_R**2)
+        disk_amp /= oversamp**2
+        sers_disk = Sersic2D(amplitude=disk_amp, r_eff=disk_R, n=disk_n)
+
+        profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
+
+
+
+        #profile_stamp = sers(xxrel, yyrel)
 
         profile_stamp,_,_,_= binned_statistic_2d(
                 x=ixx.flatten(),

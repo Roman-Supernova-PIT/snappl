@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 import scipy.ndimage
 from snappl.psf import PSF
+from scipy.ndimage import center_of_mass
 
 
 def test_gaussian_psf():
@@ -159,33 +160,29 @@ def test_gaussian_psf():
     assert cx == pytest.approx( 5.5, abs=0.01 )
     assert cy == pytest.approx( 5.5, abs=0.01 )
 
-from scipy.ndimage import center_of_mass
+
 def test_galaxy_stamp():
     gpsf = PSF.get_psf_object("gaussian", x=0, y=0, band="R062", stamp_size = 31)
-
-
-    # # Test centering
-    # for x in [1000.0, 1000.25, 1000.5]:
-    #     for y in [1000.0, 1000.25, 1000.5]:
-    #         for oversamp in [3, 5, 7]:
-    #             SNLogger.debug("------------------")
-    #             x0 = 999
-    #             y0 = 999
-    #             SNLogger().info(f"Testing x={x}, y={y}, oversamp={oversamp}")
-    #             midpix = gpsf.stamp_size // 2
-    #             expected_center_x = midpix + x - x0
-    #             expected_center_y = midpix + y - y0
-    #             galaxy_stamp = gpsf.get_galaxy_stamp(x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=oversamp)
-    #             cx, cy = center_of_mass(galaxy_stamp) # why does this need to be flipped compared to what Rob does above?
-    #             SNLogger.debug(f"delta x {cx - expected_center_x}, delta y {cy - expected_center_y}")
-    #             assert cx == pytest.approx(expected_center_x, abs=1/oversamp)
-    #             assert cy == pytest.approx(expected_center_y, abs=1/oversamp)
+    # Test centering
+    for x in [1000.0, 1000.25, 1000.5]:
+        for y in [1000.0, 1000.25, 1000.5]:
+            oversamp = 5
+            x0 = 999
+            y0 = 999
+            midpix = gpsf.stamp_size // 2
+            expected_center_x = midpix + x - x0
+            expected_center_y = midpix + y - y0
+            galaxy_stamp = gpsf.get_galaxy_stamp(x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=oversamp)
+            cx, cy = center_of_mass(galaxy_stamp) # why does this need to be flipped compared to what Rob does above?
+            assert cx == pytest.approx(expected_center_x, abs=1/oversamp)
+            assert cy == pytest.approx(expected_center_y, abs=1/oversamp)
 
     # Test total flux
-    gpsf = PSF.get_psf_object("gaussian", x=0, y=0, band="R062", stamp_size=26)
+    gpsf = PSF.get_psf_object("gaussian", x=0, y=0, band="R062", stamp_size=71)
     x=1000.0
     y=1000.0
     x0 = 1000
     y0 = 1000
-    galaxy_stamp = gpsf.get_galaxy_stamp(x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R = 1, disk_R = 3)
-    assert galaxy_stamp.sum() == pytest.approx(1e6, rel=1e-3)
+    galaxy_stamp = gpsf.get_galaxy_stamp(x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R = 2, bulge_n=3,
+    disk_R= 2, disk_n = 3)
+    assert galaxy_stamp.sum() == pytest.approx(991866, rel=1e-3) # Empirically, only 99.1 % of flux is in 71x71 stamp
