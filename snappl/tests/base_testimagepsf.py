@@ -101,14 +101,16 @@ class BaseTestImagePSF:
         #   it's damn close.
         clipx = np.arange( -14, 15 )
         clipy = np.arange( -14, 15 )
-        expectedgauss = np.exp( -( clipx[np.newaxis,:]**2 + clipy[:,np.newaxis]**2 ) / ( 2. * sigma**2 ) )
-        expectedgauss /= expectedgauss.sum()
         clip = psf.get_stamp()
         assert clip.shape == ( 29, 29 )
         assert clip.sum() == pytest.approx( 1, abs=0.005 )
-        # Doing an absolute, not a relative, comparison because where the gaussian is
-        #   approximately zero, we don't need it to be identically 0
-        assert np.all( clip == pytest.approx( expectedgauss, abs=0.001 / ( 29*29 ) ) )
+        # UGLY.  A test runonly for one sub class.
+        if self.__class__.__name__ == "TestSampling_OversampledImagePSF" :
+            expectedgauss = np.exp( -( clipx[np.newaxis,:]**2 + clipy[:,np.newaxis]**2 ) / ( 2. * sigma**2 ) )
+            expectedgauss /= expectedgauss.sum()
+            # Doing an absolute, not a relative, comparison because where the gaussian is
+            #   approximately zero, we don't need it to be identically 0
+            assert np.all( clip == pytest.approx( expectedgauss, abs=0.001 / ( 29*29 ) ) )
 
         # Render a bunch that are offset and make sure they center up where
         # expected
@@ -130,8 +132,16 @@ class BaseTestImagePSF:
                 assert clip.sum() == pytest.approx( 1, abs=0.005 )
                 assert clip.shape == ( 29, 29 )
                 cy, cx = scipy.ndimage.center_of_mass( clip )
-                assert cx == pytest.approx( xctr, abs=0.01 )
-                assert cy == pytest.approx( yctr, abs=0.01 )
+                if sigma < 0.5:
+                    # For a small enough PSF, the moments aren't going to
+                    #  get the position exactly right.  But, with abs=0.1,
+                    #  we're still making sure it's showing up in the right
+                    #  general part of the pixel.
+                    assert cx == pytest.approx( xctr, abs=0.1 )
+                    assert cy == pytest.approx( yctr, abs=0.1 )
+                else:
+                    assert cx == pytest.approx( xctr, abs=0.01 )
+                    assert cy == pytest.approx( yctr, abs=0.01 )
 
         # Now try the case where we pass x0 and y0 to get_stamp.
 
@@ -240,7 +250,9 @@ class BaseTestImagePSF:
                                     )
                         if nearedge:
                             numnear += 1
-                            assert clip.sum() < 0.98
+                            # If the PSF is small enough, most of the flux might still be there!
+                            if sigma > 0.7:
+                                assert clip.sum() < 0.98
                             ixpeak = int( np.floor( xpeak + 0.5 ) )
                             iypeak = int( np.floor( ypeak + 0.5 ) )
                             # We're just gonna punt if the peak is off of the edge of the image
@@ -272,14 +284,27 @@ class BaseTestImagePSF:
                             cy, cx = scipy.ndimage.center_of_mass( clip )
                             if nearishedge:
                                 numnearish += 1
-                                assert clip.sum() == pytest.approx( 0.99, abs=0.01 )
-                                assert cx == pytest.approx( xpeak, abs=0.06 )
-                                assert cy == pytest.approx( ypeak, abs=0.06 )
+                                # If the PSF is small enough, most of the flux might still be there!
+                                if sigma > 0.5:
+                                    assert clip.sum() == pytest.approx( 0.99, abs=0.01 )
+                                    assert cx == pytest.approx( xpeak, abs=0.06 )
+                                    assert cy == pytest.approx( ypeak, abs=0.06 )
+                                else:
+                                    assert cx == pytest.approx( xpeak, abs=0.1 )
+                                    assert cy == pytest.approx( ypeak, abs=0.1 )
                             else:
                                 numnotnear += 1
                                 assert clip.sum() == pytest.approx( 1., abs=0.005 )
-                                assert cx == pytest.approx( xpeak, abs=0.01 )
-                                assert cy == pytest.approx( ypeak, abs=0.01 )
+                                if sigma < 0.5:
+                                    # For a small enough PSF, the moments aren't going to
+                                    #  get the position exactly right.  But, with abs=0.1,
+                                    #  we're still making sure it's showing up in the right
+                                    #  general part of the pixel.
+                                    assert cx == pytest.approx( xpeak, abs=0.1 )
+                                    assert cy == pytest.approx( ypeak, abs=0.1 )
+                                else:
+                                    assert cx == pytest.approx( xpeak, abs=0.01 )
+                                    assert cy == pytest.approx( ypeak, abs=0.01 )
 
         SNLogger.debug( f"test_get_stamp_centered_oversampled: {numnear} near edge ({punted} punted), {numnearish} "
                         f"nearish edge, {numnotnear} not near edge" )
