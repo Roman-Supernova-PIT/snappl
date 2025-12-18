@@ -25,7 +25,8 @@ class ImageSimulatorPointSource:
         self.psf = psf
 
 
-    def render_stamp( self, width, height, x, y, flux, zeropoint=None, gain=1., noisy=True, rng=None, shape = "point", galaxy_kwargs=[] ):
+    def render_stamp( self, width, height, x, y, flux, zeropoint=None, gain=1., noisy=True, rng=None, shape = "point",
+                      galaxy_kwargs=[] ):
         if ( ( x < -self.psf.stamp_size ) or ( x > height + self.psf.stamp_size ) or
              ( y < -self.psf.stamp_size ) or ( y > width + self.psf.stamp_size )
             ):
@@ -160,7 +161,8 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
             raise ValueError("ImageSimulatorStaticSource requires a magnitude")
         self.mag = mag
 
-    def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None, galaxy_kwargs=[]):
+    def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None,
+                             galaxy_kwargs=[]):
 
         flux = 10 ** ((self.mag - zeropoint) / -2.5)
 
@@ -285,7 +287,8 @@ class ImageSimulatorImage:
                                                                             self.image.data.shape[0],
                                                                         x, y, self.image.mjd,
                                                                         zeropoint=self.image.zeropoint,
-                                                                        rng=rng, noisy=noisy, galaxy_kwargs=galaxy_kwargs)
+                                                                        rng=rng, noisy=noisy,
+                                                                        galaxy_kwargs=galaxy_kwargs)
             if stamp is not None:
                 ix0, ix1, iy0, iy1 = imcoords
                 sx0, sx1, sy0, sy1 = stampcoords
