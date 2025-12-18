@@ -1,0 +1,1 @@
+Image Simulator can now simulate galaxies with a more realistic double sersic profile.

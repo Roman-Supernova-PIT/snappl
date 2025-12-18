@@ -10,10 +10,14 @@ import pathlib
 # common library imports
 import numpy as np
 import scipy.integrate
+from scipy.special import gammaincinv
+from scipy.stats import binned_statistic_2d
 import scipy.signal
 import yaml
 
+
 # astro library imports
+from astropy.modeling.functional_models import Sersic2D
 import photutils.psf
 import galsim
 from roman_imsim.utils import roman_utils
@@ -127,6 +131,12 @@ class PSF:
 
         if psfclass == "gaussian":
             return GaussianPSF( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "ou24PSF_slow_photonshoot":
+            return ou24PSF_slow_photonshoot( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "ou24PSF_photonshoot":
+            return ou24PSF_photonshoot(_called_from_get_psf_object=True, **kwargs)
 
         raise ValueError( f"Unknown PSF class {psfclass}" )
 
@@ -1331,11 +1341,11 @@ class ou24PSF_slow( PSF ):
 
     """
 
-    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True,
-                   n_photons=1000000, _parent_class=False, **kwargs
+    def __init__( self, sed=None, config_file=None, size=201,
+                   n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
                  ):
         super().__init__( _parent_class=True, **kwargs )
-        self._consumed_args.update( [ 'sed', 'config_file', 'size', 'include_photonOps', 'n_photons' ] )
+        self._consumed_args.update( [ 'sed', 'config_file', 'size', '_include_photonOps', 'n_photons' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         if ( self._pointing is None ) or ( self._sca is None ):
@@ -1360,7 +1370,7 @@ class ou24PSF_slow( PSF ):
         self.sca_size = 4088
         self._x = self.sca_size // 2 if self._x is None else self._x
         self._y = self.sca_size // 2 if self._y is None else self._y
-        self.include_photonOps = include_photonOps
+        self._include_photonOps = _include_photonOps
         self.n_photons = n_photons
         self._stamps = {}
 
@@ -1414,6 +1424,7 @@ class ou24PSF_slow( PSF ):
 
 
         if (x, y, stampx, stampy) not in self._stamps:
+            SNLogger.debug("configfile = " + str(self.config_file))
             rmutils = roman_utils( self.config_file, self._pointing, self._sca )
             if seed is not None:
                 rmutils.rng = galsim.BaseDeviate( seed )
@@ -1441,24 +1452,29 @@ class ou24PSF_slow( PSF ):
             # (This is not that big a deal, because the PSF is not going to vary significantly
             # over 1 pixel.)
             photon_ops = [ rmutils.getPSF( x+1, y+1, pupil_bin=8 ) ]
-            if self.include_photonOps:
+            if self._include_photonOps:
                 photon_ops += rmutils.photon_ops
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
             center = galsim.PositionD(stampx+1, stampy+1)
-            # Note: self.include_photonOps is a bool that states whether we are
+            # Note: self._include_photonOps is a bool that states whether we are
             #  shooting photons or not, photon_ops is the actual map (not sure
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
-            if self.include_photonOps:
+
+            # Note from Cole, it seems like the photon ops method is achromatic, but the other method is using a
+            # chromatic object. I am not currently sure if this matters.
+
+            if self._include_photonOps:
+                SNLogger.debug(f"point type {type(point)}")
                 point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
 
             else:
                 psf = galsim.Convolve(point, photon_ops[0])
-                psf.drawImage(rmutils.bpass, method="no_pixel", center=center,
+                psf.drawImage(rmutils.bpass, method="auto", center=center,
                               use_true_center=True, image=stamp, wcs=self._wcs)
 
             self._stamps[(x, y, stampx, stampy)] = stamp.array
@@ -1468,7 +1484,7 @@ class ou24PSF_slow( PSF ):
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
 class ou24PSF( ou24PSF_slow ):
-    """Wrap the roman_imsim PSFs, only more efficiently (we hoipe) than ou24PSF_slow.
+    """Wrap the roman_imsim PSFs, only more efficiently (we hope) than ou24PSF_slow.
 
     TODO: document what is different, what is cached.
 
@@ -1584,7 +1600,7 @@ class ou24PSF( ou24PSF_slow ):
                 self._rmutils.rng = galsim.BaseDeviate( seed )
 
             photon_ops = [ self._psf ]
-            if self.include_photonOps:
+            if self._include_photonOps:
                 photon_ops += self._rmutils.photon_ops
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
@@ -1594,18 +1610,32 @@ class ou24PSF( ou24PSF_slow ):
             #  shooting photons or not, photon_ops is the actual map (not sure
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
-            if self.include_photonOps:
+            if self._include_photonOps:
                 self._point.drawImage(self._rmutils.bpass, method='phot', rng=self._rmutils.rng, photon_ops=photon_ops,
                                       n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                       center=center, use_true_center=True, image=self._stamp)
 
             else:
-                self._convolved_psf.drawImage(self._rmutils.bpass, method="no_pixel", center=center,
+                self._convolved_psf.drawImage(self._rmutils.bpass, method="auto", center=center,
                                               use_true_center=True, image=self._stamp, wcs=self._wcs)
 
             self._stamps[(x, y, stampx, stampy)] = self._stamp.array
 
         return self._stamps[(x, y, stampx, stampy)] * flux
+
+
+class ou24PSF_photonshoot( ou24PSF ):
+    """ The ou24 PSF but with photon shooting turned on."""
+
+    def __init__(self, _parent_class=False, **kwargs):
+        super().__init__(_parent_class=True, _include_photonOps = True, **kwargs)
+
+
+class ou24PSF_slow_photonshoot( ou24PSF_slow ):
+    """ The ou24 slow PSF but with photon shooting turned on."""
+
+    def __init__(self, _parent_class=False, **kwargs):
+        super().__init__(_parent_class=True, _include_photonOps = True, **kwargs)
 
 # class ou24PSF( OversampledImagePSF ):
 #     """An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.
@@ -1821,8 +1851,10 @@ class GaussianPSF( PSF ):
         """
         coords = np.vstack( (xrel, yrel) )
         rcoords = np.matmul( self._rotmat, coords )
-        return self._norm * np.exp( - ( rcoords[0][0]**2 / (2. * self.sigmax**2) )
-                                    - ( rcoords[1][0]**2 / (2. * self.sigmay**2) ) )
+        flux = self._norm * np.exp(
+            -(rcoords[0,:] ** 2 / (2.0 * self.sigmax**2)) - (rcoords[1,:] ** 2 / (2.0 * self.sigmay**2))
+        )
+        return flux
 
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
@@ -1867,3 +1899,69 @@ class GaussianPSF( PSF ):
         stamp *= flux
 
         return stamp
+
+
+    def get_galaxy_stamp(self, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
+                         bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
+
+        """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution."""
+        SNLogger.debug("bulge_R, bulge_n, disk_R, disk_n: ")
+        SNLogger.debug(f"{bulge_R}, {type(bulge_n)}, {disk_R}, {disk_n}")
+        midpix = int( np.floor( self.stamp_size / 2 ) )
+        xc = int( np.floor(x + 0.5 ) )
+        yc = int( np.floor(y + 0.5 ) )
+        x0 = x0 if x0 is not None else xc
+        y0 = y0 if y0 is not None else yc
+        if not ( isinstance( x0, numbers.Integral ) and isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers, got x0 as {type(x0)} and y0 as {type(y0)}" )
+
+        ix = np.linspace(-0.5, self.stamp_size - 0.5, oversamp * self.stamp_size)
+        iy = np.linspace(-0.5, self.stamp_size - 0.5, oversamp * self.stamp_size)
+        ixx, iyy = np.meshgrid(ix, iy)
+        # an underlying mesh of points on which to calculate functions where integer values line up with pixel centers
+
+        # Shift that grid relative to the desired location of the profile
+        xrel = (x0 - x) - midpix + ix
+        yrel = (y0 - y) - midpix + iy
+        xxrel, yyrel = np.meshgrid(xrel, yrel)
+        # The same mesh but now the x value is zeroed at the center of where the galaxy is being centered
+
+        psf_stamp = self.get_stamp(x=self.stamp_size//2, y=self.stamp_size//2,)
+
+
+        # Prepare and evaluate the profile
+        # Create a galaxy profile from a bulge + disk model
+
+        b_bulge = gammaincinv(2.0 * bulge_n, 0.5)
+
+        # Divide the flux equally between bulge and disk, so flux --> flux / 2
+        bulge_amp = flux/2 * b_bulge**(2*bulge_n) /\
+           (2 * np.pi * bulge_n * scipy.special.gamma(2*bulge_n) * np.exp(b_bulge) * bulge_R**2)
+        # The above is inverting the formula for total flux of a sersic profile, see
+        # http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
+        bulge_amp /= oversamp**2
+        sers_bulge = Sersic2D(amplitude=bulge_amp, r_eff=bulge_R, n=bulge_n)
+
+        b_disk = gammaincinv(2.0 * disk_n, 0.5)
+        disk_amp = flux/2 * b_disk**(2*disk_n) /\
+           (2 * np.pi * disk_n * scipy.special.gamma(2*disk_n) * np.exp(b_disk) * disk_R**2)
+        disk_amp /= oversamp**2
+        sers_disk = Sersic2D(amplitude=disk_amp, r_eff=disk_R, n=disk_n)
+
+        profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
+
+        # Downsample to image resolution
+        profile_stamp, _, _, _= binned_statistic_2d(
+                x=ixx.flatten(),
+                y=iyy.flatten(),
+                values=profile_stamp.flatten(),
+                statistic='sum',
+                bins=self.stamp_size,
+                range=[[-0.5, self.stamp_size - 0.5], [-0.5, self.stamp_size - 0.5]]
+            )
+
+        profile_stamp = profile_stamp.reshape(self.stamp_size, self.stamp_size)
+
+        convolved = scipy.signal.convolve2d(profile_stamp, psf_stamp, mode="same", boundary="symm")
+
+        return convolved

@@ -18,10 +18,10 @@ def test_slow_normalization():
     # seeds.
     bigsize = 201
     smallsize = 41
-    bigpsfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=bigsize )
+    bigpsfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", pointing=6, sca=17, size=bigsize )
     bigstamp = bigpsfobj.get_stamp( seed=42 )
     assert bigstamp.shape == ( 201, 201 )
-    smallpsfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=smallsize )
+    smallpsfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", pointing=6, sca=17, size=smallsize )
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
@@ -32,12 +32,40 @@ def test_slow_normalization():
 
     x0 = bigsize // 2 - smallsize // 2
     x1 = x0 + smallsize
+    from snappl.logger import SNLogger
+    SNLogger.debug(f"bigstamp sum: {bigstamp.sum()}, smallstamp sum: {smallstamp.sum()}, "
+                   f"bigstamp cutout sum: {bigstamp[x0:x1,x0:x1].sum()}")
     assert smallstamp.sum() == pytest.approx( bigstamp[x0:x1,x0:x1].sum(), rel=1e-5 )
 
 
+def test_slow_normalization_nophotshoot():
+    # This isn't really testing snappl code, it's checking out galsim.
+    # Empirically, the PSF normalization in the smaller clip varies by
+    # at least several tenths of a percent when you use different random
+    # seeds.
+    bigsize = 201
+    smallsize = 41
+    bigpsfobj = PSF.get_psf_object("ou24PSF_slow", pointing=6, sca=17, size=bigsize)
+    bigstamp = bigpsfobj.get_stamp(seed=42)
+    assert bigstamp.shape == (201, 201)
+    smallpsfobj = PSF.get_psf_object("ou24PSF_slow", pointing=6, sca=17, size=smallsize)
+    # Using the same seed here probably isn't doing what we want it to do,
+    #   i.e. creating the same realization of the PSF that then gets
+    #   downsampled.  But, maybe it is.  Go read the code to find out.
+    smallstamp = smallpsfobj.get_stamp(seed=42)
+    assert smallstamp.shape == (41, 41)
+
+    assert bigstamp.sum() == pytest.approx(1.0, abs=0.01) # Seems to only be accurate to about 0.5%
+
+    x0 = bigsize // 2 - smallsize // 2
+    x1 = x0 + smallsize
+
+    assert smallstamp.sum() == pytest.approx(bigstamp[x0:x1, x0:x1].sum(), rel=1e-5)
+
+
 def test_slow_get_stamp():
-    psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41. )
-    assert isinstance( psfobj, snappl.psf.ou24PSF_slow )
+    psfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", pointing=6, sca=17, size=41. )
+    assert isinstance( psfobj, snappl.psf.ou24PSF_slow_photonshoot )
 
     # It's slow getting galsim PSFs with photon ops, so we're not going to
     #   do as exhaustive of tets as we do for OversampledImagePSF.  Use
@@ -130,7 +158,7 @@ def test_check_phot_off():
     psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41.,
                                  include_photonOps=False )
     stamp = psfobj.get_stamp( 2048., 2048., x0=2050, y0=2040)
-    regression_val = 2.0617566108703613
+    regression_val = 0.9827711582183838
     assert stamp.sum() == pytest.approx(regression_val , abs=1e-7 ), \
         "Check that photon_ops is False, the sum" +\
               f"of the image should equal {regression_val}, was actually {stamp.sum()}"
@@ -143,10 +171,10 @@ def test_normalization():
     # seeds.
     bigsize = 201
     smallsize = 41
-    bigpsfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=bigsize)
+    bigpsfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=bigsize)
     bigstamp = bigpsfobj.get_stamp(seed=42)
     assert bigstamp.shape == (201, 201)
-    smallpsfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=smallsize)
+    smallpsfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=smallsize)
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
@@ -164,8 +192,8 @@ def test_get_stamp():
     # Note that in this test I have to re-call get_psf_object each time I want to make a stamp,
     # because the fast version of ou24PSF is not designed to allow x0 or y0 to change.
 
-    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
-    assert isinstance(psfobj, snappl.psf.ou24PSF)
+    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=41.0)
+    assert isinstance(psfobj, snappl.psf.ou24PSF_photonshoot)
 
     # It's slow getting galsim PSFs with photon ops, so we're not going to
     #   do as exhaustive of tets as we do for OversampledImagePSF.  Use
@@ -189,7 +217,7 @@ def test_get_stamp():
     #   doesn't come out quite precise when the thing is offset
     #   this much.
 
-    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=41.0)
     stamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
@@ -220,7 +248,7 @@ def test_get_stamp():
     # Try a PSF centered between two pixels.  Because of how we
     #   define 0.5 behavior in PSF.get_stamp, this should be
     #   centered to the *left* of the center of the image.
-    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.0, seed=42)
     assert stamp.shape == (41, 41)
     assert stamp.sum() == pytest.approx(0.986, abs=0.001)
@@ -234,7 +262,7 @@ def test_get_stamp():
     # The PSF center should be at -1.5, +2.5 pixels
     # relative to the stamp center... but then
     # offset because of the asymmetry of the roman PSF.
-    psfobj = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.5, x0=2050, y0=2046, seed=42)
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)

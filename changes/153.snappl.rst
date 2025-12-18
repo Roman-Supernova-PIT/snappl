@@ -1,0 +1,1 @@
+Split photops into PSF classes rather than a kwarg
