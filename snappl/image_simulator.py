@@ -168,7 +168,7 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
 
         # To start, we are hardcoding that static sources are just point sources.
         return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng,
-                                 shape = "galaxy", galaxy_kwargs=galaxy_kwargs)
+                                 shape = "point", galaxy_kwargs=galaxy_kwargs)
 
 
 class ImageSimulatorImage:
@@ -437,8 +437,10 @@ class ImageSimulator:
                                               fieldrad=self.star_sky_radius,
                                               m0=self.min_star_magnitude, m1=self.max_star_magnitude,
                                               alpha=self.alpha, nstars=self.nstars, rng=star_rng )
-
-        transient = ImageSimulatorTransient( ra=self.transient_ra, dec=self.transient_dec,
+        if self.transient_ra is not None and self.transient_dec is not None:
+            SNLogger.debug( f"Creating transient at ({self.transient_ra}, {self.transient_dec}) "
+                            f"with peak mag {self.transient_peak_mag} at mjd {self.transient_peak_mjd}" )
+            transient = ImageSimulatorTransient( ra=self.transient_ra, dec=self.transient_dec,
                                              psf=psf, peak_mag=self.transient_peak_mag,
                                              peak_mjd=self.transient_peak_mjd, start_mjd=self.transient_start_mjd,
                                              end_mjd=self.transient_end_mjd )
@@ -457,7 +459,8 @@ class ImageSimulator:
                                           pixscale=self.pixscale, band=self.band, sca=self.sca, exptime=self.exptime )
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
             image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise )
-            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise )
+            if self.transient_ra is not None and self.transient_dec is not None:
+                image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise )
             image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise,
                                     galaxy_kwargs=self.galaxy_kwargs)
             image.image.noise = np.sqrt( image.image.noise )
