@@ -1554,10 +1554,16 @@ class ou24PSF( ou24PSF_slow ):
             However, it will be useful in tests for purposes of testing
             reproducibility.
 
+<<<<<<< Updated upstream
           image : snappl.image.Image or None
             The image that the PSF is associated with. This image will be used to
             determine the WCS of the PSF stamp. If None, the WCS will be determined
             using rmutils.getLocalWCS.
+=======
+          image : snappl.image.Image
+            Optional, an image from which to get the WCS. If not passed, will use
+            the WCS from rmutils.getLocalWCS, i.e. using the pointing and SCA.
+>>>>>>> Stashed changes
         """
 
         # If a position is not given, assume the middle of the SCA
