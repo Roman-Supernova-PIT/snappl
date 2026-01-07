@@ -26,7 +26,9 @@ from roman_imsim.utils import roman_utils
 from snappl.config import Config
 from snappl.logger import SNLogger
 
-
+# Temporary
+import pytest
+from scipy.ndimage import center_of_mass
 class PSF:
     """Wraps a PSF.  All roman snpit photometry code will ideally only use PSF methods defined in this base class.
 
@@ -1554,16 +1556,10 @@ class ou24PSF( ou24PSF_slow ):
             However, it will be useful in tests for purposes of testing
             reproducibility.
 
-<<<<<<< Updated upstream
           image : snappl.image.Image or None
             The image that the PSF is associated with. This image will be used to
             determine the WCS of the PSF stamp. If None, the WCS will be determined
             using rmutils.getLocalWCS.
-=======
-          image : snappl.image.Image
-            Optional, an image from which to get the WCS. If not passed, will use
-            the WCS from rmutils.getLocalWCS, i.e. using the pointing and SCA.
->>>>>>> Stashed changes
         """
 
         # If a position is not given, assume the middle of the SCA
@@ -1877,6 +1873,9 @@ class GaussianPSF( PSF ):
         offy = y0 - yc
         dex = ( millix, milliy, offx, offy )
 
+        SNLogger.debug(f"Calling get_stamp with parameters: millix={millix}, milliy={milliy}, offx={offx}, offy={offy}")
+        SNLogger.debug(f"x0={x0}, y0={y0}, x={x}, y={y}")
+
         if dex in self._stamp_cache:
             # Because calculating these is slow, cache them.
             # It may be overkill to round the position to 0.001 before
@@ -1911,8 +1910,7 @@ class GaussianPSF( PSF ):
                          bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
 
         """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution."""
-        SNLogger.debug("bulge_R, bulge_n, disk_R, disk_n: ")
-        SNLogger.debug(f"{bulge_R}, {type(bulge_n)}, {disk_R}, {disk_n}")
+        SNLogger.debug(f"get galaxy stamp x {x} y {y} x0 {x0} y0 {y0} ")
         midpix = int( np.floor( self.stamp_size / 2 ) )
         xc = int( np.floor(x + 0.5 ) )
         yc = int( np.floor(y + 0.5 ) )
@@ -1929,11 +1927,11 @@ class GaussianPSF( PSF ):
         # Shift that grid relative to the desired location of the profile
         xrel = (x0 - x) - midpix + ix
         yrel = (y0 - y) - midpix + iy
+
         xxrel, yyrel = np.meshgrid(xrel, yrel)
         # The same mesh but now the x value is zeroed at the center of where the galaxy is being centered
 
         psf_stamp = self.get_stamp(x=self.stamp_size//2, y=self.stamp_size//2,)
-
 
         # Prepare and evaluate the profile
         # Create a galaxy profile from a bulge + disk model
@@ -1956,10 +1954,15 @@ class GaussianPSF( PSF ):
 
         profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
 
+        cx_oversamp, cy_oversamp = center_of_mass(profile_stamp)
+        SNLogger.debug(f"Profile stamp before downsampling center of mass: {cx_oversamp}, {cy_oversamp}")
+
         # Downsample to image resolution
         profile_stamp, _, _, _= binned_statistic_2d(
-                x=ixx.flatten(),
-                y=iyy.flatten(),
+                y=ixx.flatten(),
+                x=iyy.flatten(),
+                # Note that x and y are flipped here compared to usual convention. I am not sure why this needs to be,
+                # but when it was the other way around, the act of downsampling was swapping x and y.
                 values=profile_stamp.flatten(),
                 statistic='sum',
                 bins=self.stamp_size,
@@ -1968,6 +1971,22 @@ class GaussianPSF( PSF ):
 
         profile_stamp = profile_stamp.reshape(self.stamp_size, self.stamp_size)
 
+        expected_center_x = midpix + x - x0
+        expected_center_y = midpix + y - y0
+        cy, cx = center_of_mass(profile_stamp) # why does this need to be flipped compared to what Rob does above?
+        assert cx == pytest.approx(expected_center_x, abs=1/oversamp)
+        assert cy == pytest.approx(expected_center_y, abs=1/oversamp)
+
+        SNLogger.debug(f"Profile stamp inside get_galaxy_stamp: {cx}, {cy}")
+
         convolved = scipy.signal.convolve2d(profile_stamp, psf_stamp, mode="same", boundary="symm")
+
+        cy, cx = center_of_mass(convolved)  # why does this need to be flipped compared to what Rob does above?
+        assert cx == pytest.approx(expected_center_x, abs=1 / 20)
+        assert cy == pytest.approx(expected_center_y, abs=1 / 20)
+
+        #SNLogger.debug("-------------")
+        #SNLogger.debug(f"Expected Center: {expected_center_x}, {expected_center_y}")
+        #SNLogger.debug(f"Center of Mass: {cx}, {cy}")
 
         return convolved
