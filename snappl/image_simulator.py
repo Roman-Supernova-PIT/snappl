@@ -16,8 +16,6 @@ from snappl.image import FITSImageStdHeaders
 from snappl.wcs import AstropyWCS
 
 # Temporary
-import pytest
-from scipy.ndimage import center_of_mass
 
 
 class ImageSimulatorPointSource:
@@ -44,18 +42,7 @@ class ImageSimulatorPointSource:
         elif shape == "galaxy":
             # unpack list into dict
             galaxy_kwargs_dict = {k: float(v) for k, v in zip(galaxy_kwargs[::2], galaxy_kwargs[1::2])}
-            # SNLogger.debug("Getting Galaxy stamp...")
             stamp = self.psf.get_galaxy_stamp( x, y, x0=x0, y0=y0, flux=flux, **galaxy_kwargs_dict )
-            #SNLogger.debug(f"Getting point stamp....")
-            #point_stamp = self.psf.get_stamp(x, y, x0=x0, y0=y0, flux=flux)
-
-            #cx, cy = center_of_mass(stamp)
-            #cx_point, cy_point = center_of_mass(point_stamp)
-            #SNLogger.debug("-------------")
-            #SNLogger.debug(f"Galaxy Center: {cx}, {cy}")
-            #SNLogger.debug(f"Point Center: {cx_point}, {cy_point}")
-           # assert cx == pytest.approx(cx_point, abs=1 / 20)
-           # assert cy == pytest.approx(cy_point, abs=1 / 20)
         var = np.zeros( stamp.shape )
         if noisy:
             if rng is None:
@@ -182,9 +169,14 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
         flux = 10 ** ((self.mag - zeropoint) / -2.5)
 
         # To start, we are hardcoding that static sources are just point sources.
-        return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng,
-                                 shape = "galaxy", galaxy_kwargs=galaxy_kwargs)
+        if len(galaxy_kwargs) == 0 or galaxy_kwargs is None:
+            shape = "point"
+            SNLogger.debug(f"No Galaxy Parameters passed, Rendering static source as point source with mag {self.mag:.2f} (flux {flux:.0f}) at mjd {mjd}")
+        else:
+            shape = "galaxy"
 
+        return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng,
+                                 shape = shape, galaxy_kwargs=galaxy_kwargs)
 
 class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""

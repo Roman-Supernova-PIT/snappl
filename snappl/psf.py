@@ -29,6 +29,8 @@ from snappl.logger import SNLogger
 # Temporary
 import pytest
 from scipy.ndimage import center_of_mass
+
+
 class PSF:
     """Wraps a PSF.  All roman snpit photometry code will ideally only use PSF methods defined in this base class.
 
@@ -1469,7 +1471,6 @@ class ou24PSF_slow( PSF ):
             # chromatic object. I am not currently sure if this matters.
 
             if self._include_photonOps:
-                SNLogger.debug(f"point type {type(point)}")
                 point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
@@ -1531,7 +1532,6 @@ class ou24PSF( ou24PSF_slow ):
                 SNLogger.debug(f"Using the WCS from the image passed to {self.__class__.__name__}.")
                 self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x0+1, y0+1 ))
         SNLogger.debug( f"ou24PSF wcs fetched at: {x0, y0}" )
-        SNLogger.debug( f"ou24PSF wcs: {self._wcs}" )
         self._stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
         self._point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, self._rmutils.bpass )
         self._convolved_psf = galsim.Convolve(self._point, self._psf)
@@ -1873,8 +1873,6 @@ class GaussianPSF( PSF ):
         offy = y0 - yc
         dex = ( millix, milliy, offx, offy )
 
-        SNLogger.debug(f"Calling get_stamp with parameters: millix={millix}, milliy={milliy}, offx={offx}, offy={offy}")
-        SNLogger.debug(f"x0={x0}, y0={y0}, x={x}, y={y}")
 
         if dex in self._stamp_cache:
             # Because calculating these is slow, cache them.
@@ -1910,7 +1908,6 @@ class GaussianPSF( PSF ):
                          bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
 
         """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution."""
-        SNLogger.debug(f"get galaxy stamp x {x} y {y} x0 {x0} y0 {y0} ")
         midpix = int( np.floor( self.stamp_size / 2 ) )
         xc = int( np.floor(x + 0.5 ) )
         yc = int( np.floor(y + 0.5 ) )
@@ -1955,7 +1952,6 @@ class GaussianPSF( PSF ):
         profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
 
         cx_oversamp, cy_oversamp = center_of_mass(profile_stamp)
-        SNLogger.debug(f"Profile stamp before downsampling center of mass: {cx_oversamp}, {cy_oversamp}")
 
         # Downsample to image resolution
         profile_stamp, _, _, _= binned_statistic_2d(
@@ -1977,16 +1973,10 @@ class GaussianPSF( PSF ):
         assert cx == pytest.approx(expected_center_x, abs=1/oversamp)
         assert cy == pytest.approx(expected_center_y, abs=1/oversamp)
 
-        SNLogger.debug(f"Profile stamp inside get_galaxy_stamp: {cx}, {cy}")
-
         convolved = scipy.signal.convolve2d(profile_stamp, psf_stamp, mode="same", boundary="symm")
 
         cy, cx = center_of_mass(convolved)  # why does this need to be flipped compared to what Rob does above?
         assert cx == pytest.approx(expected_center_x, abs=1 / 20)
         assert cy == pytest.approx(expected_center_y, abs=1 / 20)
-
-        #SNLogger.debug("-------------")
-        #SNLogger.debug(f"Expected Center: {expected_center_x}, {expected_center_y}")
-        #SNLogger.debug(f"Center of Mass: {cx}, {cy}")
 
         return convolved

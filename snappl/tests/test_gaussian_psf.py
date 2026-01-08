@@ -173,7 +173,7 @@ def test_galaxy_stamp():
             expected_center_x = midpix + x - x0
             expected_center_y = midpix + y - y0
             galaxy_stamp = gpsf.get_galaxy_stamp(x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=oversamp)
-            cx, cy = center_of_mass(galaxy_stamp) # why does this need to be flipped compared to what Rob does above?
+            cy, cx = center_of_mass(galaxy_stamp)
             assert cx == pytest.approx(expected_center_x, abs=1/oversamp)
             assert cy == pytest.approx(expected_center_y, abs=1/oversamp)
 
