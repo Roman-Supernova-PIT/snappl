@@ -171,12 +171,14 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
         # To start, we are hardcoding that static sources are just point sources.
         if len(galaxy_kwargs) == 0 or galaxy_kwargs is None:
             shape = "point"
-            SNLogger.debug(f"No Galaxy Parameters passed, Rendering static source as point source with mag {self.mag:.2f} (flux {flux:.0f}) at mjd {mjd}")
+            SNLogger.debug("No Galaxy Parameters passed,"
+            f" Rendering static source as point source with mag {self.mag:.2f} (flux {flux:.0f}) at mjd {mjd}")
         else:
             shape = "galaxy"
 
         return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng,
                                  shape = shape, galaxy_kwargs=galaxy_kwargs)
+
 
 class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""
