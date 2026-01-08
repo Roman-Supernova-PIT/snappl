@@ -262,9 +262,7 @@ class Image( PathedObject ):
 
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
-
-        # Debug LNA20251202
-        self.resid_img = None
+        self.resid_img = None  # Useful for debugging, may not be necessary long-run.
 
 
     def _declare_consumed_kwargs( self, consumed_kwargs ):
@@ -954,7 +952,8 @@ class Image( PathedObject ):
             bkgfunc = LocalBackground(bginner, bgouter, MMMBackground())
             psfphot = PSFPhotometry(psfmod, fit_shape, localbkg_estimator=bkgfunc)
             psf_results = psfphot(self.data, error=self.noise, init_params=init_params)
-            self.resid_img = psfphot.make_residual_image(self.data)
+            self.resid_img = psfphot.make_residual_image(self.data) # Useful for debugging, may not be
+                                                                    # necessary long-run.
 
             return psf_results
 
