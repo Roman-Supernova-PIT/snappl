@@ -958,7 +958,7 @@ class Image( PathedObject ):
 
             if return_resid_image:
                 return psf_results, psfphot.make_residual_image(self.data)
-            else: 
+            else:
                 return psf_results
 
         except NonFiniteValueError:
