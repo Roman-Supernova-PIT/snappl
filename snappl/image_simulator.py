@@ -39,11 +39,11 @@ class ImageSimulatorPointSource:
         x0 = int( np.floor( x + 0.5 ) )
         y0 = int( np.floor( y + 0.5 ) )
         if shape == "point":
-            stamp = self.psf.get_stamp( x, y, x0=x0, y0=y0, flux=flux )
+            stamp = psf.get_stamp( x, y, x0=x0, y0=y0, flux=flux )
         elif shape == "galaxy":
             # unpack list into dict
             galaxy_kwargs_dict = {k: float(v) for k, v in zip(galaxy_kwargs[::2], galaxy_kwargs[1::2])}
-            stamp = self.psf.get_galaxy_stamp( x, y, x0=x0, y0=y0, flux=flux, **galaxy_kwargs_dict )
+            stamp = psf.get_galaxy_stamp( x, y, x0=x0, y0=y0, flux=flux, **galaxy_kwargs_dict )
         var = np.zeros( stamp.shape )
         if noisy:
             if rng is None:
