@@ -1,0 +1,1 @@
+Change webserver error responses so that on a error resulting from user input, the client won't retry. 

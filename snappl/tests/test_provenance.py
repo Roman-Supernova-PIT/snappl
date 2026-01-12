@@ -1,5 +1,6 @@
 import pytest
 import uuid
+import time
 
 from snappl.config import Config
 from snappl.provenance import Provenance
@@ -43,8 +44,10 @@ def test_provenance( dbclient ):
         gratprov2 = Provenance( process="gratprov", major=2, minor=0 )
         provstodel['provs'].append( gratprov2.id )
         assert gratprov2.id != gratprov1.id
-        with pytest.raises( RuntimeError, match="Failed to connect.*Got response 500.*already exists a provenance" ):
+        t0 = time.perf_counter()
+        with pytest.raises( RuntimeError, match="Error response from server:.*already exists a provenance" ):
             gratprov2.save_to_db( tag='kaglorky', dbclient=dbclient )
+        assert time.perf_counter() - t0 < 0.2
 
         # Make sure we can (succesfully) save a provenance and a tag all in one go
         gratprov3 = Provenance( process="alternate_gratprov", major=1, minor=0 )
