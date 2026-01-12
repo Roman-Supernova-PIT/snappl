@@ -1,6 +1,7 @@
 import pytest
 import numbers
 import uuid
+import time
 
 import numpy as np
 
@@ -207,8 +208,10 @@ def test_get_find( saved_gratuitous_spectrum, stupid_provenance, stupid_object )
     origspec = saved_gratuitous_spectrum
 
     # Make sure we error out if we ask for a non-existent spectrum
-    with pytest.raises( RuntimeError, match=r"Failed to connect.*Got response 500: No spectrum1d with id" ):
+    t0 = time.perf_counter()
+    with pytest.raises( RuntimeError, match=r"Error response from server: No spectrum1d with id" ):
         Spectrum1d.get_spectrum1d( uuid.uuid4() )
+    assert time.perf_counter() - t0 < 0.2
 
     spec = Spectrum1d.get_spectrum1d( saved_gratuitous_spectrum.id )
     for prop in ( 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id',

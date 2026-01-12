@@ -901,7 +901,7 @@ class Image( PathedObject ):
 
 
     def psf_phot( self, init_params, psf, forced_phot=True, fit_shape=(5, 5),
-                  bginner=15, bgouter=25 ):
+                  bginner=15, bgouter=25, return_resid_image=False ):
         """Do psf photometry.
 
         Does local background subtraction.
@@ -928,6 +928,10 @@ class Image( PathedObject ):
           bouter: float, default 25
              Radius of outer boundry of annulus in which to measure background.
 
+          return_resid_image: bool, default False
+             If True, returns photutils.psf.PSFPhotometry.make_residual_image
+             along with the photometry results.
+
         Returns
         -------
           TODO
@@ -952,7 +956,10 @@ class Image( PathedObject ):
             psfphot = PSFPhotometry(psfmod, fit_shape, localbkg_estimator=bkgfunc)
             psf_results = psfphot(self.data, error=self.noise, init_params=init_params)
 
-            return psf_results
+            if return_resid_image:
+                return psf_results, psfphot.make_residual_image(self.data)
+            else:
+                return psf_results
 
         except NonFiniteValueError:
             SNLogger.exception( 'fit_shape overlaps with edge of image, and therefore encloses NaNs! '
