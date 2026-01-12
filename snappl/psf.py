@@ -1916,7 +1916,6 @@ class GaussianPSF( PSF ):
 
     def get_galaxy_stamp(self, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
                          bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
-
         """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution."""
         midpix = int( np.floor( self.stamp_size / 2 ) )
         xc = int( np.floor(x + 0.5 ) )
