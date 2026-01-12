@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g6992ba56f documentation</title>
+    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+gb23913559 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=facaefc4"></script>
+    <script src="../../_static/documentation_options.js?v=5924670e"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -220,6 +220,12 @@
 
         <span class="k">if</span> <span class="n">psfclass</span> <span class="o">==</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">GaussianPSF</span><span class="p">(</span> <span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">psfclass</span> <span class="o">==</span> <span class="s2">&quot;ou24PSF_slow_photonshoot&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ou24PSF_slow_photonshoot</span><span class="p">(</span> <span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">psfclass</span> <span class="o">==</span> <span class="s2">&quot;ou24PSF_photonshoot&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ou24PSF_photonshoot</span><span class="p">(</span><span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Unknown PSF class </span><span class="si">{</span><span class="n">psfclass</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span></div>
 
@@ -1464,11 +1470,11 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">sed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span> <span class="n">include_photonOps</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                   <span class="n">n_photons</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">sed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+                   <span class="n">n_photons</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="n">_include_photonOps</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
                  <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_consumed_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="p">[</span> <span class="s1">&#39;sed&#39;</span><span class="p">,</span> <span class="s1">&#39;config_file&#39;</span><span class="p">,</span> <span class="s1">&#39;size&#39;</span><span class="p">,</span> <span class="s1">&#39;include_photonOps&#39;</span><span class="p">,</span> <span class="s1">&#39;n_photons&#39;</span> <span class="p">]</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_consumed_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="p">[</span> <span class="s1">&#39;sed&#39;</span><span class="p">,</span> <span class="s1">&#39;config_file&#39;</span><span class="p">,</span> <span class="s1">&#39;size&#39;</span><span class="p">,</span> <span class="s1">&#39;_include_photonOps&#39;</span><span class="p">,</span> <span class="s1">&#39;n_photons&#39;</span> <span class="p">]</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_warn_unknown_kwargs</span><span class="p">(</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="n">_parent_class</span> <span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
@@ -1493,7 +1499,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">sca_size</span> <span class="o">=</span> <span class="mi">4088</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sca_size</span> <span class="o">//</span> <span class="mi">2</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sca_size</span> <span class="o">//</span> <span class="mi">2</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">include_photonOps</span> <span class="o">=</span> <span class="n">include_photonOps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_include_photonOps</span> <span class="o">=</span> <span class="n">_include_photonOps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_photons</span> <span class="o">=</span> <span class="n">n_photons</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span> <span class="o">=</span> <span class="p">{}</span>
 
@@ -1549,6 +1555,7 @@
 
 
         <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">:</span>
+            <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;configfile = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_file</span><span class="p">))</span>
             <span class="n">rmutils</span> <span class="o">=</span> <span class="n">roman_utils</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="p">)</span>
             <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">rmutils</span><span class="o">.</span><span class="n">rng</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">BaseDeviate</span><span class="p">(</span> <span class="n">seed</span> <span class="p">)</span>
@@ -1576,24 +1583,32 @@
             <span class="c1"># (This is not that big a deal, because the PSF is not going to vary significantly</span>
             <span class="c1"># over 1 pixel.)</span>
             <span class="n">photon_ops</span> <span class="o">=</span> <span class="p">[</span> <span class="n">rmutils</span><span class="o">.</span><span class="n">getPSF</span><span class="p">(</span> <span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">pupil_bin</span><span class="o">=</span><span class="mi">8</span> <span class="p">)</span> <span class="p">]</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_photonOps</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_photonOps</span><span class="p">:</span>
                 <span class="n">photon_ops</span> <span class="o">+=</span> <span class="n">rmutils</span><span class="o">.</span><span class="n">photon_ops</span>
 
             <span class="c1"># Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,</span>
             <span class="c1"># whereas snappl uses 0-indexed pixel positions</span>
             <span class="n">center</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">PositionD</span><span class="p">(</span><span class="n">stampx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">stampy</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-            <span class="c1"># Note: self.include_photonOps is a bool that states whether we are</span>
+            <span class="c1"># Note: self._include_photonOps is a bool that states whether we are</span>
             <span class="c1">#  shooting photons or not, photon_ops is the actual map (not sure</span>
             <span class="c1">#  if that&#39;s the correct word) that describes where the photons</span>
             <span class="c1"># should be shot, with some randomness.</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_photonOps</span><span class="p">:</span>
+
+            <span class="c1"># Note from Cole, it seems like the photon ops method is achromatic, but the other method is using a</span>
+            <span class="c1"># chromatic object. I am not currently sure if this matters.</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_photonOps</span><span class="p">:</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;point type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">point</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">point</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;phot&#39;</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rmutils</span><span class="o">.</span><span class="n">rng</span><span class="p">,</span> <span class="n">photon_ops</span><span class="o">=</span><span class="n">photon_ops</span><span class="p">,</span>
                                 <span class="n">n_photons</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_photons</span><span class="p">,</span> <span class="n">maxN</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_photons</span><span class="p">,</span> <span class="n">poisson_flux</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                 <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span> <span class="n">use_true_center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="n">stamp</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;flux pre convolution = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">calculateFlux</span><span class="p">(</span><span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">)))</span>
                 <span class="n">psf</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Convolve</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">photon_ops</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-                <span class="n">psf</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;no_pixel&quot;</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;psf type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">psf</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;flux post convolution = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">calculateFlux</span><span class="p">(</span><span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">)))</span>
+                <span class="n">psf</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span>
                               <span class="n">use_true_center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="n">stamp</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">[(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">)]</span> <span class="o">=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">array</span>
@@ -1607,7 +1622,7 @@
 <div class="viewcode-block" id="ou24PSF">
 <a class="viewcode-back" href="../../api/snappl.psf.ou24PSF.html#snappl.psf.ou24PSF">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ou24PSF</span><span class="p">(</span> <span class="n">ou24PSF_slow</span> <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrap the roman_imsim PSFs, only more efficiently (we hoipe) than ou24PSF_slow.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrap the roman_imsim PSFs, only more efficiently (we hope) than ou24PSF_slow.</span>
 
 <span class="sd">    TODO: document what is different, what is cached.</span>
 
@@ -1725,7 +1740,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span><span class="o">.</span><span class="n">rng</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">BaseDeviate</span><span class="p">(</span> <span class="n">seed</span> <span class="p">)</span>
 
             <span class="n">photon_ops</span> <span class="o">=</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_psf</span> <span class="p">]</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_photonOps</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_photonOps</span><span class="p">:</span>
                 <span class="n">photon_ops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span><span class="o">.</span><span class="n">photon_ops</span>
 
             <span class="c1"># Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,</span>
@@ -1735,13 +1750,13 @@
             <span class="c1">#  shooting photons or not, photon_ops is the actual map (not sure</span>
             <span class="c1">#  if that&#39;s the correct word) that describes where the photons</span>
             <span class="c1"># should be shot, with some randomness.</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_photonOps</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_photonOps</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_point</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;phot&#39;</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span><span class="o">.</span><span class="n">rng</span><span class="p">,</span> <span class="n">photon_ops</span><span class="o">=</span><span class="n">photon_ops</span><span class="p">,</span>
                                       <span class="n">n_photons</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_photons</span><span class="p">,</span> <span class="n">maxN</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_photons</span><span class="p">,</span> <span class="n">poisson_flux</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                       <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span> <span class="n">use_true_center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stamp</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_convolved_psf</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;no_pixel&quot;</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_convolved_psf</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span>
                                               <span class="n">use_true_center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stamp</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">[(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamp</span><span class="o">.</span><span class="n">array</span>
@@ -1749,6 +1764,20 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">[(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">)]</span> <span class="o">*</span> <span class="n">flux</span></div>
 </div>
 
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ou24PSF_photonshoot</span><span class="p">(</span> <span class="n">ou24PSF</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The ou24 PSF but with photon shooting turned on.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">_parent_class</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">_include_photonOps</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ou24PSF_slow_photonshoot</span><span class="p">(</span> <span class="n">ou24PSF_slow</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The ou24 slow PSF but with photon shooting turned on.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">_parent_class</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">_include_photonOps</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <span class="c1"># class ou24PSF( OversampledImagePSF ):</span>
 <span class="c1">#     &quot;&quot;&quot;An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.</span>
