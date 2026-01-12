@@ -1979,7 +1979,6 @@ class GaussianPSF( PSF ):
 
         profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
 
-        cx_oversamp, cy_oversamp = center_of_mass(profile_stamp)
 
         # Downsample to image resolution
         profile_stamp, _, _, _= binned_statistic_2d(
