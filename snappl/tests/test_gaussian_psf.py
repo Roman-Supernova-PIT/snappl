@@ -179,12 +179,12 @@ def test_galaxy_stamp():
 
     # Test total flux
     gpsf = PSF.get_psf_object("gaussian", x=0, y=0, band="R062", stamp_size=71)
-    x=1000.0
-    y=1000.0
+    x = 1000.0
+    y = 1000.0
     x0 = 1000
     y0 = 1000
     galaxy_stamp = gpsf.get_galaxy_stamp(x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R = 2, bulge_n=3,
-    disk_R= 2, disk_n = 3)
+                                         disk_R= 2, disk_n = 3)
     assert galaxy_stamp.sum() == pytest.approx(991866, rel=1e-3) # Empirically, only 99.1 % of flux is in 71x71 stamp
 
 
