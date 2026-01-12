@@ -26,7 +26,6 @@ from roman_imsim.utils import roman_utils
 from snappl.config import Config
 from snappl.logger import SNLogger
 
-from scipy.ndimage import center_of_mass
 
 
 class PSF:
