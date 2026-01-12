@@ -5,7 +5,7 @@ import sys
 sys.path.insert( 0, '.' )
 from base_testimagepsf import BaseTestImagePSF
 
-from snappl.psf import PSF, OversampledImagePSF
+from snappl.psf import PSF, Sampling_OversampledImagePSF, OversampledImagePSF
 
 
 class TestOversampledImagePSF( BaseTestImagePSF ):
@@ -15,7 +15,7 @@ class TestOversampledImagePSF( BaseTestImagePSF ):
     def testpsf( self ):
         loaded = np.load('psf_test_data/testpsfarray.npz')
         arr = loaded['args']
-        mypsf = PSF.get_psf_object( "OversampledImagePSF", data=arr, x=3832., y=255.,
+        mypsf = PSF.get_psf_object( self.__psfclass__.__name__, data=arr, x=3832., y=255.,
                                     oversample_factor=3., normalize=True )
         assert isinstance( mypsf, self.__psfclass__ )
         return mypsf
@@ -45,7 +45,7 @@ class TestOversampledImagePSF( BaseTestImagePSF ):
         data = np.exp( -( xvals[np.newaxis,:]**2 / ( 2. * ovsigmax**2 ) +
                           yvals[:,np.newaxis]**2 / ( 2. * ovsigmay**2 ) ) )
         data /= data.sum()
-        psf = PSF.get_psf_object( "OversampledImagePSF", data=data, x=x, y=y, oversample_factor=oversamp )
+        psf = PSF.get_psf_object( self.__psfclass__.__name__, data=data, x=x, y=y, oversample_factor=oversamp )
 
         datacx = size // 2 + ( x - xc ) * oversamp
         datacy = size // 2 + ( y - yc ) * oversamp
@@ -59,12 +59,26 @@ class TestOversampledImagePSF( BaseTestImagePSF ):
     def test_get_stamp_centered_oversampled( self ):
         self.run_test_get_stamp_centered_oversampled()
 
-    @pytest.mark.xfail( reason="We know this doesn't work right yet." )
     def test_get_stamp_centered_oversampled_with_undersampled_psf( self ):
         self.run_test_get_stamp_centered_oversampled( oversamp=3, sigma=0.3 )
+
+    def test_get_stamp_centered_oversampled_with_undersampled_psf_more_oversampling( self ):
+        self.run_test_get_stamp_centered_oversampled( oversamp=7, sigma=0.3 )
 
     def test_get_stamp_offset_oversampled( self ):
         self.run_test_get_stamp_offset_oversampled()
 
     def test_get_imagepsf( self, testpsf ):
         self.run_test_get_imagepsf( testpsf, oversamp=3. )
+
+
+class TestSampling_OversampledImagePSF( TestOversampledImagePSF ):
+    __psfclass__ = Sampling_OversampledImagePSF
+
+    @pytest.mark.skip( reason="We know normalization fails for the sampling oversampledimagepsf" )
+    def test_get_stamp_centered_oversampled_with_undersampled_psf( self ):
+        self.run_test_get_stamp_centered_oversampled( oversamp=3, sigma=0.3 )
+
+    @pytest.mark.skip( reason="We know normalization fails for the sampling oversampledimagepsf" )
+    def test_get_stamp_centered_oversampled_with_undersampled_psf_more_oversampling( self ):
+        self.run_test_get_stamp_centered_oversampled( oversamp=3, sigma=0.3 )

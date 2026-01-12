@@ -10,6 +10,7 @@ import pathlib
 # common library imports
 import numpy as np
 import scipy.integrate
+import scipy.signal
 import yaml
 
 # astro library imports
@@ -108,6 +109,9 @@ class PSF:
 
         if psfclass == "OversampledImagePSF":
             return OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "Sampling_OversampledImagePSF":
+            return Sampling_OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
 
         if psfclass == "YamlSerialized_OversampledImagePSF":
             return YamlSerialized_OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
@@ -569,6 +573,16 @@ class photutilsImagePSF( PSF ):
         non-zero fractional parts!  TODO: fix this.... but then also fix
         any code that depends on that behavior.
 
+        WARNING: If you do get_stamp() for one of these PSFs, if your
+        PSF is intrinsically undersampled on the image, the PSF you get
+        back will probably not be properly normalized!  This *is* the
+        PSF you want to use with photutils photometry (I THINK... VERIFY
+        THIS), but it's NOT the PSF that you want to use for things like
+        scene modelling.  For scene modelling, use OversampledImagePSF,
+        which convoles before downsampling.
+
+        See Issue #157.
+
         Parmaeters
         ----------
           data : 2d numpy array; required
@@ -835,8 +849,12 @@ class photutilsImagePSF( PSF ):
 class OversampledImagePSF( PSF ):
     """A PSF stored internally in an image which is (possibly) oversampled.
 
-    get_stamp will then interpolate the internally stored oversampled
-    image to get an source-image-scale sampled PSF using an
+    This one requires an odd integral oversampling factor.  If your PSF
+    is not intrinsically undersampled, you may be able to get away with
+    using the faster and more flexible Sampling_OversampledImagePSF.
+
+    get_stamp will tophat-convolve and interpolate the internally stored
+    oversampled image to get an source-image-scale sampled PSF using an
     interpolation algorithm that's close to what PSFex uses.
 
     The internally stored data array is a copy of what is passed.  So,
@@ -848,11 +866,12 @@ class OversampledImagePSF( PSF ):
     if you change elements of data thereafter, it will *not* be
     reflected in the data array stored inside OversampledImagePSF.)
 
-    BIG PROBLEM : the interpolation used does a very bad job when the
-    PSF is intrnsically undersampled, that is, on the original image the
-    FWHM is not at least a couple of pixels.  (TODO: explore how the
-    algorithm does with PSFex-extracted PSFs on undersampled data, since
-    the algorithm here was written for and tested with PSFex PSFs.)  See Issue #30.
+    If you have an oversampled image PSF, this is the class that you
+    want to use for things like scene modelling.
+
+    WARNING : I don't think using these PSFs with get_stamp() will do
+    the right thing with photutils for intrinsically undersampled PSFs
+    (e.g. a Gaussian with σ=0.3pix).  See Issue #157.
 
     """
 
@@ -923,7 +942,7 @@ class OversampledImagePSF( PSF ):
             after making the OversampledImagePSF, it won't be reflected
             inside the OversampledImagePSF.
 
-          oversample_factor: float, default 1.
+          oversample_factor: float, default 1, must be odd
             There are this many pixels along one axis in data for one
             pixel in the original image.  Doesn't have to be an integer
             (e.g. if you used PSFex to find the PSF, it usually won't
@@ -952,6 +971,17 @@ class OversampledImagePSF( PSF ):
           object of type cls
 
         """
+
+        # Just require the size to be odd, and the oversample factor to be odd,
+        #  so we don't have to get hung up over conventions about how things are
+        #  centered.
+        if not enforce_odd:
+            raise NotImplementedError( "Non-odd-sized PSFs aren't supported." )
+        if oversample_factor != int( oversample_factor ):
+            raise ValueError( "For OversampledImagePSF, oversample_factor must be an integer." )
+        oversample_factor = int( oversample_factor )
+        if oversample_factor %2 != 1:
+            raise ValueError( "For OversampledImagePSF, oversample_factor must be odd." )
 
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'oversample_factor', 'data', 'enforce_odd', 'normalize' ] )
@@ -996,13 +1026,7 @@ class OversampledImagePSF( PSF ):
         sz += 1 if sz % 2 == 0 else 0
         return sz
 
-
-    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
-        """See PSF.get_stamp for documentation
-
-        --> CURRENTLY BROKEN FOR UNDERSAMPLED PSFs.  See Issue #30.
-
-        """
+    def _determine_stamp_coordinates( self, x=None, y=None, x0=None, y0=None ):
         # (x, y) is the position on the image for which we want to render the PSF.
         x = float(x) if x is not None else self._x
         y = float(y) if y is not None else self._y
@@ -1026,6 +1050,9 @@ class OversampledImagePSF( PSF ):
         natxfrac = natx - self._x
         natyfrac = naty - self._y
 
+        return x, y, x0, y0, natxfrac, natyfrac
+
+    def _interpolate_to_stamp( self, oversampled_data, x, y, x0, y0, natxfrac, natyfrac, flux=1. ):
         # Interpolate the PSF using Lanczos resampling:
         #     https://en.wikipedia.org/wiki/Lanczos_resampling
         #
@@ -1035,7 +1062,7 @@ class OversampledImagePSF( PSF ):
         # That's also where the factor a=4 comes from
         a = 4
 
-        psfwid = self.oversampled_data.shape[0]
+        psfwid = oversampled_data.shape[0]
         stampwid = self.stamp_size
 
         psfdex1d = np.arange( -( psfwid//2), psfwid//2+1, dtype=int )
@@ -1057,7 +1084,7 @@ class OversampledImagePSF( PSF ):
         ysincvals = np.sinc( ysincarg ) * np.sinc( ysincarg/a )
         ysincvals[ ( ysincarg > a ) | ( ysincarg < -a ) ] = 0.
         tenpro = np.tensordot( ysincvals[:, :, np.newaxis], xsincvals[:, :, np.newaxis], axes=0 )[ :, :, 0, :, :, 0 ]
-        clip = ( self.oversampled_data[:, np.newaxis, :, np.newaxis ] * tenpro ).sum( axis=0 ).sum( axis=1 )
+        clip = ( oversampled_data[:, np.newaxis, :, np.newaxis ] * tenpro ).sum( axis=0 ).sum( axis=1 )
 
         # Keeping the code below, because the code above is inpenetrable, and it's trying to
         #   do the same thing as the code below.
@@ -1093,6 +1120,21 @@ class OversampledImagePSF( PSF ):
 
         return clip
 
+
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
+        """See PSF.get_stamp for documentation."""
+
+        # TODO : caching
+
+        x, y, x0, y0, natxfrac, natyfrac = self._determine_stamp_coordinates( x, y, x0, y0 )
+
+        data = np.copy( self.oversampled_data )
+        kernel = np.ones( ( self._oversamp, self._oversamp ), dtype=data.dtype ) / ( self._oversamp ** 2 )
+        data = scipy.signal.convolve( data, kernel, mode='same' )
+
+        return self._interpolate_to_stamp( data, x, y, x0, y0, natxfrac, natyfrac, flux=flux )
+
+
     def getImagePSF( self, imagesampled=True ):
         """Return a photutils.psf.ImagePSF model.  See PSF.getImagePSF."""
 
@@ -1116,6 +1158,48 @@ class OversampledImagePSF( PSF ):
                                   "for that.  Giving you an image-smapled PSDF." )
 
         return photutils.psf.ImagePSF( self.get_stamp(), x_0=self._x, y_0=self._y )
+
+
+class Sampling_OversampledImagePSF( OversampledImagePSF ):
+    """Like OversmapledImagePSF, but samples instead of convoles.
+
+    Skips the step of doing convolutions before resampling the PSF when
+    sampling from the oversampled scale to the image scale.  This is
+    faster, but fails badly for undersampled PSFs.
+
+    Whereas OversampledImagePSF requires, always, an odd-shaped PSF, and
+    an integral odd oversample factor, this one can handle real
+    oversample factors.
+
+    """
+
+    def __init__( self, oversample_factor=1., data=None, enforce_odd=True, normalize=False,
+                  _parent_class=False, **kwargs ):
+        """See OversampledImagePSF for docs."""
+
+        # Explicitly calling the PSF init here because we do not want
+        #   to hit the error conditions that are in OversampledImagePSF
+        PSF.__init__( self, _parent_class=True, **kwargs )
+        self._consumed_args.update( [ 'oversample_factor', 'data', 'enforce_odd', 'normalize' ] )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
+
+        if ( self._x is None ) or ( self._y is None ):
+            raise ValueError( "Must supply both x and y" )
+
+        self._oversamp = oversample_factor
+        self._enforce_odd = enforce_odd
+        self._normalize = normalize
+        self.oversampled_data = data
+
+
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
+        """See PSF.get_stamp for documentation
+
+        Will perform poorly for undersampled PSFs.
+
+        """
+        x, y, x0, y0, natxfrac, natyfrac = self._determine_stamp_coordinates( x, y, x0, y0 )
+        return self._interpolate_to_stamp( self.oversampled_data, x, y, x0, y0, natxfrac, natyfrac, flux=flux )
 
 
 class YamlSerialized_OversampledImagePSF( OversampledImagePSF ):
@@ -1492,8 +1576,8 @@ class ou24PSF( ou24PSF_slow ):
         else:
             if x0 != self._stored_x0 or y0 != self._stored_y0:
                 raise ValueError("ou24PSF.get_stamp called with x0 or y0 that does not match the x0 or y0 used"
-                                  "to initialize the PSF object. If you want to recreate the PSF object, use "
-                                  "ou24PSF_slow instead.")
+                                 "to initialize the PSF object. If you want to recreate the PSF object, use "
+                                 "ou24PSF_slow instead.")
 
         stampx = self.stamp_size // 2 + ( x - x0 )
         stampy = self.stamp_size // 2 + ( y - y0 )
