@@ -128,6 +128,12 @@ class PSF:
         if psfclass == "gaussian":
             return GaussianPSF( _called_from_get_psf_object=True, **kwargs )
 
+        if psfclass == "ou24PSF_slow_photonshoot":
+            return ou24PSF_slow_photonshoot( _called_from_get_psf_object=True, **kwargs )
+
+        if psfclass == "ou24PSF_photonshoot":
+            return ou24PSF_photonshoot(_called_from_get_psf_object=True, **kwargs)
+
         raise ValueError( f"Unknown PSF class {psfclass}" )
 
 
@@ -1331,11 +1337,11 @@ class ou24PSF_slow( PSF ):
 
     """
 
-    def __init__( self, sed=None, config_file=None, size=201, include_photonOps=True,
-                   n_photons=1000000, _parent_class=False, **kwargs
+    def __init__( self, sed=None, config_file=None, size=201,
+                   n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
                  ):
         super().__init__( _parent_class=True, **kwargs )
-        self._consumed_args.update( [ 'sed', 'config_file', 'size', 'include_photonOps', 'n_photons' ] )
+        self._consumed_args.update( [ 'sed', 'config_file', 'size', '_include_photonOps', 'n_photons' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         if ( self._pointing is None ) or ( self._sca is None ):
@@ -1360,7 +1366,7 @@ class ou24PSF_slow( PSF ):
         self.sca_size = 4088
         self._x = self.sca_size // 2 if self._x is None else self._x
         self._y = self.sca_size // 2 if self._y is None else self._y
-        self.include_photonOps = include_photonOps
+        self._include_photonOps = _include_photonOps
         self.n_photons = n_photons
         self._stamps = {}
 
@@ -1414,6 +1420,7 @@ class ou24PSF_slow( PSF ):
 
 
         if (x, y, stampx, stampy) not in self._stamps:
+            SNLogger.debug("configfile = " + str(self.config_file))
             rmutils = roman_utils( self.config_file, self._pointing, self._sca )
             if seed is not None:
                 rmutils.rng = galsim.BaseDeviate( seed )
@@ -1441,24 +1448,32 @@ class ou24PSF_slow( PSF ):
             # (This is not that big a deal, because the PSF is not going to vary significantly
             # over 1 pixel.)
             photon_ops = [ rmutils.getPSF( x+1, y+1, pupil_bin=8 ) ]
-            if self.include_photonOps:
+            if self._include_photonOps:
                 photon_ops += rmutils.photon_ops
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
             center = galsim.PositionD(stampx+1, stampy+1)
-            # Note: self.include_photonOps is a bool that states whether we are
+            # Note: self._include_photonOps is a bool that states whether we are
             #  shooting photons or not, photon_ops is the actual map (not sure
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
-            if self.include_photonOps:
+
+            # Note from Cole, it seems like the photon ops method is achromatic, but the other method is using a
+            # chromatic object. I am not currently sure if this matters.
+
+            if self._include_photonOps:
+                SNLogger.debug(f"point type {type(point)}")
                 point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
 
             else:
+                SNLogger.debug("flux pre convolution = " + str(point.calculateFlux(rmutils.bpass)))
                 psf = galsim.Convolve(point, photon_ops[0])
-                psf.drawImage(rmutils.bpass, method="no_pixel", center=center,
+                SNLogger.debug(f"psf type {type(psf)}")
+                SNLogger.debug("flux post convolution = " + str(psf.calculateFlux(rmutils.bpass)))
+                psf.drawImage(rmutils.bpass, method="auto", center=center,
                               use_true_center=True, image=stamp, wcs=self._wcs)
 
             self._stamps[(x, y, stampx, stampy)] = stamp.array
@@ -1468,7 +1483,7 @@ class ou24PSF_slow( PSF ):
 
 # TODO : make a ou24PSF that makes an image and caches... when things are working better
 class ou24PSF( ou24PSF_slow ):
-    """Wrap the roman_imsim PSFs, only more efficiently (we hoipe) than ou24PSF_slow.
+    """Wrap the roman_imsim PSFs, only more efficiently (we hope) than ou24PSF_slow.
 
     TODO: document what is different, what is cached.
 
@@ -1584,7 +1599,7 @@ class ou24PSF( ou24PSF_slow ):
                 self._rmutils.rng = galsim.BaseDeviate( seed )
 
             photon_ops = [ self._psf ]
-            if self.include_photonOps:
+            if self._include_photonOps:
                 photon_ops += self._rmutils.photon_ops
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
@@ -1594,18 +1609,32 @@ class ou24PSF( ou24PSF_slow ):
             #  shooting photons or not, photon_ops is the actual map (not sure
             #  if that's the correct word) that describes where the photons
             # should be shot, with some randomness.
-            if self.include_photonOps:
+            if self._include_photonOps:
                 self._point.drawImage(self._rmutils.bpass, method='phot', rng=self._rmutils.rng, photon_ops=photon_ops,
                                       n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                       center=center, use_true_center=True, image=self._stamp)
 
             else:
-                self._convolved_psf.drawImage(self._rmutils.bpass, method="no_pixel", center=center,
+                self._convolved_psf.drawImage(self._rmutils.bpass, method="auto", center=center,
                                               use_true_center=True, image=self._stamp, wcs=self._wcs)
 
             self._stamps[(x, y, stampx, stampy)] = self._stamp.array
 
         return self._stamps[(x, y, stampx, stampy)] * flux
+
+
+class ou24PSF_photonshoot( ou24PSF ):
+    """ The ou24 PSF but with photon shooting turned on."""
+
+    def __init__(self, _parent_class=False, **kwargs):
+        super().__init__(_parent_class=True, _include_photonOps = True, **kwargs)
+
+
+class ou24PSF_slow_photonshoot( ou24PSF_slow ):
+    """ The ou24 slow PSF but with photon shooting turned on."""
+
+    def __init__(self, _parent_class=False, **kwargs):
+        super().__init__(_parent_class=True, _include_photonOps = True, **kwargs)
 
 # class ou24PSF( OversampledImagePSF ):
 #     """An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.
