@@ -1708,8 +1708,9 @@ class FITSImageStdHeaders( FITSImage ):
         if self._header is None:
             try:
                 self._header = FITSImage.get_fits_header( self )
-            except Exception:
+            except Exception as e:
                 self._header = fits.header.Header()
+                SNLogger.debug(f"Error reading header: {e}")
         return self._header
 
 

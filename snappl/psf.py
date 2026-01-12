@@ -128,6 +128,9 @@ class PSF:
         if psfclass == "gaussian":
             return GaussianPSF( _called_from_get_psf_object=True, **kwargs )
 
+        if psfclass == "varying_gaussian":
+            return VaryingGaussianPSF(_called_from_get_psf_object=True, **kwargs)
+
         if psfclass == "ou24PSF_slow_photonshoot":
             return ou24PSF_slow_photonshoot( _called_from_get_psf_object=True, **kwargs )
 
@@ -1340,6 +1343,7 @@ class ou24PSF_slow( PSF ):
     def __init__( self, sed=None, config_file=None, size=201,
                    n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
                  ):
+
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'sed', 'config_file', 'size', '_include_photonOps', 'n_photons' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
@@ -1397,6 +1401,7 @@ class ou24PSF_slow( PSF ):
             using rmutils.getLocalWCS.
 
         """
+        SNLogger.debug("Getting ou24PSF_slow stamp at x=%s, y=%s, x0=%s, y0=%s", x, y, x0, y0)
 
         # If a position is not given, assume the middle of the SCA
         #   (within 1/2 pixel; by default, we want to make x and y
@@ -1418,7 +1423,7 @@ class ou24PSF_slow( PSF ):
             raise ValueError( f"PSF would be rendered at ({stampx},{stampy}), which is too far off of the "
                               f"edge of a {self.stamp_size}-pixel stamp." )
 
-
+        SNLogger.debug("Initializing ou24PSF_slow with pointing %s and sca %s", self._pointing, self._sca)
         if (x, y, stampx, stampy) not in self._stamps:
             SNLogger.debug("configfile = " + str(self.config_file))
             rmutils = roman_utils( self.config_file, self._pointing, self._sca )
@@ -1432,6 +1437,9 @@ class ou24PSF_slow( PSF ):
 
             if self._image is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )
+                SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
+                SNLogger.debug( f"ou24PSF_slow wcs fetched at: {x+1, y+1}" )
+                SNLogger.debug( f"ou24PSF_slow wcs: {self._wcs}" )
             else:
                 image_wcs = self._image.get_wcs()
                 if image_wcs is None:
@@ -1439,8 +1447,8 @@ class ou24PSF_slow( PSF ):
                     " has no WCS; using rmutils.getLocalWCS." )
                     self._wcs = rmutils.getLocalWCS( x+1, y+1 )
                 else:
-                    SNLogger.debug(f"Using the WCS from the image passed to {self.__class__.__name__}.")
                     self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
+                    SNLogger.debug( f"ou24PSF_slow wcs fetched at: {x+1, y+1}" )
 
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
             point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, rmutils.bpass )
@@ -1518,6 +1526,7 @@ class ou24PSF( ou24PSF_slow ):
         if self._image is None:
             SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
             self._wcs = self._rmutils.getLocalWCS( x0+1, y0+1 )
+
         else:
             image_wcs = self._image.get_wcs()
             if image_wcs is None:
@@ -1855,6 +1864,7 @@ class GaussianPSF( PSF ):
 
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
+
         midpix = int( np.floor( self.stamp_size / 2 ) )
         xc = int( np.floor(x + 0.5 ) )
         yc = int( np.floor(y + 0.5 ) )
@@ -1896,3 +1906,47 @@ class GaussianPSF( PSF ):
         stamp *= flux
 
         return stamp
+
+
+class VaryingGaussianPSF( GaussianPSF ):
+    """ A Gaussian PSF that DOES vary across the image, for testing purposes.
+    The σ_x and σ_y vary linearly with position on the image. According to Aldroty et al. 2025,
+    the PSF can vary up to 10% across a single SCA. Therefore we choose that
+    σ_x = (x_location - image_center_x) * 0.1 / image_size
+    σ_y = (y_location - image_center_y) * 0.1 / image_size
+    where image_center_x and image_center_y are the center of the SCA (2044 pixels).
+    """
+
+    def __init__(self, sca_size = 256, base_sigma_x=1, base_sigma_y=1, linear_coefficient = 0.1,
+               _parent_class=False, **kwargs):
+        """Create an object that renders a spatially varying Gaussian PSF.
+
+        Parmeters are as passed to GaussianPSF.__init__() plus:
+
+        Parameters
+        ----------
+          sca_size : int, default 256
+            The size of one SCA in pixels. Used to calculate how σ_x and σ_y vary
+            across the image.
+
+          base_sigma_x : float, default 1.
+            The base σ_x value in pixels at the center of the SCA.
+
+          base_sigma_y : float, default 1.
+            The base σ_y value in pixels at the center of the SCA.
+
+          linear_coefficient : float, default 0.1, following Aldroty et al. 2025
+            The linear coefficient for the variation of σ_x and σ_y.
+        """
+        self.sca_size = sca_size
+        self.base_sigma_x = base_sigma_x
+        self.base_sigma_y = base_sigma_y
+        self.linear_coefficient = linear_coefficient
+        super().__init__(_parent_class=True, **kwargs)
+
+    def get_stamp(self, x=None, y=None, x0=None, y0=None, flux=1.):
+        self.sigmax=self.base_sigma_x + (x - (self.sca_size / 2)) * self.linear_coefficient / self.sca_size
+        self.sigmay=self.base_sigma_y + (y - (self.sca_size / 2)) * self.linear_coefficient / self.sca_size
+        gPSF = PSF.get_psf_object( "gaussian", sigmax=self.sigmax, sigmay=self.sigmay, theta=self.theta,
+                                  stamp_size=self.stamp_size )
+        return gPSF.get_stamp(x=x, y=y, x0=x0, y0=y0, flux=flux)
