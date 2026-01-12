@@ -26,8 +26,6 @@ from roman_imsim.utils import roman_utils
 from snappl.config import Config
 from snappl.logger import SNLogger
 
-# Temporary
-import pytest
 from scipy.ndimage import center_of_mass
 
 
