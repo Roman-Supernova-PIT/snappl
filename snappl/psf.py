@@ -1862,9 +1862,8 @@ class GaussianPSF( PSF ):
         """
         coords = np.vstack( (xrel, yrel) )
         rcoords = np.matmul( self._rotmat, coords )
-        flux = self._norm * np.exp(
-            -(rcoords[0,:] ** 2 / (2.0 * self.sigmax**2)) - (rcoords[1,:] ** 2 / (2.0 * self.sigmay**2))
-        )
+        flux = self._norm * np.exp( - ( rcoords[0][0]**2 / (2. * self.sigmax**2) )
+                                    - ( rcoords[1][0]**2 / (2. * self.sigmay**2) ) )
         return flux
 
 
