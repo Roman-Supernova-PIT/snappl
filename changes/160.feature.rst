@@ -1,0 +1,1 @@
+Include residual image as an attribute in snappl.image.Image.
