@@ -65,10 +65,9 @@ class SegmentationMap( PathedObject ):
 
         if self.filepath is None:
             raise ValueError( "Can't load image when filepath is None." )
-        fullpath = self.full_filepath
-
         if self.format in ( 1, 2 ):
-            self._image = self.image_format_to_class[self.format]( fullpath, imagehdu=0, noisehdu=None, flagshdu=None )
+            self._image = self.image_format_to_class[self.format]( base_path=self.base_path, filepath=self.filepath,
+                                                                   imagehdu=0, noisehdu=None, flagshdu=None )
         else:
             raise ValueError( f"Unknown format {self.format}" )
 
