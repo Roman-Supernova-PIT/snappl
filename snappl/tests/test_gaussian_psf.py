@@ -186,3 +186,57 @@ def test_galaxy_stamp():
     galaxy_stamp = gpsf.get_galaxy_stamp(x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R = 2, bulge_n=3,
     disk_R= 2, disk_n = 3)
     assert galaxy_stamp.sum() == pytest.approx(991866, rel=1e-3) # Empirically, only 99.1 % of flux is in 71x71 stamp
+
+
+def test_varying_gaussian_psf():
+    vgpsf = PSF.get_psf_object("varying_gaussian", sigmax=1, sigmay=1, stamp_size=23, sca_size = 23)
+    stamp = vgpsf.get_stamp(x=11, y=11, x0=11, y0=11)
+    assert stamp.shape == (23, 23)
+
+    middle = 23//2
+
+    mom2y = (np.arange(-middle, middle+1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle+1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    assert mom2x == pytest.approx(1.08, abs=0.01)
+    assert mom2y == pytest.approx(1.08, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=23, y=11, x0=23, y0=11)
+    mom2y = (np.arange(-middle, middle+1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle+1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=23 is 1.05
+    assert mom2x == pytest.approx(1.08 * 1.05**2, abs=0.01)
+    assert mom2y == pytest.approx(1.08, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=11, y=23, x0=11, y0=23)
+    mom2y = (np.arange(-middle, middle + 1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle + 1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=23 is 1.05
+    assert mom2x == pytest.approx(1.08, abs=0.01)
+    assert mom2y == pytest.approx(1.08 * 1.05**2, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=23, y=23, x0=23, y0=23)
+    mom2y = (np.arange(-middle, middle + 1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle + 1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=23 is 1.05
+    assert mom2x == pytest.approx(1.08 * 1.05**2, abs=0.01)
+    assert mom2y == pytest.approx(1.08 * 1.05**2, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=2, y=11, x0=2, y0=11)
+    mom2y = (np.arange(-middle, middle + 1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle + 1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=2 is 0.95869
+    assert mom2x == pytest.approx(1.08 * 0.95869565**2, abs=0.01)
+    assert mom2y == pytest.approx(1.08, abs=0.01)
+
+    stamp = vgpsf.get_stamp(x=2, y=2, x0=2, y0=2)
+    mom2y = (np.arange(-middle, middle + 1) ** 2 * stamp[:, middle]).sum() / stamp[:, middle].sum()
+    mom2x = (np.arange(-middle, middle + 1) ** 2 * stamp[middle, :]).sum() / stamp[middle, :].sum()
+    print(mom2x, mom2y)
+    # Should go like sigma^2, and sigmax at x=2 is 0.95869
+    assert mom2x == pytest.approx(1.08 * 0.95869565**2, abs=0.01)
+    assert mom2y == pytest.approx(1.08 * 0.95869565**2, abs=0.01)

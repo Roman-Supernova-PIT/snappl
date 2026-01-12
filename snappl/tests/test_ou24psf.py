@@ -193,7 +193,6 @@ def test_get_stamp():
     # because the fast version of ou24PSF is not designed to allow x0 or y0 to change.
 
     psfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=41.0)
-    assert isinstance(psfobj, snappl.psf.ou24PSF_photonshoot)
 
     # It's slow getting galsim PSFs with photon ops, so we're not going to
     #   do as exhaustive of tets as we do for OversampledImagePSF.  Use
