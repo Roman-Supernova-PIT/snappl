@@ -1996,18 +1996,7 @@ class GaussianPSF( PSF ):
             )
 
         profile_stamp = profile_stamp.reshape(self.stamp_size, self.stamp_size)
-
-        expected_center_x = midpix + x - x0
-        expected_center_y = midpix + y - y0
-        cy, cx = center_of_mass(profile_stamp) # why does this need to be flipped compared to what Rob does above?
-        assert cx == pytest.approx(expected_center_x, abs=1/oversamp)
-        assert cy == pytest.approx(expected_center_y, abs=1/oversamp)
-
         convolved = scipy.signal.convolve2d(profile_stamp, psf_stamp, mode="same", boundary="symm")
-
-        cy, cx = center_of_mass(convolved)  # why does this need to be flipped compared to what Rob does above?
-        assert cx == pytest.approx(expected_center_x, abs=1 / 20)
-        assert cy == pytest.approx(expected_center_y, abs=1 / 20)
 
         return convolved
 

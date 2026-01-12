@@ -523,7 +523,7 @@ def main():
                          help="Series of key=value PSF kwargs to pass to PSF.get_psf_object" )
 
     parser.add_argument( '--galaxy-kwargs', '--gk', nargs='*', default=[],
-                         help="Series of key=value Galaxy kwargs to pass to PSF.get_galaxy_stamp. For now, the options"
+                         help="Series of key value Galaxy kwargs to pass to PSF.get_galaxy_stamp. For now, the options"
                          "are: The HLR of bulge and a disk, bulge_R and bulge_disk, and their Sersic indices"
                          "bulge_n and bulge_disk. They should be entered in the format key1 val1 key2 val2 et cetera." )
     parser.add_argument( '--no-star-noise', action='store_true', default=False,
