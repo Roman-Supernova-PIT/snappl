@@ -180,17 +180,17 @@ class ImageSimulatorImage:
 
         rotation = rotation * np.pi / 180.
         wcsdict = { 'CTYPE1': 'RA---TAN',
-                        'CTYPE2': 'DEC--TAN',
-                        'NAXIS1': width,
-                        'NAXIS2': height,
-                        'CRPIX1': width / 2. + 1,
-                        'CRPIX2': height / 2. + 1,
-                        'CRVAL1': ra,
-                        'CRVAL2': dec,
-                        'CD1_1': pixscale / 3600. * np.cos( rotation ),
-                        'CD1_2': pixscale / 3600. * np.sin( rotation ),
-                        'CD2_1': -pixscale / 3600. * np.sin( rotation ),
-                        'CD2_2': pixscale / 3600. * np.cos( rotation )
+                    'CTYPE2': 'DEC--TAN',
+                    'NAXIS1': width,
+                    'NAXIS2': height,
+                    'CRPIX1': width / 2. + 1,
+                    'CRPIX2': height / 2. + 1,
+                    'CRVAL1': ra,
+                    'CRVAL2': dec,
+                    'CD1_1': pixscale / 3600. * np.cos( rotation ),
+                    'CD1_2': pixscale / 3600. * np.sin( rotation ),
+                    'CD2_1': -pixscale / 3600. * np.sin( rotation ),
+                    'CD2_2': pixscale / 3600. * np.cos( rotation )
                     }
 
 
