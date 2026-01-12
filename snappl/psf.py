@@ -1916,7 +1916,29 @@ class GaussianPSF( PSF ):
 
     def get_galaxy_stamp(self, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
                          bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
-        """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution."""
+        """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution.
+        This is not a standard PSF function, and may not be implemented in all subclasses. It is only really for use
+        in the image simulator.
+
+        Parameters
+        ----------
+        x,y,x0,y0,flux : as in PSF.get_stamp
+        bulge_R : float
+            The effective radius of the bulge component in pixels.
+        bulge_n : float
+            The Sersic index of the bulge component.
+        disk_R : float
+            The effective radius of the disk component in pixels.
+        disk_n : float
+            The Sersic index of the disk component.
+
+            For more detail on the above four parameters, see:
+            https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Sersic2D.html
+
+        oversamp : int
+            The oversampling factor to use when rendering the galaxy before downsampling to image resolution.
+
+        """
         midpix = int( np.floor( self.stamp_size / 2 ) )
         xc = int( np.floor(x + 0.5 ) )
         yc = int( np.floor(y + 0.5 ) )

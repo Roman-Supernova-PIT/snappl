@@ -15,7 +15,6 @@ from snappl.psf import PSF
 from snappl.image import FITSImageStdHeaders
 from snappl.wcs import AstropyWCS
 
-# Temporary
 
 
 class ImageSimulatorPointSource:
@@ -165,21 +164,21 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
         self.mag = mag
 
     def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None, psf=None,
-                             galaxy_kwarg=[]):
+                             galaxy_kwargs=[]):
 
         flux = 10 ** ((self.mag - zeropoint) / -2.5)
         SNLogger.debug(f"Adding static source with mag {self.mag:.2f} (flux {flux:.0f}) on mjd {mjd}; "
-                       f"galaxy_kwarg={galaxy_kwarg}")
+                       f"galaxy_kwargs={galaxy_kwargs}")
         SNLogger.debug(f"x={x:.2f}, y={y:.2f}")
 
-        if len(galaxy_kwarg) == 0 or galaxy_kwarg is None:
+        if len(galaxy_kwargs) == 0 or galaxy_kwargs is None:
             shape = "point"
             SNLogger.debug("No Galaxy Parameters passed, rendering static source as point source.")
         else:
             shape = "galaxy"
 
         return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng,
-                                 psf=psf, shape=shape, galaxy_kwarg=galaxy_kwarg)
+                                 psf=psf, shape=shape, galaxy_kwargs=galaxy_kwargs)
 
 
 class ImageSimulatorImage:
@@ -526,7 +525,7 @@ def main():
     parser.add_argument( '--galaxy-kwargs', '--gk', nargs='*', default=[],
                          help="Series of key=value Galaxy kwargs to pass to PSF.get_galaxy_stamp. For now, the options"
                          "are: The HLR of bulge and a disk, bulge_R and bulge_disk, and their Sersic indices"
-                         "bulge_n and bulge_disk" )
+                         "bulge_n and bulge_disk. They should be entered in the format key1 val1 key2 val2 et cetera." )
     parser.add_argument( '--no-star-noise', action='store_true', default=False,
                          help="Set this to not add poisson noise to stars." )
 
