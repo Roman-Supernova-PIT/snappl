@@ -1,4 +1,4 @@
-__all__ = ["retry_post"]
+__all__ = [ 'retry_post' ]
 
 import time
 import requests
@@ -8,7 +8,7 @@ import numpy as np
 from snappl.logger import SNLogger
 
 
-def retry_post(url, json=None, data=None, retries=5, initsleep=1.0, sleepfac=1.5, fuzz=True, **kwargs):
+def retry_post( url, json=None, data=None, retries=5, initsleep=1., sleepfac=1.5, fuzz=True, **kwargs ):
     """Do a python requests post to url, retrying on failures.
 
     Parameters
@@ -53,20 +53,20 @@ def retry_post(url, json=None, data=None, retries=5, initsleep=1.0, sleepfac=1.5
     t0 = time.perf_counter()
     if fuzz:
         rng = np.random.default_rng()
-    for tries in range(retries + 1):
+    for tries in range( retries + 1 ):
         res = None
         try:
-            res = requests.post(url, data=data, json=json, **kwargs)
+            res = requests.post( url, data=data, json=json, **kwargs )
             if res.status_code != 200:
                 errmsg = f"Got status {res.status_code} trying to connect to {url}"
                 if tries == retries:
-                    SNLogger.error(errmsg)
+                    SNLogger.error( errmsg )
                 else:
-                    SNLogger.debug(errmsg)
-                raise RuntimeError(errmsg)
+                    SNLogger.debug( errmsg )
+                raise RuntimeError( errmsg )
             if previous_fail:
                 dt = time.perf_counter() - t0
-                SNLogger.info(f"Connection to {url} succeeded after {tries} retries over {dt:.2f} seconds.")
+                SNLogger.info( f"Connection to {url} succeeded after {tries} retries over {dt:.2f} seconds." )
             return res
         except Exception:
             previous_fail = True
@@ -74,17 +74,16 @@ def retry_post(url, json=None, data=None, retries=5, initsleep=1.0, sleepfac=1.5
             if tries < retries:
                 actual_sleeptime = sleeptime
                 if fuzz:
-                    actual_sleeptime = max(initsleep / 2.0, rng.normal(sleeptime, sleeptime / 5.0))
+                    actual_sleeptime = max( initsleep/2., rng.normal( sleeptime, sleeptime/5. ) )
                 status_code = "<unknown>" if res is None else res.status_code
-                SNLogger.warning(
-                    f"Failed to connect to {url} after {tries + 1} tries "
-                    f"over {dt:.2f} seconds, got status {status_code}; "
-                    f"sleeping {actual_sleeptime:.1f} seconds and retrying."
-                )
-                time.sleep(actual_sleeptime)
+                SNLogger.warning( f"Failed to connect to {url} after {tries+1} tries "
+                                     f"over {dt:.2f} seconds, got status {status_code}; "
+                                     f"sleeping {actual_sleeptime:.1f} seconds and retrying." )
+                time.sleep( actual_sleeptime )
                 sleeptime *= sleepfac
             else:
-                SNLogger.error(f"Failed to connect to {url} after {retries} tries over {dt:.2f} seconds.  Giving up.")
-                if (res is not None) and (res.status_code == 500):
-                    SNLogger.debug(f"Body of 500 return: {res.text}")
+                SNLogger.error( f"Failed to connect to {url} after {retries} tries "
+                                   f"over {dt:.2f} seconds.  Giving up." )
+                if ( res is not None ) and ( res.status_code == 500 ):
+                    SNLogger.debug( f"Body of 500 return: {res.text}" )
                 raise
