@@ -16,6 +16,7 @@ from snappl.image import FITSImageStdHeaders
 from snappl.wcs import AstropyWCS
 
 
+
 class ImageSimulatorPointSource:
     def __init__( self, ra=None, dec=None):
         if any( i is None for i in [ ra, dec ] ):
@@ -24,7 +25,8 @@ class ImageSimulatorPointSource:
         self.dec = dec
 
 
-    def render_stamp( self, width, height, x, y, flux, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
+    def render_stamp( self, width, height, x, y, flux, zeropoint=None, gain=1., noisy=True, rng=None, psf = None,
+                      shape = "point", galaxy_kwargs = [] ):
         SNLogger.debug("Calling render_stamp with x={:.2f}, y={:.2f}, flux={:.2f}".format(x, y, flux))
         if ( ( x <  -psf.stamp_size ) or ( x > height + psf.stamp_size ) or
              ( y <  -psf.stamp_size ) or ( y > width + psf.stamp_size )
@@ -35,9 +37,12 @@ class ImageSimulatorPointSource:
 
         x0 = int( np.floor( x + 0.5 ) )
         y0 = int( np.floor( y + 0.5 ) )
-        SNLogger.debug("Flux in render_stamp: {:.2f}".format(flux))
-        stamp = psf.get_stamp( x, y, x0=x0, y0=y0, flux=flux )
-        SNLogger.debug("Max stamp value: {:.2f}".format(np.max(stamp)))
+        if shape == "point":
+            stamp = psf.get_stamp( x, y, x0=x0, y0=y0, flux=flux )
+        elif shape == "galaxy":
+            # unpack list into dict
+            galaxy_kwargs_dict = {k: float(v) for k, v in zip(galaxy_kwargs[::2], galaxy_kwargs[1::2])}
+            stamp = psf.get_galaxy_stamp( x, y, x0=x0, y0=y0, flux=flux, **galaxy_kwargs_dict )
         var = np.zeros( stamp.shape )
         if noisy:
             if rng is None:
@@ -158,15 +163,22 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
             raise ValueError("ImageSimulatorStaticSource requires a magnitude")
         self.mag = mag
 
-    def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None, psf = None):
+    def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None, psf=None,
+                             galaxy_kwargs=[]):
 
         flux = 10 ** ((self.mag - zeropoint) / -2.5)
-        SNLogger.debug(f"Adding static source with mag {self.mag:.2f} (flux {flux:.0f}) on mjd {mjd}")
+        SNLogger.debug(f"Adding static source with mag {self.mag:.2f} (flux {flux:.0f}) on mjd {mjd}; "
+                       f"galaxy_kwargs={galaxy_kwargs}")
         SNLogger.debug(f"x={x:.2f}, y={y:.2f}")
 
-        # To start, we are hardcoding that static sources are just point sources.
+        if len(galaxy_kwargs) == 0 or galaxy_kwargs is None:
+            shape = "point"
+            SNLogger.debug("No Galaxy Parameters passed, rendering static source as point source.")
+        else:
+            shape = "galaxy"
+
         return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng,
-                                 psf=psf)
+                                 psf=psf, shape=shape, galaxy_kwargs=galaxy_kwargs)
 
 
 class ImageSimulatorImage:
@@ -275,7 +287,7 @@ class ImageSimulatorImage:
             self.image.data[ iy0:iy1, ix0:ix1 ] += stamp[ sy0:sy1, sx0:sx1 ]
             self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
 
-    def add_static_source( self, static_source, rng=None, noisy = False, psf = None ):
+    def add_static_source( self, static_source, rng=None, noisy = False, psf=None, galaxy_kwargs=[] ):
         if static_source is not None:
             if rng is None:
                 rng = np.random.default_rng()
@@ -283,11 +295,12 @@ class ImageSimulatorImage:
             x, y = self.image.get_wcs().world_to_pixel( static_source.ra, static_source.dec )
             SNLogger.debug( f"...adding static source to image at ({x:.2f}, {y:.2f})..." )
             ( stamp, var,
-            imcoords, stampcoords ) = static_source.render_static_source( self.image.data.shape[1],
+              imcoords, stampcoords ) = static_source.render_static_source( self.image.data.shape[1],
                                                                             self.image.data.shape[0],
-                                                                        x, y, self.image.mjd,
-                                                                        zeropoint=self.image.zeropoint,
-                                                                        rng=rng, noisy=noisy, psf=psf)
+                                                                            x, y, self.image.mjd,
+                                                                            zeropoint=self.image.zeropoint,
+                                                                            rng=rng, noisy=noisy, psf=psf,
+                                                                            galaxy_kwargs=galaxy_kwargs )
             if stamp is not None:
                 ix0, ix1, iy0, iy1 = imcoords
                 sx0, sx1, sy0, sy1 = stampcoords
@@ -306,6 +319,7 @@ class ImageSimulator:
                   nstars=200,
                   psf_class=None,
                   psf_kwargs=[],
+                  galaxy_kwargs = [],
                   no_star_noise=False,
                   basename='simimage',
                   width=4088,
@@ -391,6 +405,8 @@ class ImageSimulator:
         self.nstars = nstars
         self.psf_class = psf_class
         self.psf_kwargs = psf_kwargs
+        self.galaxy_kwargs = galaxy_kwargs
+        SNLogger.debug(f"Galaxy kwargs: {self.galaxy_kwargs}")
         self.no_star_noise = no_star_noise
         self.band = band
         self.sca =  [sca] if not isSequence(sca) else sca
@@ -441,14 +457,16 @@ class ImageSimulator:
                                               fieldrad=self.star_sky_radius,
                                               m0=self.min_star_magnitude, m1=self.max_star_magnitude,
                                               alpha=self.alpha, nstars=self.nstars, rng=star_rng )
-
-        transient = ImageSimulatorTransient( ra=self.transient_ra, dec=self.transient_dec,
-                                             peak_mag=self.transient_peak_mag,
-                                             peak_mjd=self.transient_peak_mjd, start_mjd=self.transient_start_mjd,
-                                             end_mjd=self.transient_end_mjd )
+        if self.transient_ra is not None and self.transient_dec is not None:
+            SNLogger.debug( f"Creating transient at ({self.transient_ra}, {self.transient_dec}) "
+                            f"with peak mag {self.transient_peak_mag} at mjd {self.transient_peak_mjd}" )
+            transient = ImageSimulatorTransient( ra=self.transient_ra, dec=self.transient_dec,
+                                                 peak_mag=self.transient_peak_mag,
+                                                 peak_mjd=self.transient_peak_mjd, start_mjd=self.transient_start_mjd,
+                                                 end_mjd=self.transient_end_mjd )
         if all ( i is not None for i in [ self.static_source_ra, self.static_source_dec, self.static_source_mag ] ):
             static_source = ImageSimulatorStaticSource( ra=self.static_source_ra, dec=self.static_source_dec,
-                                                    mag=self.static_source_mag )
+                                                        mag=self.static_source_mag )
         else:
             static_source = None
 
@@ -472,7 +490,8 @@ class ImageSimulator:
             SNLogger.debug(f"Using PSF class {type(psf)} for image simulation.")
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
             image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise, psf=psf )
-            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf=psf )
+            if self.transient_ra is not None and self.transient_dec is not None:
+                image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf=psf )
             image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise, psf=psf)
             image.image.noise = np.sqrt( image.image.noise )
             SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
@@ -502,6 +521,11 @@ def main():
                          help="psfclass to use for stars (default 'gaussian')" )
     parser.add_argument( '--psf-kwargs', '--pk', nargs='*', default=[],
                          help="Series of key=value PSF kwargs to pass to PSF.get_psf_object" )
+
+    parser.add_argument( '--galaxy-kwargs', '--gk', nargs='*', default=[],
+                         help="Series of key value Galaxy kwargs to pass to PSF.get_galaxy_stamp. For now, the options"
+                         "are: The HLR of bulge and a disk, bulge_R and bulge_disk, and their Sersic indices"
+                         "bulge_n and bulge_disk. They should be entered in the format key1 val1 key2 val2 et cetera." )
     parser.add_argument( '--no-star-noise', action='store_true', default=False,
                          help="Set this to not add poisson noise to stars." )
 

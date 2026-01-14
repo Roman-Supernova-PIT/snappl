@@ -10,10 +10,14 @@ import pathlib
 # common library imports
 import numpy as np
 import scipy.integrate
+from scipy.special import gammaincinv
+from scipy.stats import binned_statistic_2d
 import scipy.signal
 import yaml
 
+
 # astro library imports
+from astropy.modeling.functional_models import Sersic2D
 import photutils.psf
 import galsim
 from roman_imsim.utils import roman_utils
@@ -21,6 +25,7 @@ from roman_imsim.utils import roman_utils
 # roman snpit library imports
 from snappl.config import Config
 from snappl.logger import SNLogger
+
 
 
 class PSF:
@@ -1471,16 +1476,12 @@ class ou24PSF_slow( PSF ):
             # chromatic object. I am not currently sure if this matters.
 
             if self._include_photonOps:
-                SNLogger.debug(f"point type {type(point)}")
                 point.drawImage(rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
                                 n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
                                 center=center, use_true_center=True, image=stamp)
 
             else:
-                SNLogger.debug("flux pre convolution = " + str(point.calculateFlux(rmutils.bpass)))
                 psf = galsim.Convolve(point, photon_ops[0])
-                SNLogger.debug(f"psf type {type(psf)}")
-                SNLogger.debug("flux post convolution = " + str(psf.calculateFlux(rmutils.bpass)))
                 psf.drawImage(rmutils.bpass, method="auto", center=center,
                               use_true_center=True, image=stamp, wcs=self._wcs)
 
@@ -1537,7 +1538,6 @@ class ou24PSF( ou24PSF_slow ):
                 SNLogger.debug(f"Using the WCS from the image passed to {self.__class__.__name__}.")
                 self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x0+1, y0+1 ))
         SNLogger.debug( f"ou24PSF wcs fetched at: {x0, y0}" )
-        SNLogger.debug( f"ou24PSF wcs: {self._wcs}" )
         self._stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
         self._point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, self._rmutils.bpass )
         self._convolved_psf = galsim.Convolve(self._point, self._psf)
@@ -1859,8 +1859,9 @@ class GaussianPSF( PSF ):
         """
         coords = np.vstack( (xrel, yrel) )
         rcoords = np.matmul( self._rotmat, coords )
-        return self._norm * np.exp( - ( rcoords[0][0]**2 / (2. * self.sigmax**2) )
+        flux = self._norm * np.exp( - ( rcoords[0][0]**2 / (2. * self.sigmax**2) )
                                     - ( rcoords[1][0]**2 / (2. * self.sigmay**2) ) )
+        return flux
 
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
@@ -1877,6 +1878,7 @@ class GaussianPSF( PSF ):
         offx = x0 - xc
         offy = y0 - yc
         dex = ( millix, milliy, offx, offy )
+
 
         if dex in self._stamp_cache:
             # Because calculating these is slow, cache them.
@@ -1906,6 +1908,93 @@ class GaussianPSF( PSF ):
         stamp *= flux
 
         return stamp
+
+
+    def get_galaxy_stamp(self, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
+                         bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
+        """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution.
+        This is not a standard PSF function, and may not be implemented in all subclasses. It is only really for use
+        in the image simulator.
+
+        Parameters
+        ----------
+        x,y,x0,y0,flux : as in PSF.get_stamp
+        bulge_R : float
+            The effective radius of the bulge component in pixels.
+        bulge_n : float
+            The Sersic index of the bulge component.
+        disk_R : float
+            The effective radius of the disk component in pixels.
+        disk_n : float
+            The Sersic index of the disk component.
+
+            For more detail on the above four parameters, see:
+            https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Sersic2D.html
+
+        oversamp : int
+            The oversampling factor to use when rendering the galaxy before downsampling to image resolution.
+
+        """
+        midpix = int( np.floor( self.stamp_size / 2 ) )
+        xc = int( np.floor(x + 0.5 ) )
+        yc = int( np.floor(y + 0.5 ) )
+        x0 = x0 if x0 is not None else xc
+        y0 = y0 if y0 is not None else yc
+        if not ( isinstance( x0, numbers.Integral ) and isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers, got x0 as {type(x0)} and y0 as {type(y0)}" )
+
+        ix = np.linspace(-0.5, self.stamp_size - 0.5, oversamp * self.stamp_size)
+        iy = np.linspace(-0.5, self.stamp_size - 0.5, oversamp * self.stamp_size)
+        ixx, iyy = np.meshgrid(ix, iy)
+        # an underlying mesh of points on which to calculate functions where integer values line up with pixel centers
+
+        # Shift that grid relative to the desired location of the profile
+        xrel = (x0 - x) - midpix + ix
+        yrel = (y0 - y) - midpix + iy
+
+        xxrel, yyrel = np.meshgrid(xrel, yrel)
+        # The same mesh but now the x value is zeroed at the center of where the galaxy is being centered
+
+        psf_stamp = self.get_stamp(x=self.stamp_size//2, y=self.stamp_size//2,)
+
+        # Prepare and evaluate the profile
+        # Create a galaxy profile from a bulge + disk model
+
+        b_bulge = gammaincinv(2.0 * bulge_n, 0.5)
+
+        # Divide the flux equally between bulge and disk, so flux --> flux / 2
+        bulge_amp = flux/2 * b_bulge**(2*bulge_n) /\
+           (2 * np.pi * bulge_n * scipy.special.gamma(2*bulge_n) * np.exp(b_bulge) * bulge_R**2)
+        # The above is inverting the formula for total flux of a sersic profile, see
+        # http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
+        bulge_amp /= oversamp**2
+        sers_bulge = Sersic2D(amplitude=bulge_amp, r_eff=bulge_R, n=bulge_n)
+
+        b_disk = gammaincinv(2.0 * disk_n, 0.5)
+        disk_amp = flux/2 * b_disk**(2*disk_n) /\
+           (2 * np.pi * disk_n * scipy.special.gamma(2*disk_n) * np.exp(b_disk) * disk_R**2)
+        disk_amp /= oversamp**2
+        sers_disk = Sersic2D(amplitude=disk_amp, r_eff=disk_R, n=disk_n)
+
+        profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
+
+
+        # Downsample to image resolution
+        profile_stamp, _, _, _= binned_statistic_2d(
+                y=ixx.flatten(),
+                x=iyy.flatten(),
+                # Note that x and y are flipped here compared to usual convention. I am not sure why this needs to be,
+                # but when it was the other way around, the act of downsampling was swapping x and y.
+                values=profile_stamp.flatten(),
+                statistic='sum',
+                bins=self.stamp_size,
+                range=[[-0.5, self.stamp_size - 0.5], [-0.5, self.stamp_size - 0.5]]
+            )
+
+        profile_stamp = profile_stamp.reshape(self.stamp_size, self.stamp_size)
+        convolved = scipy.signal.convolve2d(profile_stamp, psf_stamp, mode="same", boundary="symm")
+
+        return convolved
 
 
 class VaryingGaussianPSF( GaussianPSF ):
