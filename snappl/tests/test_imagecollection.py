@@ -71,8 +71,9 @@ def test_imagecollectionmanualfits_create():
     with pytest.raises( RuntimeError, match="manual_fits collection needs a base path" ):
         col = ImageCollection.get_collection( 'manual_fits' )
 
-    base_path = '/photometry_Test_data/ou2024/images/simple_model'
-    col = ImageCollection.get_collection( 'manual_fits', base_path='/photometry_Test_data/ou2024/images/simple_model' )
+    base_path = '/home/photometry_test_data/ou2024/images/simple_model'
+    col = ImageCollection.get_collection( 'manual_fits',
+                                          base_path='/home/photometry_test_data/ou2024/images/simple_model' )
     assert isinstance( col, ImageCollectionManualFITS )
     assert col.base_path == pathlib.Path( base_path )
 
