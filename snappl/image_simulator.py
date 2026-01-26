@@ -8,6 +8,7 @@ import multiprocessing
 
 import numpy as np
 import astropy.wcs
+import galsim # For SEDs only no one get mad at me -Cole
 
 from snappl.logger import SNLogger
 from snappl.utils import isSequence
@@ -348,6 +349,9 @@ class ImageSimulator:
                   static_source_mag=None,
                   no_static_source_noise=False,
                   numprocs=12,
+                  sed_spec=None,
+                  sed_wave_type=None,
+                  sed_flux_type=None
                   ):
 
         self.mjds = mjds if mjds is not None else np.arange( 60000., 60065., 5. )
@@ -433,6 +437,10 @@ class ImageSimulator:
         self.overwrite = overwrite
         self.numprocs = numprocs
 
+        self.sed_spec = sed_spec
+        self.sed_wave_type = sed_wave_type
+        self.sed_flux_type = sed_flux_type
+
     def __call__( self ):
         base_rng = np.random.default_rng( self.seed )
         sky_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
@@ -470,6 +478,11 @@ class ImageSimulator:
         else:
             static_source = None
 
+        if self.sed_spec is not None:
+            sed = galsim.SED(self.sed_spec, wave_type=self.sed_wave_type, flux_type=self.sed_flux_type)
+            SNLogger.debug("Sucessfully created SED with spec: %s, wave_type: %s, flux_type: %s",
+                           self.sed_spec, self.sed_wave_type, self.sed_flux_type)
+
         SNLogger.debug(f"psf class: {self.psf_class}, psf kwargs: {kwargs}")
         for i in range( len( self.imdata['mjds'] ) ):
             print(f"----------------------- IMAGE {i} -----------------------")
@@ -486,7 +499,7 @@ class ImageSimulator:
                                           pointing=self.pointing[i] )
             SNLogger.debug("Image object created with pointing %s and sca %s", image.image.pointing, image.image.sca)
             kwargs["image"] = image.image
-            psf = PSF.get_psf_object(self.psf_class, **kwargs)
+            psf = PSF.get_psf_object(self.psf_class, sed=sed, **kwargs)
             SNLogger.debug(f"Using PSF class {type(psf)} for image simulation.")
             image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
             image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise, psf=psf )
@@ -585,6 +598,13 @@ def main():
     parser.add_argument( '--numprocs', type=int, default=12, help="Number of star rendering processes (default 12)" )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
                          help="Overwrite any existing images with the same filename." )
+
+    parser.add_argument( 'sed-spec', default = None, help = "spec argument that is passed to galsim.SED,"
+                         " see https://galsim-developers.github.io/GalSim/_build/html/sed.html")
+    parser.add_argument( 'sed-wave_type', default = None, help = "wave_type argument that is passed to galsim.SED,"
+                         " see https://galsim-developers.github.io/GalSim/_build/html/sed.html")
+    parser.add_argument( 'sed-flux_type', default = None, help = "flux_type argument that is passed to galsim.SED,"
+                         " see https://galsim-developers.github.io/GalSim/_build/html/sed.html")
 
 
 
