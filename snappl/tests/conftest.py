@@ -88,7 +88,7 @@ def manual_fits_image( ou2024imagepath):
 
 @pytest.fixture
 def romandatamodel_image_path():
-    return '/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
+    return '/home/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
 
 
 @pytest.fixture
@@ -124,7 +124,7 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
 
 @pytest.fixture
 def unloaded_fitsimage_basepath():
-    return '/photometry_test_data/simple_gaussian_test/sig1.0/test_60030.0'
+    return '/home/photometry_test_data/simple_gaussian_test/sig1.0/test_60030.0'
 
 
 @pytest.fixture
@@ -227,7 +227,7 @@ def loaded_ou2024_test_diaobjects():
             prov = make_provenance_and_tag( 'import_ou2024_diaobjects', 0, 1, tag='dbou2024_test', dbcon=dbcon )
 
             # Load whatever parquet files are in the ou2024 truth direictory of photometry_test_data
-            pqdir = pathlib.Path( "/photometry_test_data/ou2024/snana_truth" )
+            pqdir = pathlib.Path( "/home/photometry_test_data/ou2024/snana_truth" )
             pqfiles = pqdir.glob( "snana*.parquet" )
             for pqf in pqfiles:
                 load_snana_ou2024_diaobject( prov.id, pqf, dbcon=dbcon )
