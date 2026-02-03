@@ -295,7 +295,7 @@ def test_set_wcs():
     psfobj_1.get_stamp( seed=42 )
     psfobj_2.get_stamp( seed=42 )
 
-    assert psfobj_1._wcs != psfobj_2._wcs, ( "The initial WCS should be different for different PSF objects with " 
+    assert psfobj_1._wcs != psfobj_2._wcs, ( "The initial WCS should be different for different PSF objects with "
                                              "different objservation_id/sca." )
 
     img_collection = ImageCollection()

@@ -44,8 +44,8 @@ def test_ou2024_find_images( loaded_ou2024_test_l2images, dbclient ):
     assert images[0].id == allimages[0].id
 
     # Test searching by observation_id, SCA, and band
-    images = imcol.find_images( sca=allimages[0].sca, observation_id=allimages[0].observation_id, band=allimages[0].band,
-                                dbclient=dbclient )
+    images = imcol.find_images( sca=allimages[0].sca, observation_id=allimages[0].observation_id,
+                                band=allimages[0].band, dbclient=dbclient )
     assert len(images) == 1
     assert images[0].id == allimages[0].id
 

@@ -658,7 +658,7 @@ class Image( PathedObject ):
         dupdec = updec - middec
         leftang = np.arctan2( -dleftdec, dleftra ) * 180. / np.pi
         upang = np.arctan2( dupra, dupdec ) * 180 / np.pi
-        
+
         # Have to deal with the edge case where they are around ±180.
         if ( ( ( leftang > 0 ) != ( upang > 0 ) )
              and
