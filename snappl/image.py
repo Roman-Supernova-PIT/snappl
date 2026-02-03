@@ -2009,7 +2009,7 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         mat = self._filenamere.search( self.filepath.name )
         if mat is None:
             raise ValueError( f"Failed to parse {self.filepath.name} for pointing" )
-        self._observation_id = int( mat.group( 'pointing' ) )
+        self._observation_id = mat.group( 'pointing' )
 
     def _get_sca( self ):
         header = self.get_fits_header()

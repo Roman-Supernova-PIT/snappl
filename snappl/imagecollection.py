@@ -345,11 +345,11 @@ class ImageCollectionOU2024:
         res = retry_post( f"{simdex}/findromanimages", json=params ).json()
 
         images = []
-        for i in range( len(res['observation_id']) ):
-            path = self.get_image_path( res['observation_id'][i], res['filter'][i], res['sca'][i] )
+        for i in range( len(res['pointing']) ):
+            path = self.get_image_path( res['pointing'][i], res['filter'][i], res['sca'][i] )
             image = OpenUniverse2024FITSImage(path,
                                               band=res['filter'][i],
-                                              observation_id=res['observation_id'][i],
+                                              observation_id=str( res['pointing'][i] ),
                                               sca=res["sca"][i],
                                               mjd=res['mjd'][i],
                                               format=-1 )
