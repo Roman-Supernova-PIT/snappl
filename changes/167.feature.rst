@@ -1,0 +1,4 @@
+Add the ability to import Roman Datamodel images into the l2images table
+in the database.  Rename pointing → observation_id in the l2images table
+and everywhere that uses it to fit with what we'll be getting in
+metadata from Roman.
