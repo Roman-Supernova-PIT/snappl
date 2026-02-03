@@ -73,7 +73,7 @@ def _parse_rdm_file( sourcepath=None, dest_base_path=None, dest_subdir=None, lin
         else:
             writepath.parent.mkdir( exist_ok=True, parents=True )
             if link:
-                linkdest = sourcepath.relative_to( writepath, walk_up=True )
+                linkdest = sourcepath.relative_to( writepath.parent, walk_up=True )
                 os.symlink( linkdest, writepath )
             else:
                 shutil.copy2( sourcepath, writepath )
@@ -146,7 +146,8 @@ class RDM_L2image_loader:
                                                provid=self.provid,
                                                dest_base_path=self.dest_path,
                                                dest_subdir=self.dest_subdir,
-                                               link=self.symlink )
+                                               link=self.symlink,
+                                               really_do=self.really_do )
 
         with snappl.db.db.DBCon( dbcon ) as self.dbcon:
             if nprocs > 1:
