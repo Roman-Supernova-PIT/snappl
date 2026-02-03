@@ -64,9 +64,7 @@ class Image( PathedObject ):
              HERE FOR BACKWARDS COMPATIBILITY ONLY
     * name : str; synonym for filename.  HERE FOR BACKWARDS COMPATIBILITY ONLY.
 
-    * pointing : int (str?); a unique identifier of the exposure associated with the image
-    *            WARNING, this property name will probably change once we fighre out the
-    *            right thing from the roman datamodel we want to use
+    * observation_id : str; a unique identifier of the exposure associated with the image
     * sca : int (str?); the SCA of this image
     * ra: float; the nominal RA at the center of the image in decimal degrees, usu. from the header
     * dec: float; the nominal RA at the center of the image in decimal degrees, usu. from the header
@@ -122,10 +120,10 @@ class Image( PathedObject ):
     #  file so all the classes will be defined by the time we get there.)
 
 
-    def __init__( self, path=None, filepath=None, base_path=None, base_dir=None,
-                  full_filepath=None, no_base_path=False,
+    def __init__( self, full_filepath=None, filepath=None, base_path=None, base_dir=None,
+                  path=None, no_base_path=False,
                   id=None, provenance_id=None, width=None, height=None,
-                  pointing=None, sca=None, ra=None, dec=None,
+                  observation_id=None, sca=None, ra=None, dec=None,
                   ra_corner_00=None, ra_corner_01=None, ra_corner_10=None, ra_corner_11=None,
                   dec_corner_00=None, dec_corner_01=None, dec_corner_10=None, dec_corner_11=None,
                   band=None, mjd=None, position_angle=None, exptime=None, sky_level=None, zeropoint=None,
@@ -193,7 +191,7 @@ class Image( PathedObject ):
           format : int, default -1
             Index into the table Image._format_def at the bottom of this file.
 
-          pointing : int (str?), default None (WARNING: this parameter keyword will change)
+          observation_id : str
           sca: int, default None
           ra: float, default None
           dec: float, default None
@@ -219,6 +217,7 @@ class Image( PathedObject ):
                 #   working.  If somebody uses both, then they're just wrong,
                 #   so tell them to use the new thing.
                 raise ValueError( "Do not use path, only use full_filepath." )
+            SNLogger.warning( "path argument to Image construtors is deprecated; use full_filepath" )
             full_filepath = path
 
         # This has to be set before superclass init because the
@@ -230,8 +229,8 @@ class Image( PathedObject ):
                           full_filepath=full_filepath, no_base_path=no_base_path )
 
         self._declare_consumed_kwargs( { 'path', 'filepath', 'base_path', 'base_dir',
-                                         'full_filepath', 'no_base_path',
-                                         'id', 'provenance_id', 'width', 'height', 'pointing', 'sca', 'ra', 'dec',
+                                         'full_filepath', 'no_base_path', 'id', 'provenance_id',
+                                         'width', 'height', 'observation_id', 'sca', 'ra', 'dec',
                                          'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                          'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                                          'band', 'mjd', 'position_nagle', 'exptime', 'sky_level', 'zeropoint' } )
@@ -241,7 +240,7 @@ class Image( PathedObject ):
         self._provenance_id = asUUID( provenance_id ) if provenance_id is not None else None
         self._width = width
         self._height = height
-        self._pointing = pointing
+        self._observation_id = observation_id
         self._sca = sca
         self._ra = ra
         self._dec = dec
@@ -409,15 +408,15 @@ class Image( PathedObject ):
         return self._height
 
     @property
-    def pointing( self ):
-        """Str or int or something; the exposure/pointing/visit/SOMETHING for the image"""
-        if self._pointing is None:
-            self._get_pointing()
-        return self._pointing
+    def observation_id( self ):
+        """Str; unique identifier of one exposure combining all SCAs."""
+        if self._observation_id is None:
+            self._get_observation_id()
+        return self._observation_id
 
-    @pointing.setter
-    def pointing( self, val ):
-        self._pointing = val
+    @observation_id.setter
+    def observation_id( self, val ):
+        self._observation_id = val
 
     @property
     def sca( self ):
@@ -617,8 +616,8 @@ class Image( PathedObject ):
     def _get_image_shape( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_image_shape" )
 
-    def _get_pointing( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_pointing" )
+    def _get_observation_id( self ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_observation_id" )
 
     def _get_sca( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_sca" )
@@ -651,31 +650,31 @@ class Image( PathedObject ):
         ny, nx = self.image_shape
         midra, middec = wcs.pixel_to_world( nx/2., ny/2. )
         cosdec = np.cos( middec * np.pi / 180. )
-        rightra, rightdec = wcs.pixel_to_world( nx/2.+1, ny/2. )
-        drightra = ( rightra - midra ) * cosdec
-        drightdec = rightdec - middec
+        leftra, leftdec = wcs.pixel_to_world( nx/2.-1, ny/2. )
+        dleftra = ( leftra - midra ) * cosdec
+        dleftdec = leftdec - middec
         upra, updec = wcs.pixel_to_world( nx/2., ny/2.+1 )
         dupra = ( upra - midra ) * cosdec
         dupdec = updec - middec
-        rightang = np.arctan2( -drightdec, drightra ) * 180. / np.pi
+        leftang = np.arctan2( -dleftdec, dleftra ) * 180. / np.pi
         upang = np.arctan2( dupra, dupdec ) * 180 / np.pi
-
+        
         # Have to deal with the edge case where they are around ±180.
-        if ( ( ( rightang > 0 ) != ( upang > 0 ) )
+        if ( ( ( leftang > 0 ) != ( upang > 0 ) )
              and
-             ( np.fabs( np.fabs(rightang) - 180. ) <= self._close_enough_position_angle )
+             ( np.fabs( np.fabs(leftang) - 180. ) <= self._close_enough_position_angle )
              and
              ( np.fabs( np.fabs(upang) - 180. ) <= self._close_enough_position_angle )
             ):
-            if rightang < 0:
-                rightang += 360.
+            if leftang < 0:
+                leftang += 360.
             if upang < 0:
                 upang += 360.
 
-        if np.abs( rightang - upang ) > self._close_enough_position_angle:
-            raise ValueError( f"Calculated position angle of {rightang:.2f}° looking to the right "
+        if np.abs( leftang - upang ) > self._close_enough_position_angle:
+            raise ValueError( f"Calculated position angle of {leftang:.2f}° looking to the left "
                               f"and {upang:.2f}° looking up; these are inconsistent!" )
-        self._position_angle = ( rightang + upang ) / 2.
+        self._position_angle = ( leftang + upang ) / 2.
 
         # Leftover from dealing with the RA~±180 edge case
         if self._position_angle > 180.:
@@ -1101,7 +1100,7 @@ class Image( PathedObject ):
             By default, the returned images are not sorted in any
             particular way.  Put a keyword here to sort by that value
             (or by those values).  Options include 'id',
-            'provenance_id', 'pointing', 'sca', 'ra', 'dec', 'filepath',
+            'provenance_id', 'observation_id', 'sca', 'ra', 'dec', 'filepath',
             'width', 'height', 'mjd', 'exptime'.  Not all of these are
             necessarily useful, and some of them may be null for many
             objects in the database.
@@ -1574,8 +1573,8 @@ class FITSImage( Numpy2DImage ):
 
         # TODO : fix _ra* and _dec* fields, they're all WRONG
 
-        for prop in [ '_pointing', '_sca', '_band', '_mjd', '_position_angle', '_exptime', '_sky_level', '_zeropoint',
-                      '_ra', '_dec',
+        for prop in [ '_observation_id', '_sca', '_band', '_mjd', '_position_angle', '_exptime',
+                      '_sky_level', '_zeropoint', '_ra', '_dec',
                       '_ra_corner_00', '_ra_corner_01', '_ra_corner_10', '_ra_corner_11',
                       '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
             setattr( snappl_cutout, prop, getattr( self, prop ) )
@@ -1686,7 +1685,7 @@ class FITSImageStdHeaders( FITSImage ):
     """
     def __init__( self, *args,
                   header_kws = {
-                      'pointing': "POINTING",
+                      'observation_id': "POINTING",
                       'sca': "SCA",
                       'ra': "RA",
                       'dec': "DEC",
@@ -1720,21 +1719,21 @@ class FITSImageStdHeaders( FITSImage ):
     #   the property or the setter, you have to override both, you
     #   can't take the parent class implementation for just one.
 
-    def _get_pointing( self ):
+    def _get_observation_id( self ):
         hdr = self.get_fits_header()
-        self._pointing = hdr[ self._header_kws['pointing'] ]
+        self._observation_id = hdr[ self._header_kws['observation_id'] ]
 
     @property
-    def pointing( self ):
-        if self._pointing is None:
-            self._get_pointing()
-        return self._pointing
+    def observation_id( self ):
+        if self._observation_id is None:
+            self._get_observation_id()
+        return self._observation_id
 
-    @pointing.setter
-    def pointing( self, val ):
-        self._pointing = val
+    @observation_id.setter
+    def observation_id( self, val ):
+        self._observation_id = val
         hdr = self.get_fits_header()
-        hdr[ self._header_kws['pointing'] ] = self._pointing
+        hdr[ self._header_kws['observation_id'] ] = self._observation_id
 
     def _get_sca( self ):
         hdr = self.get_fits_header()
@@ -1984,8 +1983,8 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
     def truthpath( self ):
         """Path to truth catalog.  WARNING: this is OpenUniverse2024FITSImage-specific, use with care."""
         tds_base = pathlib.Path( Config.get().value( 'system.ou24.tds_base' ) )
-        return ( tds_base / f'truth/{self.band}/{self.pointing}/'
-                 f'Roman_TDS_index_{self.band}_{self.pointing}_{self.sca}.txt' )
+        return ( tds_base / f'truth/{self.band}/{self.observation_id}/'
+                 f'Roman_TDS_index_{self.band}_{self.observation_id}_{self.sca}.txt' )
 
 
     def _get_image_shape( self ):
@@ -1993,13 +1992,13 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         self._width = int( header['NAXIS1'] )
         self._height = int( header['NAXIS2'] )
 
-    def _get_pointing( self ):
+    def _get_observation_id( self ):
         # Irritatingly, the pointing is not in the header.  So, we have to
         #   parse the filename to get the pointing.
         mat = self._filenamere.search( self.filepath.name )
         if mat is None:
             raise ValueError( f"Failed to parse {self.filepath.name} for pointing" )
-        self._pointing = int( mat.group( 'pointing' ) )
+        self._observation_id = int( mat.group( 'pointing' ) )
 
     def _get_sca( self ):
         header = self.get_fits_header()
@@ -2110,8 +2109,13 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
 # An image read from a roman datamodel ASDF file
 #
 # Empirically:
-#   self._dm.err**2 == self._dm.var_poisson + self._dm.var_rnoise + self.dm.var_flat
-
+#   self._dm.err**2 == self._dm.var_poisson + self._dm.var_rnoise
+#
+# Potentially useful links:
+#   https://roman-docs.stsci.edu/data-handbook/wfi-data-levels-and-products#DataLevelsandProducts-Level2
+#   https://github.com/spacetelescope/rad
+#   https://github.com/spacetelescope/rad/blob/main/src/rad/resources/schemas/exposure-1.3.0.yaml
+#     (check that the version is current on this one!)
 class RomanDatamodelImage( Image ):
     """An image read from a roman datamodel ASDF file.
 
@@ -2128,23 +2132,78 @@ class RomanDatamodelImage( Image ):
 
     # TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !
 
+    def _get_image_shape( self ):
+        # TODO : this must be in the header / meta information somewhere
+        self._height, self._width = self.data.shape
+
+    def _get_observation_id( self ):
+        self._observation_id = self.dm.meta.observation.observation_id
+
     def _get_sca( self ):
         match = self._detectormatch.search( self.dm.meta.instrument.detector )
         if match is None:
-            raise ValueError( f'Failed to parse self._dm.meta.instrument.detector= '
+            raise ValueError( f'Failed to parse self._dm.meta.instrument.detector='
                               f'"{self._dm.meta.instrument.detector} for "WFInn"' )
         self._sca = int( match.group(1) )
 
 
-    def _get_image_shape( self ):
-        # TODO : this must be in the header / meta information somewhere
-        self._height, self._width = self.data.shape
+    def _get_ra_dec( self ):
+        # TODO : see if there's something in the header that would work
+        ny, nx = self.image_shape
+        wcs = self.get_wcs()
+        self._ra, self._dec = wcs.pixel_to_world( nx / 2., ny / 2. )
+
+    def _get_corners( self ):
+        ny, nx = self.image_shape
+        wcs = self.get_wcs()
+        self._ra_corner_00, self._dec_corner_00 = wcs.pixel_to_world( 0, 0 )
+        self._ra_corner_01, self._dec_corner_01 = wcs.pixel_to_world( 0, ny-1 )
+        self._ra_corner_10, self._dec_corner_10 = wcs.pixel_to_world( nx-1, 0 )
+        self._ra_corner_11, self._dec_corner_11 = wcs.pixel_to_world( nx-1, ny-1 )
 
     def _get_band( self ):
         self._band = self.dm.meta.instrument.optical_element
 
     def _get_mjd( self ):
-        self._mjd = self.dm.meta.exposure.mid_time.mjd
+        self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
+
+    def _get_exptime( self ):
+        self._exptime = self.dm.meta.exposure.exposure_time
+
+    # def _get_sky_level(self):
+    #    ...dunno what to do here
+
+    def _get_zeropoint( self ):
+        # photometry.conversion_megajanskys gives MJy per steradian that
+        #   gives an instrumental count rate of 1 dn/second.  I'm
+        #   assuming that's 1 dn/second per pixel, as it's not clear
+        #   what this would mean otherwise.  (I guess it could be 1
+        #   dn/s/sr?  But then why bother talking about surface
+        #   brightness, of the sr is on both sides?)
+        #
+        # photometry.pixel_area is the area of one pixel in ... well,
+        #   it's not clear, because the comments in the schema say
+        #   "in units of steradians", but then the "unit:" field says
+        #   "uJy.arcsec**-2", so I really don't know what to make of that.
+        #   I'm going to assume it's in steradians for now
+        #
+        # What we really want is the number of Jy (not Jy/sr or
+        #   whatever) we get from a certain number of "counts in the
+        #   image", summed over all the pixels where those counts were.
+        #   (Thiking a PSF, hence surface brightness is not the right
+        #   thing to think about.)  I'm going to assume that the units
+        #   of the image are dn/sec.  If we multiply
+        #   conversion_megajanskys * pixel_area (define "cm_pa" to be
+        #   that), we should get the number of MJy that correspond to 1
+        #   dn/s regardless of what pixels they show up in.
+        #
+        # f_Jy = cm_ma * 1e-6 * dn_s
+        # m_ab = -2.5 * log10( f_Jy ) + 8.90
+        #      = -2.5 * log10( cm_ma * 1e-6 * dn_s ) + 8.90
+        #      = -2.5*log10( dn_s ) -2.5*log10( cm_ma ) + 15 + 8.90
+
+        self._zeropoint = 23.9 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
+                                                 self.dm.meta.photometry.pixel_area )
 
     @property
     def data( self ):

@@ -28,8 +28,8 @@ def test_ou2024_find_images( loaded_ou2024_test_l2images, dbclient ):
     assert len(images) == 1
     assert images[0].id == allimages[0].id
 
-    # Test searching by pointing
-    images = imcol.find_images( pointing=allimages[0].pointing, dbclient=dbclient )
+    # Test searching by observation_id
+    images = imcol.find_images( observation_id=allimages[0].observation_id, dbclient=dbclient )
     assert len(images) == 1
     assert images[0].id == allimages[0].id
 
@@ -38,18 +38,19 @@ def test_ou2024_find_images( loaded_ou2024_test_l2images, dbclient ):
     assert len(images) == 3
     assert set( i.id for i in images ) == set( i.id for i in allimages if i.sca==15 )
 
-    # Test searching by pointing and SCA
-    images = imcol.find_images( sca=allimages[0].sca, pointing=allimages[0].pointing, dbclient=dbclient )
+    # Test searching by observation_id and SCA
+    images = imcol.find_images( sca=allimages[0].sca, observation_id=allimages[0].observation_id, dbclient=dbclient )
     assert len(images) == 1
     assert images[0].id == allimages[0].id
 
-    # Test searching by pointing, SCA, and band
-    images = imcol.find_images( sca=allimages[0].sca, pointing=allimages[0].pointing, band=allimages[0].band,
+    # Test searching by observation_id, SCA, and band
+    images = imcol.find_images( sca=allimages[0].sca, observation_id=allimages[0].observation_id, band=allimages[0].band,
                                 dbclient=dbclient )
     assert len(images) == 1
     assert images[0].id == allimages[0].id
 
-    images = imcol.find_images( sca=allimages[0].sca, pointing=allimages[0].pointing, band='FOO', dbclient=dbclient )
+    images = imcol.find_images( sca=allimages[0].sca, observation_id=allimages[0].observation_id, band='FOO',
+                                dbclient=dbclient )
     assert len(images) == 0
 
     # Find all images that diaobject 20172782... which should be all of them
@@ -81,7 +82,7 @@ def test_ou2024_get_image( loaded_ou2024_test_l2images, dbclient ):
     img = imcol.get_image( path=allimages[0].filepath, dbclient=dbclient )
     assert img.id == allimages[0].id
 
-    img = imcol.get_image( pointing=allimages[0].pointing, sca=allimages[0].sca, band=allimages[0].band,
+    img = imcol.get_image( observation_id=allimages[0].observation_id, sca=allimages[0].sca, band=allimages[0].band,
                            dbclient=dbclient )
     assert img.id == allimages[0].id
 

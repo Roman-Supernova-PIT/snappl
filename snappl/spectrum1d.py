@@ -572,7 +572,7 @@ class Spectrum1d( PathedObject ):
             By default, the returned images are not sorted in any
             particular way.  Put a keyword here to sort by that value
             (or by those values).  Options include 'id',
-            'provenance_id', 'pointing', 'sca', 'ra', 'dec', 'filepath',
+            'provenance_id', 'observation_id', 'sca', 'ra', 'dec', 'filepath',
             'width', 'height', 'mjd', 'exptime'.  Not all of these are
             necessarily useful, and some of them may be null for many
             objects in the database.

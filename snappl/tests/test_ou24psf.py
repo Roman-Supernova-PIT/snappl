@@ -18,10 +18,10 @@ def test_slow_normalization():
     # seeds.
     bigsize = 201
     smallsize = 41
-    bigpsfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", pointing=6, sca=17, size=bigsize )
+    bigpsfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", observation_id='6', sca=17, size=bigsize )
     bigstamp = bigpsfobj.get_stamp( seed=42 )
     assert bigstamp.shape == ( 201, 201 )
-    smallpsfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", pointing=6, sca=17, size=smallsize )
+    smallpsfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", observation_id='6', sca=17, size=smallsize )
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
@@ -45,10 +45,10 @@ def test_slow_normalization_nophotshoot():
     # seeds.
     bigsize = 201
     smallsize = 41
-    bigpsfobj = PSF.get_psf_object("ou24PSF_slow", pointing=6, sca=17, size=bigsize)
+    bigpsfobj = PSF.get_psf_object("ou24PSF_slow", observation_id='6', sca=17, size=bigsize)
     bigstamp = bigpsfobj.get_stamp(seed=42)
     assert bigstamp.shape == (201, 201)
-    smallpsfobj = PSF.get_psf_object("ou24PSF_slow", pointing=6, sca=17, size=smallsize)
+    smallpsfobj = PSF.get_psf_object("ou24PSF_slow", observation_id='6', sca=17, size=smallsize)
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
@@ -64,7 +64,7 @@ def test_slow_normalization_nophotshoot():
 
 
 def test_slow_get_stamp():
-    psfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", pointing=6, sca=17, size=41. )
+    psfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", observation_id='6', sca=17, size=41. )
     assert isinstance( psfobj, snappl.psf.ou24PSF_slow_photonshoot )
 
     # It's slow getting galsim PSFs with photon ops, so we're not going to
@@ -126,7 +126,7 @@ def test_slow_get_stamp():
 
 
 def test_slow_get_imagepsf():
-    psfobj = PSF.get_psf_object( "ou24PSF", pointing=6, sca=17, size=41. )
+    psfobj = PSF.get_psf_object( "ou24PSF", observation_id='6', sca=17, size=41. )
 
     imagepsf = psfobj.getImagePSF( imagesampled=False )
     assert isinstance( imagepsf, ImagePSF )
@@ -142,7 +142,7 @@ def test_slow_get_imagepsf():
 # Continue this when ou24psf is more than a wrapper around ou24PSF_slow
 # def test_get_stamp():
 #     # Use the defaults, which will be an internal image of size 201 and a stamp size of 41
-#     psfobj = PSF.get_psf_object( "ou24PSF", pointing=6, sca=17, oversample_factor=11,  oversampled_size=451 )
+#     psfobj = PSF.get_psf_object( "ou24PSF", observation_id='6', sca=17, oversample_factor=11,  oversampled_size=451 )
 #     assert isinstance( psfobj, snappl.psf.ou24PSF )
 #
 #     # Try a basic centered PSDF
@@ -155,7 +155,7 @@ def test_check_phot_off():
     # Check and make sure that photon ops are actually off, when passing
     #  include_photonOps=False, they weren't previously. If they are off, the
     # sum of the image should always equal what it is in the test below.
-    psfobj = PSF.get_psf_object( "ou24PSF_slow", pointing=6, sca=17, size=41.,
+    psfobj = PSF.get_psf_object( "ou24PSF_slow", observation_id='6', sca=17, size=41.,
                                  include_photonOps=False )
     stamp = psfobj.get_stamp( 2048., 2048., x0=2050, y0=2040)
     regression_val = 0.9827711582183838
@@ -171,10 +171,10 @@ def test_normalization():
     # seeds.
     bigsize = 201
     smallsize = 41
-    bigpsfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=bigsize)
+    bigpsfobj = PSF.get_psf_object("ou24PSF_photonshoot", observation_id='6', sca=17, size=bigsize)
     bigstamp = bigpsfobj.get_stamp(seed=42)
     assert bigstamp.shape == (201, 201)
-    smallpsfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=smallsize)
+    smallpsfobj = PSF.get_psf_object("ou24PSF_photonshoot", observation_id='6', sca=17, size=smallsize)
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
@@ -192,7 +192,7 @@ def test_get_stamp():
     # Note that in this test I have to re-call get_psf_object each time I want to make a stamp,
     # because the fast version of ou24PSF is not designed to allow x0 or y0 to change.
 
-    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", observation_id='6', sca=17, size=41.0)
 
     # It's slow getting galsim PSFs with photon ops, so we're not going to
     #   do as exhaustive of tets as we do for OversampledImagePSF.  Use
@@ -216,7 +216,7 @@ def test_get_stamp():
     #   doesn't come out quite precise when the thing is offset
     #   this much.
 
-    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", observation_id='6', sca=17, size=41.0)
     stamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
@@ -247,7 +247,7 @@ def test_get_stamp():
     # Try a PSF centered between two pixels.  Because of how we
     #   define 0.5 behavior in PSF.get_stamp, this should be
     #   centered to the *left* of the center of the image.
-    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", observation_id='6', sca=17, size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.0, seed=42)
     assert stamp.shape == (41, 41)
     assert stamp.sum() == pytest.approx(0.986, abs=0.001)
@@ -261,7 +261,7 @@ def test_get_stamp():
     # The PSF center should be at -1.5, +2.5 pixels
     # relative to the stamp center... but then
     # offset because of the asymmetry of the roman PSF.
-    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", pointing=6, sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("ou24PSF_photonshoot", observation_id='6', sca=17, size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.5, x0=2050, y0=2046, seed=42)
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
@@ -270,7 +270,7 @@ def test_get_stamp():
 
 
 def test_get_imagepsf():
-    psfobj = PSF.get_psf_object( "ou24PSF", pointing=6, sca=17, size=41. )
+    psfobj = PSF.get_psf_object( "ou24PSF", observation_id='6', sca=17, size=41. )
 
     imagepsf = psfobj.getImagePSF( imagesampled=False )
     assert isinstance( imagepsf, ImagePSF )
@@ -286,23 +286,23 @@ def test_get_imagepsf():
 def test_set_wcs():
     # For some testing and simulation cases, we want to be able to set the WCS of the PSF manually.
     # This is a test that this works.
-    psfobj_1 = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0)
+    psfobj_1 = PSF.get_psf_object("ou24PSF", observation_id='6', sca=17, size=41.0)
     assert isinstance(psfobj_1, snappl.psf.ou24PSF)
 
-    psfobj_2 = PSF.get_psf_object("ou24PSF", pointing=5934, sca=3, size=41.0)
+    psfobj_2 = PSF.get_psf_object("ou24PSF", observation_id='5934', sca=3, size=41.0)
     assert isinstance(psfobj_2, snappl.psf.ou24PSF)
 
     psfobj_1.get_stamp( seed=42 )
     psfobj_2.get_stamp( seed=42 )
 
-    assert psfobj_1._wcs != psfobj_2._wcs, "The initial WCS should be different for different PSF objects with" + \
-    "different pointing/sca."
+    assert psfobj_1._wcs != psfobj_2._wcs, ( "The initial WCS should be different for different PSF objects with " 
+                                             "different objservation_id/sca." )
 
     img_collection = ImageCollection()
     img_collection = img_collection.get_collection("ou2024")
-    dummy_image = img_collection.get_image(pointing=5934, sca=3, band="Y106")
-    psfobj_1 = PSF.get_psf_object("ou24PSF", pointing=6, sca=17, size=41.0, image=dummy_image)
-    psfobj_2 = PSF.get_psf_object("ou24PSF", pointing=5934, sca=3, size=41.0 )
+    dummy_image = img_collection.get_image(observation_id='5934', sca=3, band="Y106")
+    psfobj_1 = PSF.get_psf_object("ou24PSF", observation_id='6', sca=17, size=41.0, image=dummy_image)
+    psfobj_2 = PSF.get_psf_object("ou24PSF", observation_id='5934', sca=3, size=41.0 )
 
     psfobj_1.get_stamp( seed=42 )
     psfobj_2.get_stamp( seed=42 )

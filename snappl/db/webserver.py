@@ -462,7 +462,7 @@ class GetL2Image( BaseView ):
 
 class FindL2Images( BaseView ):
     def do_the_things( self ):
-        equalses = { 'id', 'pointing', 'sca', 'band', 'filepath', 'format' }
+        equalses = { 'id', 'observation_id', 'sca', 'band', 'filepath', 'format' }
         minmaxes = { 'ra', 'dec', 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                      'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                      'width', 'height', 'mjd', 'exptime', 'position_angle' }
