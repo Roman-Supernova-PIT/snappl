@@ -645,7 +645,7 @@ class Image( PathedObject ):
 
 
     def _get_position_angle( self ):
-        """Position angle in degrees north of east (CHECK THIS)"""
+        """Position angle in degrees north of east"""
         wcs = self.get_wcs()
         ny, nx = self.image_shape
         midra, middec = wcs.pixel_to_world( nx/2., ny/2. )
@@ -656,8 +656,19 @@ class Image( PathedObject ):
         upra, updec = wcs.pixel_to_world( nx/2., ny/2.+1 )
         dupra = ( upra - midra ) * cosdec
         dupdec = updec - middec
-        leftang = np.arctan2( -dleftdec, dleftra ) * 180. / np.pi
-        upang = np.arctan2( dupra, dupdec ) * 180 / np.pi
+
+        # Need to figure out if there's a mirroring.  If there is no
+        # mirroring, then the cross product of up and left will have a
+        # positive z component.... though we need to do a left-handed
+        # cross product because RA/Dec is a left-handed coordinate system!
+        # (Increasing RA is to the left, increasing Dec is up.)
+        cross_z = - ( dupra * dleftdec - dupdec * dleftra )
+        if cross_z > 0:
+            leftang = np.arctan2( dleftdec, dleftra ) * 180. / np.pi
+            upang = np.arctan2( -dupra, dupdec ) * 180 / np.pi
+        else:
+            leftang = np.arctan2( dleftdec, -dleftra ) * 180. / np.pi
+            upang = np.arctan2( dupra, dupdec ) * 180. / np.pi
 
         # Have to deal with the edge case where they are around ±180.
         if ( ( ( leftang > 0 ) != ( upang > 0 ) )
