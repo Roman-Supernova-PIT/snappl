@@ -425,7 +425,8 @@ class ImageCollectionDB:
     image_class_to_format = { 'ou2024': 2,
                               'ou2024_nativelocation': 2,
                               'ou2024_stdlocation': 1,
-                              'ou2024nov2025': 1
+                              'ou2024nov2025': 1,
+                              'roman_datamodel': 100
                               }
 
     def __init__( self, provenance=None, base_path=None ):
