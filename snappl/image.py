@@ -2219,14 +2219,14 @@ class RomanDatamodelImage( Image ):
         #   Define m_ab to be the AB magnitude.  Define cm_ma as above:
         #   conversion_megajanskys * pixel_area
         #
-        # f_Jy = cm_ma * 1e-6 * dn_s
+        # f_Jy = cm_ma * 1e6 * dn_s         [1e6 is to get cm_ma in units of Jy/(dn/s)]
         # m_ab = -2.5*log10( f_Jy ) + 8.90  [This is just the standard definition of AB magnitude]
-        #      = -2.5*log10( cm_ma * 1e-6 * dn_s ) + 8.90
-        #      = -2.5*log10( dn_s ) -2.5*log10( cm_ma ) + 15 + 8.90
+        #      = -2.5*log10( cm_ma * 1e6 * dn_s ) + 8.90
+        #      = -2.5*log10( dn_s ) -2.5*log10( cm_ma ) - 15 + 8.90
         # m_ab = -2.5*log10( dn_s ) + zp    [This is the definition of zp]
-        # zp = -2.5*log10( cm_ma ) + 23.9
+        # zp = -2.5*log10( cm_ma ) - 6.1
 
-        self._zeropoint = 23.9 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
+        self._zeropoint = -6.1 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
                                                  self.dm.meta.photometry.pixel_area )
 
     @property
