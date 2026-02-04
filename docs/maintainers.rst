@@ -2,6 +2,9 @@
 Environment and Database Maintainer's Guide
 ###########################################
 
+.. contents::
+   :depth: 3
+
 Installing a new database on NERSC Spin
 =======================================
 
@@ -20,7 +23,7 @@ Then, select the right account with::
 
   rancher context switch
 
-Find the number that corresponds to ``production`` and ``m4385``, and give it that number.  If you don't see ``m4385` on the list, then you don't yet have access to the Roman SNPIT spin area.
+Find the number that corresponds to ``production`` and ``m4385``, and give it that number.  If you don't see ``m4385`` on the list, then you don't yet have access to the Roman SNPIT spin area.
 
 See what namespaces currently exist with::
 
@@ -47,7 +50,7 @@ I will sometimes add ``-yyyymmdd`` to the end of my tag so that I can explicitly
 Pick a postgres password
 ------------------------
 
-This actually doesn't really need to be all that secure, because the postgres server is not going to be accessible from anywhere other than the small collection of virtual machines you'll be running on Spin within your namespace.  However, there's no reason not just to do it right.  Pick a good password.  Here is a python snippit that will do that::
+This actually doesn't need to be all that secure, because the postgres server is not going to be accessible from anywhere other than the small collection of virtual machines you'll be running on Spin within your namespace.  However, there's no reason not just to do it right.  Pick a good password.  Here is a python snippit that will do that::
 
   import secrets
   chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -109,7 +112,7 @@ Edit the Spin YAML files
 
 Copy all the files in the ``spin/rknop_dev`` file to a place where you can edit them.  (Please do not edit the files there.)  You will need to edit all of them.  The edits you need to make are:
 
-* **Update the namespace.**  In *every* file, replace the string `romansnpit-rknop-dev` with the :ref:`spin namespace <spin-namespace>` you're using.
+* **Update the namespace.**  In *every* file, replace the string ``romansnpit-rknop-dev`` with the :ref:`spin namespace <spin-namespace>` you're using.
 
 * **Update postgres.yaml** : Make the following edits:
 
@@ -123,7 +126,7 @@ Copy all the files in the ``spin/rknop_dev`` file to a place where you can edit 
   * Find the line starting with ``nersc.gov/uid`` and replace ``95089`` with your NERSC UID.  (Run ``id`` on the command line to figure out what this is.)
   * Find the line starting with ``image:`` and replace the value after the colon with the :ref:`docker image you built and pushed for the webserver<webserver-docker-image>`.
   * Uncomment the line ``command: [ 'tail', '-f', '/etc/issue' ]``
-  * Comment out (using ``#``) the lines at the bottom starting with ``- host: romansnpit-rknop-dev-webap.lbl.gov`` all the way to the bottom of the file, but leaving the last ``---`` line uncommented.  (You will need to uncomment these again later after you've done further steps.)
+  * Comment out (using ``#``) the lines at the bottom starting with ``- host: romansnpit-rknop-dev.lbl.gov`` all the way to the bottom of the file, but leaving the last ``---`` line uncommented.  (You will need to uncomment these again later after you've done further steps.)
 
 * **Update secrets.yaml** : This one is a bit more involved.
 
@@ -191,7 +194,7 @@ Next, migrate the database.  Get a shell on the webserver machine (which current
 
 where ``<podname>`` is the name of the pod for the webserver with ``get pods`` above.  It will start with ``webserver``, but it will end with some (seemingly) random characters.
 
-Once you have a shell on the webserver, run ``python`` and, then, interactively to python::
+Once you have a shell on the webserver, run ``python`` and, then, interactively in python::
 
   >> from snappl.db.migrations.apply_migrations import apply_migrations
   >> apply_migrations()
@@ -201,13 +204,11 @@ If all is well, it will tell you it applied a bunch of ``.sql`` files and give y
 Get a DNS name for the webserver
 --------------------------------
 
-This is potentially complicated.  Your webserver does actually already have a DNS name which was created by Spin.  To find the default Spin DNS name, look at the file ``webserver.yaml`` you created.  Find the line ``kind: Ingress``, and find the first line starting with ``- host:` below that.  The hostname on that line is the Spin DNS name.  It will be::
+This is potentially complicated.  Your webserver does actually already have a DNS name which was created by Spin.  To find the default Spin DNS name, look at the file ``webserver.yaml`` you created.  Find the line ``kind: Ingress``, and find the first line starting with ``- host:`` below that.  The hostname on that line is the Spin DNS name.  It will be::
 
   webserver.<namespace>.production.svc.spin.nersc.org
 
-You can just use this as the database webserver, but it will *not* have a valid SSL certificate, which will cause problems with the spin dbclient.  (You can work around those problems, but it's better to do things right.)
-
-However, you'll be happier with a more concise DNS name.  E.g., I use ``romansnpit-rknop-dev.lbl.gov`` for my dev instance.  If you're at LBL, you can use https://iprequest.lbl.gov/ and ask for a CNAME that points to the Spin default DNS name.  If you aren't... you have to figure something out.
+You can just use this as the database webserver, but it will *not* have a valid SSL certificate, which will cause problems with the spin dbclient.  (You can work around those problems, but it's better to do things right.)  E.g., I use ``romansnpit-rknop-dev.lbl.gov`` for my dev instance.  If you're at LBL, you can use https://iprequest.lbl.gov/ and ask for a CNAME that points to the Spin default DNS name.  If you aren't... you have to figure something out.
 
 Get a Certificate for your DNS name
 -----------------------------------
@@ -231,7 +232,7 @@ Edit the file ``cert.yaml``:
 
 * Find the line starting ``tls.crt:``.  Replace ``PUT THE RIGHT THING HERE`` with the contents of ``cert.barf``.
 
-* Find the line starting ``tls.key:``.  Replace ``PUT THE RIGHT THING HERE`` with the contents of ``cert.barf``.
+* Find the line starting ``tls.key:``.  Replace ``PUT THE RIGHT THING HERE`` with the contents of ``priv.barf``.
 
 
 Update the webserver to actually run the webserver
