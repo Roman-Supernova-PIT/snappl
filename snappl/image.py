@@ -2190,7 +2190,7 @@ class RomanDatamodelImage( Image ):
         #   assuming that's 1 dn/second per pixel, as it's not clear
         #   what this would mean otherwise.  (I guess it could be 1
         #   dn/s/sr?  But then why bother talking about surface
-        #   brightness, of the sr is on both sides?)
+        #   brightness, if the sr is on both sides?)
         #
         # Next, I'm assuming that the pixel values in L2 images are
         #   in units of dn/s (*not* dn).
@@ -2211,10 +2211,20 @@ class RomanDatamodelImage( Image ):
         #   total count rate summed over all the pixels that light from
         #   the object fell into of 1 dn/s
         #
+        # Below, define dn_s to be the total dn_s (i.e. pixel values in
+        #   the image) summed over all pixels that light from the object
+        #   fell into (determined either from aperture photometry with
+        #   an infinite aperture after background subtraction, or psf
+        #   fitting).  Define f_Jy to be the flux in Jy from the star.
+        #   Define m_ab to be the AB magnitude.  Define cm_ma as above:
+        #   conversion_megajanskys * pixel_area
+        #
         # f_Jy = cm_ma * 1e-6 * dn_s
-        # m_ab = -2.5 * log10( f_Jy ) + 8.90
-        #      = -2.5 * log10( cm_ma * 1e-6 * dn_s ) + 8.90
+        # m_ab = -2.5*log10( f_Jy ) + 8.90  [This is just the standard definition of AB magnitude]
+        #      = -2.5*log10( cm_ma * 1e-6 * dn_s ) + 8.90
         #      = -2.5*log10( dn_s ) -2.5*log10( cm_ma ) + 15 + 8.90
+        # m_ab = -2.5*log10( dn_s ) + zp    [This is the definition of zp]
+        # zp = -2.5*log10( cm_ma ) + 23.9
 
         self._zeropoint = 23.9 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
                                                  self.dm.meta.photometry.pixel_area )
