@@ -2192,6 +2192,9 @@ class RomanDatamodelImage( Image ):
         #   dn/s/sr?  But then why bother talking about surface
         #   brightness, of the sr is on both sides?)
         #
+        # Next, I'm assuming that the pixel values in L2 images are
+        #   in units of dn/s (*not* dn).
+        #
         # photometry.pixel_area is the area of one pixel in ... well,
         #   it's not clear, because the comments in the schema say
         #   "in units of steradians", but then the "unit:" field says
@@ -2202,11 +2205,11 @@ class RomanDatamodelImage( Image ):
         #   whatever) we get from a certain number of "counts in the
         #   image", summed over all the pixels where those counts were.
         #   (Thiking a PSF, hence surface brightness is not the right
-        #   thing to think about.)  I'm going to assume that the units
-        #   of the image are dn/sec.  If we multiply
+        #   thing to think about.)  If we multiply
         #   conversion_megajanskys * pixel_area (define "cm_pa" to be
-        #   that), we should get the number of MJy that correspond to 1
-        #   dn/s regardless of what pixels they show up in.
+        #   that), we should get the number of MJy that correspond a
+        #   total count rate summed over all the pixels that light from
+        #   the object fell into of 1 dn/s
         #
         # f_Jy = cm_ma * 1e-6 * dn_s
         # m_ab = -2.5 * log10( f_Jy ) + 8.90
