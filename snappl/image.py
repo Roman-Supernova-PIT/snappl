@@ -856,6 +856,58 @@ class Image( PathedObject ):
         return ( x >= 0 ) and ( x < self.width ) and ( y >= 0 ) and ( y < self.height )
 
 
+    def save_to_db( self, dbclient=None ):
+        """Write this image record to the database.
+
+        USE THIS WITH CARE.  All fields must be properly set.  In
+        particular, the filepath and provenance_id must both be
+        right for the database.  Don't use this if you don't really know
+        what you're doing.
+
+        This does not actually write any files; it just writes a
+        database row.  Make sure files are where they need to be before
+        calling this.
+
+        """
+
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
+
+        props = [ 'id', 'provenance_id', 'filepath', 'width', 'height', 'observation_id', 'sca',
+                  'ra', 'dec', 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
+                  'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
+                  'band', 'mjd', 'position_angle', 'exptime' ]
+        data = { p: getattr( self, p ) for p in props if getattr( self, p ) is not None }
+        data['format'] = self._format
+        # Deal with json serialization
+        data['filepath'] = str( data['filepath'] )
+        data['id'] = str( data['id'] )
+        data['provenance_id'] = str( data['provenance_id'] )
+
+        row = dbclient.send( "/savel2image", json=data )
+
+        return row
+
+
+    @classmethod
+    def bulk_save_to_db( cls, images, dbclient=None ):
+        """Don't use this if you don't really know what you're doing."""
+
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
+
+        props = [ 'id', 'provenance_id', 'filepath', 'width', 'height', 'observation_id', 'sca',
+                  'ra', 'dec', 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
+                  'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
+                  'band', 'mjd', 'position_angle', 'exptime' ]
+        data = { p: [ getattr(i, p) for i in images ] for p in props }
+        data['format'] = [ i._format for i in images ]
+        # Deal with json serialization
+        data['filepath'] = [ str(f) for f in data['filepath'] ]
+        data['id'] = [ str(i) for i in data['id'] ]
+        data['provenance_id'] = [ str(p) for p in data['provenance_id'] ]
+
+        dbclient.send( "/bulksavel2images", json=data )
+
+
     def ap_phot( self, coords, ap_r=9, method='subpixel', subpixels=5, bgsize=511, **kwargs ):
         """Do aperture photometry on the image at the specified coordinates.
 

@@ -497,6 +497,56 @@ class FindL2Images( BaseView ):
 
 # ======================================================================
 
+class SaveL2Image( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected image info in json POST; didn't get any.", 422
+
+        needed_keys = { 'id', 'provenance_id', 'band', 'ra', 'dec',
+                        'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
+                        'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
+                        'filepath', 'format', 'mjd', 'exptime' }
+        allowed_keys = needed_keys.union( { 'observation_id', 'sca', 'extension', 'width', 'height',
+                                            'properties', 'position_angle' } )
+        data = self.check_json_keys( needed_keys, allowed_keys )
+        keysql, subs = self.build_sql_insert( data.keys() )
+        q = sql.SQL( "INSERT INTO l2image(" ) + keysql + sql.SQL( ") VALUES (" ) + sql.SQL( subs ) + sql.SQL( ")" )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            dbcon.execute( q, data )
+            row = dbcon.execute( "SELECT * FROM l2image WHERE id=%(id)s", { 'id': data['id'] } )
+            dbcon.commit()
+
+        return row
+
+
+# ======================================================================
+
+class BulkSaveL2Images( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected image info in json POST; didn't get json.", 422
+
+        needed_keys = { 'id', 'provenance_id', 'band', 'ra', 'dec',
+                        'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
+                        'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
+                        'filepath', 'format', 'mjd', 'exptime' }
+        allowed_keys = needed_keys.union( { 'observation_id', 'sca', 'extension', 'width', 'height',
+                                            'properties', 'position_angle' } )
+        data = self.check_json_keys( needed_keys, allowed_keys )
+
+        try:
+            # Passing assume_no_conflict=True here.  That's a poorly named parameter.
+            #   What we want is for it to error out if there is a conflict.
+            db.L2Image.bulk_insert_or_upsert( data, assume_no_conflict=True )
+        except Exception as ex:
+            return f"Got an exception trying to bulk insert images: {ex}", 422
+
+        return { "status": "ok" }
+
+
+# ======================================================================
+
 class SaveSegmentationMap( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
@@ -739,6 +789,8 @@ urls = {
 
     "/getl2image/<imageid>": GetL2Image,
     "/findl2images": FindL2Images,
+    "/savel2image": SaveL2Image,
+    "/bulksavel2images": BulkSaveL2Images,
 
     "/savesegmap": SaveSegmentationMap,
     "/getsegmap/<segmapid>": GetSegmentationMap,
