@@ -110,7 +110,7 @@ Stick this password in your password safe somewhere (you do use one, yes?).
 Edit the Spin YAML files
 ------------------------
 
-Copy all the files in the ``spin/rknop_dev`` file to a place where you can edit them.  (Please do not edit the files there.)  You will need to edit all of them.  The edits you need to make are:
+Copy all the files in the ``spin/rknop_dev`` directory (*except* for ``shell.yaml``) to a place where you can edit them.  (Please do not edit the files in ``spin/rknop_dev``.)  You will need to edit all of them.  The edits you need to make are:
 
 * **Update the namespace.**  In *every* file, replace the string ``romansnpit-rknop-dev`` with the :ref:`spin namespace <spin-namespace>` you're using.
 
