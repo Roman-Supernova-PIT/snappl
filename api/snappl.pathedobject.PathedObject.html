@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>PathedObject &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <script src="../_static/documentation_options.js?v=b4ef4976"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Provenance" href="snappl.provenance.Provenance.html" />
+    <link rel="prev" title="SNLogger" href="snappl.logger.SNLogger.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../environment.html">Roman SNPIT Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developers.html">snappl Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../maintainers.html">Environment and Database Maintainer’s Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">snappl API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../database_schema.html">Database Schema</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">snappl API</a><ul>
+      <li>Previous: <a href="snappl.logger.SNLogger.html" title="previous chapter">SNLogger</a></li>
+      <li>Next: <a href="snappl.provenance.Provenance.html" title="next chapter">Provenance</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.logger.SNLogger.html" title="Previous document">SNLogger</a>
+        </li>
+        <li>
+          <a href="snappl.provenance.Provenance.html" title="Next document">Provenance</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="pathedobject">
+<h1>PathedObject<a class="headerlink" href="#pathedobject" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="snappl.pathedobject.PathedObject">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.pathedobject.</span></span><span class="sig-name descname"><span class="pre">PathedObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_filepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_base_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/pathedobject.html#PathedObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.pathedobject.PathedObject" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>An object that might be stored in the database but that also has files on disk.</p>
+<p>Subclasses include Image, SegmentatonMap, Lightcurve, and Spectrum1d, and will include more in the future.</p>
+<p>Here so we can have a semi-unified interface.</p>
+<p>Standard properties of a PathedObject are:</p>
+<blockquote>
+<div><ul>
+<li><dl>
+<dt>filepath<span class="classifier">pathlib.Path</span><span class="classifier">path of the object <em>relative to</em> the base</span></dt><dd><p>path for this kind of object.  This is what
+gets stored in the database (usually in a
+column named “filepath”, though the user
+will not need to know that).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>full_filepath<span class="classifier">pathlib.Path</span><span class="classifier">the absolute path to the file on disk.</span></dt><dd><p>(But see “complications” below.)  This
+attribute is usually derived from
+base_path and filepath.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>base_path<span class="classifier">pathlib.Path</span><span class="classifier">base path for this kind of object.</span></dt><dd><p>Normally this is from the config, and is
+the base path for this kind of object.
+(For instance, for L2 images, base_path is
+the directory pointed to by config value
+“system.paths.images”).  However, for
+backwards compatibility, we want to be able
+to support objects that aren’t in the
+database, so you can set a custom
+base_path, if you need to, every time you
+create an object.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>filename : string : the name part of filepath (so if filepath is
+Path(“/foo/bar”), filename is “bar”).</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<p>Complications:</p>
+<p>This class is designed implicitly assuming that one row in the database
+corresponds to one PathedObject object, and to one file on disk.
+Sometimes that may not be true, e.g. an image might not have the image,
+noise, and flags arrays all packed into one file, but in three different
+files.  In that case, the subclass must know how to deal with this, and
+“filepath” may not be the path to an actual file, but to a path to the
+name of which you must append additional standard stuff to find the file.
+(The one extant example of this is the image.FITSImage class with
+std_imagenames set to True.)</p>
+<p>For subclass developers:</p>
+<p>Any subclass of this class must define one of two things.  Either, it must
+define a class variable _base_path_config_item that is thing to look up
+with Config.get().value(…) to figure out the default base path for
+objects of that class; or, it must define a function _set_base_path that
+sets both self._no_base_path and self._base_path.  (Practically speaking:
+they all define _base_path_config_item, except for Image, which has to do
+other gyrations for backwards compatibility.)</p>
+<p>Set up object paths.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Path of the file relative to base_path.  If no_base_path is True
+(which should <em>never</em> be the case for an object that is associated
+with the database), then this is the full path.</p></li>
+<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Only use one of these; they set the same thing.  (Both parameters
+are defined for backwards compatibility.)  Most of the time you do
+<em>not</em> want to specify this, but leave it at the default.  If
+no_base_path is True, you <em>must</em> leave these at None.  This is the
+base path for objects of the subclass of PathedObject that is
+being constructed.  By default (which is usually what you want),
+it will use a path that is configured for the type of object that
+the subclass tracks.</p></li>
+<li><p><strong>base_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Only use one of these; they set the same thing.  (Both parameters
+are defined for backwards compatibility.)  Most of the time you do
+<em>not</em> want to specify this, but leave it at the default.  If
+no_base_path is True, you <em>must</em> leave these at None.  This is the
+base path for objects of the subclass of PathedObject that is
+being constructed.  By default (which is usually what you want),
+it will use a path that is configured for the type of object that
+the subclass tracks.</p></li>
+<li><p><strong>full_filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Usually you don’t want to specify this, but there are cases where
+you can.</p></li>
+<li><p><strong>no_base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – You may want to set this to True if you are dealing with
+files that aren’t tracked by the database.  In that case,
+you can’t specify base_path (or base_dir), and filepath and
+full_filepath mean the same thing (and must be the same if
+for some reasdon you give both).</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Attributes Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.pathedobject.PathedObject.base_dir" title="snappl.pathedobject.PathedObject.base_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_dir</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.pathedobject.PathedObject.base_path" title="snappl.pathedobject.PathedObject.base_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_path</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.pathedobject.PathedObject.filename" title="snappl.pathedobject.PathedObject.filename"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filename</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.pathedobject.PathedObject.filepath" title="snappl.pathedobject.PathedObject.filepath"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filepath</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.pathedobject.PathedObject.full_filepath" title="snappl.pathedobject.PathedObject.full_filepath"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_filepath</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.pathedobject.PathedObject.generate_filepath" title="snappl.pathedobject.PathedObject.generate_filepath"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_filepath</span></code></a>()</p></td>
+<td><p>Classes that have default filepaths should override this function to set self._filepath.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.pathedobject.PathedObject.base_dir">
+<span class="sig-name descname"><span class="pre">base_dir</span></span><a class="headerlink" href="#snappl.pathedobject.PathedObject.base_dir" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.pathedobject.PathedObject.base_path">
+<span class="sig-name descname"><span class="pre">base_path</span></span><a class="headerlink" href="#snappl.pathedobject.PathedObject.base_path" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.pathedobject.PathedObject.filename">
+<span class="sig-name descname"><span class="pre">filename</span></span><a class="headerlink" href="#snappl.pathedobject.PathedObject.filename" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.pathedobject.PathedObject.filepath">
+<span class="sig-name descname"><span class="pre">filepath</span></span><a class="headerlink" href="#snappl.pathedobject.PathedObject.filepath" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="snappl.pathedobject.PathedObject.full_filepath">
+<span class="sig-name descname"><span class="pre">full_filepath</span></span><a class="headerlink" href="#snappl.pathedobject.PathedObject.full_filepath" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.pathedobject.PathedObject.generate_filepath">
+<span class="sig-name descname"><span class="pre">generate_filepath</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/pathedobject.html#PathedObject.generate_filepath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.pathedobject.PathedObject.generate_filepath" title="Link to this definition">¶</a></dt>
+<dd><p>Classes that have default filepaths should override this function to set self._filepath.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="snappl.logger.SNLogger.html" title="Previous document">SNLogger</a>
+        </li>
+        <li>
+          <a href="snappl.provenance.Provenance.html" title="Next document">Provenance</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2026, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/snappl.pathedobject.PathedObject.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -14,7 +14,7 @@ FITSImageStdHeaders
       ~FITSImageStdHeaders.dec
       ~FITSImageStdHeaders.exptime
       ~FITSImageStdHeaders.mjd
-      ~FITSImageStdHeaders.pointing
+      ~FITSImageStdHeaders.observation_id
       ~FITSImageStdHeaders.position_angle
       ~FITSImageStdHeaders.ra
       ~FITSImageStdHeaders.sca
@@ -33,7 +33,7 @@ FITSImageStdHeaders
    .. autoattribute:: dec
    .. autoattribute:: exptime
    .. autoattribute:: mjd
-   .. autoattribute:: pointing
+   .. autoattribute:: observation_id
    .. autoattribute:: position_angle
    .. autoattribute:: ra
    .. autoattribute:: sca

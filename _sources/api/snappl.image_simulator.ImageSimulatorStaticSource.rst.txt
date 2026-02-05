@@ -1,0 +1,17 @@
+ImageSimulatorStaticSource
+==========================
+
+.. currentmodule:: snappl.image_simulator
+
+.. autoclass:: ImageSimulatorStaticSource
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ImageSimulatorStaticSource.render_static_source
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: render_static_source

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>snappl.pathedobject &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../_static/documentation_options.js?v=b4ef4976"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../environment.html">Roman SNPIT Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developers.html">snappl Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../maintainers.html">Environment and Database Maintainer’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../database_schema.html">Database Schema</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for snappl.pathedobject</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+
+
+<div class="viewcode-block" id="PathedObject">
+<a class="viewcode-back" href="../../api/snappl.pathedobject.PathedObject.html#snappl.pathedobject.PathedObject">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PathedObject</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An object that might be stored in the database but that also has files on disk.</span>
+
+<span class="sd">    Subclasses include Image, SegmentatonMap, Lightcurve, and Spectrum1d, and will include more in the future.</span>
+
+<span class="sd">    Here so we can have a semi-unified interface.</span>
+
+<span class="sd">    Standard properties of a PathedObject are:</span>
+
+<span class="sd">      * filepath : pathlib.Path : path of the object *relative to* the base</span>
+<span class="sd">                                  path for this kind of object.  This is what</span>
+<span class="sd">                                  gets stored in the database (usually in a</span>
+<span class="sd">                                  column named &quot;filepath&quot;, though the user</span>
+<span class="sd">                                  will not need to know that).</span>
+
+<span class="sd">      * full_filepath : pathlib.Path : the absolute path to the file on disk.</span>
+<span class="sd">                                       (But see &quot;complications&quot; below.)  This</span>
+<span class="sd">                                       attribute is usually derived from</span>
+<span class="sd">                                       base_path and filepath.</span>
+
+<span class="sd">      * base_path : pathlib.Path : base path for this kind of object.</span>
+<span class="sd">                                   Normally this is from the config, and is</span>
+<span class="sd">                                   the base path for this kind of object.</span>
+<span class="sd">                                   (For instance, for L2 images, base_path is</span>
+<span class="sd">                                   the directory pointed to by config value</span>
+<span class="sd">                                   &quot;system.paths.images&quot;).  However, for</span>
+<span class="sd">                                   backwards compatibility, we want to be able</span>
+<span class="sd">                                   to support objects that aren&#39;t in the</span>
+<span class="sd">                                   database, so you can set a custom</span>
+<span class="sd">                                   base_path, if you need to, every time you</span>
+<span class="sd">                                   create an object.</span>
+
+<span class="sd">       * filename : string : the name part of filepath (so if filepath is</span>
+<span class="sd">         Path(&quot;/foo/bar&quot;), filename is &quot;bar&quot;).</span>
+
+<span class="sd">    Complications:</span>
+
+<span class="sd">    This class is designed implicitly assuming that one row in the database</span>
+<span class="sd">    corresponds to one PathedObject object, and to one file on disk.</span>
+<span class="sd">    Sometimes that may not be true, e.g. an image might not have the image,</span>
+<span class="sd">    noise, and flags arrays all packed into one file, but in three different</span>
+<span class="sd">    files.  In that case, the subclass must know how to deal with this, and</span>
+<span class="sd">    &quot;filepath&quot; may not be the path to an actual file, but to a path to the</span>
+<span class="sd">    name of which you must append additional standard stuff to find the file.</span>
+<span class="sd">    (The one extant example of this is the image.FITSImage class with</span>
+<span class="sd">    std_imagenames set to True.)</span>
+
+<span class="sd">    For subclass developers:</span>
+
+<span class="sd">    Any subclass of this class must define one of two things.  Either, it must</span>
+<span class="sd">    define a class variable _base_path_config_item that is thing to look up</span>
+<span class="sd">    with Config.get().value(...) to figure out the default base path for</span>
+<span class="sd">    objects of that class; or, it must define a function _set_base_path that</span>
+<span class="sd">    sets both self._no_base_path and self._base_path.  (Practically speaking:</span>
+<span class="sd">    they all define _base_path_config_item, except for Image, which has to do</span>
+<span class="sd">    other gyrations for backwards compatibility.)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">full_filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up object paths.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          filepath : str or Path, default None</span>
+<span class="sd">            Path of the file relative to base_path.  If no_base_path is True</span>
+<span class="sd">            (which should *never* be the case for an object that is associated</span>
+<span class="sd">            with the database), then this is the full path.</span>
+
+<span class="sd">          base_path, base_dir : str or Path, default None</span>
+<span class="sd">            Only use one of these; they set the same thing.  (Both parameters</span>
+<span class="sd">            are defined for backwards compatibility.)  Most of the time you do</span>
+<span class="sd">            *not* want to specify this, but leave it at the default.  If</span>
+<span class="sd">            no_base_path is True, you *must* leave these at None.  This is the</span>
+<span class="sd">            base path for objects of the subclass of PathedObject that is</span>
+<span class="sd">            being constructed.  By default (which is usually what you want),</span>
+<span class="sd">            it will use a path that is configured for the type of object that</span>
+<span class="sd">            the subclass tracks.</span>
+
+<span class="sd">          full_filepath : str or Path, default None</span>
+<span class="sd">            Usually you don&#39;t want to specify this, but there are cases where</span>
+<span class="sd">            you can.</span>
+
+<span class="sd">          no_base_path : bool, default False</span>
+<span class="sd">            You may want to set this to True if you are dealing with</span>
+<span class="sd">            files that aren&#39;t tracked by the database.  In that case,</span>
+<span class="sd">            you can&#39;t specify base_path (or base_dir), and filepath and</span>
+<span class="sd">            full_filepath mean the same thing (and must be the same if</span>
+<span class="sd">            for some reasdon you give both).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># The tortured filepath logic comes about from wanting to have paths</span>
+        <span class="c1"># controlled when things are in the database, but also wanting to have</span>
+        <span class="c1"># the ability to create objects that won&#39;t eventually be saved to the</span>
+        <span class="c1"># database, and so want to have manually specified paths.  (Plus, some</span>
+        <span class="c1"># additional fun from backwards compatibility.)</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">base_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">base_path</span> <span class="o">!=</span> <span class="n">base_dir</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Only give one of base_path or base_dir, they mean the same thing.&quot;</span> <span class="p">)</span>
+        <span class="n">base_path</span> <span class="o">=</span> <span class="n">base_path</span> <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">base_dir</span> <span class="k">if</span> <span class="n">base_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_base_path</span><span class="p">(</span> <span class="n">base_path</span><span class="p">,</span> <span class="n">no_base_path</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">filepath</span> <span class="p">)</span> <span class="k">if</span> <span class="n">filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">full_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">full_filepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">full_filepath</span> <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span> <span class="o">!=</span> <span class="n">full_filepath</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Error, no_base_path is true, filepath resolves to &quot;</span>
+                                          <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2">, and full_filepath resolves to &quot;</span>
+                                          <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">full_filepath</span><span class="si">}</span><span class="s2">; these are inconsistent.&quot;</span> <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="o">=</span> <span class="n">full_filepath</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">nominal_filepath</span> <span class="o">=</span> <span class="n">full_filepath</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;base_path is </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span><span class="si">}</span><span class="s2">, but full_filepath </span><span class="si">{</span><span class="n">full_filepath</span><span class="si">}</span><span class="s2"> &quot;</span>
+                                      <span class="sa">f</span><span class="s2">&quot;cannot be made relative to that.&quot;</span> <span class="p">)</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="o">=</span> <span class="n">nominal_filepath</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="o">!=</span> <span class="n">nominal_filepath</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Error, filepath is </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span><span class="si">}</span><span class="s2">, but given base path </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span><span class="si">}</span><span class="s2"> &quot;</span>
+                                          <span class="sa">f</span><span class="s2">&quot;and full path </span><span class="si">{</span><span class="n">full_filepath</span><span class="si">}</span><span class="s2">, this is inconsistent.&quot;</span> <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_base_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span> <span class="o">=</span> <span class="n">no_base_path</span>
+        <span class="k">if</span> <span class="n">no_base_path</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Cannot specify a base_path (or base_dir) if no_base_path is True.&quot;</span> <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">base_path</span> <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span>
+                                            <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_path_config_item</span> <span class="p">)</span>
+                                           <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filepath</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_filepath</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span>
+
+    <span class="nd">@filepath</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filepath</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+    <span class="c1"># filename deliberately has no setter</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filename</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">base_path</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span>
+
+    <span class="nd">@base_path</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">base_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> object has no_base_path=True, can&#39;t set base path&quot;</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">base_dir</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span>
+
+    <span class="nd">@base_dir</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">base_dir</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="c1"># full_filepath deliberately does not have a setter</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">full_filepath</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_base_path</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath</span>
+
+<div class="viewcode-block" id="PathedObject.generate_filepath">
+<a class="viewcode-back" href="../../api/snappl.pathedobject.PathedObject.html#snappl.pathedobject.PathedObject.generate_filepath">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_filepath</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Classes that have default filepaths should override this function to set self._filepath.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> hasn&#39;t implemented generate_filepath.&quot;</span> <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2026, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

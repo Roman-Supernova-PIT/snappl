@@ -17,14 +17,17 @@ the github package repository at https://github.com/Roman-Supernova-PIT/roman_sn
 
 .. toctree::
    :maxdepth: 1
-   :caption: Getting Started
 
+   environment.rst
    installation.rst
    usage.rst
    changes.rst
+   developers.rst
+   maintainers.rst
    api.rst
    database_schema.rst
 
+   
 
 Indices and tables
 ==================

@@ -1,0 +1,19 @@
+ImageSimulationStar
+===================
+
+.. currentmodule:: snappl.image_simulator
+
+.. autoclass:: ImageSimulationStar
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ImageSimulationStar.add_to_image
+      ~ImageSimulationStar.render_star
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: add_to_image
+   .. automethod:: render_star

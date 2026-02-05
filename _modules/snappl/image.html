@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+gb23913559 documentation</title>
+    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=5924670e"></script>
+    <script src="../../_static/documentation_options.js?v=b4ef4976"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -43,11 +43,13 @@
 
 
 <h3>Navigation</h3>
-<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../environment.html">Roman SNPIT Environment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developers.html">snappl Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../maintainers.html">Environment and Database Maintainer’s Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../database_schema.html">Database Schema</a></li>
 </ul>
@@ -155,9 +157,7 @@
 <span class="sd">             HERE FOR BACKWARDS COMPATIBILITY ONLY</span>
 <span class="sd">    * name : str; synonym for filename.  HERE FOR BACKWARDS COMPATIBILITY ONLY.</span>
 
-<span class="sd">    * pointing : int (str?); a unique identifier of the exposure associated with the image</span>
-<span class="sd">    *            WARNING, this property name will probably change once we fighre out the</span>
-<span class="sd">    *            right thing from the roman datamodel we want to use</span>
+<span class="sd">    * observation_id : str; a unique identifier of the exposure associated with the image</span>
 <span class="sd">    * sca : int (str?); the SCA of this image</span>
 <span class="sd">    * ra: float; the nominal RA at the center of the image in decimal degrees, usu. from the header</span>
 <span class="sd">    * dec: float; the nominal RA at the center of the image in decimal degrees, usu. from the header</span>
@@ -213,10 +213,10 @@
     <span class="c1">#  file so all the classes will be defined by the time we get there.)</span>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                  <span class="n">full_filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">full_filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                  <span class="n">pointing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">observation_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">ra_corner_00</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra_corner_01</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra_corner_10</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ra_corner_11</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">dec_corner_00</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec_corner_01</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec_corner_10</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dec_corner_11</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">position_angle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exptime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sky_level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zeropoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -284,7 +284,7 @@
 <span class="sd">          format : int, default -1</span>
 <span class="sd">            Index into the table Image._format_def at the bottom of this file.</span>
 
-<span class="sd">          pointing : int (str?), default None (WARNING: this parameter keyword will change)</span>
+<span class="sd">          observation_id : str</span>
 <span class="sd">          sca: int, default None</span>
 <span class="sd">          ra: float, default None</span>
 <span class="sd">          dec: float, default None</span>
@@ -310,6 +310,7 @@
                 <span class="c1">#   working.  If somebody uses both, then they&#39;re just wrong,</span>
                 <span class="c1">#   so tell them to use the new thing.</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Do not use path, only use full_filepath.&quot;</span> <span class="p">)</span>
+            <span class="n">SNLogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span> <span class="s2">&quot;path argument to Image construtors is deprecated; use full_filepath&quot;</span> <span class="p">)</span>
             <span class="n">full_filepath</span> <span class="o">=</span> <span class="n">path</span>
 
         <span class="c1"># This has to be set before superclass init because the</span>
@@ -321,8 +322,8 @@
                           <span class="n">full_filepath</span><span class="o">=</span><span class="n">full_filepath</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="n">no_base_path</span> <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_declare_consumed_kwargs</span><span class="p">(</span> <span class="p">{</span> <span class="s1">&#39;path&#39;</span><span class="p">,</span> <span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;base_path&#39;</span><span class="p">,</span> <span class="s1">&#39;base_dir&#39;</span><span class="p">,</span>
-                                         <span class="s1">&#39;full_filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;no_base_path&#39;</span><span class="p">,</span>
-                                         <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;provenance_id&#39;</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="s1">&#39;pointing&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span>
+                                         <span class="s1">&#39;full_filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;no_base_path&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;provenance_id&#39;</span><span class="p">,</span>
+                                         <span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="s1">&#39;observation_id&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span>
                                          <span class="s1">&#39;ra_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_11&#39;</span><span class="p">,</span>
                                          <span class="s1">&#39;dec_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_11&#39;</span><span class="p">,</span>
                                          <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd&#39;</span><span class="p">,</span> <span class="s1">&#39;position_nagle&#39;</span><span class="p">,</span> <span class="s1">&#39;exptime&#39;</span><span class="p">,</span> <span class="s1">&#39;sky_level&#39;</span><span class="p">,</span> <span class="s1">&#39;zeropoint&#39;</span> <span class="p">}</span> <span class="p">)</span>
@@ -332,7 +333,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_provenance_id</span> <span class="o">=</span> <span class="n">asUUID</span><span class="p">(</span> <span class="n">provenance_id</span> <span class="p">)</span> <span class="k">if</span> <span class="n">provenance_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="n">width</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_height</span> <span class="o">=</span> <span class="n">height</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="o">=</span> <span class="n">pointing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="o">=</span> <span class="n">observation_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="o">=</span> <span class="n">sca</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ra</span> <span class="o">=</span> <span class="n">ra</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dec</span> <span class="o">=</span> <span class="n">dec</span>
@@ -500,15 +501,15 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_height</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">pointing</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Str or int or something; the exposure/pointing/visit/SOMETHING for the image&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_get_pointing</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observation_id</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Str; unique identifier of one exposure combining all SCAs.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_observation_id</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span>
 
-    <span class="nd">@pointing</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">pointing</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="o">=</span> <span class="n">val</span>
+    <span class="nd">@observation_id</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observation_id</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="o">=</span> <span class="n">val</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">sca</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
@@ -708,8 +709,8 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_image_shape</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement _get_image_shape&quot;</span> <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pointing</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement _get_pointing&quot;</span> <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_observation_id</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement _get_observation_id&quot;</span> <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_sca</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs to implement _get_sca&quot;</span> <span class="p">)</span>
@@ -737,36 +738,47 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_position_angle</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Position angle in degrees north of east (CHECK THIS)&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Position angle in degrees north of east&quot;&quot;&quot;</span>
         <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
         <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_shape</span>
         <span class="n">midra</span><span class="p">,</span> <span class="n">middec</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="n">nx</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="n">ny</span><span class="o">/</span><span class="mf">2.</span> <span class="p">)</span>
         <span class="n">cosdec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span> <span class="n">middec</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">180.</span> <span class="p">)</span>
-        <span class="n">rightra</span><span class="p">,</span> <span class="n">rightdec</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="n">nx</span><span class="o">/</span><span class="mf">2.</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">ny</span><span class="o">/</span><span class="mf">2.</span> <span class="p">)</span>
-        <span class="n">drightra</span> <span class="o">=</span> <span class="p">(</span> <span class="n">rightra</span> <span class="o">-</span> <span class="n">midra</span> <span class="p">)</span> <span class="o">*</span> <span class="n">cosdec</span>
-        <span class="n">drightdec</span> <span class="o">=</span> <span class="n">rightdec</span> <span class="o">-</span> <span class="n">middec</span>
+        <span class="n">leftra</span><span class="p">,</span> <span class="n">leftdec</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="n">nx</span><span class="o">/</span><span class="mf">2.</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ny</span><span class="o">/</span><span class="mf">2.</span> <span class="p">)</span>
+        <span class="n">dleftra</span> <span class="o">=</span> <span class="p">(</span> <span class="n">leftra</span> <span class="o">-</span> <span class="n">midra</span> <span class="p">)</span> <span class="o">*</span> <span class="n">cosdec</span>
+        <span class="n">dleftdec</span> <span class="o">=</span> <span class="n">leftdec</span> <span class="o">-</span> <span class="n">middec</span>
         <span class="n">upra</span><span class="p">,</span> <span class="n">updec</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="n">nx</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="n">ny</span><span class="o">/</span><span class="mf">2.</span><span class="o">+</span><span class="mi">1</span> <span class="p">)</span>
         <span class="n">dupra</span> <span class="o">=</span> <span class="p">(</span> <span class="n">upra</span> <span class="o">-</span> <span class="n">midra</span> <span class="p">)</span> <span class="o">*</span> <span class="n">cosdec</span>
         <span class="n">dupdec</span> <span class="o">=</span> <span class="n">updec</span> <span class="o">-</span> <span class="n">middec</span>
-        <span class="n">rightang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span> <span class="o">-</span><span class="n">drightdec</span><span class="p">,</span> <span class="n">drightra</span> <span class="p">)</span> <span class="o">*</span> <span class="mf">180.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
-        <span class="n">upang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span> <span class="n">dupra</span><span class="p">,</span> <span class="n">dupdec</span> <span class="p">)</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+        <span class="c1"># Need to figure out if there&#39;s a mirroring.  If there is no</span>
+        <span class="c1"># mirroring, then the cross product of up and left will have a</span>
+        <span class="c1"># positive z component.... though we need to do a left-handed</span>
+        <span class="c1"># cross product because RA/Dec is a left-handed coordinate system!</span>
+        <span class="c1"># (Increasing RA is to the left, increasing Dec is up.)</span>
+        <span class="n">cross_z</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span> <span class="n">dupra</span> <span class="o">*</span> <span class="n">dleftdec</span> <span class="o">-</span> <span class="n">dupdec</span> <span class="o">*</span> <span class="n">dleftra</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">cross_z</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">leftang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span> <span class="n">dleftdec</span><span class="p">,</span> <span class="n">dleftra</span> <span class="p">)</span> <span class="o">*</span> <span class="mf">180.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="n">upang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span> <span class="o">-</span><span class="n">dupra</span><span class="p">,</span> <span class="n">dupdec</span> <span class="p">)</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">leftang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span> <span class="n">dleftdec</span><span class="p">,</span> <span class="o">-</span><span class="n">dleftra</span> <span class="p">)</span> <span class="o">*</span> <span class="mf">180.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="n">upang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span> <span class="n">dupra</span><span class="p">,</span> <span class="n">dupdec</span> <span class="p">)</span> <span class="o">*</span> <span class="mf">180.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
 
         <span class="c1"># Have to deal with the edge case where they are around ±180.</span>
-        <span class="k">if</span> <span class="p">(</span> <span class="p">(</span> <span class="p">(</span> <span class="n">rightang</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="o">!=</span> <span class="p">(</span> <span class="n">upang</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="p">(</span> <span class="p">(</span> <span class="n">leftang</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="o">!=</span> <span class="p">(</span> <span class="n">upang</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">)</span>
              <span class="ow">and</span>
-             <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span><span class="n">rightang</span><span class="p">)</span> <span class="o">-</span> <span class="mf">180.</span> <span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_enough_position_angle</span> <span class="p">)</span>
+             <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span><span class="n">leftang</span><span class="p">)</span> <span class="o">-</span> <span class="mf">180.</span> <span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_enough_position_angle</span> <span class="p">)</span>
              <span class="ow">and</span>
              <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span><span class="n">upang</span><span class="p">)</span> <span class="o">-</span> <span class="mf">180.</span> <span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_enough_position_angle</span> <span class="p">)</span>
             <span class="p">):</span>
-            <span class="k">if</span> <span class="n">rightang</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">rightang</span> <span class="o">+=</span> <span class="mf">360.</span>
+            <span class="k">if</span> <span class="n">leftang</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">leftang</span> <span class="o">+=</span> <span class="mf">360.</span>
             <span class="k">if</span> <span class="n">upang</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">upang</span> <span class="o">+=</span> <span class="mf">360.</span>
 
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span> <span class="n">rightang</span> <span class="o">-</span> <span class="n">upang</span> <span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_enough_position_angle</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Calculated position angle of </span><span class="si">{</span><span class="n">rightang</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">° looking to the right &quot;</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span> <span class="n">leftang</span> <span class="o">-</span> <span class="n">upang</span> <span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_enough_position_angle</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Calculated position angle of </span><span class="si">{</span><span class="n">leftang</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">° looking to the left &quot;</span>
                               <span class="sa">f</span><span class="s2">&quot;and </span><span class="si">{</span><span class="n">upang</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">° looking up; these are inconsistent!&quot;</span> <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_position_angle</span> <span class="o">=</span> <span class="p">(</span> <span class="n">rightang</span> <span class="o">+</span> <span class="n">upang</span> <span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position_angle</span> <span class="o">=</span> <span class="p">(</span> <span class="n">leftang</span> <span class="o">+</span> <span class="n">upang</span> <span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
 
         <span class="c1"># Leftover from dealing with the RA~±180 edge case</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_angle</span> <span class="o">&gt;</span> <span class="mf">180.</span><span class="p">:</span>
@@ -955,6 +967,64 @@
             <span class="k">return</span> <span class="kc">False</span>
         <span class="c1"># NOTE : we&#39;re assuming a full-size image here.  Think about cutouts!</span>
         <span class="k">return</span> <span class="p">(</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">y</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Image.save_to_db">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.save_to_db">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_to_db</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write this image record to the database.</span>
+
+<span class="sd">        USE THIS WITH CARE.  All fields must be properly set.  In</span>
+<span class="sd">        particular, the filepath and provenance_id must both be</span>
+<span class="sd">        right for the database.  Don&#39;t use this if you don&#39;t really know</span>
+<span class="sd">        what you&#39;re doing.</span>
+
+<span class="sd">        This does not actually write any files; it just writes a</span>
+<span class="sd">        database row.  Make sure files are where they need to be before</span>
+<span class="sd">        calling this.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+
+        <span class="n">props</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;provenance_id&#39;</span><span class="p">,</span> <span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="s1">&#39;observation_id&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_11&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;dec_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_11&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd&#39;</span><span class="p">,</span> <span class="s1">&#39;position_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;exptime&#39;</span> <span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span> <span class="n">p</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">p</span> <span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">props</span> <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">p</span> <span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">}</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span>
+        <span class="c1"># Deal with json serialization</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span> <span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span> <span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="s2">&quot;/savel2image&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">row</span></div>
+
+
+
+<div class="viewcode-block" id="Image.bulk_save_to_db">
+<a class="viewcode-back" href="../../api/snappl.image.Image.html#snappl.image.Image.bulk_save_to_db">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bulk_save_to_db</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Don&#39;t use this if you don&#39;t really know what you&#39;re doing.&quot;&quot;&quot;</span>
+
+        <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
+
+        <span class="n">props</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;provenance_id&#39;</span><span class="p">,</span> <span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="s1">&#39;observation_id&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;ra_corner_11&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;dec_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;dec_corner_11&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;mjd&#39;</span><span class="p">,</span> <span class="s1">&#39;position_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;exptime&#39;</span> <span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span> <span class="n">p</span><span class="p">:</span> <span class="p">[</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">images</span> <span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">props</span> <span class="p">}</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="n">i</span><span class="o">.</span><span class="n">_format</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">images</span> <span class="p">]</span>
+        <span class="c1"># Deal with json serialization</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">]</span> <span class="p">]</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="p">]</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;provenance_id&#39;</span><span class="p">]</span> <span class="p">]</span>
+
+        <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="s2">&quot;/bulksavel2images&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span> <span class="p">)</span></div>
 
 
 
@@ -1230,7 +1300,7 @@
 <span class="sd">            By default, the returned images are not sorted in any</span>
 <span class="sd">            particular way.  Put a keyword here to sort by that value</span>
 <span class="sd">            (or by those values).  Options include &#39;id&#39;,</span>
-<span class="sd">            &#39;provenance_id&#39;, &#39;pointing&#39;, &#39;sca&#39;, &#39;ra&#39;, &#39;dec&#39;, &#39;filepath&#39;,</span>
+<span class="sd">            &#39;provenance_id&#39;, &#39;observation_id&#39;, &#39;sca&#39;, &#39;ra&#39;, &#39;dec&#39;, &#39;filepath&#39;,</span>
 <span class="sd">            &#39;width&#39;, &#39;height&#39;, &#39;mjd&#39;, &#39;exptime&#39;.  Not all of these are</span>
 <span class="sd">            necessarily useful, and some of them may be null for many</span>
 <span class="sd">            objects in the database.</span>
@@ -1727,8 +1797,8 @@
 
         <span class="c1"># TODO : fix _ra* and _dec* fields, they&#39;re all WRONG</span>
 
-        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="p">[</span> <span class="s1">&#39;_pointing&#39;</span><span class="p">,</span> <span class="s1">&#39;_sca&#39;</span><span class="p">,</span> <span class="s1">&#39;_band&#39;</span><span class="p">,</span> <span class="s1">&#39;_mjd&#39;</span><span class="p">,</span> <span class="s1">&#39;_position_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;_exptime&#39;</span><span class="p">,</span> <span class="s1">&#39;_sky_level&#39;</span><span class="p">,</span> <span class="s1">&#39;_zeropoint&#39;</span><span class="p">,</span>
-                      <span class="s1">&#39;_ra&#39;</span><span class="p">,</span> <span class="s1">&#39;_dec&#39;</span><span class="p">,</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="p">[</span> <span class="s1">&#39;_observation_id&#39;</span><span class="p">,</span> <span class="s1">&#39;_sca&#39;</span><span class="p">,</span> <span class="s1">&#39;_band&#39;</span><span class="p">,</span> <span class="s1">&#39;_mjd&#39;</span><span class="p">,</span> <span class="s1">&#39;_position_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;_exptime&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;_sky_level&#39;</span><span class="p">,</span> <span class="s1">&#39;_zeropoint&#39;</span><span class="p">,</span> <span class="s1">&#39;_ra&#39;</span><span class="p">,</span> <span class="s1">&#39;_dec&#39;</span><span class="p">,</span>
                       <span class="s1">&#39;_ra_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;_ra_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;_ra_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;_ra_corner_11&#39;</span><span class="p">,</span>
                       <span class="s1">&#39;_dec_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;_dec_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;_dec_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;_dec_corner_11&#39;</span> <span class="p">]:</span>
             <span class="nb">setattr</span><span class="p">(</span> <span class="n">snappl_cutout</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">prop</span> <span class="p">)</span> <span class="p">)</span>
@@ -1849,7 +1919,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                   <span class="n">header_kws</span> <span class="o">=</span> <span class="p">{</span>
-                      <span class="s1">&#39;pointing&#39;</span><span class="p">:</span> <span class="s2">&quot;POINTING&quot;</span><span class="p">,</span>
+                      <span class="s1">&#39;observation_id&#39;</span><span class="p">:</span> <span class="s2">&quot;POINTING&quot;</span><span class="p">,</span>
                       <span class="s1">&#39;sca&#39;</span><span class="p">:</span> <span class="s2">&quot;SCA&quot;</span><span class="p">,</span>
                       <span class="s1">&#39;ra&#39;</span><span class="p">:</span> <span class="s2">&quot;RA&quot;</span><span class="p">,</span>
                       <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="s2">&quot;DEC&quot;</span><span class="p">,</span>
@@ -1873,8 +1943,9 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="n">FITSImage</span><span class="o">.</span><span class="n">get_fits_header</span><span class="p">(</span> <span class="bp">self</span> <span class="p">)</span>
-            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_header</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to read header from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="si">}</span><span class="s2">, creating blank header: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header</span></div>
 
 
@@ -1885,21 +1956,21 @@
     <span class="c1">#   the property or the setter, you have to override both, you</span>
     <span class="c1">#   can&#39;t take the parent class implementation for just one.</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pointing</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_observation_id</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fits_header</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header_kws</span><span class="p">[</span><span class="s1">&#39;pointing&#39;</span><span class="p">]</span> <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header_kws</span><span class="p">[</span><span class="s1">&#39;observation_id&#39;</span><span class="p">]</span> <span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">pointing</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_get_pointing</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observation_id</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_observation_id</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span>
 
-    <span class="nd">@pointing</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">pointing</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="o">=</span> <span class="n">val</span>
+    <span class="nd">@observation_id</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observation_id</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="o">=</span> <span class="n">val</span>
         <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fits_header</span><span class="p">()</span>
-        <span class="n">hdr</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header_kws</span><span class="p">[</span><span class="s1">&#39;pointing&#39;</span><span class="p">]</span> <span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span>
+        <span class="n">hdr</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header_kws</span><span class="p">[</span><span class="s1">&#39;observation_id&#39;</span><span class="p">]</span> <span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_sca</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fits_header</span><span class="p">()</span>
@@ -2161,8 +2232,8 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">truthpath</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Path to truth catalog.  WARNING: this is OpenUniverse2024FITSImage-specific, use with care.&quot;&quot;&quot;</span>
         <span class="n">tds_base</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.ou24.tds_base&#39;</span> <span class="p">)</span> <span class="p">)</span>
-        <span class="k">return</span> <span class="p">(</span> <span class="n">tds_base</span> <span class="o">/</span> <span class="sa">f</span><span class="s1">&#39;truth/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">band</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pointing</span><span class="si">}</span><span class="s1">/&#39;</span>
-                 <span class="sa">f</span><span class="s1">&#39;Roman_TDS_index_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">band</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pointing</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sca</span><span class="si">}</span><span class="s1">.txt&#39;</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span> <span class="n">tds_base</span> <span class="o">/</span> <span class="sa">f</span><span class="s1">&#39;truth/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">band</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">observation_id</span><span class="si">}</span><span class="s1">/&#39;</span>
+                 <span class="sa">f</span><span class="s1">&#39;Roman_TDS_index_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">band</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">observation_id</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sca</span><span class="si">}</span><span class="s1">.txt&#39;</span> <span class="p">)</span>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_image_shape</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
@@ -2170,13 +2241,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;NAXIS1&#39;</span><span class="p">]</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_height</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;NAXIS2&#39;</span><span class="p">]</span> <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pointing</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_observation_id</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="c1"># Irritatingly, the pointing is not in the header.  So, we have to</span>
         <span class="c1">#   parse the filename to get the pointing.</span>
         <span class="n">mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filenamere</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="o">.</span><span class="n">name</span> <span class="p">)</span>
         <span class="k">if</span> <span class="n">mat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Failed to parse </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> for pointing&quot;</span> <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">mat</span><span class="o">.</span><span class="n">group</span><span class="p">(</span> <span class="s1">&#39;pointing&#39;</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">group</span><span class="p">(</span> <span class="s1">&#39;pointing&#39;</span> <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_sca</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fits_header</span><span class="p">()</span>
@@ -2288,8 +2359,13 @@
 <span class="c1"># An image read from a roman datamodel ASDF file</span>
 <span class="c1">#</span>
 <span class="c1"># Empirically:</span>
-<span class="c1">#   self._dm.err**2 == self._dm.var_poisson + self._dm.var_rnoise + self.dm.var_flat</span>
-
+<span class="c1">#   self._dm.err**2 == self._dm.var_poisson + self._dm.var_rnoise</span>
+<span class="c1">#</span>
+<span class="c1"># Potentially useful links:</span>
+<span class="c1">#   https://roman-docs.stsci.edu/data-handbook/wfi-data-levels-and-products#DataLevelsandProducts-Level2</span>
+<span class="c1">#   https://github.com/spacetelescope/rad</span>
+<span class="c1">#   https://github.com/spacetelescope/rad/blob/main/src/rad/resources/schemas/exposure-1.3.0.yaml</span>
+<span class="c1">#     (check that the version is current on this one!)</span>
 <div class="viewcode-block" id="RomanDatamodelImage">
 <a class="viewcode-back" href="../../api/snappl.image.RomanDatamodelImage.html#snappl.image.RomanDatamodelImage">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RomanDatamodelImage</span><span class="p">(</span> <span class="n">Image</span> <span class="p">):</span>
@@ -2308,23 +2384,91 @@
 
     <span class="c1"># TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_image_shape</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="c1"># TODO : this must be in the header / meta information somewhere</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_height</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_observation_id</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">observation</span><span class="o">.</span><span class="n">observation_id</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_sca</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="n">match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detectormatch</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">detector</span> <span class="p">)</span>
         <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;Failed to parse self._dm.meta.instrument.detector= &#39;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s1">&#39;Failed to parse self._dm.meta.instrument.detector=&#39;</span>
                               <span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">detector</span><span class="si">}</span><span class="s1"> for &quot;WFInn&quot;&#39;</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_image_shape</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
-        <span class="c1"># TODO : this must be in the header / meta information somewhere</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_height</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_ra_dec</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="c1"># TODO : see if there&#39;s something in the header that would work</span>
+        <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_shape</span>
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dec</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="n">nx</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">ny</span> <span class="o">/</span> <span class="mf">2.</span> <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_corners</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_shape</span>
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ra_corner_00</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dec_corner_00</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ra_corner_01</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dec_corner_01</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ny</span><span class="o">-</span><span class="mi">1</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ra_corner_10</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dec_corner_10</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ra_corner_11</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dec_corner_11</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">pixel_to_world</span><span class="p">(</span> <span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ny</span><span class="o">-</span><span class="mi">1</span> <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_band</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_band</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">optical_element</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_mjd</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_mjd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">mid_time</span><span class="o">.</span><span class="n">mjd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mjd</span> <span class="o">=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">start_time</span><span class="o">.</span><span class="n">mjd</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">end_time</span><span class="o">.</span><span class="n">mjd</span> <span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_exptime</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exptime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">exposure_time</span>
+
+    <span class="c1"># def _get_sky_level(self):</span>
+    <span class="c1">#    ...dunno what to do here</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_zeropoint</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="c1"># photometry.conversion_megajanskys gives MJy per steradian that</span>
+        <span class="c1">#   gives an instrumental count rate of 1 dn/second.  I&#39;m</span>
+        <span class="c1">#   assuming that&#39;s 1 dn/second per pixel, as it&#39;s not clear</span>
+        <span class="c1">#   what this would mean otherwise.  (I guess it could be 1</span>
+        <span class="c1">#   dn/s/sr?  But then why bother talking about surface</span>
+        <span class="c1">#   brightness, if the sr is on both sides?)</span>
+        <span class="c1">#</span>
+        <span class="c1"># Next, I&#39;m assuming that the pixel values in L2 images are</span>
+        <span class="c1">#   in units of dn/s (*not* dn).</span>
+        <span class="c1">#</span>
+        <span class="c1"># photometry.pixel_area is the area of one pixel in ... well,</span>
+        <span class="c1">#   it&#39;s not clear, because the comments in the schema say</span>
+        <span class="c1">#   &quot;in units of steradians&quot;, but then the &quot;unit:&quot; field says</span>
+        <span class="c1">#   &quot;uJy.arcsec**-2&quot;, so I really don&#39;t know what to make of that.</span>
+        <span class="c1">#   I&#39;m going to assume it&#39;s in steradians for now</span>
+        <span class="c1">#</span>
+        <span class="c1"># What we really want is the number of Jy (not Jy/sr or</span>
+        <span class="c1">#   whatever) we get from a certain number of &quot;counts in the</span>
+        <span class="c1">#   image&quot;, summed over all the pixels where those counts were.</span>
+        <span class="c1">#   (Thiking a PSF, hence surface brightness is not the right</span>
+        <span class="c1">#   thing to think about.)  If we multiply</span>
+        <span class="c1">#   conversion_megajanskys * pixel_area (define &quot;cm_pa&quot; to be</span>
+        <span class="c1">#   that), we should get the number of MJy that correspond a</span>
+        <span class="c1">#   total count rate summed over all the pixels that light from</span>
+        <span class="c1">#   the object fell into of 1 dn/s</span>
+        <span class="c1">#</span>
+        <span class="c1"># Below, define dn_s to be the total dn_s (i.e. pixel values in</span>
+        <span class="c1">#   the image) summed over all pixels that light from the object</span>
+        <span class="c1">#   fell into (determined either from aperture photometry with</span>
+        <span class="c1">#   an infinite aperture after background subtraction, or psf</span>
+        <span class="c1">#   fitting).  Define f_Jy to be the flux in Jy from the star.</span>
+        <span class="c1">#   Define m_ab to be the AB magnitude.  Define cm_ma as above:</span>
+        <span class="c1">#   conversion_megajanskys * pixel_area</span>
+        <span class="c1">#</span>
+        <span class="c1"># f_Jy = cm_ma * 1e6 * dn_s         [1e6 is to get cm_ma in units of Jy/(dn/s)]</span>
+        <span class="c1"># m_ab = -2.5*log10( f_Jy ) + 8.90  [This is just the standard definition of AB magnitude]</span>
+        <span class="c1">#      = -2.5*log10( cm_ma * 1e6 * dn_s ) + 8.90</span>
+        <span class="c1">#      = -2.5*log10( dn_s ) -2.5*log10( cm_ma ) - 15 + 8.90</span>
+        <span class="c1"># m_ab = -2.5*log10( dn_s ) + zp    [This is the definition of zp]</span>
+        <span class="c1"># zp = -2.5*log10( cm_ma ) - 6.1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_zeropoint</span> <span class="o">=</span> <span class="o">-</span><span class="mf">6.1</span> <span class="o">-</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">photometry</span><span class="o">.</span><span class="n">conversion_megajanskys</span> <span class="o">*</span>
+                                                 <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">photometry</span><span class="o">.</span><span class="n">pixel_area</span> <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>

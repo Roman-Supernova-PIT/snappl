@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Environment and Database Maintainer’s Guide &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+    <script src="_static/documentation_options.js?v=b4ef4976"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="snappl API" href="api.html" />
+    <link rel="prev" title="snappl Developers Guide" href="developers.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="index.html">
+    <img class="logo" src="_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="environment.html">Roman SNPIT Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developers.html">snappl Developers Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Environment and Database Maintainer’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">snappl API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database_schema.html">Database Schema</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="developers.html" title="previous chapter">snappl Developers Guide</a></li>
+      <li>Next: <a href="api.html" title="next chapter">snappl API</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="developers.html" title="Previous document">snappl Developers Guide</a>
+        </li>
+        <li>
+          <a href="api.html" title="Next document">snappl API</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="environment-and-database-maintainer-s-guide">
+<h1><a class="toc-backref" href="#id4" role="doc-backlink">Environment and Database Maintainer’s Guide</a><a class="headerlink" href="#environment-and-database-maintainer-s-guide" title="Link to this heading">¶</a></h1>
+<nav class="contents" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#environment-and-database-maintainer-s-guide" id="id4">Environment and Database Maintainer’s Guide</a></p>
+<ul>
+<li><p><a class="reference internal" href="#installing-a-new-database-on-nersc-spin" id="id5">Installing a new database on NERSC Spin</a></p>
+<ul>
+<li><p><a class="reference internal" href="#figure-out-your-spin-namespace" id="id6">Figure out your Spin namespace</a></p></li>
+<li><p><a class="reference internal" href="#figure-out-the-tag-for-your-docker-images" id="id7">Figure out the tag for your docker images</a></p></li>
+<li><p><a class="reference internal" href="#build-the-docker-images" id="id8">Build the docker images</a></p></li>
+<li><p><a class="reference internal" href="#pick-a-postgres-password" id="id9">Pick a postgres password</a></p></li>
+<li><p><a class="reference internal" href="#edit-the-spin-yaml-files" id="id10">Edit the Spin YAML files</a></p></li>
+<li><p><a class="reference internal" href="#run-the-initial-spin-servers-and-create-the-database-tables" id="id11">Run the Initial Spin Servers and Create the Database Tables</a></p></li>
+<li><p><a class="reference internal" href="#debugging-spin-issues" id="id12">Debugging spin issues</a></p></li>
+<li><p><a class="reference internal" href="#get-a-dns-name-for-the-webserver" id="id13">Get a DNS name for the webserver</a></p></li>
+<li><p><a class="reference internal" href="#get-a-certificate-for-your-dns-name" id="id14">Get a Certificate for your DNS name</a></p></li>
+<li><p><a class="reference internal" href="#update-the-webserver-to-actually-run-the-webserver" id="id15">Update the webserver to actually run the webserver</a></p></li>
+<li><p><a class="reference internal" href="#create-a-config-file-for-people-who-are-going-to-connect-to-your-database" id="id16">Create a config file for people who are going to connect to your database</a></p></li>
+<li><p><a class="reference internal" href="#test-that-you-can-connect-to-the-database" id="id17">Test that you can connect to the database</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="installing-a-new-database-on-nersc-spin">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Installing a new database on NERSC Spin</a><a class="headerlink" href="#installing-a-new-database-on-nersc-spin" title="Link to this heading">¶</a></h2>
+<p><strong>Important</strong>: to do this, you probably need to be running on on <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> Linux machine.  If you really know what you’re doing, you may be able to build a <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> image on another architecture, though it will probably be slow because the build process will need to emulate the architecture.  Things will work better if you just do things in the architecture that we also need to run in.</p>
+<section id="figure-out-your-spin-namespace">
+<span id="spin-namespace"></span><h3><a class="toc-backref" href="#id6" role="doc-backlink">Figure out your Spin namespace</a><a class="headerlink" href="#figure-out-your-spin-namespace" title="Link to this heading">¶</a></h3>
+<p>Assuming you’re doing this for the Roman SNPIT, you will will be working with the <code class="docutils literal notranslate"><span class="pre">m4385</span></code> nersc account.  First, make sure you can run spin by, on Perlmutter, doing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">module</span> <span class="n">load</span> <span class="n">spin</span>
+</pre></div>
+</div>
+<p>Then, select the right account with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rancher</span> <span class="n">context</span> <span class="n">switch</span>
+</pre></div>
+</div>
+<p>Find the number that corresponds to <code class="docutils literal notranslate"><span class="pre">production</span></code> and <code class="docutils literal notranslate"><span class="pre">m4385</span></code>, and give it that number.  If you don’t see <code class="docutils literal notranslate"><span class="pre">m4385</span></code> on the list, then you don’t yet have access to the Roman SNPIT spin area.</p>
+<p>See what namespaces currently exist with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rancher</span> <span class="n">namespaces</span>
+</pre></div>
+</div>
+<p>If you know you want to work in one of those (and you will know if you know; if you’re setting up a new thing, you prbably don’t want to work in one of those), good, remember it.  If not, you will need to make a new namespace with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rancher</span> <span class="n">namespace</span> <span class="n">create</span> <span class="o">&lt;</span><span class="n">namespace</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">description</span> <span class="s2">&quot;&lt;comment&gt;&quot;</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;namespace&gt;</span></code> should <em>always</em> start with <code class="docutils literal notranslate"><span class="pre">romanmansnpit</span></code>, and the <code class="docutils literal notranslate"><span class="pre">&lt;comment&gt;</span></code> should be a brief one line description of what this namespace is for.</p>
+</section>
+<section id="figure-out-the-tag-for-your-docker-images">
+<span id="docker-image-tag"></span><h3><a class="toc-backref" href="#id7" role="doc-backlink">Figure out the tag for your docker images</a><a class="headerlink" href="#figure-out-the-tag-for-your-docker-images" title="Link to this heading">¶</a></h3>
+<p>To avoid confusion, we need to make sure that the docker images we make to run things on Spin do not have names that collide with each other.  Pick a tag that is a shortish string of text without spaces that indicates the database you’re installing.  For instance, if I was making a dev database, I might choose the tag <code class="docutils literal notranslate"><span class="pre">rknop-dev</span></code>.  If I was making a database for the nov2025 test run, I might just use <code class="docutils literal notranslate"><span class="pre">nov2025</span></code> as the tag.</p>
+<p>I will sometimes add <code class="docutils literal notranslate"><span class="pre">-yyyymmdd</span></code> to the end of my tag so that I can explicitly update the image if necessary.</p>
+</section>
+<section id="build-the-docker-images">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Build the docker images</a><a class="headerlink" href="#build-the-docker-images" title="Link to this heading">¶</a></h3>
+<p>If you know what you’re doing, you may be able to do this with <code class="docutils literal notranslate"><span class="pre">podman-hpc</span></code> on NERSC.  However, I (Rob) always do this on my laptop or desktop.  (Both of these are <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> linux machines; see the warning above.)</p>
+<p>You need to do this in a checkout of the <a class="reference external" href="https://github.com/roman-Supernova-PIT/snappl">snappl repo</a>.</p>
+<section id="build-the-postgres-docker-image">
+<span id="postgres-docker-image"></span><h4>Build the postgres docker image<a class="headerlink" href="#build-the-postgres-docker-image" title="Link to this heading">¶</a></h4>
+<p>From your snappl checkout:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">docker</span><span class="o">/</span><span class="n">postgres</span>
+<span class="n">docker</span> <span class="n">build</span> <span class="o">--</span><span class="n">target</span> <span class="n">postgres</span> <span class="o">-</span><span class="n">t</span> <span class="n">registry</span><span class="o">.</span><span class="n">nersc</span><span class="o">.</span><span class="n">gov</span><span class="o">/</span><span class="n">m4385</span><span class="o">/</span><span class="n">snpit</span><span class="o">-</span><span class="n">db</span><span class="o">-</span><span class="n">postgres</span><span class="p">:</span><span class="o">&lt;</span><span class="n">tag</span><span class="o">&gt;</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;tag&gt;</span></code> is the <a class="reference internal" href="#docker-image-tag"><span class="std std-ref">image tag</span></a> you chose above.</p>
+<p>Assuming all is well, push the docker image up to NERSC with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">push</span> <span class="n">registry</span><span class="o">.</span><span class="n">nersc</span><span class="o">.</span><span class="n">gov</span><span class="o">/</span><span class="n">m4385</span><span class="o">/</span><span class="n">snpit</span><span class="o">-</span><span class="n">db</span><span class="o">-</span><span class="n">postgres</span><span class="p">:</span><span class="o">&lt;</span><span class="n">tag</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>If it yells at you that you don’t have access, you may need to log into the NERSC image registry with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">login</span> <span class="n">registry</span><span class="o">.</span><span class="n">nersc</span><span class="o">.</span><span class="n">gov</span>
+</pre></div>
+</div>
+<p>Give it your usual NERSC username and password (<em>without</em> the 6-digit OTP).</p>
+</section>
+<section id="build-the-webserver-docker-image">
+<span id="webserver-docker-image"></span><h4>Build the webserver docker image<a class="headerlink" href="#build-the-webserver-docker-image" title="Link to this heading">¶</a></h4>
+<p>From the top directory of your snappl checkout:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">build</span> <span class="o">--</span><span class="n">target</span> <span class="n">webserver</span> <span class="o">-</span><span class="n">t</span> <span class="n">registry</span><span class="o">.</span><span class="n">nersc</span><span class="o">.</span><span class="n">gov</span><span class="o">/</span><span class="n">m4385</span><span class="o">/</span><span class="n">snpit</span><span class="o">-</span><span class="n">db</span><span class="o">-</span><span class="n">webserver</span><span class="p">:</span><span class="o">&lt;</span><span class="n">tag</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">f</span> <span class="n">docker</span><span class="o">/</span><span class="n">webserver</span><span class="o">/</span><span class="n">Dockerfile</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;tag&gt;</span></code> is the <a class="reference internal" href="#docker-image-tag"><span class="std std-ref">image tag</span></a> you chose above.</p>
+<p>Assuming all is well, push the docker image up to NERSC with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">push</span> <span class="n">registry</span><span class="o">.</span><span class="n">nersc</span><span class="o">.</span><span class="n">gov</span><span class="o">/</span><span class="n">m4385</span><span class="o">/</span><span class="n">snpit</span><span class="o">-</span><span class="n">db</span><span class="o">-</span><span class="n">webserver</span><span class="p">:</span><span class="o">&lt;</span><span class="n">tag</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>again logging first if necessary.</p>
+</section>
+</section>
+<section id="pick-a-postgres-password">
+<span id="postgres-password"></span><h3><a class="toc-backref" href="#id9" role="doc-backlink">Pick a postgres password</a><a class="headerlink" href="#pick-a-postgres-password" title="Link to this heading">¶</a></h3>
+<p>This actually doesn’t need to be all that secure, because the postgres server is not going to be accessible from anywhere other than the small collection of virtual machines you’ll be running on Spin within your namespace.  However, there’s no reason not just to do it right.  Pick a good password.  Here is a python snippit that will do that:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
+<span class="n">chars</span> <span class="o">=</span> <span class="s1">&#39;abcdefghijklmnopqrstuvwxyz0123456789&#39;</span>
+<span class="n">pw</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">chars</span><span class="p">[</span> <span class="n">secrets</span><span class="o">.</span><span class="n">randbelow</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span> <span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span> <span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span> <span class="n">pw</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>Stick this password in your password safe somewhere (you do use one, yes?).</p>
+</section>
+<section id="edit-the-spin-yaml-files">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink">Edit the Spin YAML files</a><a class="headerlink" href="#edit-the-spin-yaml-files" title="Link to this heading">¶</a></h3>
+<p>Copy all the files in the <code class="docutils literal notranslate"><span class="pre">spin/rknop_dev</span></code> directory (<em>except</em> for <code class="docutils literal notranslate"><span class="pre">shell.yaml</span></code>) to a place where you can edit them.  (Please do not edit the files in <code class="docutils literal notranslate"><span class="pre">spin/rknop_dev</span></code>.)  You will need to edit all of them.  The edits you need to make are:</p>
+<ul>
+<li><p><strong>Update the namespace.</strong>  In <em>every</em> file, replace the string <code class="docutils literal notranslate"><span class="pre">romansnpit-rknop-dev</span></code> with the <a class="reference internal" href="#spin-namespace"><span class="std std-ref">spin namespace</span></a> you’re using.</p></li>
+<li><p><strong>Update postgres.yaml</strong> : Make the following edits:</p>
+<ul class="simple">
+<li><p>Find the line starting with <code class="docutils literal notranslate"><span class="pre">nersc.gov/username</span></code> and replace <code class="docutils literal notranslate"><span class="pre">raknop</span></code> with your NERSC username.</p></li>
+<li><p>Find the line starting with <code class="docutils literal notranslate"><span class="pre">nersc.gov/uid</span></code> and replace <code class="docutils literal notranslate"><span class="pre">95089</span></code> with your NERSC UID.  (Run <code class="docutils literal notranslate"><span class="pre">id</span></code> on the command line to figure out what this is.)</p></li>
+<li><p>Find the line starting with <code class="docutils literal notranslate"><span class="pre">image:</span></code> and replace the value after the colon with the <a class="reference internal" href="#postgres-docker-image"><span class="std std-ref">docker image you built and pushed for postgres</span></a>.</p></li>
+</ul>
+</li>
+<li><p><strong>Update webserver.yaml</strong> : Make the following edits</p>
+<ul class="simple">
+<li><p>Find the line starting with <code class="docutils literal notranslate"><span class="pre">nersc.gov/username</span></code> and replace <code class="docutils literal notranslate"><span class="pre">raknop</span></code> with your NERSC username.</p></li>
+<li><p>Find the line starting with <code class="docutils literal notranslate"><span class="pre">nersc.gov/uid</span></code> and replace <code class="docutils literal notranslate"><span class="pre">95089</span></code> with your NERSC UID.  (Run <code class="docutils literal notranslate"><span class="pre">id</span></code> on the command line to figure out what this is.)</p></li>
+<li><p>Find the line starting with <code class="docutils literal notranslate"><span class="pre">image:</span></code> and replace the value after the colon with the <a class="reference internal" href="#webserver-docker-image"><span class="std std-ref">docker image you built and pushed for the webserver</span></a>.</p></li>
+<li><p>Uncomment the line <code class="docutils literal notranslate"><span class="pre">command:</span> <span class="pre">[</span> <span class="pre">'tail',</span> <span class="pre">'-f',</span> <span class="pre">'/etc/issue'</span> <span class="pre">]</span></code></p></li>
+<li><p>Comment out (using <code class="docutils literal notranslate"><span class="pre">#</span></code>) the lines at the bottom starting with <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">host:</span> <span class="pre">romansnpit-rknop-dev.lbl.gov</span></code> all the way to the bottom of the file, but leaving the last <code class="docutils literal notranslate"><span class="pre">---</span></code> line uncommented.  (You will need to uncomment these again later after you’ve done further steps.)</p></li>
+</ul>
+</li>
+<li><p><strong>Update secrets.yaml</strong> : This one is a bit more involved.</p>
+<ul>
+<li><p>First, you have to create a config file.  Create a file with these contents:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">system</span><span class="p">:</span>
+  <span class="n">webserver</span><span class="p">:</span>
+    <span class="n">flask_secret_key</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">PUT</span> <span class="n">FLASK</span> <span class="n">SECRET</span> <span class="n">KEY</span> <span class="n">HERE</span><span class="o">&gt;</span>
+    <span class="n">sessionstore</span><span class="p">:</span> <span class="o">/</span><span class="n">sessions</span>
+    <span class="n">emailfrom</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">YOUR</span> <span class="n">EMAIL</span> <span class="n">ADDRESS</span> <span class="n">WHICH</span> <span class="n">PROBABLY</span> <span class="n">NEEDS</span> <span class="n">TO</span> <span class="n">BE</span> <span class="n">AT</span> <span class="n">LBL</span><span class="p">,</span> <span class="n">IF</span> <span class="n">NOT</span> <span class="n">TALK</span> <span class="n">TO</span> <span class="n">ROB</span><span class="o">&gt;</span>
+    <span class="n">smtpserver</span><span class="p">:</span> <span class="n">smtp</span><span class="o">.</span><span class="n">lbl</span><span class="o">.</span><span class="n">gov</span>
+    <span class="n">smtpport</span><span class="p">:</span> <span class="mi">25</span>
+    <span class="n">smtpusessl</span><span class="p">:</span> <span class="kc">False</span>
+    <span class="n">smtpusername</span><span class="p">:</span> <span class="n">NULL</span>
+    <span class="n">smtppassword</span><span class="p">:</span> <span class="n">NULL</span>
+
+  <span class="n">db</span><span class="p">:</span>
+    <span class="n">postgres_host</span><span class="p">:</span> <span class="n">postgres</span>
+    <span class="n">postgres_port</span><span class="p">:</span> <span class="mi">5432</span>
+    <span class="n">postgres_database</span><span class="p">:</span> <span class="n">roman_snpit</span>
+    <span class="n">postgres_username</span><span class="p">:</span> <span class="n">postgres</span>
+    <span class="n">postgres_password</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">PUT</span> <span class="n">THE</span> <span class="n">POSTGRES</span> <span class="n">PASSWORD</span> <span class="n">HERE</span><span class="o">&gt;</span>
+    <span class="c1"># These next two are for debugging purposes and should always be false in production</span>
+    <span class="n">echoqueries</span><span class="p">:</span> <span class="n">false</span>
+    <span class="n">alwaysexplain</span><span class="p">:</span> <span class="n">false</span>
+</pre></div>
+</div>
+<p>Replace the three things above that are in <code class="docutils literal notranslate"><span class="pre">&lt;ALL</span> <span class="pre">CAPS&gt;</span></code>.  For the postgres password, put in the one you <a class="reference internal" href="#postgres-password"><span class="std std-ref">created above</span></a>.  For the flask secret key, generate another “good” password; it can be anything, it just shouldn’t be the same as what’s used anywhere else, and nobody else should have access to it.</p>
+</li>
+<li><p>Run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">base64</span> <span class="o">-</span><span class="n">w</span> <span class="mi">0</span> <span class="o">&lt;</span><span class="n">configfile</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">barf</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;configfile&gt;</span></code> is the config file you created and edited.  Then, in <code class="docutils literal notranslate"><span class="pre">secrets.yaml</span></code>, edit the line starting <code class="docutils literal notranslate"><span class="pre">snpit_config.yaml:</span></code> and replace <code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">THE</span> <span class="pre">RIGHT</span> <span class="pre">THING</span> <span class="pre">HERE</span></code> with the contents of the file <code class="docutils literal notranslate"><span class="pre">barf</span></code>.</p>
+</li>
+<li><p>base64 encode your <a class="reference internal" href="#postgres-password"><span class="std std-ref">postgres password</span></a> with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">echo</span> <span class="o">-</span><span class="n">n</span> <span class="s2">&quot;&lt;postgres password&gt;&quot;</span> <span class="o">|</span> <span class="n">base64</span> <span class="o">-</span> <span class="o">&amp;&amp;</span> <span class="n">echo</span>
+</pre></div>
+</div>
+<p>Copy the single line of text that command produces, and replace <code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">THE</span> <span class="pre">RIGHT</span> <span class="pre">THING</span> <span class="pre">HERE</span></code> with that line of text in <code class="docutils literal notranslate"><span class="pre">secrets.yaml</span></code> on the line starting <code class="docutils literal notranslate"><span class="pre">pgpasswd:</span></code>.  (Yes, the postgres password goes in two different places.)</p>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="run-the-initial-spin-servers-and-create-the-database-tables">
+<span id="create-database-tables"></span><h3><a class="toc-backref" href="#id11" role="doc-backlink">Run the Initial Spin Servers and Create the Database Tables</a><a class="headerlink" href="#run-the-initial-spin-servers-and-create-the-database-tables" title="Link to this heading">¶</a></h3>
+<p>Apply all (well, most) of the yaml files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export NAMESPACE=&lt;your namespace&gt;
+rancher kubectl --namespace $NAMESPACE apply -f secrets.yaml
+rancher kubectl --namespace $NAMESPACE apply -f postgres-pvc.yaml
+rancher kubectl --namespace $NAMESPACE apply -f webserver-sessions-pvc.yaml
+rancher kubectl --namespace $NAMESPACE apply -f postgres.yaml
+rancher kubectl --namespace $NAMESPACE apply -f webserver.yaml
+</pre></div>
+</div>
+<p>Stop if you get error messages after any of these, and try to figure out what’s going on.</p>
+<p>Once you’ve done all of this, run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>rancher kubectl --namespace $NAMESPACE get pods
+</pre></div>
+</div>
+<p>If all is well, you should see the postgres and webserver</p>
+<p>Next, migrate the database.  Get a shell on the webserver machine (which currently isn’t actually running the webserver) with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>rancher kubectl --namespace $NAMESPACE exec -it &lt;podname&gt; -- /bin/bash
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;podname&gt;</span></code> is the name of the pod for the webserver with <code class="docutils literal notranslate"><span class="pre">get</span> <span class="pre">pods</span></code> above.  It will start with <code class="docutils literal notranslate"><span class="pre">webserver</span></code>, but it will end with some (seemingly) random characters.</p>
+<p>Once you have a shell on the webserver, run <code class="docutils literal notranslate"><span class="pre">python</span></code> and, then, interactively in python:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">snappl.db.migrations.apply_migrations</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_migrations</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">apply_migrations</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If all is well, it will tell you it applied a bunch of <code class="docutils literal notranslate"><span class="pre">.sql</span></code> files and give you no errors.</p>
+<p>Finally, you need to create a user on the webserver.  Do this, inside the container, by running the following lines within python:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">snappl.admin.create_web_user</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_web_user</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">create_web_user</span><span class="p">(</span> <span class="s1">&#39;dbuser&#39;</span><span class="p">,</span> <span class="s1">&#39;your_email&#39;</span><span class="p">,</span> <span class="s1">&#39;Default DB User&#39;</span><span class="p">,</span> <span class="s1">&#39;password&#39;</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">your_email</span></code> with your email address, and replace <code class="docutils literal notranslate"><span class="pre">password</span></code> with a good password.  (See <a class="reference external" href="postgres-password">Pick a postgres password</a> for a python code snippit that will make a good password.  Put this password somewhere in your password safe.  (You should probably also create a new file in your secrets directory, if you’re using one, with this password in it.)</p>
+</section>
+<section id="debugging-spin-issues">
+<h3><a class="toc-backref" href="#id12" role="doc-backlink">Debugging spin issues</a><a class="headerlink" href="#debugging-spin-issues" title="Link to this heading">¶</a></h3>
+<p>If the container is not starting, there are two places to look.  One, it’s possible the container did start, but immediately crashed.  If this happens, the <code class="docutils literal notranslate"><span class="pre">get</span> <span class="pre">pods</span></code> command above should show something like <code class="docutils literal notranslate"><span class="pre">CrashLoopBackoff</span></code>.  In that case, get the logs of one of your crashed container with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">rancher kubectl --namespace $NAMESPACE logs &lt;pod&gt;</span>
+</pre></div>
+</div>
+<p>It’s also possible that the container never started, e.g. because it failed to pull the docker image, or for some other reason.  You can get some error messages with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">rancher kubectl --namespace $NAMESPACE get events --sort-by=&#39;.lastTimestamp&#39;</span>
+</pre></div>
+</div>
+<p>What to do once you actually see the error messages… is hard.</p>
+</section>
+<section id="get-a-dns-name-for-the-webserver">
+<span id="webserver-dns-name"></span><h3><a class="toc-backref" href="#id13" role="doc-backlink">Get a DNS name for the webserver</a><a class="headerlink" href="#get-a-dns-name-for-the-webserver" title="Link to this heading">¶</a></h3>
+<p>This is potentially complicated.  Your webserver does actually already have a DNS name which was created by Spin.  To find the default Spin DNS name, look at the file <code class="docutils literal notranslate"><span class="pre">webserver.yaml</span></code> you created.  Find the line <code class="docutils literal notranslate"><span class="pre">kind:</span> <span class="pre">Ingress</span></code>, and find the first line starting with <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">host:</span></code> below that.  The hostname on that line is the Spin DNS name.  It will be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">webserver</span><span class="o">.&lt;</span><span class="n">namespace</span><span class="o">&gt;.</span><span class="n">production</span><span class="o">.</span><span class="n">svc</span><span class="o">.</span><span class="n">spin</span><span class="o">.</span><span class="n">nersc</span><span class="o">.</span><span class="n">org</span>
+</pre></div>
+</div>
+<p>(You can also get the Spin DNS name with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">rancher kubectl --namespace=$NAMESPACE get ingress</span>
+</pre></div>
+</div>
+<p>)</p>
+<p>You can just use this as the database webserver, but it will <em>not</em> have a valid SSL certificate, which will cause problems with the spin dbclient.  (You can work around those problems, but it’s better to do things right.)  E.g., I use <code class="docutils literal notranslate"><span class="pre">romansnpit-rknop-dev.lbl.gov</span></code> for my dev instance.  If you’re at LBL, you can use <a class="reference external" href="https://iprequest.lbl.gov/">https://iprequest.lbl.gov/</a> and ask for a CNAME that points to the Spin default DNS name.  If you aren’t… you have to figure something out.</p>
+</section>
+<section id="get-a-certificate-for-your-dns-name">
+<h3><a class="toc-backref" href="#id14" role="doc-backlink">Get a Certificate for your DNS name</a><a class="headerlink" href="#get-a-certificate-for-your-dns-name" title="Link to this heading">¶</a></h3>
+<p>You can generate a privatey key and a certificate signing request with (on NERSC, or any system that has <code class="docutils literal notranslate"><span class="pre">openssl</span></code> installed):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">openssl</span> <span class="n">req</span> <span class="o">-</span><span class="n">new</span> <span class="o">-</span><span class="n">newkey</span> <span class="n">rsa</span><span class="p">:</span><span class="mi">2048</span> <span class="o">-</span><span class="n">pubkey</span> <span class="o">-</span><span class="n">keyout</span> <span class="n">your_server_name</span><span class="o">.</span><span class="n">priv</span> <span class="o">-</span><span class="n">out</span> <span class="n">your_server_name</span><span class="o">.</span><span class="n">csr</span> <span class="o">-</span><span class="n">nodes</span>
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">your_server_name</span></code> with the DNS name, only replace all periods with underscores.  (Truthfully, it doesn’t matter exactly what you name these two files, as long as you keep track of them.)  That will ask you a bunch of questions, which you should answer correctly.  Do <em>not</em> give it a password; just hit Enter there to make the key passwordless.</p>
+<p>You will use the <code class="docutils literal notranslate"><span class="pre">.csr</span></code> file you created to get a signed certificate.  If you’re at LBL, you can go to <a class="reference external" href="https://certificates.lbl.gov">https://certificates.lbl.gov</a> and paste everything everything from the CSR file starting from the line <code class="docutils literal notranslate"><span class="pre">-----BEGIN</span> <span class="pre">CERTIFICATE</span> <span class="pre">REQUEST-----</span></code> to the bottom of the file into the text widget on that page.  If you’re not at LBL… you need to figure something out.</p>
+<p>Once you get the certificate, save it in the file <code class="docutils literal notranslate"><span class="pre">your_server_name.cert</span></code>.  If you got your certificate from <code class="docutils literal notranslate"><span class="pre">certificates.lbl.gov</span></code>, you want to save the “Certificate (w/ issue after), PEM encoded” certificate to that file.</p>
+<p>Base64 encode both your private key and your certificate:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">base64</span> <span class="o">-</span><span class="n">w</span> <span class="mi">0</span> <span class="n">your_server_name</span><span class="o">.</span><span class="n">cert</span> <span class="o">&gt;</span> <span class="n">cert</span><span class="o">.</span><span class="n">barf</span>
+<span class="n">base64</span> <span class="o">-</span><span class="n">w</span> <span class="mi">0</span> <span class="n">your_server_name</span><span class="o">.</span><span class="n">priv</span> <span class="o">&gt;</span> <span class="n">priv</span><span class="o">.</span><span class="n">barf</span>
+</pre></div>
+</div>
+<p>Edit the file <code class="docutils literal notranslate"><span class="pre">cert.yaml</span></code>:</p>
+<ul class="simple">
+<li><p>Find the line starting <code class="docutils literal notranslate"><span class="pre">tls.crt:</span></code>.  Replace <code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">THE</span> <span class="pre">RIGHT</span> <span class="pre">THING</span> <span class="pre">HERE</span></code> with the contents of <code class="docutils literal notranslate"><span class="pre">cert.barf</span></code>.</p></li>
+<li><p>Find the line starting <code class="docutils literal notranslate"><span class="pre">tls.key:</span></code>.  Replace <code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">THE</span> <span class="pre">RIGHT</span> <span class="pre">THING</span> <span class="pre">HERE</span></code> with the contents of <code class="docutils literal notranslate"><span class="pre">priv.barf</span></code>.</p></li>
+</ul>
+</section>
+<section id="update-the-webserver-to-actually-run-the-webserver">
+<h3><a class="toc-backref" href="#id15" role="doc-backlink">Update the webserver to actually run the webserver</a><a class="headerlink" href="#update-the-webserver-to-actually-run-the-webserver" title="Link to this heading">¶</a></h3>
+<blockquote>
+<div><ul>
+<li><p>Edit the file <code class="docutils literal notranslate"><span class="pre">webserver.yaml</span></code>:</p>
+<ul class="simple">
+<li><p>Comment out the line <code class="docutils literal notranslate"><span class="pre">command:</span> <span class="pre">[</span> <span class="pre">'tail',</span> <span class="pre">'-f',</span> <span class="pre">'/etc/issue'</span> <span class="pre">]</span></code></p></li>
+<li><p>Uncomment all the lines at the bottom starting with <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">host:</span> <span class="pre">romansnpit-rknop-dev.lbl.gov</span></code></p></li>
+<li><p>Replace <code class="docutils literal notranslate"><span class="pre">romansnpit-rknop-dev.lbl.gov</span></code> (in two places!) with the DNS name of your webserver.</p></li>
+<li><p>Remember to save the file.</p></li>
+</ul>
+</li>
+<li><p>Run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>rancher kubectl --namespace $NAMESPACE apply -f webserver.yaml
+</pre></div>
+</div>
+<p>This will restart the webserver, now actually running the webserver.  Do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>rancher kubectl --namespace $NAMESPACE get pods
+</pre></div>
+</div>
+<p>until you see the webserver is running.  Then, do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>rancher kubectl --namespace $NAMESPACE logs &lt;podname&gt;
+</pre></div>
+</div>
+<p>make sure the logs look good.  If you see errors and stack dumps, that’s not good.</p>
+</li>
+</ul>
+</div></blockquote>
+</section>
+<section id="create-a-config-file-for-people-who-are-going-to-connect-to-your-database">
+<span id="create-config"></span><h3><a class="toc-backref" href="#id16" role="doc-backlink">Create a config file for people who are going to connect to your database</a><a class="headerlink" href="#create-a-config-file-for-people-who-are-going-to-connect-to-your-database" title="Link to this heading">¶</a></h3>
+<p>Start with the following yaml, and copy it into a new <code class="docutils literal notranslate"><span class="pre">.yaml</span></code> file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">system</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">db</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://&lt;YOUR WEBSERVER DNS NAME&gt;/</span>
+<span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbuser</span>
+<span class="w">    </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+<span class="w">    </span><span class="nt">passwordfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/secrets/&lt;SECRETS FILE NAME&gt;</span>
+
+<span class="w">  </span><span class="nt">paths</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spectra1d</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data/spectra1d</span>
+<span class="w">    </span><span class="nt">lightcurves</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data/lightcurves</span>
+<span class="w">    </span><span class="nt">segmaps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data/segmaps</span>
+<span class="w">    </span><span class="nt">images</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data/images</span>
+
+<span class="w">    </span><span class="nt">temp_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/snpit_temp</span>
+
+<span class="w">    </span><span class="nt">snappl</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">A25ePSF_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/a25epsf</span>
+
+<span class="w">  </span><span class="nt">ou24</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">simdex_server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://roman-desc-simdex.lbl.gov</span>
+<span class="w">    </span><span class="nt">tds_base</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/ou2024/RomanTDS</span>
+<span class="w">    </span><span class="nt">config_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/home/environment/ou2024_tds.yaml</span>
+<span class="w">    </span><span class="nt">sn_truth_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/ou2024_snana</span>
+<span class="w">    </span><span class="nt">images</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/ou2024/RomanTDS/images/simple_model</span>
+<span class="w">    </span><span class="nt">sims_sed_library</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/ou2024_sims_sed_library</span>
+</pre></div>
+</div>
+<p>For now, don’t worry about all the paths.  Eventually, those will need to be right.  They <em>are</em> already right for running inside a container, but you will also need to set up the command that launches the container.  (TODO: document that.)  Replace <code class="docutils literal notranslate"><span class="pre">YOUR</span> <span class="pre">WEBSERVER</span> <span class="pre">DNS</span> <span class="pre">NAME</span></code> with the <a class="reference external" href="webserver-dns-name">name you secured for your webserver</a>.  For <code class="docutils literal notranslate"><span class="pre">SECRETS</span> <span class="pre">FILE</span> <span class="pre">NAME</span></code>, pick the name of a file that you will put in your secrets directory (see <a class="reference internal" href="environment.html"><span class="doc">Roman SNPIT Environment</span></a> for more information about that).  It should not be short, but should probably be something like <code class="docutils literal notranslate"><span class="pre">roman_snpit_db_rknop_dev</span></code>, replacing <code class="docutils literal notranslate"><span class="pre">rknop_dev</span></code> with something specific to the database you’re setting up.  In this secrets file on your system, put the password you made for the user on the webserver in <a href="#id18"><span class="problematic" id="id19">`create-database-table`_</span></a>.</p>
+</section>
+<section id="test-that-you-can-connect-to-the-database">
+<h3><a class="toc-backref" href="#id17" role="doc-backlink">Test that you can connect to the database</a><a class="headerlink" href="#test-that-you-can-connect-to-the-database" title="Link to this heading">¶</a></h3>
+<p>Get a SNPIT environment shell running (see <a class="reference internal" href="environment.html"><span class="doc">Roman SNPIT Environment</span></a>).  Once there, set your config:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export SNPIT_CONFIG=/path/to/your/config.yaml</span>
+</pre></div>
+</div>
+<p>The path is the <em>in-container</em> path to the config file <a class="reference external" href="create-config">you just created</a>.  (If you named this file <code class="docutils literal notranslate"><span class="pre">my_new_config.yaml</span></code> and put this in the “working” directory that <a href="#id2"><span class="problematic" id="id3">:dock:`environment`</span></a> talks about, then it will be <code class="docutils literal notranslate"><span class="pre">/home/my_new_config.yaml</span></code>.)</p>
+<p>Now run python, and try to connect to the database:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">snappl.dbclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITDBClient</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dbclient</span><span class="o">.</span><span class="n">verify_logged_in</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If you don’t get any error messages, then it worked.</p>
+</section>
+</section>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="developers.html" title="Previous document">snappl Developers Guide</a>
+        </li>
+        <li>
+          <a href="api.html" title="Next document">snappl API</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2026, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/maintainers.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

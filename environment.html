@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Roman SNPIT Environment &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=5a6b8c39" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=f3bc516d" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+    <script src="_static/documentation_options.js?v=b4ef4976"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" />
+    <link rel="prev" title="roman_snpit_snappl Documentation" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="index.html">
+    <img class="logo" src="_static/logo_black_filled.png" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">Software developed by the Roman SNPIT</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Roman SNPIT Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developers.html">snappl Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maintainers.html">Environment and Database Maintainer’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">snappl API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database_schema.html">Database Schema</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">roman_snpit_snappl Documentation</a></li>
+      <li>Next: <a href="installation.html" title="next chapter">Installation</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="index.html" title="Previous document">roman_snpit_snappl Documentation</a>
+        </li>
+        <li>
+          <a href="installation.html" title="Next document">Installation</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="roman-snpit-environment">
+<h1><a class="toc-backref" href="#id5" role="doc-backlink">Roman SNPIT Environment</a><a class="headerlink" href="#roman-snpit-environment" title="Link to this heading">¶</a></h1>
+<nav class="contents" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#roman-snpit-environment" id="id5">Roman SNPIT Environment</a></p>
+<ul>
+<li><p><a class="reference internal" href="#overview" id="id6">Overview</a></p>
+<ul>
+<li><p><a class="reference internal" href="#containers-vs-native" id="id7">Containers vs. Native</a></p></li>
+<li><p><a class="reference internal" href="#databases-filesystems-and-config-files" id="id8">Databases, Filesystems, and Config Files</a></p></li>
+<li><p><a class="reference internal" href="#making-it-so-your-code-can-run-in-the-snpit-environment" id="id9">Making it so your code can run in the SNPIT Environment</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#databases-currently-supported" id="id10">Databases currently supported</a></p></li>
+<li><p><a class="reference internal" href="#running-on-nersc" id="id11">Running on NERSC</a></p>
+<ul>
+<li><p><a class="reference internal" href="#using-conda" id="id12">Using Conda</a></p></li>
+<li><p><a class="reference internal" href="#using-the-container" id="id13">Using the Container</a></p></li>
+<li><p><a class="reference internal" href="#running-a-test-environment" id="id14">Running a Test Environment</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#running-on-smdc" id="id15">Running on SMDC</a></p></li>
+<li><p><a class="reference internal" href="#running-locally-on-your-machine" id="id16">Running locally on your machine</a></p>
+<ul>
+<li><p><a class="reference internal" href="#using-pip-or-conda" id="id17">Using Pip or Conda</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id18">Using the Container</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id19">Running a Test Environment</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="overview">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">Overview</a><a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>Eventually, if possible, we would like all SNPIT Code to run in the same environment.  This will simplify life for the people who are eventually going to be deploying and managing the entire pipeline.  However, if your code absolutely requires its own environment, as long as we can containerize it, we <em>might</em> be able to live with that.</p>
+<section id="containers-vs-native">
+<h3><a class="toc-backref" href="#id7" role="doc-backlink">Containers vs. Native</a><a class="headerlink" href="#containers-vs-native" title="Link to this heading">¶</a></h3>
+<p>Currently, at least on NERSC, we support two different Roman SNPIT environments: one that is just a conda environment, and the other that runs inside a container using <code class="docutils literal notranslate"><span class="pre">podman-hpc</span></code> (which is similar to using <code class="docutils literal notranslate"><span class="pre">docker</span></code> on your own system).  Because the goal is to get all code running in containers, we urge you to move to using the containerized environment on NERSC as soon as possible.</p>
+</section>
+<section id="databases-filesystems-and-config-files">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Databases, Filesystems, and Config Files</a><a class="headerlink" href="#databases-filesystems-and-config-files" title="Link to this heading">¶</a></h3>
+<p><a class="reference external" href="github.com/Roman-Supernova-PIT/snappl/">snappl</a> is the SNPIT library that handles connectivity to the database.</p>
+<p>While the SNPIT environment itself is just a set of installed libraries, eventually most pipeline code is going to need to connect to a database and access the shared files referred to by that database.  Although we <em>could</em> have developed a system that allows the files to be shared across multiple different systems (and Rob has done that for other projects), that adds complexity that we do not believe we will need in the SNPIT.  As such, when you connect to a database, snappl assumes that you’re running on a system with all the files where it expects.  Eventually, this will all be on SMDC (assuming, as it looks, that that will be the PIT’s production environment.  Currently, for many of our test databases, that is on NERSC Perlmutter.</p>
+<p>To connect to the database, you need a config file that points you to the right database and to the right places to find the files tracked by the database.</p>
+</section>
+<section id="making-it-so-your-code-can-run-in-the-snpit-environment">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Making it so your code can run in the SNPIT Environment</a><a class="headerlink" href="#making-it-so-your-code-can-run-in-the-snpit-environment" title="Link to this heading">¶</a></h3>
+<p>The most important thing is to <strong>make your code pip installable</strong>.</p>
+<p>However, please also make sure that your package has its requirements listed, and that as much as possible the versions of those requirements are consistent with the versions in the <a class="reference external" href="https://github.com/Roman-Supernova-PIT/environment">SNPIT environment</a> (see the <code class="docutils literal notranslate"><span class="pre">requirements-cpu.txt</span></code> and <code class="docutils literal notranslate"><span class="pre">requirements-cuda.txt</span></code> files there), and with what’s used in <code class="docutils literal notranslate"><span class="pre">snappl</span></code> (see the <code class="docutils literal notranslate"><span class="pre">dependencies</span></code> section of <a class="reference external" href="https://github.com/Roman-Supernova-PIT/snappl/blob/main/pyproject.toml">snappl’s pyproject.toml file</a>.</p>
+<p>Next actually test your code in the docker environment.  Some common gotchas are going to be:</p>
+<ul class="simple">
+<li><p>References to absolute paths.  Any time you reference a path on your system, make it something that can be configured via an environment variable or from the command line</p></li>
+<li><p>(todo, what are other common problems?)</p></li>
+</ul>
+</section>
+</section>
+<section id="databases-currently-supported">
+<span id="database-list"></span><h2><a class="toc-backref" href="#id10" role="doc-backlink">Databases currently supported</a><a class="headerlink" href="#databases-currently-supported" title="Link to this heading">¶</a></h2>
+<p>The following test/development databases are currently up and running.  (The columns are all used in other instructions below.)</p>
+<table class="docutils align-default">
+<thead>
+  <tr class="row-odd">
+    <th class="head">Database</th>
+    <th class="head">Secrets File</th>
+    <th class="head">System</th>
+    <th class="head">Launcher</th>
+  </tr>
+</thead>
+<tbody>
+  <tr class="row-even">
+    <td>The nov2025 test database</td>
+    <td><tt>roman_snpit_ou2024_nov_ou2024nov</tt></td>
+    <td>NERSC</td>
+    <td><tt>interactive-podman-nov2025.sh</tt></td>
+  </tr>
+  <tr class="row-odd">
+    <td>Rob's tests</td>
+    <td><tt>roman_snpit_db_rknop_dev</tt></td>
+    <td>NERSC</td>
+    <td><tt>interactive-podman-rknop-dev.sh</tt></td>
+  </tr>
+</tbody>
+</table></section>
+<section id="running-on-nersc">
+<h2><a class="toc-backref" href="#id11" role="doc-backlink">Running on NERSC</a><a class="headerlink" href="#running-on-nersc" title="Link to this heading">¶</a></h2>
+<section id="using-conda">
+<h3><a class="toc-backref" href="#id12" role="doc-backlink">Using Conda</a><a class="headerlink" href="#using-conda" title="Link to this heading">¶</a></h3>
+<p>TODO</p>
+</section>
+<section id="using-the-container">
+<h3><a class="toc-backref" href="#id13" role="doc-backlink">Using the Container</a><a class="headerlink" href="#using-the-container" title="Link to this heading">¶</a></h3>
+<p>There are a few steps you need to do in order to set yourself up to run on NERSC using the container.  Most of these you only have to do once, or once for each database you want to connect to, so this is not as cumbersome as it looks.</p>
+<section id="figure-out-which-database-you-want-to-connect-to">
+<h4>Figure out which database you want to connect to<a class="headerlink" href="#figure-out-which-database-you-want-to-connect-to" title="Link to this heading">¶</a></h4>
+<p>See <a class="reference internal" href="#database-list"><span class="std std-ref">Databases currently supported</span></a> above.</p>
+</section>
+<section id="make-a-temporary-directory">
+<h4>Make a temporary directory<a class="headerlink" href="#make-a-temporary-directory" title="Link to this heading">¶</a></h4>
+<p>Run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mkdir $PSCRATCH/snpit_temp</span>
+</pre></div>
+</div>
+<p>This directory will be used inside the container, and mounted at <code class="docutils literal notranslate"><span class="pre">/snpit_temp</span></code>.</p>
+<p>You only ever need to do this once.</p>
+</section>
+<section id="create-a-secrets-directory">
+<h4>Create a secrets directory<a class="headerlink" href="#create-a-secrets-directory" title="Link to this heading">¶</a></h4>
+<p>We do not store the passwords for databases anywhere in github.  As such, there will need to be some manual intervention on your part so that the environment is able to find the password.  Although it’s not perfect, we handle this by having a “secrets” directory underneath your home directory that is <em>not</em> world readable.  All NERSC admins can still read this file, but we have decided to trust them.  Create your secrets directory with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd</span>
+<span class="go">mkdir secrets</span>
+<span class="go">chmod 710 secrets</span>
+<span class="go">setfacl -Rdm g::x,o::- secrets</span>
+</pre></div>
+</div>
+<p>You only ever need to do this once.</p>
+</section>
+<section id="create-the-password-file-for-the-database-you-wish-to-connect-to">
+<h4>Create the password file for the database you wish to connect to<a class="headerlink" href="#create-the-password-file-for-the-database-you-wish-to-connect-to" title="Link to this heading">¶</a></h4>
+<p>Figure out two things: the name of the secrets file (see <a class="reference internal" href="#database-list">database_list</a>) and the actual password.  (For the latter, you need to talk to Rob, or whoever set up the database you’re connecting to.)</p>
+<p>Once you know these two things, create the password file with the right name in your <code class="docutils literal notranslate"><span class="pre">secrets</span></code> directory.  It should have one line, which is the password.  Do this however you like to do these things (text editor, whatever), or run the following on NERSC:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd ~/secrets</span>
+<span class="go">echo &quot;&lt;password&gt;&quot; &gt; &lt;passwordfile&gt;</span>
+</pre></div>
+</div>
+<p>substituting the right filename for <code class="docutils literal notranslate"><span class="pre">&lt;passwordfile&gt;</span></code> and the right password for <code class="docutils literal notranslate"><span class="pre">&lt;password&gt;</span></code>.</p>
+<p>Verify that the password is right with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cat ~/secrets/&lt;passwordfile&gt;</span>
+</pre></div>
+</div>
+<p>You only need to do this once for each different database you want to connect to.</p>
+</section>
+<section id="pick-a-directory-you-re-going-to-work-in">
+<h4>Pick a directory you’re going to work in<a class="headerlink" href="#pick-a-directory-you-re-going-to-work-in" title="Link to this heading">¶</a></h4>
+<p>You can put this under your home directory, but probably don’t want to do that, as the space you’re allowed in your home directory is very limited.  Either make yourself a subdirectory on scratch under <code class="docutils literal notranslate"><span class="pre">$SCRATCH</span></code> (being aware that files will be purged off of that disk after a while, so make sure you’ve committed anything you want to keep to git), or make yourself a directory underneath <code class="docutils literal notranslate"><span class="pre">/global/cfs/cdirs/m4385/users/&lt;yourname&gt;</span></code>.</p>
+<p>In this directory, check out all the various things that you want to work on.  If you’re working on photometry, you probably want to git clone the <a class="reference external" href="https://github.com/roman-Supernova-PIT/photometry_test_data">photometry test data</a>.  You <em>might</em> want to clone <a class="reference external" href="https://github.com/roman-Supernova-PIT/snappl">snappl</a> (but probably don’t need to, because snappl is built into the Dockerfile you’ll be running.)  And, of course, make sure the directory of the code you’re working on is here, and has no symlinks that point outside of itself.</p>
+</section>
+<section id="run-the-container">
+<h4>Run the container<a class="headerlink" href="#run-the-container" title="Link to this heading">¶</a></h4>
+<p>Make sure you are in the directory you picked to work in, and do:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">bash /global/cfs/cdirs/m4385/env/&lt;launcher&gt;</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;launcher&gt;</span></code> is the “NERSC Launcher” from the <a class="reference internal" href="#database-list"><span class="std std-ref">Databases currently supported</span></a>.</p>
+<p><strong>NOTE</strong>: if you need Cuda inside the container (e.g. if you’re running sidecar or phrosty), you should instead run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">WHICHROMANENV=cuda-dev bash /global/cfs/cdirs/m4385/env/&lt;launcher&gt;</span>
+</pre></div>
+</div>
+<p>This will give you a shell inside the container.  You can tell you’re in the container because the prompt will change to something like <code class="docutils literal notranslate"><span class="pre">root&#64;fa872d696e6b:/home#</span></code> (where the hex barf after the <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> will be different).</p>
+<p>If you <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/home</span></code>, you should see all the subdirectories and files that you put in your work directory.</p>
+<p>You can find your perlmutter scratch directory inside the container at <code class="docutils literal notranslate"><span class="pre">/scratch</span></code> (in case you have anything there you need).</p>
+</section>
+<section id="exit-the-container-when-done">
+<h4>Exit the container when done<a class="headerlink" href="#exit-the-container-when-done" title="Link to this heading">¶</a></h4>
+<p>When you’re done, just <code class="docutils literal notranslate"><span class="pre">exit</span></code> the container.  Probably also be a good citizen and clean up after yourself with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">podman-hpc system prune</span>
+</pre></div>
+</div>
+<p>(It’s not really a big deal, but if you don’t do that, somewhere the system keeps a record of your exited container, and you probably don’t need that.)</p>
+</section>
+<section id="if-you-need-your-own-config-file">
+<h4>If you need your own config file<a class="headerlink" href="#if-you-need-your-own-config-file" title="Link to this heading">¶</a></h4>
+<p>The containers come with a config file that has the database connection baked in.  If you’re using the snappl config system yourself, you probably have your own config file with things in it that configure your own application.  In order to use the container config’s database together with your config file, put the following lines at the top of your config <code class="docutils literal notranslate"><span class="pre">.yaml</span></code> file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">preloads</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/snpit_env/configs/${SNPIT_DEFAULT_CONFIG}</span>
+</pre></div>
+</div>
+<p>Make sure that your own config file does <em>not</em> have a <code class="docutils literal notranslate"><span class="pre">system:</span></code> block; if it does, then things will break.</p>
+<p>Then, every time you start the container, run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export SNPIT_CONFIG=&lt;in-container path to your config file&gt;</span>
+</pre></div>
+</div>
+<p>Now, when you run anything, snappl will connect to the database designed for the container, but will also include all of your own configuration data.</p>
+</section>
+<section id="submitting-batch-jobs">
+<h4>Submitting batch jobs<a class="headerlink" href="#submitting-batch-jobs" title="Link to this heading">¶</a></h4>
+<p>This will be more involved.  What you will need to do is copy and edit the “NERSC Launcher” script.  If you’re lucky, all you’ll have to do is replace <code class="docutils literal notranslate"><span class="pre">/bin/bash</span></code> on the last line with the command that you want to run, and edit the top to have all the necessary <code class="docutils literal notranslate"><span class="pre">#SBATCH</span></code> directives.  Then <code class="docutils literal notranslate"><span class="pre">sbatch</span></code> your copied and edited script from your work directory.</p>
+</section>
+</section>
+<section id="running-a-test-environment">
+<h3><a class="toc-backref" href="#id14" role="doc-backlink">Running a Test Environment</a><a class="headerlink" href="#running-a-test-environment" title="Link to this heading">¶</a></h3>
+<p>TODO.  Haven’t fully figured out yet how to get this working on NERSC.</p>
+</section>
+</section>
+<section id="running-on-smdc">
+<h2><a class="toc-backref" href="#id15" role="doc-backlink">Running on SMDC</a><a class="headerlink" href="#running-on-smdc" title="Link to this heading">¶</a></h2>
+<p>TODO</p>
+</section>
+<section id="running-locally-on-your-machine">
+<h2><a class="toc-backref" href="#id16" role="doc-backlink">Running locally on your machine</a><a class="headerlink" href="#running-locally-on-your-machine" title="Link to this heading">¶</a></h2>
+<section id="using-pip-or-conda">
+<h3><a class="toc-backref" href="#id17" role="doc-backlink">Using Pip or Conda</a><a class="headerlink" href="#using-pip-or-conda" title="Link to this heading">¶</a></h3>
+<p>TODO</p>
+</section>
+<section id="id2">
+<h3><a class="toc-backref" href="#id18" role="doc-backlink">Using the Container</a><a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<p><strong>Warning</strong>: Currently, we are only able to build our containers for <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> (also called <code class="docutils literal notranslate"><span class="pre">amd64</span></code>) systems.  We have not succeeded in building our containers for <code class="docutils literal notranslate"><span class="pre">ARM</span></code> (also called <code class="docutils literal notranslate"><span class="pre">arm64</span></code>) systems— which includes all Macs.  You <em>might</em> be able to run a container from a different architecture on your machine, but performance is likely to be very poor.  This means that for development, you really want to be using an <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> Linux machine if that’s at all possible.  (We do hope to get the container working for <code class="docutils literal notranslate"><span class="pre">ARM</span></code>, but it’s a thorny problem and not a high proirity.  If you want to figure out how to make it work, please do.)</p>
+<p>TODO</p>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id19" role="doc-backlink">Running a Test Environment</a><a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<p>TODO</p>
+<p>In the mean time, in your working directory (i.e. the directory that has subdirectories which are checkouts of the other git archives you’re working on), clone the <a class="reference external" href="https://github.com/Roman-Supernova-PIT/environment">roman SNPIT environment repo</a>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/Roman-Supernova-PIT/environment.git</span>
+</pre></div>
+</div>
+<p>(If you know what you’re doing, you probably want to clone the <code class="docutils literal notranslate"><span class="pre">git&#64;github.com:</span></code> version instead of the <code class="docutils literal notranslate"><span class="pre">https:</span></code> version.)</p>
+<ul>
+<li><p>cd into <code class="docutils literal notranslate"><span class="pre">environment/test-docker-environment</span></code></p></li>
+<li><p>Build the necessary docker files with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docker compose build</span>
+</pre></div>
+</div>
+<p>As above, this will probably not work if you aren’t on an <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> Linux machine.</p>
+</li>
+<li><p>Start the test environment with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docker compose up -d webserver shell</span>
+</pre></div>
+</div>
+</li>
+<li><p>Connect into the test environment with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docker compose exec -it shell /bin/bash</span>
+</pre></div>
+</div>
+</li>
+<li><p>Try to do things.</p></li>
+<li><p>When you are done, <code class="docutils literal notranslate"><span class="pre">exit</span></code> out of the test environment, and bring it all down with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docker compose down -v</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>For example, if you want to run the snappl tests on a branch of snappl, make sure you’ve checked out both the <a class="reference external" href="https://github.com/Roman-Supernova-PIT/snappl">snappl repo</a> and the <a class="reference external" href="https://github.com/roman-Supernova-PIT/photometry_test_data">photometry test data</a> in the same directory as where you checked out the environment repo.  Make sure you’ve checked out whichever branch of snappl it is you want to run the tests on.  Then, once you’re inside the container, try:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd /home/snappl</span>
+<span class="go">pip install -e .[test]</span>
+<span class="go">cd snappl/tests</span>
+<span class="go">pytest -v</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="index.html" title="Previous document">roman_snpit_snappl Documentation</a>
+        </li>
+        <li>
+          <a href="installation.html" title="Next document">Installation</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2026, Roman Supernova PIT.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/environment.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

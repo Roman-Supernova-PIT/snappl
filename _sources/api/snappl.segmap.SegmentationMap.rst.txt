@@ -1,0 +1,33 @@
+SegmentationMap
+===============
+
+.. currentmodule:: snappl.segmap
+
+.. autoclass:: SegmentationMap
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~SegmentationMap.image
+      ~SegmentationMap.image_format_to_class
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~SegmentationMap.find_segmaps
+      ~SegmentationMap.get_by_id
+      ~SegmentationMap.save_to_db
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: image
+   .. autoattribute:: image_format_to_class
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: find_segmaps
+   .. automethod:: get_by_id
+   .. automethod:: save_to_db

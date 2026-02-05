@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.imagecollection &#8212; roman_snpit_snappl 0.1.dev1+gb23913559 documentation</title>
+    <title>snappl.imagecollection &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=5924670e"></script>
+    <script src="../../_static/documentation_options.js?v=b4ef4976"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -43,11 +43,13 @@
 
 
 <h3>Navigation</h3>
-<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../environment.html">Roman SNPIT Environment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developers.html">snappl Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../maintainers.html">Environment and Database Maintainer’s Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../database_schema.html">Database Schema</a></li>
 </ul>
@@ -94,7 +96,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">simplejson</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.http</span><span class="w"> </span><span class="kn">import</span> <span class="n">retry_post</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">snappl.snappl_http</span><span class="w"> </span><span class="kn">import</span> <span class="n">retry_post</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">OpenUniverse2024FITSImage</span><span class="p">,</span> <span class="n">FITSImage</span><span class="p">,</span> <span class="n">FITSImageStdHeaders</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provenance</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.dbclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNPITDBClient</span>
@@ -198,13 +200,13 @@
 
 <div class="viewcode-block" id="ImageCollection.get_image">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollection.html#snappl.imagecollection.ImageCollection.get_image">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pointing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">observation_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an object of a subclass of Image based on input parameters.</span>
 
 <span class="sd">        You can specify an image by:</span>
 <span class="sd">          * image_id  (for collections that point to the internal Roman SNPIT database)</span>
 <span class="sd">          * path</span>
-<span class="sd">          * pointing, band, and sca</span>
+<span class="sd">          * observation_id, band, and sca</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -212,14 +214,14 @@
 <span class="sd">            The id of the image you want to get.  This is only relevant</span>
 <span class="sd">            for image collections that refer to images in the internal</span>
 <span class="sd">            Roman SNPIT database, otherwise it is invalid.  If image_id</span>
-<span class="sd">            is given, then path, pointing, band, and sca are all ignored.</span>
+<span class="sd">            is given, then path, observation_id, band, and sca are all ignored.</span>
 
 <span class="sd">          path: Path or str, default None</span>
 <span class="sd">            The path to the relative to base_path.  For some subclasses,</span>
-<span class="sd">            this must be consistent wiht pointing, band, and sca if passed.</span>
+<span class="sd">            this must be consistent wiht observation_id, band, and sca if passed.</span>
 
-<span class="sd">          pointing: str, default None</span>
-<span class="sd">            Pointing.  If not given, just use the Path to find the image.</span>
+<span class="sd">          observation_id: str, default None</span>
+<span class="sd">            Observation_Id.  If not given, just use the Path to find the image.</span>
 
 <span class="sd">          band: str, default None</span>
 <span class="sd">            Band.</span>
@@ -248,17 +250,17 @@
 
 <div class="viewcode-block" id="ImageCollection.get_image_path">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollection.html#snappl.imagecollection.ImageCollection.get_image_path">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">observation_id</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the absolute path to the desired image, if that makes sense.</span>
 
 <span class="sd">        This will only make sense for image collections where an image</span>
-<span class="sd">        is uniquely defined by a pointing, band, and sca.  Other image</span>
+<span class="sd">        is uniquely defined by a observation_id, band, and sca.  Other image</span>
 <span class="sd">        collections will just not implement this method.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">          pointing: str</span>
-<span class="sd">            The pointing number</span>
+<span class="sd">          observation_id: str</span>
+<span class="sd">            The identifier of the observation.</span>
 
 <span class="sd">          band : str</span>
 <span class="sd">            The band</span>
@@ -322,7 +324,7 @@
 <span class="sd">            By default, the returned images are not sorted in any</span>
 <span class="sd">            particular way.  Put a keyword here to sort by that value</span>
 <span class="sd">            (or by those values).  Options include &#39;id&#39;,</span>
-<span class="sd">            &#39;provenance_id&#39;, &#39;pointing&#39;, &#39;sca&#39;, &#39;ra&#39;, &#39;dec&#39;, &#39;filepath&#39;,</span>
+<span class="sd">            &#39;provenance_id&#39;, &#39;observation_id&#39;, &#39;sca&#39;, &#39;ra&#39;, &#39;dec&#39;, &#39;filepath&#39;,</span>
 <span class="sd">            &#39;width&#39;, &#39;height&#39;, &#39;mjd&#39;, &#39;exptime&#39;.  Not all of these are</span>
 <span class="sd">            necessarily useful, and some of them may be null for many</span>
 <span class="sd">            objects in the database.</span>
@@ -365,17 +367,24 @@
 
 <div class="viewcode-block" id="ImageCollectionOU2024.get_image">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollectionOU2024.html#snappl.imagecollection.ImageCollectionOU2024.get_image">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pointing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">observation_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a OpenUniverse2024FITSImage based on specifications.</span>
 
-<span class="sd">        If you specify all of path, pointing, band, and sca, they must</span>
+<span class="sd">        If you specify all of path, observation_id, band, and sca, they must</span>
 <span class="sd">        be consistent.</span>
 
-<span class="sd">        If you just give path, then pointing, band, and sca will be read</span>
+<span class="sd">        If you just give path, then observation_id, band, and sca will be read</span>
 <span class="sd">        from the header.</span>
 
-<span class="sd">        If you give pointinb, band, and sca, but not path, it will use</span>
+<span class="sd">        If you give observation_id, band, and sca, but not path, it will use</span>
 <span class="sd">        get_image_path to find the image.</span>
+
+<span class="sd">        NOTE: in the ou2024 files, &quot;observation_id&quot; is called &quot;pointing&quot;</span>
+<span class="sd">        and is an int.  In snappl, to match what will come from Roman,</span>
+<span class="sd">        we use observation_id, and make it a string (even though it&#39;s</span>
+<span class="sd">        composed of characters [0-9], it&#39;s a string in the Roman</span>
+<span class="sd">        headers).</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -385,34 +394,34 @@
         <span class="n">base_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span> <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">base_path</span> <span class="p">)</span>
         <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">img</span> <span class="o">=</span> <span class="n">OpenUniverse2024FITSImage</span><span class="p">(</span> <span class="n">base_path</span> <span class="o">/</span> <span class="n">path</span><span class="p">,</span> <span class="nb">format</span><span class="o">=-</span><span class="mi">1</span> <span class="p">)</span>
-            <span class="k">if</span> <span class="p">(</span> <span class="n">pointing</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="nb">int</span><span class="p">(</span><span class="n">pointing</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">pointing</span><span class="p">)</span> <span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Pointing </span><span class="si">{pointing}</span><span class="s2"> inconsistent with what&#39;s in </span><span class="si">{path}</span><span class="s2">&quot;</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="n">observation_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="nb">int</span><span class="p">(</span><span class="n">observation_id</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">observation_id</span><span class="p">)</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Observation_Id </span><span class="si">{observation_id}</span><span class="s2"> inconsistent with what&#39;s in </span><span class="si">{path}</span><span class="s2">&quot;</span> <span class="p">)</span>
             <span class="k">if</span> <span class="p">(</span> <span class="n">sca</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="nb">int</span><span class="p">(</span><span class="n">sca</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">sca</span><span class="p">)</span> <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;SCA </span><span class="si">{sca}</span><span class="s2"> inconsistent with what&#39;s in </span><span class="si">{path}</span><span class="s2">&quot;</span> <span class="p">)</span>
             <span class="k">if</span> <span class="p">(</span> <span class="n">band</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="nb">str</span><span class="p">(</span><span class="n">band</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">band</span><span class="p">)</span> <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Band </span><span class="si">{band}</span><span class="s2"> inconsistent with what&#39;s in </span><span class="si">{path}</span><span class="s2">&quot;</span> <span class="p">)</span>
             <span class="k">return</span> <span class="n">img</span>
 
-        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span> <span class="n">i</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span> <span class="p">]</span> <span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must specify either path or all of (pointing, band, sca)&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span> <span class="n">i</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">observation_id</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span> <span class="p">]</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must specify either path or all of (observation_id, band, sca)&quot;</span> <span class="p">)</span>
 
-        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_image_path</span><span class="p">(</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="n">base_path</span> <span class="p">)</span>
-        <span class="n">img</span> <span class="o">=</span> <span class="n">OpenUniverse2024FITSImage</span><span class="p">(</span> <span class="n">path</span><span class="p">,</span> <span class="n">pointing</span><span class="o">=</span><span class="n">pointing</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="n">sca</span><span class="p">,</span> <span class="nb">format</span><span class="o">=-</span><span class="mi">1</span> <span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_image_path</span><span class="p">(</span> <span class="n">observation_id</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="n">base_path</span> <span class="p">)</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">OpenUniverse2024FITSImage</span><span class="p">(</span> <span class="n">path</span><span class="p">,</span> <span class="n">observation_id</span><span class="o">=</span><span class="n">observation_id</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="n">sca</span><span class="p">,</span> <span class="nb">format</span><span class="o">=-</span><span class="mi">1</span> <span class="p">)</span>
         <span class="k">return</span> <span class="n">img</span></div>
 
 
 
 <div class="viewcode-block" id="ImageCollectionOU2024.get_image_path">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollectionOU2024.html#snappl.imagecollection.ImageCollectionOU2024.get_image_path">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">observation_id</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the absolute path to the desired OU2024 FITS image.</span>
 
 <span class="sd">        See ImageCollection.get_image_path for documentation.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">base_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span> <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">base_path</span> <span class="p">)</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="p">(</span> <span class="n">base_path</span> <span class="o">/</span> <span class="n">band</span> <span class="o">/</span> <span class="nb">str</span><span class="p">(</span><span class="n">pointing</span><span class="p">)</span> <span class="o">/</span>
-                 <span class="sa">f</span><span class="s1">&#39;Roman_TDS_simple_model_</span><span class="si">{</span><span class="n">band</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">pointing</span><span class="p">)</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">sca</span><span class="p">)</span><span class="si">}</span><span class="s1">.fits.gz&#39;</span> <span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="p">(</span> <span class="n">base_path</span> <span class="o">/</span> <span class="n">band</span> <span class="o">/</span> <span class="nb">str</span><span class="p">(</span><span class="n">observation_id</span><span class="p">)</span> <span class="o">/</span>
+                 <span class="sa">f</span><span class="s1">&#39;Roman_TDS_simple_model_</span><span class="si">{</span><span class="n">band</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">observation_id</span><span class="p">)</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">sca</span><span class="p">)</span><span class="si">}</span><span class="s1">.fits.gz&#39;</span> <span class="p">)</span>
         <span class="k">return</span> <span class="n">path</span></div>
 
 
@@ -456,7 +465,7 @@
             <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_image_path</span><span class="p">(</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;pointing&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;filter&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;sca&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="p">)</span>
             <span class="n">image</span> <span class="o">=</span> <span class="n">OpenUniverse2024FITSImage</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
                                               <span class="n">band</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;filter&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
-                                              <span class="n">pointing</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;pointing&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                              <span class="n">observation_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;pointing&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="p">),</span>
                                               <span class="n">sca</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;sca&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
                                               <span class="n">mjd</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;mjd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
                                               <span class="nb">format</span><span class="o">=-</span><span class="mi">1</span> <span class="p">)</span>
@@ -489,7 +498,7 @@
 <span class="sd">      BAND</span>
 <span class="sd">      EXPTIME</span>
 <span class="sd">      MJD</span>
-<span class="sd">      POINTING</span>
+<span class="sd">      POINTING    [ this is &quot;observation_id&quot; ]</span>
 <span class="sd">      SCA</span>
 <span class="sd">      ZPT</span>
 
@@ -505,7 +514,7 @@
 
 <div class="viewcode-block" id="ImageCollectionManualFITS.get_image_path">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollectionManualFITS.html#snappl.imagecollection.ImageCollectionManualFITS.get_image_path">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">observation_id</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;get_image_path is not defined for ImageCollectionManualFITS&quot;</span> <span class="p">)</span></div>
 
 
@@ -517,13 +526,14 @@
 
 <div class="viewcode-block" id="ImageCollectionManualFITS.get_image">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollectionManualFITS.html#snappl.imagecollection.ImageCollectionManualFITS.get_image">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pointing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">observation_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
         <span class="k">if</span> <span class="n">image_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;image_id is invalid for ImageCollectionManualFITS&quot;</span> <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;ImageCollectionManualFITS.get_image requires a path, it can&#39;t &quot;</span>
-                              <span class="s2">&quot;handle pointing/band/sca.&quot;</span> <span class="p">)</span>
+                              <span class="s2">&quot;handle observation_id/band/sca.&quot;</span> <span class="p">)</span>
 
         <span class="n">base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">base_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">threefile</span><span class="p">:</span>
@@ -547,7 +557,8 @@
     <span class="n">image_class_to_format</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;ou2024&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
                               <span class="s1">&#39;ou2024_nativelocation&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
                               <span class="s1">&#39;ou2024_stdlocation&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                              <span class="s1">&#39;ou2024nov2025&#39;</span><span class="p">:</span> <span class="mi">1</span>
+                              <span class="s1">&#39;ou2024nov2025&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                              <span class="s1">&#39;roman_datamodel&#39;</span><span class="p">:</span> <span class="mi">100</span>
                               <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
@@ -568,7 +579,7 @@
 
 <div class="viewcode-block" id="ImageCollectionDB.get_image">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollectionDB.html#snappl.imagecollection.ImageCollectionDB.get_image">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pointing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">observation_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dbclient</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
         <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="n">dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dbclient</span>
 
         <span class="k">if</span> <span class="n">image_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -576,11 +587,11 @@
 
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span> <span class="p">(</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span>
-                     <span class="p">(</span> <span class="nb">all</span><span class="p">(</span> <span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span> <span class="p">]</span> <span class="p">)</span> <span class="p">)</span> <span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must specify one of image_id, path, or (pointing, band, and sca).&quot;</span> <span class="p">)</span>
+                     <span class="p">(</span> <span class="nb">all</span><span class="p">(</span> <span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">observation_id</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span> <span class="p">]</span> <span class="p">)</span> <span class="p">)</span> <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Must specify one of image_id, path, or (observation_id, band, and sca).&quot;</span> <span class="p">)</span>
 
-            <span class="n">data</span> <span class="o">=</span> <span class="p">{</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span> <span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;pointing&#39;</span><span class="p">,</span> <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span> <span class="p">],</span>
-                                           <span class="p">[</span><span class="n">path</span><span class="p">,</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span> <span class="p">]</span> <span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span> <span class="p">[</span><span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="s1">&#39;observation_id&#39;</span><span class="p">,</span> <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span> <span class="p">],</span>
+                                           <span class="p">[</span><span class="n">path</span><span class="p">,</span> <span class="n">observation_id</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span> <span class="p">]</span> <span class="p">)</span>
                      <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">}</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;provenance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">id</span>
             <span class="n">rows</span> <span class="o">=</span> <span class="n">dbclient</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="s2">&quot;/findl2images&quot;</span><span class="p">,</span>
@@ -602,12 +613,12 @@
 
 <div class="viewcode-block" id="ImageCollectionDB.get_image_path">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollectionDB.html#snappl.imagecollection.ImageCollectionDB.get_image_path">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_path</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">observation_id</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">sca</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_id</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
         <span class="c1"># get_image_path was really put in becasue early software was written only</span>
         <span class="c1">#   for the OU2024 simulations, and an image was uniquely identified by</span>
-        <span class="c1">#   pointing/sca/band (and thus a unique path could be detetermined).  Once</span>
+        <span class="c1">#   observation_id/sca/band (and thus a unique path could be detetermined).  Once</span>
         <span class="c1">#   we have provenance (as is the case in the DB), this is no longer true,</span>
-        <span class="c1">#   so it&#39;s not possible to uniquely identify an image with pointing/band/sca.</span>
+        <span class="c1">#   so it&#39;s not possible to uniquely identify an image with observation_id/band/sca.</span>
         <span class="c1"># (I mean, yes, the collection knows its provenance, so it could query the</span>
         <span class="c1">#   database, but the principle is, early designs were based on the assumption</span>
         <span class="c1">#   that the only image collection they would ever have to work with was that</span>

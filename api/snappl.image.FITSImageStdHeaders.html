@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>FITSImageStdHeaders &#8212; roman_snpit_snappl 0.1.dev1+gb23913559 documentation</title>
+    <title>FITSImageStdHeaders &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=5924670e"></script>
+    <script src="../_static/documentation_options.js?v=b4ef4976"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -46,11 +46,13 @@
 
 
 <h3>Navigation</h3>
-<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../environment.html">Roman SNPIT Environment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developers.html">snappl Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../maintainers.html">Environment and Database Maintainer’s Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">snappl API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../database_schema.html">Database Schema</a></li>
 </ul>
@@ -103,7 +105,7 @@
 <h1>FITSImageStdHeaders<a class="headerlink" href="#fitsimagestdheaders" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.image.FITSImageStdHeaders">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.image.</span></span><span class="sig-name descname"><span class="pre">FITSImageStdHeaders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_kws</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'band':</span> <span class="pre">'BAND',</span> <span class="pre">'dec':</span> <span class="pre">'DEC',</span> <span class="pre">'exptime':</span> <span class="pre">'EXPTIME',</span> <span class="pre">'mjd':</span> <span class="pre">'MJD',</span> <span class="pre">'pointing':</span> <span class="pre">'POINTING',</span> <span class="pre">'position_angle':</span> <span class="pre">'POSANG',</span> <span class="pre">'ra':</span> <span class="pre">'RA',</span> <span class="pre">'sca':</span> <span class="pre">'SCA',</span> <span class="pre">'sky_level':</span> <span class="pre">'SKYLEVEL',</span> <span class="pre">'zeropoint':</span> <span class="pre">'ZPT'}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImageStdHeaders"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImageStdHeaders" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.image.</span></span><span class="sig-name descname"><span class="pre">FITSImageStdHeaders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_kws</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'band':</span> <span class="pre">'BAND',</span> <span class="pre">'dec':</span> <span class="pre">'DEC',</span> <span class="pre">'exptime':</span> <span class="pre">'EXPTIME',</span> <span class="pre">'mjd':</span> <span class="pre">'MJD',</span> <span class="pre">'observation_id':</span> <span class="pre">'POINTING',</span> <span class="pre">'position_angle':</span> <span class="pre">'POSANG',</span> <span class="pre">'ra':</span> <span class="pre">'RA',</span> <span class="pre">'sca':</span> <span class="pre">'SCA',</span> <span class="pre">'sky_level':</span> <span class="pre">'SKYLEVEL',</span> <span class="pre">'zeropoint':</span> <span class="pre">'ZPT'}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#FITSImageStdHeaders"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.FITSImageStdHeaders" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="snappl.image.FITSImage.html#snappl.image.FITSImage" title="snappl.image.FITSImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">FITSImage</span></code></a></p>
 <p>A FITS Image that has standardized header keywords corresponding to the properties defined in Image.</p>
 <p>Setting a property also updates the internally stored header.</p>
@@ -150,7 +152,7 @@ database (but is required in that case).</p></li>
 <li><p><strong>width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
 <li><p><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
 <li><p><strong>format</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default -1</em>) – Index into the table Image._format_def at the bottom of this file.</p></li>
-<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> (</em><em>str?</em><em>)</em><em>, </em><em>default None</em><em> (</em><em>WARNING: this parameter keyword will change</em><em>)</em>)</p></li>
+<li><p><strong>observation_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
 <li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>)</p></li>
 <li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>
 <li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>
@@ -182,8 +184,8 @@ many cases, they will be lazy-loaded from the header.</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImageStdHeaders.mjd" title="snappl.image.FITSImageStdHeaders.mjd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mjd</span></code></a></p></td>
 <td><p>MJD of the start of the image (defined how? TAI?)</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImageStdHeaders.pointing" title="snappl.image.FITSImageStdHeaders.pointing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pointing</span></code></a></p></td>
-<td><p>Str or int or something; the exposure/pointing/visit/SOMETHING for the image</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.FITSImageStdHeaders.observation_id" title="snappl.image.FITSImageStdHeaders.observation_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">observation_id</span></code></a></p></td>
+<td><p>Str; unique identifier of one exposure combining all SCAs.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.FITSImageStdHeaders.position_angle" title="snappl.image.FITSImageStdHeaders.position_angle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">position_angle</span></code></a></p></td>
 <td><p>Position angle in degrees north of east (CHECK THIS)</p></td>
@@ -232,8 +234,8 @@ many cases, they will be lazy-loaded from the header.</p></li>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="snappl.image.FITSImageStdHeaders.pointing">
-<span class="sig-name descname"><span class="pre">pointing</span></span><a class="headerlink" href="#snappl.image.FITSImageStdHeaders.pointing" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="snappl.image.FITSImageStdHeaders.observation_id">
+<span class="sig-name descname"><span class="pre">observation_id</span></span><a class="headerlink" href="#snappl.image.FITSImageStdHeaders.observation_id" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">

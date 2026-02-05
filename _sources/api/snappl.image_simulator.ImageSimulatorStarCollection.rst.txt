@@ -1,0 +1,7 @@
+ImageSimulatorStarCollection
+============================
+
+.. currentmodule:: snappl.image_simulator
+
+.. autoclass:: ImageSimulatorStarCollection
+   :show-inheritance:

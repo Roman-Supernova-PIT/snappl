@@ -1,0 +1,17 @@
+ImageSimulatorPointSource
+=========================
+
+.. currentmodule:: snappl.image_simulator
+
+.. autoclass:: ImageSimulatorPointSource
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ImageSimulatorPointSource.render_stamp
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: render_stamp

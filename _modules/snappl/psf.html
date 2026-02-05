@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+gb23913559 documentation</title>
+    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=5924670e"></script>
+    <script src="../../_static/documentation_options.js?v=b4ef4976"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -43,11 +43,13 @@
 
 
 <h3>Navigation</h3>
-<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../environment.html">Roman SNPIT Environment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developers.html">snappl Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../maintainers.html">Environment and Database Maintainer’s Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api.html">snappl API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../database_schema.html">Database Schema</a></li>
 </ul>
@@ -99,10 +101,14 @@
 <span class="c1"># common library imports</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">scipy.integrate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.special</span><span class="w"> </span><span class="kn">import</span> <span class="n">gammaincinv</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">binned_statistic_2d</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">scipy.signal</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 
+
 <span class="c1"># astro library imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">astropy.modeling.functional_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sersic2D</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">photutils.psf</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">galsim</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">roman_imsim.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">roman_utils</span>
@@ -110,6 +116,7 @@
 <span class="c1"># roman snpit library imports</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">snappl.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">SNLogger</span>
+
 
 
 <div class="viewcode-block" id="PSF">
@@ -126,7 +133,7 @@
 <div class="viewcode-block" id="PSF.get_psf_object">
 <a class="viewcode-back" href="../../api/snappl.psf.PSF.html#snappl.psf.PSF.get_psf_object">[docs]</a>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_psf_object</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">psfclass</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pointing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_psf_object</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">psfclass</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">observation_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                         <span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a PSF object whose type is specified by psfclass.</span>
 
@@ -161,8 +168,9 @@
 <span class="sd">            The Roman band this is a PSF for.  (I.e. the band of the</span>
 <span class="sd">            host image.)  Ignored by some subclasses.</span>
 
-<span class="sd">          pointing: int, default None</span>
-<span class="sd">            Roman pointing.  Ignored by many subclasses.</span>
+<span class="sd">          observation_id: str, default None</span>
+<span class="sd">            Roman observation id.  Ignored by many subclasses.  (OU2024</span>
+<span class="sd">            uses this for its &quot;pointing&quot;.)</span>
 
 <span class="sd">          sca: int, default None</span>
 <span class="sd">            Probably only relevant for the ou24PSF classes.</span>
@@ -192,7 +200,7 @@
         <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="p">{</span> <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
                          <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span>
                          <span class="s1">&#39;band&#39;</span><span class="p">:</span> <span class="n">band</span><span class="p">,</span>
-                         <span class="s1">&#39;pointing&#39;</span><span class="p">:</span> <span class="n">pointing</span><span class="p">,</span>
+                         <span class="s1">&#39;observation_id&#39;</span><span class="p">:</span> <span class="n">observation_id</span><span class="p">,</span>
                          <span class="s1">&#39;sca&#39;</span><span class="p">:</span> <span class="n">sca</span><span class="p">,</span>
                          <span class="s1">&#39;image&#39;</span> <span class="p">:</span> <span class="n">image</span><span class="p">,</span>
                          <span class="s1">&#39;seed&#39;</span> <span class="p">:</span> <span class="n">seed</span> <span class="p">}</span> <span class="p">)</span>
@@ -221,6 +229,9 @@
         <span class="k">if</span> <span class="n">psfclass</span> <span class="o">==</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">GaussianPSF</span><span class="p">(</span> <span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
 
+        <span class="k">if</span> <span class="n">psfclass</span> <span class="o">==</span> <span class="s2">&quot;varying_gaussian&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">VaryingGaussianPSF</span><span class="p">(</span><span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">psfclass</span> <span class="o">==</span> <span class="s2">&quot;ou24PSF_slow_photonshoot&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">ou24PSF_slow_photonshoot</span><span class="p">(</span> <span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
 
@@ -237,7 +248,7 @@
     <span class="c1"># oversampled image.  Should there be a general interface for</span>
     <span class="c1"># getting access to oversampled PSFs?</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pointing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">observation_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sca</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">_called_from_get_psf_object</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Don&#39;t call this or the constructor of a subclass directly, call PSF.get_psf_object().</span>
 
@@ -251,12 +262,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_consumed_args</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">_called_from_get_psf_object</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Don&#39;t instantiate a </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> directly, call PSF.get_psf_object&quot;</span> <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_consumed_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="p">[</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;pointing&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span><span class="p">,</span> <span class="s1">&#39;_called_from_get_psf_object&#39;</span><span class="p">,</span> <span class="s2">&quot;seed&quot;</span><span class="p">,</span>
-                                     <span class="s2">&quot;image&quot;</span> <span class="p">]</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_consumed_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="p">[</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;observation_id&#39;</span><span class="p">,</span> <span class="s1">&#39;sca&#39;</span><span class="p">,</span> <span class="s1">&#39;_called_from_get_psf_object&#39;</span><span class="p">,</span>
+                                      <span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="s2">&quot;image&quot;</span> <span class="p">]</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_x</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">x</span> <span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">y</span> <span class="p">)</span> <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_band</span> <span class="o">=</span> <span class="n">band</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="o">=</span> <span class="n">pointing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="o">=</span> <span class="n">observation_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="o">=</span> <span class="n">sca</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_image</span> <span class="o">=</span> <span class="n">image</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_seed</span> <span class="o">=</span> <span class="n">seed</span>
@@ -1473,12 +1484,13 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">sed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
                    <span class="n">n_photons</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="n">_include_photonOps</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
                  <span class="p">):</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_consumed_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="p">[</span> <span class="s1">&#39;sed&#39;</span><span class="p">,</span> <span class="s1">&#39;config_file&#39;</span><span class="p">,</span> <span class="s1">&#39;size&#39;</span><span class="p">,</span> <span class="s1">&#39;_include_photonOps&#39;</span><span class="p">,</span> <span class="s1">&#39;n_photons&#39;</span> <span class="p">]</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_warn_unknown_kwargs</span><span class="p">(</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="n">_parent_class</span> <span class="p">)</span>
 
-        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Need a pointing and an sca to make an ou24PSF_slow&quot;</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Need a observation_id and an sca to make an ou24PSF_slow&quot;</span> <span class="p">)</span>
         <span class="k">if</span> <span class="p">(</span> <span class="n">size</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">)</span> <span class="o">!=</span> <span class="n">size</span> <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="s2">&quot;Size must be an odd integer.&quot;</span> <span class="p">)</span>
         <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">size</span> <span class="p">)</span>
@@ -1532,6 +1544,7 @@
 <span class="sd">            using rmutils.getLocalWCS.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Getting ou24PSF_slow stamp at x=</span><span class="si">%s</span><span class="s2">, y=</span><span class="si">%s</span><span class="s2">, x0=</span><span class="si">%s</span><span class="s2">, y0=</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">)</span>
 
         <span class="c1"># If a position is not given, assume the middle of the SCA</span>
         <span class="c1">#   (within 1/2 pixel; by default, we want to make x and y</span>
@@ -1553,10 +1566,11 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;PSF would be rendered at (</span><span class="si">{</span><span class="n">stampx</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">stampy</span><span class="si">}</span><span class="s2">), which is too far off of the &quot;</span>
                               <span class="sa">f</span><span class="s2">&quot;edge of a </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="si">}</span><span class="s2">-pixel stamp.&quot;</span> <span class="p">)</span>
 
-
+        <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Initializing ou24PSF_slow with observation_id </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span><span class="si">}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;and sca </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sca</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">:</span>
             <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;configfile = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_file</span><span class="p">))</span>
-            <span class="n">rmutils</span> <span class="o">=</span> <span class="n">roman_utils</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="p">)</span>
+            <span class="n">rmutils</span> <span class="o">=</span> <span class="n">roman_utils</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="p">)</span>
             <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">rmutils</span><span class="o">.</span><span class="n">rng</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">BaseDeviate</span><span class="p">(</span> <span class="n">seed</span> <span class="p">)</span>
 
@@ -1567,6 +1581,9 @@
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">rmutils</span><span class="o">.</span><span class="n">getLocalWCS</span><span class="p">(</span> <span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">+</span><span class="mi">1</span> <span class="p">)</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No image passed to ou24PSF; using rmutils.getLocalWCS.&quot;</span><span class="p">)</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;ou24PSF_slow wcs fetched at: </span><span class="si">{</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;ou24PSF_slow wcs: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">image_wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">image_wcs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1574,8 +1591,8 @@
                     <span class="s2">&quot; has no WCS; using rmutils.getLocalWCS.&quot;</span> <span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">rmutils</span><span class="o">.</span><span class="n">getLocalWCS</span><span class="p">(</span> <span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">+</span><span class="mi">1</span> <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using the WCS from the image passed to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">image_wcs</span><span class="o">.</span><span class="n">get_galsim_wcs</span><span class="p">()</span><span class="o">.</span><span class="n">local</span><span class="p">(</span> <span class="n">image_pos</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">PositionD</span><span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">+</span><span class="mi">1</span> <span class="p">))</span>
+                    <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;ou24PSF_slow wcs fetched at: </span><span class="si">{</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
 
             <span class="n">stamp</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="p">)</span>
             <span class="n">point</span> <span class="o">=</span> <span class="p">(</span> <span class="n">galsim</span><span class="o">.</span><span class="n">DeltaFunction</span><span class="p">()</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sed</span> <span class="p">)</span><span class="o">.</span><span class="n">withFlux</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span> <span class="p">)</span>
@@ -1598,16 +1615,12 @@
             <span class="c1"># chromatic object. I am not currently sure if this matters.</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_photonOps</span><span class="p">:</span>
-                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;point type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">point</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">point</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;phot&#39;</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rmutils</span><span class="o">.</span><span class="n">rng</span><span class="p">,</span> <span class="n">photon_ops</span><span class="o">=</span><span class="n">photon_ops</span><span class="p">,</span>
                                 <span class="n">n_photons</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_photons</span><span class="p">,</span> <span class="n">maxN</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_photons</span><span class="p">,</span> <span class="n">poisson_flux</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                 <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span> <span class="n">use_true_center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="n">stamp</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;flux pre convolution = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">calculateFlux</span><span class="p">(</span><span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">)))</span>
                 <span class="n">psf</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Convolve</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">photon_ops</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;psf type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">psf</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;flux post convolution = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">calculateFlux</span><span class="p">(</span><span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">)))</span>
                 <span class="n">psf</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span>
                               <span class="n">use_true_center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="n">stamp</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
 
@@ -1651,12 +1664,13 @@
 
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span> <span class="o">=</span> <span class="n">roman_utils</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span> <span class="o">=</span> <span class="n">roman_utils</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_observation_id</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_psf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span><span class="o">.</span><span class="n">getPSF</span><span class="p">(</span><span class="n">x0</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y0</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">pupil_bin</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
         <span class="c1"># TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No image passed to ou24PSF; using rmutils.getLocalWCS.&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span><span class="o">.</span><span class="n">getLocalWCS</span><span class="p">(</span> <span class="n">x0</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y0</span><span class="o">+</span><span class="mi">1</span> <span class="p">)</span>
+
         <span class="k">else</span><span class="p">:</span>
             <span class="n">image_wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">image_wcs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1667,7 +1681,6 @@
                 <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using the WCS from the image passed to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">image_wcs</span><span class="o">.</span><span class="n">get_galsim_wcs</span><span class="p">()</span><span class="o">.</span><span class="n">local</span><span class="p">(</span> <span class="n">image_pos</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">PositionD</span><span class="p">(</span><span class="n">x0</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y0</span><span class="o">+</span><span class="mi">1</span> <span class="p">))</span>
         <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;ou24PSF wcs fetched at: </span><span class="si">{</span><span class="n">x0</span><span class="p">,</span><span class="w"> </span><span class="n">y0</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
-        <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;ou24PSF wcs: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_stamp</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_point</span> <span class="o">=</span> <span class="p">(</span> <span class="n">galsim</span><span class="o">.</span><span class="n">DeltaFunction</span><span class="p">()</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sed</span> <span class="p">)</span><span class="o">.</span><span class="n">withFlux</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rmutils</span><span class="o">.</span><span class="n">bpass</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_convolved_psf</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Convolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_point</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_psf</span><span class="p">)</span>
@@ -1782,14 +1795,15 @@
 <span class="c1"># class ou24PSF( OversampledImagePSF ):</span>
 <span class="c1">#     &quot;&quot;&quot;An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.</span>
 
-<span class="c1">#     Use this just like you use an OversampledImagePSF.  However, to construct one, you need to give</span>
-<span class="c1">#     it a pointing and an SCA from the OpenUniverse2024 sims.  It will only work if all that OU2024</span>
-<span class="c1">#     data is available on disk.</span>
+<span class="c1">#     Use this just like you use an OversampledImagePSF.  However, to</span>
+<span class="c1">#     construct one, you need to give it a observation_id (pointing) and</span>
+<span class="c1">#     an SCA from the OpenUniverse2024 sims.  It will only work if all</span>
+<span class="c1">#     that OU2024 data is available on disk.</span>
 
 <span class="c1">#     &quot;&quot;&quot;</span>
 
 <span class="c1">#     def __init__( self, x=2044., y=2044., oversample_factor=5, oversampled_size=201,</span>
-<span class="c1">#                   pointing=None, sca=None, sed=None, config_file=None,</span>
+<span class="c1">#                   observation_id=None, sca=None, sed=None, config_file=None,</span>
 <span class="c1">#                   include_photonOps=True, n_photons=1000000, seed=None,</span>
 <span class="c1">#                   **kwargs ):</span>
 <span class="c1">#         &quot;&quot;&quot;Construct an ou24PSF.</span>
@@ -1829,8 +1843,8 @@
 <span class="c1">#             out what size of a stamp you&#39;ll get when you run</span>
 <span class="c1">#             get_stamp().)</span>
 
-<span class="c1">#           pointing: int</span>
-<span class="c1">#             Required.  The OpenUniverse2024 pointing.</span>
+<span class="c1">#           observation_id: str</span>
+<span class="c1">#             Required.  int(observation_id) is the OpenUniverse2024 pointing.</span>
 
 <span class="c1">#           sca: int</span>
 <span class="c1">#             Required.  The SCA.</span>
@@ -1865,8 +1879,8 @@
 <span class="c1">#         if self._data is not None:</span>
 <span class="c1">#             raise ValueError( &quot;Error, do not pass data when constructing an ou24PSF&quot; )</span>
 
-<span class="c1">#         if ( pointing is None ) or ( sca is None ):</span>
-<span class="c1">#             raise ValueError( &quot;Need a pointing and an sca to make an ou24PSF&quot; )</span>
+<span class="c1">#         if ( observation_id is None ) or ( sca is None ):</span>
+<span class="c1">#             raise ValueError( &quot;Need a observation_id and an sca to make an ou24PSF&quot; )</span>
 <span class="c1">#         if ( oversampled_size % 2 == 0 ) or ( int(oversampled_size) != oversampled_size ):</span>
 <span class="c1">#             raise ValueError( &quot;Size must be an odd integer.&quot; )</span>
 <span class="c1">#         oversampled_size = int( oversampled_size )</span>
@@ -1883,7 +1897,7 @@
 <span class="c1">#         if config_file is None:</span>
 <span class="c1">#             config_file = Config.get().value( &#39;system.ou24.config_file&#39; )</span>
 <span class="c1">#         self.config_file = config_file</span>
-<span class="c1">#         self.pointing = pointing</span>
+<span class="c1">#         self.observation_id = observation_id</span>
 <span class="c1">#         self.sca = sca</span>
 <span class="c1">#         self.oversampled_size = oversampled_size</span>
 <span class="c1">#         self.sca_size = 4088</span>
@@ -1900,7 +1914,7 @@
 <span class="c1">#             stampx = self.oversampled_size // 2</span>
 <span class="c1">#             stampy = self.oversampled_size // 2</span>
 
-<span class="c1">#             rmutils = roman_utils( self.config_file, self.pointing, self.sca )</span>
+<span class="c1">#             rmutils = roman_utils( self.config_file, int(self.observation_id), self.sca )</span>
 <span class="c1">#             if self.seed is not None:</span>
 <span class="c1">#                 rmutils.rng = galsim.BaseDeviate( self.seed )</span>
 <span class="c1">#             wcs = rmutils.getLocalWCS( x+1, y+1 )</span>
@@ -1993,11 +2007,13 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span> <span class="p">(</span><span class="n">xrel</span><span class="p">,</span> <span class="n">yrel</span><span class="p">)</span> <span class="p">)</span>
         <span class="n">rcoords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rotmat</span><span class="p">,</span> <span class="n">coords</span> <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_norm</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="o">-</span> <span class="p">(</span> <span class="n">rcoords</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmax</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_norm</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="o">-</span> <span class="p">(</span> <span class="n">rcoords</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmax</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="p">)</span>
                                     <span class="o">-</span> <span class="p">(</span> <span class="n">rcoords</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmay</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="n">flux</span>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_stamp</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.</span> <span class="p">):</span>
+
         <span class="n">midpix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span> <span class="o">/</span> <span class="mi">2</span> <span class="p">)</span> <span class="p">)</span>
         <span class="n">xc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span> <span class="p">)</span>
         <span class="n">yc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span> <span class="p">)</span>
@@ -2010,6 +2026,7 @@
         <span class="n">offx</span> <span class="o">=</span> <span class="n">x0</span> <span class="o">-</span> <span class="n">xc</span>
         <span class="n">offy</span> <span class="o">=</span> <span class="n">y0</span> <span class="o">-</span> <span class="n">yc</span>
         <span class="n">dex</span> <span class="o">=</span> <span class="p">(</span> <span class="n">millix</span><span class="p">,</span> <span class="n">milliy</span><span class="p">,</span> <span class="n">offx</span><span class="p">,</span> <span class="n">offy</span> <span class="p">)</span>
+
 
         <span class="k">if</span> <span class="n">dex</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamp_cache</span><span class="p">:</span>
             <span class="c1"># Because calculating these is slow, cache them.</span>
@@ -2039,6 +2056,137 @@
         <span class="n">stamp</span> <span class="o">*=</span> <span class="n">flux</span>
 
         <span class="k">return</span> <span class="n">stamp</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_galaxy_stamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">bulge_R</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                         <span class="n">bulge_n</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">disk_R</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">disk_n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">oversamp</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution.</span>
+<span class="sd">        This is not a standard PSF function, and may not be implemented in all subclasses. It is only really for use</span>
+<span class="sd">        in the image simulator.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x,y,x0,y0,flux : as in PSF.get_stamp</span>
+<span class="sd">        bulge_R : float</span>
+<span class="sd">            The effective radius of the bulge component in pixels.</span>
+<span class="sd">        bulge_n : float</span>
+<span class="sd">            The Sersic index of the bulge component.</span>
+<span class="sd">        disk_R : float</span>
+<span class="sd">            The effective radius of the disk component in pixels.</span>
+<span class="sd">        disk_n : float</span>
+<span class="sd">            The Sersic index of the disk component.</span>
+
+<span class="sd">            For more detail on the above four parameters, see:</span>
+<span class="sd">            https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Sersic2D.html</span>
+
+<span class="sd">        oversamp : int</span>
+<span class="sd">            The oversampling factor to use when rendering the galaxy before downsampling to image resolution.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">midpix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span> <span class="o">/</span> <span class="mi">2</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="n">xc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="n">yc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">x0</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">xc</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="n">y0</span> <span class="k">if</span> <span class="n">y0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">yc</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">x0</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span> <span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">y0</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span> <span class="p">)</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;x0 and y0 must be integers, got x0 as </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span><span class="si">}</span><span class="s2"> and y0 as </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">y0</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+
+        <span class="n">ix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">oversamp</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">)</span>
+        <span class="n">iy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">oversamp</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">)</span>
+        <span class="n">ixx</span><span class="p">,</span> <span class="n">iyy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">ix</span><span class="p">,</span> <span class="n">iy</span><span class="p">)</span>
+        <span class="c1"># an underlying mesh of points on which to calculate functions where integer values line up with pixel centers</span>
+
+        <span class="c1"># Shift that grid relative to the desired location of the profile</span>
+        <span class="n">xrel</span> <span class="o">=</span> <span class="p">(</span><span class="n">x0</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">midpix</span> <span class="o">+</span> <span class="n">ix</span>
+        <span class="n">yrel</span> <span class="o">=</span> <span class="p">(</span><span class="n">y0</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="n">midpix</span> <span class="o">+</span> <span class="n">iy</span>
+
+        <span class="n">xxrel</span><span class="p">,</span> <span class="n">yyrel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">xrel</span><span class="p">,</span> <span class="n">yrel</span><span class="p">)</span>
+        <span class="c1"># The same mesh but now the x value is zeroed at the center of where the galaxy is being centered</span>
+
+        <span class="n">psf_stamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stamp</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="o">//</span><span class="mi">2</span><span class="p">,)</span>
+
+        <span class="c1"># Prepare and evaluate the profile</span>
+        <span class="c1"># Create a galaxy profile from a bulge + disk model</span>
+
+        <span class="n">b_bulge</span> <span class="o">=</span> <span class="n">gammaincinv</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">bulge_n</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="c1"># Divide the flux equally between bulge and disk, so flux --&gt; flux / 2</span>
+        <span class="n">bulge_amp</span> <span class="o">=</span> <span class="n">flux</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">b_bulge</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">bulge_n</span><span class="p">)</span> <span class="o">/</span>\
+           <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">bulge_n</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">gamma</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">bulge_n</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">b_bulge</span><span class="p">)</span> <span class="o">*</span> <span class="n">bulge_R</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># The above is inverting the formula for total flux of a sersic profile, see</span>
+        <span class="c1"># http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html</span>
+        <span class="n">bulge_amp</span> <span class="o">/=</span> <span class="n">oversamp</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">sers_bulge</span> <span class="o">=</span> <span class="n">Sersic2D</span><span class="p">(</span><span class="n">amplitude</span><span class="o">=</span><span class="n">bulge_amp</span><span class="p">,</span> <span class="n">r_eff</span><span class="o">=</span><span class="n">bulge_R</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">bulge_n</span><span class="p">)</span>
+
+        <span class="n">b_disk</span> <span class="o">=</span> <span class="n">gammaincinv</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">disk_n</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">disk_amp</span> <span class="o">=</span> <span class="n">flux</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">b_disk</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">disk_n</span><span class="p">)</span> <span class="o">/</span>\
+           <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">disk_n</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">gamma</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">disk_n</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">b_disk</span><span class="p">)</span> <span class="o">*</span> <span class="n">disk_R</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">disk_amp</span> <span class="o">/=</span> <span class="n">oversamp</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">sers_disk</span> <span class="o">=</span> <span class="n">Sersic2D</span><span class="p">(</span><span class="n">amplitude</span><span class="o">=</span><span class="n">disk_amp</span><span class="p">,</span> <span class="n">r_eff</span><span class="o">=</span><span class="n">disk_R</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">disk_n</span><span class="p">)</span>
+
+        <span class="n">profile_stamp</span> <span class="o">=</span> <span class="n">sers_bulge</span><span class="p">(</span><span class="n">xxrel</span><span class="p">,</span> <span class="n">yyrel</span><span class="p">)</span> <span class="o">+</span> <span class="n">sers_disk</span><span class="p">(</span><span class="n">xxrel</span><span class="p">,</span> <span class="n">yyrel</span><span class="p">)</span>
+
+
+        <span class="c1"># Downsample to image resolution</span>
+        <span class="n">profile_stamp</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="o">=</span> <span class="n">binned_statistic_2d</span><span class="p">(</span>
+                <span class="n">y</span><span class="o">=</span><span class="n">ixx</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                <span class="n">x</span><span class="o">=</span><span class="n">iyy</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                <span class="c1"># Note that x and y are flipped here compared to usual convention. I am not sure why this needs to be,</span>
+                <span class="c1"># but when it was the other way around, the act of downsampling was swapping x and y.</span>
+                <span class="n">values</span><span class="o">=</span><span class="n">profile_stamp</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                <span class="n">statistic</span><span class="o">=</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span>
+                <span class="n">bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">,</span>
+                <span class="nb">range</span><span class="o">=</span><span class="p">[[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">]]</span>
+            <span class="p">)</span>
+
+        <span class="n">profile_stamp</span> <span class="o">=</span> <span class="n">profile_stamp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">)</span>
+        <span class="n">convolved</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">convolve2d</span><span class="p">(</span><span class="n">profile_stamp</span><span class="p">,</span> <span class="n">psf_stamp</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">&quot;symm&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">convolved</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">VaryingGaussianPSF</span><span class="p">(</span> <span class="n">GaussianPSF</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; A Gaussian PSF that DOES vary across the image, for testing purposes.</span>
+<span class="sd">    The σ_x and σ_y vary linearly with position on the image. According to Aldroty et al. 2025,</span>
+<span class="sd">    the PSF can vary up to 10% across a single SCA. Therefore we choose that</span>
+<span class="sd">    σ_x = (x_location - image_center_x) * 0.1 / image_size</span>
+<span class="sd">    σ_y = (y_location - image_center_y) * 0.1 / image_size</span>
+<span class="sd">    where image_center_x and image_center_y are the center of the SCA (2044 pixels).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sca_size</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span> <span class="n">base_sigma_x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">base_sigma_y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">linear_coefficient</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+               <span class="n">_parent_class</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an object that renders a spatially varying Gaussian PSF.</span>
+
+<span class="sd">        Parmeters are as passed to GaussianPSF.__init__() plus:</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">          sca_size : int, default 256</span>
+<span class="sd">            The size of one SCA in pixels. Used to calculate how σ_x and σ_y vary</span>
+<span class="sd">            across the image.</span>
+
+<span class="sd">          base_sigma_x : float, default 1.</span>
+<span class="sd">            The base σ_x value in pixels at the center of the SCA.</span>
+
+<span class="sd">          base_sigma_y : float, default 1.</span>
+<span class="sd">            The base σ_y value in pixels at the center of the SCA.</span>
+
+<span class="sd">          linear_coefficient : float, default 0.1, following Aldroty et al. 2025</span>
+<span class="sd">            The linear coefficient for the variation of σ_x and σ_y.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sca_size</span> <span class="o">=</span> <span class="n">sca_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_sigma_x</span> <span class="o">=</span> <span class="n">base_sigma_x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_sigma_y</span> <span class="o">=</span> <span class="n">base_sigma_y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear_coefficient</span> <span class="o">=</span> <span class="n">linear_coefficient</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">_parent_class</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigmax</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_sigma_x</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sca_size</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_coefficient</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sca_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigmay</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_sigma_y</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sca_size</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_coefficient</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sca_size</span>
+        <span class="n">gPSF</span> <span class="o">=</span> <span class="n">PSF</span><span class="o">.</span><span class="n">get_psf_object</span><span class="p">(</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">,</span> <span class="n">sigmax</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sigmax</span><span class="p">,</span> <span class="n">sigmay</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sigmay</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span>
+                                  <span class="n">stamp_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="n">gPSF</span><span class="o">.</span><span class="n">get_stamp</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="n">flux</span><span class="p">)</span>
 </pre></div>
 
           </div>

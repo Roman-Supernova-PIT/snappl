@@ -27,8 +27,8 @@ Image
       ~Image.mjd
       ~Image.name
       ~Image.noise
+      ~Image.observation_id
       ~Image.path
-      ~Image.pointing
       ~Image.position_angle
       ~Image.provenance_id
       ~Image.ra
@@ -46,6 +46,7 @@ Image
    .. autosummary::
 
       ~Image.ap_phot
+      ~Image.bulk_save_to_db
       ~Image.find_images
       ~Image.fraction_masked
       ~Image.free
@@ -58,6 +59,7 @@ Image
       ~Image.psf_phot
       ~Image.save
       ~Image.save_data
+      ~Image.save_to_db
 
    .. rubric:: Attributes Documentation
 
@@ -78,8 +80,8 @@ Image
    .. autoattribute:: mjd
    .. autoattribute:: name
    .. autoattribute:: noise
+   .. autoattribute:: observation_id
    .. autoattribute:: path
-   .. autoattribute:: pointing
    .. autoattribute:: position_angle
    .. autoattribute:: provenance_id
    .. autoattribute:: ra
@@ -95,6 +97,7 @@ Image
    .. rubric:: Methods Documentation
 
    .. automethod:: ap_phot
+   .. automethod:: bulk_save_to_db
    .. automethod:: find_images
    .. automethod:: fraction_masked
    .. automethod:: free
@@ -107,3 +110,4 @@ Image
    .. automethod:: psf_phot
    .. automethod:: save
    .. automethod:: save_data
+   .. automethod:: save_to_db

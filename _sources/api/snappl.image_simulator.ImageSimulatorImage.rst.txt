@@ -1,0 +1,23 @@
+ImageSimulatorImage
+===================
+
+.. currentmodule:: snappl.image_simulator
+
+.. autoclass:: ImageSimulatorImage
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ImageSimulatorImage.add_stars
+      ~ImageSimulatorImage.add_static_source
+      ~ImageSimulatorImage.add_transient
+      ~ImageSimulatorImage.render_sky
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: add_stars
+   .. automethod:: add_static_source
+   .. automethod:: add_transient
+   .. automethod:: render_sky

@@ -5,18 +5,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>ImageCollection &#8212; roman_snpit_snappl 0.1.dev1+gb23913559 documentation</title>
+    <title>ImageCollection &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=5924670e"></script>
+    <script src="../_static/documentation_options.js?v=b4ef4976"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="ImageCollectionOU2024" href="snappl.imagecollection.ImageCollectionOU2024.html" />
-    <link rel="prev" title="SNLogger" href="snappl.logger.SNLogger.html" />
+    <link rel="prev" title="DiaObjectManual" href="snappl.diaobject.DiaObjectManual.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -46,11 +46,13 @@
 
 
 <h3>Navigation</h3>
-<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../environment.html">Roman SNPIT Environment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../changes.html">Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developers.html">snappl Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../maintainers.html">Environment and Database Maintainer’s Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">snappl API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../database_schema.html">Database Schema</a></li>
 </ul>
@@ -60,7 +62,7 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="../api.html">snappl API</a><ul>
-      <li>Previous: <a href="snappl.logger.SNLogger.html" title="previous chapter">SNLogger</a></li>
+      <li>Previous: <a href="snappl.diaobject.DiaObjectManual.html" title="previous chapter">DiaObjectManual</a></li>
       <li>Next: <a href="snappl.imagecollection.ImageCollectionOU2024.html" title="next chapter">ImageCollectionOU2024</a></li>
   </ul></li>
   </ul></li>
@@ -86,7 +88,7 @@
     <ul>
         <li>
           &larr;
-          <a href="snappl.logger.SNLogger.html" title="Previous document">SNLogger</a>
+          <a href="snappl.diaobject.DiaObjectManual.html" title="Previous document">DiaObjectManual</a>
         </li>
         <li>
           <a href="snappl.imagecollection.ImageCollectionOU2024.html" title="Next document">ImageCollectionOU2024</a>
@@ -120,10 +122,10 @@ collection.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.imagecollection.ImageCollection.get_collection" title="snappl.imagecollection.ImageCollection.get_collection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_collection</span></code></a>([collection, subset, ...])</p></td>
 <td><p>Get an ImageCollection object.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.imagecollection.ImageCollection.get_image" title="snappl.imagecollection.ImageCollection.get_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_image</span></code></a>([image_id, path, pointing, band, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.imagecollection.ImageCollection.get_image" title="snappl.imagecollection.ImageCollection.get_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_image</span></code></a>([image_id, path, observation_id, ...])</p></td>
 <td><p>Return an object of a subclass of Image based on input parameters.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.imagecollection.ImageCollection.get_image_path" title="snappl.imagecollection.ImageCollection.get_image_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_image_path</span></code></a>(pointing, band, sca[, base_path])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.imagecollection.ImageCollection.get_image_path" title="snappl.imagecollection.ImageCollection.get_image_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_image_path</span></code></a>(observation_id, band, sca[, ...])</p></td>
 <td><p>Return the absolute path to the desired image, if that makes sense.</p></td>
 </tr>
 </tbody>
@@ -153,7 +155,7 @@ parameters.</p></li>
 <li><p><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>default None</em>) – By default, the returned images are not sorted in any
 particular way.  Put a keyword here to sort by that value
 (or by those values).  Options include ‘id’,
-‘provenance_id’, ‘pointing’, ‘sca’, ‘ra’, ‘dec’, ‘filepath’,
+‘provenance_id’, ‘observation_id’, ‘sca’, ‘ra’, ‘dec’, ‘filepath’,
 ‘width’, ‘height’, ‘mjd’, ‘exptime’.  Not all of these are
 necessarily useful, and some of them may be null for many
 objects in the database.</p></li>
@@ -224,13 +226,13 @@ will be made when needed.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.imagecollection.ImageCollection.get_image">
-<span class="sig-name descname"><span class="pre">get_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/imagecollection.html#ImageCollection.get_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.imagecollection.ImageCollection.get_image" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observation_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dbclient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/imagecollection.html#ImageCollection.get_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.imagecollection.ImageCollection.get_image" title="Link to this definition">¶</a></dt>
 <dd><p>Return an object of a subclass of Image based on input parameters.</p>
 <dl class="simple">
 <dt>You can specify an image by:</dt><dd><ul class="simple">
 <li><p>image_id  (for collections that point to the internal Roman SNPIT database)</p></li>
 <li><p>path</p></li>
-<li><p>pointing, band, and sca</p></li>
+<li><p>observation_id, band, and sca</p></li>
 </ul>
 </dd>
 </dl>
@@ -240,10 +242,10 @@ will be made when needed.</p></li>
 <li><p><strong>image_id</strong> (<em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The id of the image you want to get.  This is only relevant
 for image collections that refer to images in the internal
 Roman SNPIT database, otherwise it is invalid.  If image_id
-is given, then path, pointing, band, and sca are all ignored.</p></li>
+is given, then path, observation_id, band, and sca are all ignored.</p></li>
 <li><p><strong>path</strong> (<em>Path</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The path to the relative to base_path.  For some subclasses,
-this must be consistent wiht pointing, band, and sca if passed.</p></li>
-<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Pointing.  If not given, just use the Path to find the image.</p></li>
+this must be consistent wiht observation_id, band, and sca if passed.</p></li>
+<li><p><strong>observation_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Observation_Id.  If not given, just use the Path to find the image.</p></li>
 <li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Band.</p></li>
 <li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – SCA.</p></li>
 <li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – The base path for the image collection.  If not given, use
@@ -265,15 +267,15 @@ made if needed.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="snappl.imagecollection.ImageCollection.get_image_path">
-<span class="sig-name descname"><span class="pre">get_image_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pointing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sca</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/imagecollection.html#ImageCollection.get_image_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.imagecollection.ImageCollection.get_image_path" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_image_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observation_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sca</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/imagecollection.html#ImageCollection.get_image_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.imagecollection.ImageCollection.get_image_path" title="Link to this definition">¶</a></dt>
 <dd><p>Return the absolute path to the desired image, if that makes sense.</p>
 <p>This will only make sense for image collections where an image
-is uniquely defined by a pointing, band, and sca.  Other image
+is uniquely defined by a observation_id, band, and sca.  Other image
 collections will just not implement this method.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>pointing</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The pointing number</p></li>
+<li><p><strong>observation_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The identifier of the observation.</p></li>
 <li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The band</p></li>
 <li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The SCA</p></li>
 <li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – If None, use the default value for this collection</p></li>
@@ -297,7 +299,7 @@ collections will just not implement this method.</p>
     <ul>
         <li>
           &larr;
-          <a href="snappl.logger.SNLogger.html" title="Previous document">SNLogger</a>
+          <a href="snappl.diaobject.DiaObjectManual.html" title="Previous document">DiaObjectManual</a>
         </li>
         <li>
           <a href="snappl.imagecollection.ImageCollectionOU2024.html" title="Next document">ImageCollectionOU2024</a>

@@ -1,0 +1,35 @@
+PathedObject
+============
+
+.. currentmodule:: snappl.pathedobject
+
+.. autoclass:: PathedObject
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~PathedObject.base_dir
+      ~PathedObject.base_path
+      ~PathedObject.filename
+      ~PathedObject.filepath
+      ~PathedObject.full_filepath
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~PathedObject.generate_filepath
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: base_dir
+   .. autoattribute:: base_path
+   .. autoattribute:: filename
+   .. autoattribute:: filepath
+   .. autoattribute:: full_filepath
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: generate_filepath

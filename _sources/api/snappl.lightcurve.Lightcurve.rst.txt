@@ -1,0 +1,45 @@
+Lightcurve
+==========
+
+.. currentmodule:: snappl.lightcurve
+
+.. autoclass:: Lightcurve
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~Lightcurve.data
+      ~Lightcurve.filename_extensions
+      ~Lightcurve.lightcurve
+      ~Lightcurve.meta
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~Lightcurve.find_lightcurves
+      ~Lightcurve.generate_filepath
+      ~Lightcurve.get_by_id
+      ~Lightcurve.get_combined_lightcurve
+      ~Lightcurve.read
+      ~Lightcurve.save_to_db
+      ~Lightcurve.write
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: data
+   .. autoattribute:: filename_extensions
+   .. autoattribute:: lightcurve
+   .. autoattribute:: meta
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: find_lightcurves
+   .. automethod:: generate_filepath
+   .. automethod:: get_by_id
+   .. automethod:: get_combined_lightcurve
+   .. automethod:: read
+   .. automethod:: save_to_db
+   .. automethod:: write

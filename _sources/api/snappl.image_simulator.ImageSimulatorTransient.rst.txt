@@ -1,0 +1,17 @@
+ImageSimulatorTransient
+=======================
+
+.. currentmodule:: snappl.image_simulator
+
+.. autoclass:: ImageSimulatorTransient
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ImageSimulatorTransient.render_transient
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: render_transient

@@ -1,0 +1,17 @@
+ImageSimulator
+==============
+
+.. currentmodule:: snappl.image_simulator
+
+.. autoclass:: ImageSimulator
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~ImageSimulator.__call__
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: __call__
