@@ -944,7 +944,7 @@ class DBBase:
              the values in dict.  (SQL will have ON CONFLICT DO NOTHING
              if False, ON CONFLICT DO UPDATE if True.)
 
-          assume_no_conflict: bool, default Falsea
+          assume_no_conflict: bool, default False
              Usually you just want to leave this False.  There are
              obscure kludge cases (e.g. if you're playing games and have
              removed primary key constraints and you know what you're

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webserver-sessions-pvc
+  namespace: romansnpit-rknop-dev
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 16Mi
+  storageClassName: nfs-client-vast
+  volumeMode: Filesystem

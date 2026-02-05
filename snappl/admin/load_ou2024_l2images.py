@@ -36,7 +36,7 @@ def _parse_fits_file( relpath, base_path=None, provid=None ):
 
     params = { 'id': uuid.uuid4(),
                'provenance_id': provid,
-               'pointing': image.pointing,
+               'observation_id': image.observation_id,
                'sca': image.sca,
                'band': image.band,
                'ra': ra,
@@ -98,16 +98,16 @@ class OU2024_L2image_loader:
                 if len(words) != 3:
                     raise ValueError( f'Failed to parse line: "{line}"' )
                 if ( any( words[0].strip() == i for i in ('filter', 'band') ) and
-                     ( words[1].strip() == 'pointing' ) and
+                     ( words[1].strip() == 'observation_id' ) and
                      ( words[2].strip() == 'sca' )
                     ):
                     header = True
                 elif not header:
-                    raise ValueError( f'First line was "{line}", not "band,pointing,sca"' )
+                    raise ValueError( f'First line was "{line}", not "band,observation_id,sca"' )
                 else:
-                    band, pointing, sca = words
-                    fpath = pathlib.Path( f'{band}/{pointing}/'
-                                          f'Roman_TDS_simple_model_{band}_{pointing}_{sca}.fits.gz' )
+                    band, observation_id, sca = words
+                    fpath = pathlib.Path( f'{band}/{observation_id}/'
+                                          f'Roman_TDS_simple_model_{band}_{observation_id}_{sca}.fits.gz' )
                     if ( self.base_path / fpath ).is_file():
                         imagefiles.append( fpath )
                     else:
@@ -193,7 +193,7 @@ def main():
                                 'what gets mapped to system.ou24.images, then the "format" field '
                                 'of loaded images may not be what you want!' ) )
     parser.add_argument( '-f', '--filelist', default=None,
-                         help="File with list of band,pointing,sca" )
+                         help="File with list of band,observation_id,sca" )
     parser.add_argument( '-j', '--just-get-filenames', default=False, action='store_true',
                          help="Don't actually load files to the database, just generate a file list." )
     parser.add_argument( '-s', '--save-file-list', default=None,

@@ -102,13 +102,13 @@ class ImageCollection:
         else:
             raise ValueError( f"Unknown image collection {collection} (subset {subset})" )
 
-    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, dbclient=None ):
+    def get_image( self, image_id=None, path=None, observation_id=None, band=None, sca=None, dbclient=None ):
         """Return an object of a subclass of Image based on input parameters.
 
         You can specify an image by:
           * image_id  (for collections that point to the internal Roman SNPIT database)
           * path
-          * pointing, band, and sca
+          * observation_id, band, and sca
 
         Parameters
         ----------
@@ -116,14 +116,14 @@ class ImageCollection:
             The id of the image you want to get.  This is only relevant
             for image collections that refer to images in the internal
             Roman SNPIT database, otherwise it is invalid.  If image_id
-            is given, then path, pointing, band, and sca are all ignored.
+            is given, then path, observation_id, band, and sca are all ignored.
 
           path: Path or str, default None
             The path to the relative to base_path.  For some subclasses,
-            this must be consistent wiht pointing, band, and sca if passed.
+            this must be consistent wiht observation_id, band, and sca if passed.
 
-          pointing: str, default None
-            Pointing.  If not given, just use the Path to find the image.
+          observation_id: str, default None
+            Observation_Id.  If not given, just use the Path to find the image.
 
           band: str, default None
             Band.
@@ -149,17 +149,17 @@ class ImageCollection:
         raise NotImplementedError( f"get_image not implemented for f{self.__class__.__name__}" )
 
 
-    def get_image_path( self, pointing, band, sca, base_path=None ):
+    def get_image_path( self, observation_id, band, sca, base_path=None ):
         """Return the absolute path to the desired image, if that makes sense.
 
         This will only make sense for image collections where an image
-        is uniquely defined by a pointing, band, and sca.  Other image
+        is uniquely defined by a observation_id, band, and sca.  Other image
         collections will just not implement this method.
 
         Parameters
         ----------
-          pointing: str
-            The pointing number
+          observation_id: str
+            The identifier of the observation.
 
           band : str
             The band
@@ -220,7 +220,7 @@ class ImageCollection:
             By default, the returned images are not sorted in any
             particular way.  Put a keyword here to sort by that value
             (or by those values).  Options include 'id',
-            'provenance_id', 'pointing', 'sca', 'ra', 'dec', 'filepath',
+            'provenance_id', 'observation_id', 'sca', 'ra', 'dec', 'filepath',
             'width', 'height', 'mjd', 'exptime'.  Not all of these are
             necessarily useful, and some of them may be null for many
             objects in the database.
@@ -257,17 +257,24 @@ class ImageCollectionOU2024:
             self._base_path = pathlib.Path( Config.get().value( 'system.ou24.images' ) )
         return self._base_path
 
-    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, base_path=None, dbclient=None ):
+    def get_image( self, image_id=None, path=None, observation_id=None, band=None, sca=None,
+                   base_path=None, dbclient=None ):
         """Return a OpenUniverse2024FITSImage based on specifications.
 
-        If you specify all of path, pointing, band, and sca, they must
+        If you specify all of path, observation_id, band, and sca, they must
         be consistent.
 
-        If you just give path, then pointing, band, and sca will be read
+        If you just give path, then observation_id, band, and sca will be read
         from the header.
 
-        If you give pointinb, band, and sca, but not path, it will use
+        If you give observation_id, band, and sca, but not path, it will use
         get_image_path to find the image.
+
+        NOTE: in the ou2024 files, "observation_id" is called "pointing"
+        and is an int.  In snappl, to match what will come from Roman,
+        we use observation_id, and make it a string (even though it's
+        composed of characters [0-9], it's a string in the Roman
+        headers).
 
         """
 
@@ -277,31 +284,31 @@ class ImageCollectionOU2024:
         base_path = self.base_path if base_path is None else pathlib.Path( base_path )
         if path is not None:
             img = OpenUniverse2024FITSImage( base_path / path, format=-1 )
-            if ( pointing is not None ) and ( int(pointing) != int(img.pointing) ):
-                raise ValueError( "Pointing {pointing} inconsistent with what's in {path}" )
+            if ( observation_id is not None ) and ( int(observation_id) != int(img.observation_id) ):
+                raise ValueError( "Observation_Id {observation_id} inconsistent with what's in {path}" )
             if ( sca is not None ) and ( int(sca) != int(img.sca) ):
                 raise ValueError( "SCA {sca} inconsistent with what's in {path}" )
             if ( band is not None ) and ( str(band) != str(img.band) ):
                 raise ValueError( "Band {band} inconsistent with what's in {path}" )
             return img
 
-        if any( i is None for i in [ pointing, band, sca ] ):
-            raise ValueError( "Must specify either path or all of (pointing, band, sca)" )
+        if any( i is None for i in [ observation_id, band, sca ] ):
+            raise ValueError( "Must specify either path or all of (observation_id, band, sca)" )
 
-        path = self.get_image_path( pointing, band, sca, base_path=base_path )
-        img = OpenUniverse2024FITSImage( path, pointing=pointing, sca=sca, format=-1 )
+        path = self.get_image_path( observation_id, band, sca, base_path=base_path )
+        img = OpenUniverse2024FITSImage( path, observation_id=observation_id, sca=sca, format=-1 )
         return img
 
 
-    def get_image_path( self, pointing, band, sca, base_path=None ):
+    def get_image_path( self, observation_id, band, sca, base_path=None ):
         """Return the absolute path to the desired OU2024 FITS image.
 
         See ImageCollection.get_image_path for documentation.
 
         """
         base_path = self.base_path if base_path is None else pathlib.Path( base_path )
-        path = ( base_path / band / str(pointing) /
-                 f'Roman_TDS_simple_model_{band}_{str(pointing)}_{str(sca)}.fits.gz' )
+        path = ( base_path / band / str(observation_id) /
+                 f'Roman_TDS_simple_model_{band}_{str(observation_id)}_{str(sca)}.fits.gz' )
         return path
 
     def find_images( self,
@@ -342,7 +349,7 @@ class ImageCollectionOU2024:
             path = self.get_image_path( res['pointing'][i], res['filter'][i], res['sca'][i] )
             image = OpenUniverse2024FITSImage(path,
                                               band=res['filter'][i],
-                                              pointing=res['pointing'][i],
+                                              observation_id=str( res['pointing'][i] ),
                                               sca=res["sca"][i],
                                               mjd=res['mjd'][i],
                                               format=-1 )
@@ -371,7 +378,7 @@ class ImageCollectionManualFITS:
       BAND
       EXPTIME
       MJD
-      POINTING
+      POINTING    [ this is "observation_id" ]
       SCA
       ZPT
 
@@ -385,19 +392,20 @@ class ImageCollectionManualFITS:
         self.base_path = pathlib.Path( base_path )
         self.threefile = threefile
 
-    def get_image_path( self, pointing, band, sca, base_path=None ):
+    def get_image_path( self, observation_id, band, sca, base_path=None ):
         raise NotImplementedError( "get_image_path is not defined for ImageCollectionManualFITS" )
 
     def find_images( self, **kwargs ):
         raise NotImplementedError( "find_images is not defined for ImageCollectionManualFITS" )
 
-    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, base_path=None, dbclient=None ):
+    def get_image( self, image_id=None, path=None, observation_id=None, band=None, sca=None,
+                   base_path=None, dbclient=None ):
         if image_id is not None:
             raise ValueError( "image_id is invalid for ImageCollectionManualFITS" )
 
         if path is None:
             raise ValueError( "ImageCollectionManualFITS.get_image requires a path, it can't "
-                              "handle pointing/band/sca." )
+                              "handle observation_id/band/sca." )
 
         base_path = pathlib.Path(base_path) if base_path is not None else self.base_path
         if self.threefile:
@@ -417,7 +425,8 @@ class ImageCollectionDB:
     image_class_to_format = { 'ou2024': 2,
                               'ou2024_nativelocation': 2,
                               'ou2024_stdlocation': 1,
-                              'ou2024nov2025': 1
+                              'ou2024nov2025': 1,
+                              'roman_datamodel': 100
                               }
 
     def __init__( self, provenance=None, base_path=None ):
@@ -436,7 +445,7 @@ class ImageCollectionDB:
         self.base_path = pathlib.Path( base_path )
 
 
-    def get_image( self, image_id=None, path=None, pointing=None, band=None, sca=None, dbclient=None ):
+    def get_image( self, image_id=None, path=None, observation_id=None, band=None, sca=None, dbclient=None ):
         dbclient = SNPITDBClient.get() if dbclient is None else dbclient
 
         if image_id is not None:
@@ -444,11 +453,11 @@ class ImageCollectionDB:
 
         else:
             if not ( ( path is not None ) or
-                     ( all( i is not None for i in [ pointing, band, sca ] ) ) ):
-                raise ValueError( "Must specify one of image_id, path, or (pointing, band, and sca)." )
+                     ( all( i is not None for i in [ observation_id, band, sca ] ) ) ):
+                raise ValueError( "Must specify one of image_id, path, or (observation_id, band, and sca)." )
 
-            data = { k: v for k, v in zip( ['filepath', 'pointing', 'band', 'sca' ],
-                                           [path, pointing, band, sca ] )
+            data = { k: v for k, v in zip( ['filepath', 'observation_id', 'band', 'sca' ],
+                                           [path, observation_id, band, sca ] )
                      if v is not None }
             data['provenance'] = self.provenance.id
             rows = dbclient.send( "/findl2images",
@@ -467,12 +476,12 @@ class ImageCollectionDB:
             return self.image_class( **row )
 
 
-    def get_image_path( self, pointing, band, sca, base_path=None, image_id=None ):
+    def get_image_path( self, observation_id, band, sca, base_path=None, image_id=None ):
         # get_image_path was really put in becasue early software was written only
         #   for the OU2024 simulations, and an image was uniquely identified by
-        #   pointing/sca/band (and thus a unique path could be detetermined).  Once
+        #   observation_id/sca/band (and thus a unique path could be detetermined).  Once
         #   we have provenance (as is the case in the DB), this is no longer true,
-        #   so it's not possible to uniquely identify an image with pointing/band/sca.
+        #   so it's not possible to uniquely identify an image with observation_id/band/sca.
         # (I mean, yes, the collection knows its provenance, so it could query the
         #   database, but the principle is, early designs were based on the assumption
         #   that the only image collection they would ever have to work with was that
