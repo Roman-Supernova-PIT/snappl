@@ -33,7 +33,7 @@ spec:
       - env:
         - name: SNPIT_CONFIG
           value: /secrets/snpit_config.yaml
-        image: registry.nersc.gov/m4385/snpit-db-webserver:rknop-dev-20260204
+        image: registry.nersc.gov/m4385/snpit-db-webserver:rknop-dev-20260205
         imagePullPolicy: Always
         name: webserver
         resources: {}
@@ -55,7 +55,7 @@ spec:
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         tty: true
-        command: [ 'tail', '-f', '/etc/issue' ]
+        # command: [ 'tail', '-f', '/etc/issue' ]
         volumeMounts:
         - mountPath: /sessions
           name: webserver-sessions
@@ -132,17 +132,17 @@ spec:
             port:
               number: 8080
         pathType: ImplementationSpecific
-#   - host: romansnpit-rknop-dev.lbl.gov
-#     http:
-#       paths:
-#       - backend:
-#           service:
-#             name: webserver-ingress
-#             port:
-#               number: 8080
-#         pathType: ImplementationSpecific
-#   tls:
-#   - hosts:
-#     - romansnpit-rknop-dev.lbl.gov
-#     secretName: cert
+  - host: romansnpit-rknop-dev.lbl.gov
+    http:
+      paths:
+      - backend:
+          service:
+            name: webserver-ingress
+            port:
+              number: 8080
+        pathType: ImplementationSpecific
+  tls:
+  - hosts:
+    - romansnpit-rknop-dev.lbl.gov
+    secretName: cert
 ---

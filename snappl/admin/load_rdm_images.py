@@ -8,13 +8,10 @@ import hashlib
 import os
 import shutil
 
-import psycopg
-
-from snappl.image import RomanDatamodelImage
+from snappl.image import Image, RomanDatamodelImage
 from snappl.logger import SNLogger
 from snappl.utils import asUUID
 from snappl.provenance import Provenance
-import snappl.db.db
 
 
 # python multiprocesing irritates me; it seems you can't
@@ -53,8 +50,7 @@ def _parse_rdm_file( sourcepath=None, dest_base_path=None, dest_subdir=None, lin
                'format': 100,
                'mjd': image.mjd,
                'position_angle': image.position_angle,
-               'exptime': image.exptime,
-               'properties': psycopg.types.json.Jsonb( {} )
+               'exptime': image.exptime
               }
 
     # Copy the file if necessary
@@ -94,7 +90,6 @@ class RDM_L2image_loader:
         self.regex_image = re.compile( regex_image )
         self.symlink = symlink
         self.really_do = really_do
-        self.dbcon = None
 
 
 
@@ -117,27 +112,27 @@ class RDM_L2image_loader:
         return imagefiles
 
     def save_to_db( self ):
-        if len( self.copydata ) > 0:
-            SNLogger.info( f"Loading {len(self.copydata)} images to database..." )
+        if len( self.images ) > 0:
+            SNLogger.info( f"Loading {len(self.images)} images to database..." )
             if self.really_do:
-                snappl.db.db.L2Image.bulk_insert_or_upsert( self.copydata, dbcon=self.dbcon )
-            self.totloaded += len( self.copydata )
-            self.copydata = []
+                Image.bulk_save_to_db( self.images )
+            self.totloaded += len( self.images )
+            self.images = []
 
-    def append_to_copydata( self, relpath ):
-        self.copydata.append( relpath )
-        if len(self.copydata) % self.loadevery == 0:
+    def append_to_images( self, params ):
+        self.images.append( RomanDatamodelImage( **params ) )
+        if len(self.images) % self.loadevery == 0:
             self.save_to_db()
 
     def omg( self, e ):
         self.errors.append( e )
 
-    def __call__( self, dbcon=None, loadevery=1000, nprocs=1, filelist=None ):
+    def __call__( self, loadevery=1000, nprocs=1, filelist=None ):
         SNLogger.info( f"Collecting images underneath {self.source_path}" )
         toload = self.collect_image_paths( "." )
 
         self.totloaded = 0
-        self.copydata = []
+        self.images = []
         self.loadevery = loadevery
         self.errors = []
 
@@ -149,35 +144,31 @@ class RDM_L2image_loader:
                                                link=self.symlink,
                                                really_do=self.really_do )
 
-        with snappl.db.db.DBCon( dbcon ) as self.dbcon:
-            if nprocs > 1:
-                with multiprocessing.Pool( nprocs ) as pool:
-                    for path in toload:
-                        pool.apply_async( do_parse_rdm_file,
-                                          args=[ str( self.source_path / path ) ],
-                                          callback=self.append_to_copydata,
-                                          error_callback=self.omg
-                                         )
-                    pool.close()
-                    pool.join()
-                if len( self.errors ) > 0:
-                    nl = "\n"
-                    SNLogger.error( f"Got errors loading FITS files:\n{nl.join(str(e) for e in self.errors)}" )
-                    raise RuntimeError( "Massive failure." )
-
-            elif nprocs == 1:
+        if nprocs > 1:
+            with multiprocessing.Pool( nprocs ) as pool:
                 for path in toload:
-                    self.append_to_copydata( do_parse_rdm_file( self.source_path / path ) )
+                    pool.apply_async( do_parse_rdm_file,
+                                      args=[ str( self.source_path / path ) ],
+                                      callback=self.append_to_images,
+                                      error_callback=self.omg
+                                     )
+                pool.close()
+                pool.join()
+            if len( self.errors ) > 0:
+                nl = "\n"
+                SNLogger.error( f"Got errors loading FITS files:\n{nl.join(str(e) for e in self.errors)}" )
+                raise RuntimeError( "Massive failure." )
 
-            else:
-                raise ValueError( "Dude, nprocs needs to be positive, not {nprocs}" )
+        elif nprocs == 1:
+            for path in toload:
+                self.append_to_images( do_parse_rdm_file( self.source_path / path ) )
 
-            # Get any residual ones that didn't pass the "send to db" threshold
-            self.save_to_db()
+        else:
+            raise ValueError( "Dude, nprocs needs to be positive, not {nprocs}" )
 
-            SNLogger.info( f"Loaded {self.totloaded} of {len(toload)} images to database." )
-
-        self.dbcon = None
+        # Get any residual ones that didn't pass the "send to db" threshold
+        self.save_to_db()
+        SNLogger.info( f"Loaded {self.totloaded} of {len(toload)} images to database." )
 
         return toload
 
@@ -208,13 +199,8 @@ def main():
 
     args = parser.parse_args()
 
-    with snappl.db.db.DBCon( dictcursor=True ) as dbcon:
-        rows = dbcon.execute( "SELECT * FROM provenance WHERE id=%(id)s", { 'id': args.provid } )
-        if len(rows) == 0:
-            raise ValueError( "Invalid provenance {args.provid}" )
-        SNLogger.info( f"Loading with provenance for process {rows[0]['process']} "
-                       f"{rows[0]['major']}.{rows[0]['minor']}" )
-
+    # Make sure the provenance exists
+    _prov = Provenance.get_by_id( args.provid )
 
     loader = RDM_L2image_loader( provid=args.provid,
                                  source_path=args.sourcedir,
