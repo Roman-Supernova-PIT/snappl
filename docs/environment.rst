@@ -68,6 +68,12 @@ The following test/development databases are currently up and running.  (The col
       <td>NERSC</td>
       <td><tt>interactive-podman-nov2025.sh</tt></td>
     </tr>
+    <tr class="row-odd">
+      <td>Rob's tests</td>
+      <td><tt>roman_snpit_db_rknop_dev</tt></td>
+      <td>NERSC</td>
+      <td><tt>interactive-podman-rknop-dev.sh</tt></td>
+    </tr>
   </tbody>
   </table>
 
