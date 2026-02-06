@@ -1545,7 +1545,6 @@ class FITSImage( Numpy2DImage ):
             raise ValueError( f"Size must be odd for a well defined central "
                               f"pixel, you tried to pass a size of {xsize, ysize}.")
 
-        SNLogger.debug(f'Cutting out at {x , y}')
         data, noise, flags = self.get_data( 'all' )
 
         wcs = self.get_wcs()
