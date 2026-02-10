@@ -32,7 +32,7 @@ class PSF:
     """
 
     @classmethod
-    def get_psf_object( cls, psfclass, x=None, y=None, band=None, pointing=None, sca=None,
+    def get_psf_object( cls, psfclass, x=None, y=None, band=None, observation_id=None, sca=None,
                         image=None, seed=None, **kwargs ):
         """Return a PSF object whose type is specified by psfclass.
 
@@ -67,8 +67,8 @@ class PSF:
             The Roman band this is a PSF for.  (I.e. the band of the
             host image.)  Ignored by some subclasses.
 
-          pointing: int, default None
-            Roman pointing.  Ignored by many subclasses.
+          observation_id: int, default None
+            Roman observation_id.  Ignored by many subclasses.
 
           sca: int, default None
             Probably only relevant for the ou24PSF classes.
@@ -98,7 +98,7 @@ class PSF:
         kwargs.update( { 'x': x,
                          'y': y,
                          'band': band,
-                         'pointing': pointing,
+                         'observation_id': observation_id,
                          'sca': sca,
                          'image' : image,
                          'seed' : seed } )
@@ -133,7 +133,7 @@ class PSF:
     # oversampled image.  Should there be a general interface for
     # getting access to oversampled PSFs?
 
-    def __init__( self, x=None, y=None, band=None, pointing=None, sca=None,
+    def __init__( self, x=None, y=None, band=None, observation_id=None, sca=None,
                   _called_from_get_psf_object=False, image=None, seed=None, **kwargs ):
         """Don't call this or the constructor of a subclass directly, call PSF.get_psf_object().
 
@@ -147,12 +147,12 @@ class PSF:
         self._consumed_args = set()
         if not _called_from_get_psf_object:
             raise RuntimeError( f"Don't instantiate a {self.__class__.__name__} directly, call PSF.get_psf_object" )
-        self._consumed_args.update( [ 'x', 'y', 'band', 'pointing', 'sca', '_called_from_get_psf_object', "seed",
+        self._consumed_args.update( [ 'x', 'y', 'band', 'observation_id', 'sca', '_called_from_get_psf_object', "seed",
                                      "image" ] )
         self._x = float( x ) if x is not None else None
         self._y = float( y ) if y is not None else None
         self._band = band
-        self._pointing = pointing
+        self._observation_id = observation_id
         self._sca = sca
         self._image = image
         self._seed = seed
@@ -1254,8 +1254,8 @@ class ou24PSF_slow( PSF ):
         self._consumed_args.update( [ 'sed', 'config_file', 'size', 'include_photonOps', 'n_photons' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
-        if ( self._pointing is None ) or ( self._sca is None ):
-            raise ValueError( "Need a pointing and an sca to make an ou24PSF_slow" )
+        if ( self._observation_id is None ) or ( self._sca is None ):
+            raise ValueError( "Need a observation_id and an sca to make an ou24PSF_slow" )
         if ( size % 2 == 0 ) or ( int(size) != size ):
             raise ValueError( "Size must be an odd integer." )
         size = int( size )
@@ -1330,7 +1330,7 @@ class ou24PSF_slow( PSF ):
 
 
         if (x, y, stampx, stampy) not in self._stamps:
-            rmutils = roman_utils( self.config_file, self._pointing, self._sca )
+            rmutils = roman_utils( self.config_file, self._observation_id, self._sca )
             if seed is not None:
                 rmutils.rng = galsim.BaseDeviate( seed )
 
@@ -1413,7 +1413,7 @@ class ou24PSF( ou24PSF_slow ):
 
 
         """
-        self._rmutils = roman_utils(self.config_file, self._pointing, self._sca)
+        self._rmutils = roman_utils(self.config_file, self._observation_id, self._sca)
         self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
         # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
         if self._image is None:
@@ -1527,13 +1527,13 @@ class ou24PSF( ou24PSF_slow ):
 #     """An OversampledImagePSF that renders its internally stored image from a galsim roman_imsim PSF.
 
 #     Use this just like you use an OversampledImagePSF.  However, to construct one, you need to give
-#     it a pointing and an SCA from the OpenUniverse2024 sims.  It will only work if all that OU2024
+#     it a observation_id and an SCA from the OpenUniverse2024 sims.  It will only work if all that OU2024
 #     data is available on disk.
 
 #     """
 
 #     def __init__( self, x=2044., y=2044., oversample_factor=5, oversampled_size=201,
-#                   pointing=None, sca=None, sed=None, config_file=None,
+#                   observation_id=None, sca=None, sed=None, config_file=None,
 #                   include_photonOps=True, n_photons=1000000, seed=None,
 #                   **kwargs ):
 #         """Construct an ou24PSF.
@@ -1573,8 +1573,8 @@ class ou24PSF( ou24PSF_slow ):
 #             out what size of a stamp you'll get when you run
 #             get_stamp().)
 
-#           pointing: int
-#             Required.  The OpenUniverse2024 pointing.
+#           observation_id: int
+#             Required.  The OpenUniverse2024 observation_id.
 
 #           sca: int
 #             Required.  The SCA.
@@ -1609,8 +1609,8 @@ class ou24PSF( ou24PSF_slow ):
 #         if self._data is not None:
 #             raise ValueError( "Error, do not pass data when constructing an ou24PSF" )
 
-#         if ( pointing is None ) or ( sca is None ):
-#             raise ValueError( "Need a pointing and an sca to make an ou24PSF" )
+#         if ( observation_id is None ) or ( sca is None ):
+#             raise ValueError( "Need a observation_id and an sca to make an ou24PSF" )
 #         if ( oversampled_size % 2 == 0 ) or ( int(oversampled_size) != oversampled_size ):
 #             raise ValueError( "Size must be an odd integer." )
 #         oversampled_size = int( oversampled_size )
@@ -1627,7 +1627,7 @@ class ou24PSF( ou24PSF_slow ):
 #         if config_file is None:
 #             config_file = Config.get().value( 'system.ou24.config_file' )
 #         self.config_file = config_file
-#         self.pointing = pointing
+#         self.observation_id = observation_id
 #         self.sca = sca
 #         self.oversampled_size = oversampled_size
 #         self.sca_size = 4088
@@ -1644,7 +1644,7 @@ class ou24PSF( ou24PSF_slow ):
 #             stampx = self.oversampled_size // 2
 #             stampy = self.oversampled_size // 2
 
-#             rmutils = roman_utils( self.config_file, self.pointing, self.sca )
+#             rmutils = roman_utils( self.config_file, self.observation_id, self.sca )
 #             if self.seed is not None:
 #                 rmutils.rng = galsim.BaseDeviate( self.seed )
 #             wcs = rmutils.getLocalWCS( x+1, y+1 )

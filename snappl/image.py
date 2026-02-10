@@ -64,7 +64,7 @@ class Image( PathedObject ):
              HERE FOR BACKWARDS COMPATIBILITY ONLY
     * name : str; synonym for filename.  HERE FOR BACKWARDS COMPATIBILITY ONLY.
 
-    * pointing : int (str?); a unique identifier of the exposure associated with the image
+    * observation_id : int (str?); a unique identifier of the exposure associated with the image
     *            WARNING, this property name will probably change once we fighre out the
     *            right thing from the roman datamodel we want to use
     * sca : int (str?); the SCA of this image
@@ -125,7 +125,7 @@ class Image( PathedObject ):
     def __init__( self, path=None, filepath=None, base_path=None, base_dir=None,
                   full_filepath=None, no_base_path=False,
                   id=None, provenance_id=None, width=None, height=None,
-                  pointing=None, sca=None, ra=None, dec=None,
+                  observation_id=None, sca=None, ra=None, dec=None,
                   ra_corner_00=None, ra_corner_01=None, ra_corner_10=None, ra_corner_11=None,
                   dec_corner_00=None, dec_corner_01=None, dec_corner_10=None, dec_corner_11=None,
                   band=None, mjd=None, position_angle=None, exptime=None, sky_level=None, zeropoint=None,
@@ -193,7 +193,7 @@ class Image( PathedObject ):
           format : int, default -1
             Index into the table Image._format_def at the bottom of this file.
 
-          pointing : int (str?), default None (WARNING: this parameter keyword will change)
+          observation_id : int (str?), default None (WARNING: this parameter keyword will change)
           sca: int, default None
           ra: float, default None
           dec: float, default None
@@ -231,7 +231,7 @@ class Image( PathedObject ):
 
         self._declare_consumed_kwargs( { 'path', 'filepath', 'base_path', 'base_dir',
                                          'full_filepath', 'no_base_path',
-                                         'id', 'provenance_id', 'width', 'height', 'pointing', 'sca', 'ra', 'dec',
+                                         'id', 'provenance_id', 'width', 'height', 'observation_id', 'sca', 'ra', 'dec',
                                          'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                          'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                                          'band', 'mjd', 'position_nagle', 'exptime', 'sky_level', 'zeropoint' } )
@@ -241,7 +241,7 @@ class Image( PathedObject ):
         self._provenance_id = asUUID( provenance_id ) if provenance_id is not None else None
         self._width = width
         self._height = height
-        self._pointing = pointing
+        self._observation_id = observation_id
         self._sca = sca
         self._ra = ra
         self._dec = dec
@@ -409,15 +409,15 @@ class Image( PathedObject ):
         return self._height
 
     @property
-    def pointing( self ):
-        """Str or int or something; the exposure/pointing/visit/SOMETHING for the image"""
-        if self._pointing is None:
-            self._get_pointing()
-        return self._pointing
+    def observation_id( self ):
+        """Str or int or something; the exposure/observation_id/visit/SOMETHING for the image"""
+        if self._observation_id is None:
+            self._get_observation_id()
+        return self._observation_id
 
-    @pointing.setter
-    def pointing( self, val ):
-        self._pointing = val
+    @observation_id.setter
+    def observation_id( self, val ):
+        self._observation_id = val
 
     @property
     def sca( self ):
@@ -617,8 +617,8 @@ class Image( PathedObject ):
     def _get_image_shape( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_image_shape" )
 
-    def _get_pointing( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_pointing" )
+    def _get_observation_id( self ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_observation_id" )
 
     def _get_sca( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_sca" )
@@ -1094,7 +1094,7 @@ class Image( PathedObject ):
             By default, the returned images are not sorted in any
             particular way.  Put a keyword here to sort by that value
             (or by those values).  Options include 'id',
-            'provenance_id', 'pointing', 'sca', 'ra', 'dec', 'filepath',
+            'provenance_id', 'observation_id', 'sca', 'ra', 'dec', 'filepath',
             'width', 'height', 'mjd', 'exptime'.  Not all of these are
             necessarily useful, and some of them may be null for many
             objects in the database.
@@ -1567,7 +1567,7 @@ class FITSImage( Numpy2DImage ):
 
         # TODO : fix _ra* and _dec* fields, they're all WRONG
 
-        for prop in [ '_pointing', '_sca', '_band', '_mjd', '_position_angle', '_exptime', '_sky_level', '_zeropoint',
+        for prop in [ '_observation_id', '_sca', '_band', '_mjd', '_position_angle', '_exptime', '_sky_level', '_zeropoint',
                       '_ra', '_dec',
                       '_ra_corner_00', '_ra_corner_01', '_ra_corner_10', '_ra_corner_11',
                       '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
@@ -1679,7 +1679,7 @@ class FITSImageStdHeaders( FITSImage ):
     """
     def __init__( self, *args,
                   header_kws = {
-                      'pointing': "POINTING",
+                      'observation_id': "POINTING",
                       'sca': "SCA",
                       'ra': "RA",
                       'dec': "DEC",
@@ -1712,21 +1712,21 @@ class FITSImageStdHeaders( FITSImage ):
     #   the property or the setter, you have to override both, you
     #   can't take the parent class implementation for just one.
 
-    def _get_pointing( self ):
+    def _get_observation_id( self ):
         hdr = self.get_fits_header()
-        self._pointing = hdr[ self._header_kws['pointing'] ]
+        self._observation_id = hdr[ self._header_kws['observation_id'] ]
 
     @property
-    def pointing( self ):
-        if self._pointing is None:
-            self._get_pointing()
-        return self._pointing
+    def observation_id( self ):
+        if self._observation_id is None:
+            self._get_observation_id()
+        return self._observation_id
 
-    @pointing.setter
-    def pointing( self, val ):
-        self._pointing = val
+    @observation_id.setter
+    def observation_id( self, val ):
+        self._observation_id = val
         hdr = self.get_fits_header()
-        hdr[ self._header_kws['pointing'] ] = self._pointing
+        hdr[ self._header_kws['observation_id'] ] = self._observation_id
 
     def _get_sca( self ):
         hdr = self.get_fits_header()
@@ -1970,14 +1970,14 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
 
     _image_class_base_path_config_item = 'system.ou24.images'
 
-    _filenamere = re.compile( r'^Roman_TDS_simple_model_(?P<band>[^_]+)_(?P<pointing>\d+)_(?P<sca>\d+).fits' )
+    _filenamere = re.compile( r'^Roman_TDS_simple_model_(?P<band>[^_]+)_(?P<observation_id>\d+)_(?P<sca>\d+).fits' )
 
     @property
     def truthpath( self ):
         """Path to truth catalog.  WARNING: this is OpenUniverse2024FITSImage-specific, use with care."""
         tds_base = pathlib.Path( Config.get().value( 'system.ou24.tds_base' ) )
-        return ( tds_base / f'truth/{self.band}/{self.pointing}/'
-                 f'Roman_TDS_index_{self.band}_{self.pointing}_{self.sca}.txt' )
+        return ( tds_base / f'truth/{self.band}/{self.observation_id}/'
+                 f'Roman_TDS_index_{self.band}_{self.observation_id}_{self.sca}.txt' )
 
 
     def _get_image_shape( self ):
@@ -1985,13 +1985,13 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         self._width = int( header['NAXIS1'] )
         self._height = int( header['NAXIS2'] )
 
-    def _get_pointing( self ):
-        # Irritatingly, the pointing is not in the header.  So, we have to
-        #   parse the filename to get the pointing.
+    def _get_observation_id( self ):
+        # Irritatingly, the observation_id is not in the header.  So, we have to
+        #   parse the filename to get the observation_id.
         mat = self._filenamere.search( self.filepath.name )
         if mat is None:
-            raise ValueError( f"Failed to parse {self.filepath.name} for pointing" )
-        self._pointing = int( mat.group( 'pointing' ) )
+            raise ValueError( f"Failed to parse {self.filepath.name} for observation_id" )
+        self._observation_id = int( mat.group( 'observation_id' ) )
 
     def _get_sca( self ):
         header = self.get_fits_header()
