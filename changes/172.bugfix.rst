@@ -1,0 +1,1 @@
+Accept 'format' in addition to 'image_class' from provenance
