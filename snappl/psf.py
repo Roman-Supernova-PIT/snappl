@@ -110,41 +110,22 @@ class PSF:
                          'image' : image,
                          'seed' : seed } )
 
-        if psfclass == "photutilsImagePSF":
-            return photutilsImagePSF( _called_from_get_psf_object=True, **kwargs )
+        psfclass_to_function_mapping = {
+            "photutilsImagePSF": photutilsImagePSF,
+            "OversampledImagePSF": OversampledImagePSF,
+            "Sampling_OversampledImagePSF": Sampling_OversampledImagePSF,
+            "YamlSerialized_OversampledImagePSF": YamlSerialized_OversampledImagePSF,
+            "A25ePSF": A25ePSF,
+            "ou24PSF_slow": ou24PSF_slow,
+            "ou24PSF": ou24PSF,
+            "gaussian": GaussianPSF,
+            "varying_gaussian": VaryingGaussianPSF,
+            "ou24PSF_slow_photonshoot": ou24PSF_slow_photonshoot,
+            "ou24PSF_photonshoot": ou24PSF_photonshoot,
+        }
 
-        if psfclass == "OversampledImagePSF":
-            return OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "Sampling_OversampledImagePSF":
-            return Sampling_OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "YamlSerialized_OversampledImagePSF":
-            return YamlSerialized_OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "A25ePSF":
-            return A25ePSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "ou24PSF_slow":
-            return ou24PSF_slow( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "ou24PSF":
-            return ou24PSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "gaussian":
-            return GaussianPSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "varying_gaussian":
-            return VaryingGaussianPSF(_called_from_get_psf_object=True, **kwargs)
-
-        if psfclass == "ou24PSF_slow_photonshoot":
-            return ou24PSF_slow_photonshoot( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "ou24PSF_photonshoot":
-            return ou24PSF_photonshoot(_called_from_get_psf_object=True, **kwargs)
-
-        raise ValueError( f"Unknown PSF class {psfclass}" )
-
+        psf_function = psfclass_to_function_mapping[psfclass]
+        return psf_function( _called_from_get_psf_object=True, **kwargs )
 
     # Thought required: how to deal with oversampling.  Right now, the
     # OversampledImagePSF and photutilsImagePSF subclasses provide a
