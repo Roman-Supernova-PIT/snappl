@@ -6,7 +6,7 @@ import scipy
 from snappl.psf import PSF
 
 
-def test_get_stamp():
+def test_get_centered_psf():
     psfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=41)
 
     # Try a basic centered PSF
@@ -20,14 +20,16 @@ def test_get_stamp():
     assert cx == pytest.approx(19.716, abs=0.01)
     assert cy == pytest.approx(19.922, abs=0.01)
 
-    centerstamp = stamp
 
+def test_get_offcenter_psf():
     # Try an offcenter PSF that's still centered on a pixel
     # The wings of this PSF are monstrous, so the centroiding
     #   doesn't come out quite precise when the thing is offset
     #   this much.
 
     psfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=41.0)
+    centerstamp = psfobj.get_stamp(seed=42)
+
     stamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
@@ -58,6 +60,8 @@ def test_get_stamp():
     newstamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
     np.testing.assert_array_equal(stamp, newstamp)
 
+
+def test_get_edge_centered_psf():
     # Try a PSF centered between two pixels.  Because of how we
     #   define 0.5 behavior in PSF.get_stamp, this should be
     #   centered to the *left* of the center of the image.
