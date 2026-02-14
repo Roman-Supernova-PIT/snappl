@@ -21,15 +21,15 @@ def test_normalization():
     #   downsampled.  But, maybe it is.  Someone should go read the code to find out.
     seed = 42
 
-    bigpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=bigsize)
+    bigpsfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=bigsize)
     bigstamp = bigpsfobj.get_stamp(seed=seed)
     assert bigstamp.shape == (bigsize, bigsize)
 
-    mediumpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=mediumsize)
+    mediumpsfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=mediumsize)
     mediumstamp = mediumpsfobj.get_stamp(seed=seed)
     assert mediumstamp.shape == (mediumsize, mediumsize)
 
-    smallpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=smallsize)
+    smallpsfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=smallsize)
     smallstamp = smallpsfobj.get_stamp(seed=seed)
     assert smallstamp.shape == (smallsize, smallsize)
 
@@ -45,13 +45,13 @@ def test_normalization():
 
 
 def test_get_centered_psf():
-    psfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=41)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41)
 
     # Try a basic centered PSF
     stamp = psfobj.get_stamp(seed=42)
     assert stamp.shape == (41, 41)
-    # Empirically, a 41×41 stamp comes out at 0.986.  See test_normalization above.
-    assert stamp.sum() == pytest.approx(0.986, abs=0.001)
+    # 2026-02-14 MWV: H158 comes out to 0.979.  See test_normalization for implicit comparison.
+    assert stamp.sum() == pytest.approx(0.979, abs=0.001)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     # The roman PSF is asymmetric, so we don't expect the CoM to be the exact center.
     # The comparison numbers are what we got the first time we ran this test...
@@ -65,7 +65,7 @@ def test_get_offcenter_psf():
     #   doesn't come out quite precise when the thing is offset
     #   this much.
 
-    psfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
     centerstamp = psfobj.get_stamp(seed=42)
 
     stamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
@@ -103,10 +103,10 @@ def test_get_edge_centered_psf():
     # Try a PSF centered between two pixels.  Because of how we
     #   define 0.5 behavior in PSF.get_stamp, this should be
     #   centered to the *left* of the center of the image.
-    psfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.0, seed=42)
     assert stamp.shape == (41, 41)
-    assert stamp.sum() == pytest.approx(0.986, abs=0.001)
+    assert stamp.sum() == pytest.approx(0.979, abs=0.001)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     assert cx == pytest.approx(19.22, abs=0.02)
     assert cy == pytest.approx(19.92, abs=0.02)
@@ -115,7 +115,7 @@ def test_get_edge_centered_psf():
     # The PSF center should be at -1.5, +2.5 pixels
     # relative to the stamp center... but then
     # offset because of the asymmetry of the roman PSF.
-    psfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.5, x0=2050, y0=2046, seed=42)
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
