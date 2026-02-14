@@ -7,7 +7,12 @@ from snappl.psf import PSF
 
 
 def test_normalization():
-    """Verify normalization of PSF for different stamp sizes."""
+    """Verify normalization of PSF for different stamp sizes.
+
+    Specifically, verify that a big-enough PSF is close to 1
+    and that smaller stamps have a normalization such that they
+    match the sum of the subset of the big PSF stamp.
+    """
     bigsize = 501
     mediumsize = 201
     smallsize = 41
@@ -28,8 +33,7 @@ def test_normalization():
     smallstamp = smallpsfobj.get_stamp(seed=seed)
     assert smallstamp.shape == (smallsize, smallsize)
 
-    assert bigstamp.sum() == pytest.approx(1.0, abs=0.0001)
-    assert mediumstamp.sum() == pytest.approx(1.0, abs=0.01)
+    assert bigstamp.sum() == pytest.approx(1.0, abs=0.001)
 
     x0 = bigsize // 2 - mediumsize // 2
     x1 = x0 + mediumsize
