@@ -86,12 +86,12 @@ def test_get_offcenter_psf():
             ] == pytest.approx(centerstamp[20 + yoff, 20 + xoff], abs=absoff)
 
     with pytest.raises(
-        ValueError, match="ou24PSF.get_stamp called with x0 or y0 that does not match"
+        ValueError, match="STPSF.get_stamp called with x0 or y0 that does not match"
     ):
         _ = psfobj.get_stamp(2048.0, 2048.0)
 
     with pytest.raises(
-        ValueError, match="ou24PSF.get_stamp called with x0 or y0 that does not match"
+        ValueError, match="STPSF.get_stamp called with x0 or y0 that does not match"
     ):
         _ = psfobj.get_stamp(2048.0, 2048.0, x0=2046, y0=2045)
 
