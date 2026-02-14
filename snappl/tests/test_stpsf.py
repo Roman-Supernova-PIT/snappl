@@ -6,6 +6,30 @@ import scipy
 from snappl.psf import PSF
 
 
+def test_normalization():
+    # This isn't really testing snappl code, it's checking out STPSF.
+    # Empirically, the PSF normalization in the smaller clip varies by
+    # at least several tenths of a percent when you use different random
+    # seeds.
+    bigsize = 201
+    smallsize = 41
+    bigpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=bigsize)
+    bigstamp = bigpsfobj.get_stamp(seed=42)
+    assert bigstamp.shape == (201, 201)
+    smallpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=smallsize)
+    # Using the same seed here probably isn't doing what we want it to do,
+    #   i.e. creating the same realization of the PSF that then gets
+    #   downsampled.  But, maybe it is.  Someone should go read the code to find out.
+    smallstamp = smallpsfobj.get_stamp(seed=42)
+    assert smallstamp.shape == (41, 41)
+
+    assert bigstamp.sum() == pytest.approx(1.0, abs=0.001)
+
+    x0 = bigsize // 2 - smallsize // 2
+    x1 = x0 + smallsize
+    assert smallstamp.sum() == pytest.approx(bigstamp[x0:x1, x0:x1].sum(), rel=1e-5)
+
+
 def test_get_centered_psf():
     psfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=41)
 
