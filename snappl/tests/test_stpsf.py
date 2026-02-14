@@ -54,8 +54,8 @@ def test_get_centered_psf():
     assert stamp.sum() == pytest.approx(0.979, abs=0.001)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     # The roman PSF is asymmetric, so we don't expect the CoM to be the exact center.
-    # The comparison numbers are what we got the first time we ran this test...
-    assert cx == pytest.approx(19.716, abs=0.01)
+    # The comparison numbers are what MWV go when adapting this test for STPSF
+    assert cx == pytest.approx(19.856, abs=0.01)
     assert cy == pytest.approx(19.922, abs=0.01)
 
 
@@ -71,7 +71,7 @@ def test_get_offcenter_psf():
     stamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(19.716 + (2048 - 2050), abs=0.2)
+    assert cx == pytest.approx(19.856 + (2048 - 2050), abs=0.2)
     assert cy == pytest.approx(19.922 + (2048 - 2040), abs=0.2)
     # This stamp should just be a shifted version of centerstamp; verify
     #   that.  This check should be much more precise than the
