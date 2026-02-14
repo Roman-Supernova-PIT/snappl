@@ -10,22 +10,20 @@ import pathlib
 # common library imports
 import numpy as np
 import scipy.integrate
+import scipy.signal
 from scipy.special import gammaincinv
 from scipy.stats import binned_statistic_2d
-import scipy.signal
 import yaml
-
 
 # astro library imports
 from astropy.modeling.functional_models import Sersic2D
-import photutils.psf
 import galsim
+import photutils.psf
 from roman_imsim.utils import roman_utils
 
 # roman snpit library imports
 from snappl.config import Config
 from snappl.logger import SNLogger
-
 
 
 class PSF:
