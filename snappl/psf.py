@@ -1785,8 +1785,8 @@ class STPSF( PSF ):
     identical arguments it will return the cached version).
     """
 
-    def __init__( self, sed=None, config_file=None, size=201,
-                  n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
+    def __init__( self, sed=None, size=201,
+                  _parent_class=False,  **kwargs
                  ):
 
         super().__init__( _parent_class=True, **kwargs )
@@ -1831,11 +1831,6 @@ class STPSF( PSF ):
             However, it will be useful in tests for purposes of testing
             reproducibility.
 
-          image : snappl.image.Image or None
-            The image that the PSF is associated with. This image will be used to
-            determine the WCS of the PSF stamp. If None, the WCS will be determined
-            using rmutils.getLocalWCS.
-
         Notes
         -----
         For more details
@@ -1867,7 +1862,7 @@ class STPSF( PSF ):
 
         if ( ( stampx < -self.stamp_size ) or ( stampx > 2.*self.stamp_size ) or
              ( stampy < -self.stamp_size ) or ( stampy > 2.*self.stamp_size ) ):
-            raise ValueError( f"PSF would be rendered at ({stampx},{stampy}), which is too far off of the "
+            raise ValueError( f"PSF would be rendered at ({stampx}, {stampy}), which is too far off of the "
                               f"edge of a {self.stamp_size}-pixel stamp." )
 
         SNLogger.debug( f"Initializing STPSF with band {self._band} "
