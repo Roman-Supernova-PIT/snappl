@@ -1868,7 +1868,7 @@ class STPSF( PSF ):
         SNLogger.debug( f"Initializing STPSF with band {self._band} "
                         f"and sca {self._sca}" )
         if (x, y, stampx, stampy) not in self._stamps:
-            stamp = wfi.calc_psf()
+            stamp = wfi.calc_psf(fov_pixels=self.stamp_size)
             self._stamps[(x, y, stampx, stampy)] = stamp["DET_SAMP"].data
 
         return self._stamps[(x, y, stampx, stampy)] * flux
