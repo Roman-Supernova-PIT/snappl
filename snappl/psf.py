@@ -1771,6 +1771,118 @@ class ou24PSF_slow_photonshoot( ou24PSF_slow ):
 #         return self._data
 
 
+class STPSF( PSF ):
+    """Wrap the STPSF PSFs.
+
+    Each time you call get_stamp it will render a new one, with all the
+    photon ops and so forth.
+
+    However, an object of this class will cache, so if you call get_stamp with
+    identical arguments it will return the cached version).
+    """
+
+    def __init__( self, sed=None, config_file=None, size=201,
+                  n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
+                 ):
+
+        super().__init__( _parent_class=True, **kwargs )
+        self._consumed_args.update( [ 'sed', 'config_file', 'size', '_include_photonOps', 'n_photons' ] )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
+
+        if ( self._band is None ) or ( self._sca is None ):
+            raise ValueError( "Need a band and an sca to make a STPSF" )
+        if ( size % 2 == 0 ) or ( int(size) != size ):
+            raise ValueError( "Size must be an odd integer." )
+        size = int( size )
+
+        if sed is None:
+            SNLogger.warning( "No sed passed to STPSF, using a flat SED between 0.1μm and 2.6μm" )
+            self.sed = galsim.SED( galsim.LookupTable( [1000, 26000], [1, 1], interpolant='linear' ),
+                              wave_type='Angstrom', flux_type='fphotons' )
+        elif not isinstance( sed, galsim.SED ):
+            raise TypeError( f"sed must be a galsim.SED, not a {type(sed)}" )
+        else:
+            self.sed = sed
+
+        if config_file is None:
+            config_file = Config.get().value( 'system.STPSF.config_file' )
+        self.config_file = config_file
+        self.size = size
+        self.sca_size = 4088
+        self._x = self.sca_size // 2 if self._x is None else self._x
+        self._y = self.sca_size // 2 if self._y is None else self._y
+        self._include_photonOps = _include_photonOps
+        self.n_photons = n_photons
+        self._stamps = {}
+
+    @property
+    def stamp_size( self ):
+        return self.size
+
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None ):
+        """Return a 2d numpy image of the PSF at the image resolution.
+
+        Parameters are as in PSF.get_stamp, plus:
+
+        Parameters
+        ----------
+
+          seed : int
+            A random seed to pass to galsim.BaseDeviate for photonOps.
+            NOTE: this is not part of the base PSF interface (at least,
+            as of yet), so don't use it in production pipeline code.
+            However, it will be useful in tests for purposes of testing
+            reproducibility.
+
+          image : snappl.image.Image or None
+            The image that the PSF is associated with. This image will be used to
+            determine the WCS of the PSF stamp. If None, the WCS will be determined
+            using rmutils.getLocalWCS.
+
+        Notes
+        -----
+        For more details
+          see the STPSF documentation
+        https://stpsf.readthedocs.io/en/latest/roman.html
+          and sample Roman WFI STPSF Notebook
+        https://github.com/spacetelescope/stpsf/blob/develop/notebooks/STPSF-Roman_Tutorial.ipynb
+        """
+        SNLogger.debug("Getting STPSF stamp at x=%s, y=%s, x0=%s, y0=%s", x, y, x0, y0)
+
+        import stpsf
+        wfi = stpsf.roman.WFI()
+        wfi.detector = f"WFI{self._sca:02d}"
+
+        # If a position is not given, assume the middle of the SCA
+        #   (within 1/2 pixel; by default, we want to make x and y
+        #   centered on a pixel).
+        x = x if x is not None else float( self._x )
+        y = y if y is not None else float( self._y )
+        wfi.detector_position = (x, y)
+
+        xc = int( np.floor( x + 0.5 ) )
+        yc = int( np.floor( y + 0.5 ) )
+        x0 = xc if x0 is None else x0
+        y0 = yc if y0 is None else y0
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+        stampx = self.stamp_size // 2 + ( x - x0 )
+        stampy = self.stamp_size // 2 + ( y - y0 )
+
+        if ( ( stampx < -self.stamp_size ) or ( stampx > 2.*self.stamp_size ) or
+             ( stampy < -self.stamp_size ) or ( stampy > 2.*self.stamp_size ) ):
+            raise ValueError( f"PSF would be rendered at ({stampx},{stampy}), which is too far off of the "
+                              f"edge of a {self.stamp_size}-pixel stamp." )
+
+        SNLogger.debug( f"Initializing STPSF with band {self._band} "
+                        f"and sca {self._sca}" )
+        if (x, y, stampx, stampy) not in self._stamps:
+            stamp = wfi.calc_psf()
+            self._stamps[(x, y, stampx, stampy)] = stamp["DET_SAMP"]
+
+        return self._stamps[(x, y, stampx, stampy)] * flux
+
+
 class GaussianPSF( PSF ):
     """A Gaussian PSF that doesn't vary across the image, for testing purposes.
 
