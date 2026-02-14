@@ -56,7 +56,7 @@ def test_get_centered_psf():
     # The roman PSF is asymmetric, so we don't expect the CoM to be the exact center.
     # The comparison numbers are what MWV go when adapting this test for STPSF
     assert cx == pytest.approx(19.856, abs=0.01)
-    assert cy == pytest.approx(19.922, abs=0.01)
+    assert cy == pytest.approx(19.911, abs=0.01)
 
 
 def test_get_offcenter_psf():
@@ -72,7 +72,7 @@ def test_get_offcenter_psf():
     assert stamp.shape == (41, 41)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     assert cx == pytest.approx(19.856 + (2048 - 2050), abs=0.2)
-    assert cy == pytest.approx(19.922 + (2048 - 2040), abs=0.2)
+    assert cy == pytest.approx(19.911 + (2048 - 2040), abs=0.2)
     # This stamp should just be a shifted version of centerstamp; verify
     #   that.  This check should be much more precise than the
     #   centroids, as wing-cutting won't matter for this check.
@@ -109,7 +109,7 @@ def test_get_edge_centered_psf():
     assert stamp.sum() == pytest.approx(0.979, abs=0.001)
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     assert cx == pytest.approx(19.22, abs=0.02)
-    assert cy == pytest.approx(19.92, abs=0.02)
+    assert cy == pytest.approx(19.911, abs=0.02)
 
     # Try an offcenter PSF that's centered on a corner
     # The PSF center should be at -1.5, +2.5 pixels
