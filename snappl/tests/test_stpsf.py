@@ -7,23 +7,33 @@ from snappl.psf import PSF
 
 
 def test_normalization():
-    # This isn't really testing snappl code, it's checking out STPSF.
-    # Empirically, the PSF normalization in the smaller clip varies by
-    # at least several tenths of a percent when you use different random
-    # seeds.
+    """Verify normalization of PSF for different stamp sizes."""
     bigsize = 501
+    mediumsize = 201
     smallsize = 41
-    bigpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=bigsize)
-    bigstamp = bigpsfobj.get_stamp(seed=42)
-    assert bigstamp.shape == (bigsize, bigsize)
-    smallpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=smallsize)
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Someone should go read the code to find out.
-    smallstamp = smallpsfobj.get_stamp(seed=42)
+    seed = 42
+
+    bigpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=bigsize)
+    bigstamp = bigpsfobj.get_stamp(seed=seed)
+    assert bigstamp.shape == (bigsize, bigsize)
+
+    mediumpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=mediumsize)
+    mediumstamp = mediumpsfobj.get_stamp(seed=seed)
+    assert mediumstamp.shape == (mediumsize, mediumsize)
+
+    smallpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=smallsize)
+    smallstamp = smallpsfobj.get_stamp(seed=seed)
     assert smallstamp.shape == (smallsize, smallsize)
 
-    assert bigstamp.sum() == pytest.approx(1.0, abs=0.001)
+    assert bigstamp.sum() == pytest.approx(1.0, abs=0.0001)
+    assert mediumstamp.sum() == pytest.approx(1.0, abs=0.01)
+
+    x0 = bigsize // 2 - mediumsize // 2
+    x1 = x0 + mediumsize
+    assert mediumstamp.sum() == pytest.approx(bigstamp[x0:x1, x0:x1].sum(), rel=1e-5)
 
     x0 = bigsize // 2 - smallsize // 2
     x1 = x0 + smallsize
