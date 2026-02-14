@@ -39,7 +39,9 @@ dependencies = [
   "rkwebutil>=2.5.2,<3.0.0",
   "roman-datamodels>=0.28.1,<0.29.0",
   "scipy>=1.16.2,<2.0.0",
-  "simplejson>=3.20.2,<4.0.0"
+  "simplejson>=3.20.2,<4.0.0",
+  "stpsf",
+  "synphot",
 ]
 license-files = ["LICENSE"]
 
