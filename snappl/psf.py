@@ -1,6 +1,6 @@
 __all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
             'YamlSerialized_OversampledImagePSF', 'A25ePSF',
-            'ou24PSF_slow', 'ou24PSF' ]
+            'ou24PSF_slow', 'ou24PSF', 'STPSF' ]
 
 # python standard library imports
 import base64
@@ -50,6 +50,7 @@ class PSF:
             * A25ePSF -- YamlSearialized_OversampledImagePSF from Aldoroty et al. 2025
             * ou24PSF_slow -- a PSF from galsim for OpenUniverse 2024
             * ou24PSF -- a PSF from galsim for OpenUniverse 2024
+            * STPSF -- a PSF from STScI STPSF
 
           x, y: float
             The position on the host image that this is the PSF for.
@@ -120,6 +121,7 @@ class PSF:
             "varying_gaussian": VaryingGaussianPSF,
             "ou24PSF_slow_photonshoot": ou24PSF_slow_photonshoot,
             "ou24PSF_photonshoot": ou24PSF_photonshoot,
+            "STPSF": STPSF,
         }
 
         psf_function = psfclass_to_function_mapping[psfclass]
