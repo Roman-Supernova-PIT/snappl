@@ -1880,7 +1880,7 @@ class STPSF( PSF ):
                         f"and sca {self._sca}" )
         if (x, y, stampx, stampy) not in self._stamps:
             stamp = wfi.calc_psf()
-            self._stamps[(x, y, stampx, stampy)] = stamp["DET_SAMP"]
+            self._stamps[(x, y, stampx, stampy)] = stamp["DET_SAMP"].data
 
         return self._stamps[(x, y, stampx, stampy)] * flux
 
