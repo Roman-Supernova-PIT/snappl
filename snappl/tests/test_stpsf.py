@@ -11,17 +11,17 @@ def test_normalization():
     # Empirically, the PSF normalization in the smaller clip varies by
     # at least several tenths of a percent when you use different random
     # seeds.
-    bigsize = 201
+    bigsize = 501
     smallsize = 41
     bigpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=bigsize)
     bigstamp = bigpsfobj.get_stamp(seed=42)
-    assert bigstamp.shape == (201, 201)
+    assert bigstamp.shape == (bigsize, bigsize)
     smallpsfobj = PSF.get_psf_object("STPSF", band="R062", sca=17, size=smallsize)
     # Using the same seed here probably isn't doing what we want it to do,
     #   i.e. creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Someone should go read the code to find out.
     smallstamp = smallpsfobj.get_stamp(seed=42)
-    assert smallstamp.shape == (41, 41)
+    assert smallstamp.shape == (smallsize, smallsize)
 
     assert bigstamp.sum() == pytest.approx(1.0, abs=0.001)
 
