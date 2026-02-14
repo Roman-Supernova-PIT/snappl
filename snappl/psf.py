@@ -20,6 +20,8 @@ from astropy.modeling.functional_models import Sersic2D
 import galsim
 import photutils.psf
 from roman_imsim.utils import roman_utils
+import stpsf
+import synphot
 
 # roman snpit library imports
 from snappl.config import Config
@@ -1788,7 +1790,7 @@ class STPSF( PSF ):
                  ):
 
         super().__init__( _parent_class=True, **kwargs )
-        self._consumed_args.update( [ 'sed', 'config_file', 'size', '_include_photonOps', 'n_photons' ] )
+        self._consumed_args.update( [ 'sed', 'size' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         if ( self._band is None ) or ( self._sca is None ):
@@ -1798,23 +1800,16 @@ class STPSF( PSF ):
         size = int( size )
 
         if sed is None:
-            SNLogger.warning( "No sed passed to STPSF, using a flat SED between 0.1μm and 2.6μm" )
-            self.sed = galsim.SED( galsim.LookupTable( [1000, 26000], [1, 1], interpolant='linear' ),
-                              wave_type='Angstrom', flux_type='fphotons' )
-        elif not isinstance( sed, galsim.SED ):
-            raise TypeError( f"sed must be a galsim.SED, not a {type(sed)}" )
+            SNLogger.warning( "No sed passed to STPSF, default is 5700K sunlike spectrum."
+        elif not isinstance( sed, synphot.spectrum.SourceSpectrum ):
+            raise TypeError( f"sed must be a synphot.spectrum.SourceSpectrum, not a {type(sed)}" )
         else:
             self.sed = sed
 
-        if config_file is None:
-            config_file = Config.get().value( 'system.STPSF.config_file' )
-        self.config_file = config_file
         self.size = size
         self.sca_size = 4088
         self._x = self.sca_size // 2 if self._x is None else self._x
         self._y = self.sca_size // 2 if self._y is None else self._y
-        self._include_photonOps = _include_photonOps
-        self.n_photons = n_photons
         self._stamps = {}
 
     @property
@@ -1851,7 +1846,6 @@ class STPSF( PSF ):
         """
         SNLogger.debug("Getting STPSF stamp at x=%s, y=%s, x0=%s, y0=%s", x, y, x0, y0)
 
-        import stpsf
         wfi = stpsf.roman.WFI()
         wfi.detector = f"WFI{self._sca:02d}"
 
