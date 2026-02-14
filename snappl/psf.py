@@ -1800,7 +1800,7 @@ class STPSF( PSF ):
         size = int( size )
 
         if sed is None:
-            SNLogger.warning( "No sed passed to STPSF, default is 5700K sunlike spectrum."
+            SNLogger.warning( "No sed passed to STPSF, default is 5700K sunlike spectrum." )
         elif not isinstance( sed, synphot.spectrum.SourceSpectrum ):
             raise TypeError( f"sed must be a synphot.spectrum.SourceSpectrum, not a {type(sed)}" )
         else:
