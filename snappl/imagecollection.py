@@ -434,11 +434,15 @@ class ImageCollectionDB:
             raise ValueError( "provenance is required" )
         self.provenance = provenance
 
-        prov_imclass = self.provenance.params['image_class']
-        if prov_imclass not in self.image_class_to_format:
-            raise RuntimeError( "Unknown image_class {image_class} in image provenance" )
-        imclass_format = self.image_class_to_format[ prov_imclass ]
-        self.image_class = Image._format_def[ imclass_format ]['image_class']
+        if 'format' in self.provenance.params:
+            imclass_format = self.provenance.params['format']
+            self.image_class = Image._format_def[ imclass_format ]['image_class']
+        else:
+            prov_imclass = self.provenance.params['image_class']
+            if prov_imclass not in self.image_class_to_format:
+                raise RuntimeError( "Unknown image_class {image_class} in image provenance" )
+            imclass_format = self.image_class_to_format[ prov_imclass ]
+            self.image_class = Image._format_def[ imclass_format ]['image_class']
 
         if base_path is None:
             base_path = Config.get().value( Image._format_def[ imclass_format ]['base_path_config'] )
