@@ -350,7 +350,7 @@ class PSF:
             Define midpix = stamp_size // 2
               (so, for instance midpix=3 for a 7×7 stamp)
 
-            Given how we've defined the x and y parmaeters to this
+            Given how we've defined the x and y parameters to this
               function, on the original image, the peak of the PSF is at
               (x, y) = (xc + fx, yc + fy).
 
