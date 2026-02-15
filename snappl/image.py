@@ -2289,6 +2289,16 @@ class RomanDatamodelImage( Image ):
         # with one of these.
         return self.dm.data
 
+    @data.setter
+    def data(self, new_value):
+        if ( isinstance(new_value, np.ndarray)
+             and np.issubdtype(new_value.dtype, np.floating)
+             and len(new_value.shape) == 2
+            ) or (new_value is None):
+            self._data = new_value
+        else:
+            raise TypeError( "Data must be a 2d numpy array of floats." )
+
     @property
     def noise( self ):
         # See comment in data
