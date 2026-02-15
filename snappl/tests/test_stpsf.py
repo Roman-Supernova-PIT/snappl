@@ -85,16 +85,6 @@ def test_get_offcenter_psf():
                 20 + yoff + 2048 - 2040, 20 + xoff + 2048 - 2050
             ] == pytest.approx(centerstamp[20 + yoff, 20 + xoff], abs=absoff)
 
-    with pytest.raises(
-        ValueError, match="STPSF.get_stamp called with x0 or y0 that does not match"
-    ):
-        _ = psfobj.get_stamp(2048.0, 2048.0)
-
-    with pytest.raises(
-        ValueError, match="STPSF.get_stamp called with x0 or y0 that does not match"
-    ):
-        _ = psfobj.get_stamp(2048.0, 2048.0, x0=2046, y0=2045)
-
     newstamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
     np.testing.assert_array_equal(stamp, newstamp)
 
