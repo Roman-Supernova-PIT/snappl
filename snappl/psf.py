@@ -1857,19 +1857,41 @@ class STPSF( PSF ):
         y0 = yc if y0 is None else y0
         if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
             raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+
         stampx = self.stamp_size // 2 + ( x - x0 )
         stampy = self.stamp_size // 2 + ( y - y0 )
 
-        if ( ( stampx < -self.stamp_size ) or ( stampx > 2.*self.stamp_size ) or
-             ( stampy < -self.stamp_size ) or ( stampy > 2.*self.stamp_size ) ):
+        if ( ( stampx < -self.stamp_size ) or ( stampx > 2 * self.stamp_size ) or
+             ( stampy < -self.stamp_size ) or ( stampy > 2 * self.stamp_size ) ):
             raise ValueError( f"PSF would be rendered at ({stampx}, {stampy}), which is too far off of the "
                               f"edge of a {self.stamp_size}-pixel stamp." )
 
-        SNLogger.debug( f"Initializing STPSF with band {self._band} "
-                        f"and sca {self._sca}" )
+        x_offset = int( x - x0 )
+        y_offset = int( y - y0 )
+        buffer = max( np.abs( x_offset ), np.abs( y_offset ) )
+        buffered_stamp_size = self.stamp_size + 2 * buffer
+
+        SNLogger.debug( f"Initializing STPSF with band {self._band} and sca {self._sca}" )
+        SNLogger.debug( f"{x_offset, y_offset, buffer, stampx, stampy, x, y, x0, y0, xc, yc}" )
+        if buffer > 0:
+            SNLogger.debug( f"Creating oversized stamp of size ({buffered_stamp_size, buffered_stamp_size})" )
+
         if (x, y, stampx, stampy) not in self._stamps:
-            stamp = wfi.calc_psf(fov_pixels=self.stamp_size)
-            self._stamps[(x, y, stampx, stampy)] = stamp["DET_SAMP"].data
+            buffered_stamp = wfi.calc_psf(fov_pixels=buffered_stamp_size)
+            buffered_stamp = buffered_stamp["DET_SAMP"].data
+            # Trim stamp to originally requested size
+            x_start = buffer - int( x - x0 )
+            x_end = buffer + self.stamp_size - int( x - x0 )
+            y_start = buffer - int( y - y0 )
+            y_end = buffer + self.stamp_size - int( y - y0 )
+
+            if buffer > 0:
+                SNLogger.debug( f"Trimming stamp to ({x_start - x_end}, {y_start - y_end})" )
+            # Since we're explicitly dealing with the array here
+            # we have use row-major [y, x] order when making the sub-selection.
+            stamp = buffered_stamp[y_start:y_end, x_start:x_end]
+
+            self._stamps[(x, y, stampx, stampy)] = stamp
 
         return self._stamps[(x, y, stampx, stampy)] * flux
 
