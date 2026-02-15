@@ -2287,7 +2287,19 @@ class RomanDatamodelImage( Image ):
         # I'm hoping it will be duck-typing equivalent to a numpy array.
         # TODO : investigate memory use when you do numpy array things
         # with one of these.
+        # MWV: 2026-02-10.  It is not equivalent.
+        # Could this be np.asarray(self.dm.data)?
         return self.dm.data
+
+    @data.setter
+    def data(self, new_value):
+        if ( isinstance(new_value, np.ndarray)
+             and np.issubdtype(new_value.dtype, np.floating)
+             and len(new_value.shape) == 2
+            ) or (new_value is None):
+            self._data = new_value
+        else:
+            raise TypeError( "Data must be a 2d numpy array of floats." )
 
     @property
     def noise( self ):
