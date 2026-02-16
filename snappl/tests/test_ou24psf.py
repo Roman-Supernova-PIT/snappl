@@ -355,7 +355,8 @@ def test_galaxy_ou2024_stamp():
 
 
 def test_galaxy_ou2024_photonshoot_stamp():
-    gpsf = PSF.get_psf_object("ou24PSF_slow_photonshoot", x=0, y=0, band="R062", stamp_size=71, observation_id="6", sca=17)
+    gpsf = PSF.get_psf_object("ou24PSF_slow_photonshoot", x=0, y=0, band="R062",
+                              stamp_size=71, observation_id="6", sca=17)
 
     assymtetry_CM_x = 19.716 - 20
     assymtetry_CM_y = 19.922 - 20
@@ -378,7 +379,8 @@ def test_galaxy_ou2024_photonshoot_stamp():
             assert cy == pytest.approx(expected_center_y + assymtetry_CM_y, abs=1 / oversamp)
 
     # Test total flux
-    gpsf = PSF.get_psf_object("ou24PSF_slow_photonshoot", x=0, y=0, band="R062", stamp_size=71, observation_id="6", sca=17)
+    gpsf = PSF.get_psf_object("ou24PSF_slow_photonshoot", x=0, y=0, band="R062",
+                              stamp_size=71, observation_id="6", sca=17)
     x = 1000.0
     y = 1000.0
     x0 = 1000
