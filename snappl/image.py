@@ -1785,6 +1785,12 @@ class FITSImageStdHeaders( FITSImage ):
     def _get_observation_id( self ):
         hdr = self.get_fits_header()
         self._observation_id = hdr[ self._header_kws['observation_id'] ]
+        if not isinstance( self._observation_id, str ):
+            try:
+                self._observation_id = str( self._observation_id )
+                SNLogger.debug(f"Coerced observation_id to string: {self._observation_id}")
+            except Exception:
+                raise TypeError( f"Observation ID must be a string, got {type(self._observation_id)}" )
 
     @property
     def observation_id( self ):
