@@ -1,0 +1,2 @@
+Making snappl backwards compatible by trying to coerce old int pointings into str obs_ids.
+
