@@ -7,7 +7,7 @@
 
 # ======================================================================
 
-FROM debian:bookworm-20250630 AS base
+FROM debian:trixie-20260112 AS base
 LABEL maintainer="Rob Knop <rknop@pobox.com>"
 
 SHELL ["/bin/bash", "-c"]
@@ -79,8 +79,8 @@ RUN source /venv/bin/activate && \
         "python-dateutil>=2.9.0.post0,<3.0.0" \
         "pytz>=2025.2" \
         "pyyaml>=6.0.3,<7.0.0" \
-        "rkwebutil>=2.3.0,<3.0.0" \
-        "roman-datamodels>=0.27.0,<0.28.0" \
+        "rkwebutil>=2.5.0,<3.0.0" \
+        "roman-datamodels>=0.28.1,<0.29.0" \
         "scipy>=1.16.2,<2.0.0" \
         "simplejson>=3.20.2,<4.0.0"
 # END TEMPORARY
@@ -94,9 +94,9 @@ RUN mkdir -p /roman-snpit-db/templates
 RUN mkdir -p /roman-snpit-db/static
 
 # Could save a wee bit of image size by making symbolic links instead of copying
-RUN cp -p /venv/lib/python3.11/site-packages/rkwebutil/static/* /roman-snpit-db/static/
-RUN cp -p /venv/lib/python3.11/site-packages/snappl/db/static/* /roman-snpit-db/static/
-RUN cp -p /venv/lib/python3.11/site-packages/snappl/db/templates/* /roman-snpit-db/templates/
+RUN cp -p /venv/lib/python3.13/site-packages/rkwebutil/static/* /roman-snpit-db/static/
+RUN cp -p /venv/lib/python3.13/site-packages/snappl/db/static/* /roman-snpit-db/static/
+RUN cp -p /venv/lib/python3.13/site-packages/snappl/db/templates/* /roman-snpit-db/templates/
 
 
 # ======================================================================
@@ -153,6 +153,7 @@ ENV PATH=/venv/bin:$PATH
 
 WORKDIR /roman-snpit-db
 ENV PYTHONPATH=/roman-snpit-db
+COPY docker/webserver/roman-snpit-server.py /roman-snpit-db/
 
 RUN mkdir /sessions
 

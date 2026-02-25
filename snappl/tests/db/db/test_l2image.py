@@ -11,7 +11,7 @@ class TestL2Image( BaseTestDB ):
     @pytest.fixture
     def basetest_setup( self, stupid_provenance ):
         self.cls = L2Image
-        self.safe_to_modify = [ 'pointing', 'sca', 'band', 'ra', 'dec',
+        self.safe_to_modify = [ 'observation_id', 'sca', 'band', 'ra', 'dec',
                                 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                 'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                                 'filepath', 'extension', 'width', 'height', 'format', 'mjd', 'position_angle',
@@ -21,7 +21,7 @@ class TestL2Image( BaseTestDB ):
         self.uniques = []
         self.obj1 = L2Image( id=uuid.uuid4(),
                              provenance_id=stupid_provenance,
-                             pointing=1,
+                             observation_id='1',
                              sca=1,
                              band='a',
                              ra=1.,
@@ -44,7 +44,7 @@ class TestL2Image( BaseTestDB ):
         self.dict1 = { k: getattr( self.obj1, k ) for k in self.columns }
         self.obj2 = L2Image( id=uuid.uuid4(),
                              provenance_id=stupid_provenance,
-                             pointing=2,
+                             observation_id='2',
                              sca=2,
                              band='b',
                              ra=2.,
@@ -67,7 +67,7 @@ class TestL2Image( BaseTestDB ):
         self.dict2 = { k: getattr( self.obj2, k ) for k in self.columns }
         self.dict3 = { 'id': uuid.uuid4(),
                        'provenance_id': stupid_provenance,
-                       'pointing': 3,
+                       'observation_id': '3',
                        'sca': 3,
                        'band': 'c',
                        'ra': 3.,

@@ -2,7 +2,7 @@
 Database Schema
 ===============
 
-These are the schema of the tables in the backend database.  The databsae code is all in the ``db`` submodule of ``snappl``.  Normally, you will not interact with these directly.  Rather, you will call ``snappl`` library functions that contact the web API frontend to the database.  You only really need to know about these if you're working on the backend.
+These are the schema of the tables in the backend database.  The database code is all in the ``db`` submodule of ``snappl``.  Normally, you will not interact with these directly.  Rather, you will call ``snappl`` library functions that contact the web API frontend to the database.  You only really need to know about these if you're working on the backend.
 
 Last updated 2025-10-17.
 

@@ -88,7 +88,7 @@ def manual_fits_image( ou2024imagepath):
 
 @pytest.fixture
 def romandatamodel_image_path():
-    return '/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
+    return '/home/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
 
 
 @pytest.fixture
@@ -124,7 +124,7 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
 
 @pytest.fixture
 def unloaded_fitsimage_basepath():
-    return '/photometry_test_data/simple_gaussian_test/sig1.0/test_60030.0'
+    return '/home/photometry_test_data/simple_gaussian_test/sig1.0/test_60030.0'
 
 
 @pytest.fixture
@@ -227,7 +227,7 @@ def loaded_ou2024_test_diaobjects():
             prov = make_provenance_and_tag( 'import_ou2024_diaobjects', 0, 1, tag='dbou2024_test', dbcon=dbcon )
 
             # Load whatever parquet files are in the ou2024 truth direictory of photometry_test_data
-            pqdir = pathlib.Path( "/photometry_test_data/ou2024/snana_truth" )
+            pqdir = pathlib.Path( "/home/photometry_test_data/ou2024/snana_truth" )
             pqfiles = pqdir.glob( "snana*.parquet" )
             for pqf in pqfiles:
                 load_snana_ou2024_diaobject( prov.id, pqf, dbcon=dbcon )
@@ -326,7 +326,7 @@ def ou2024_test_lightcurve( loaded_ou2024_test_diaobjects, loaded_ou2024_test_l2
                  'zpt': [ i.zeropoint for i in images ],
                  'NEA': [ 5. ] * 8,
                  'sky_rms': [ 10. ] * 8,
-                 'pointing': [ i.pointing for i in images ],
+                 'observation_id': [ i.observation_id for i in images ],
                  'sca': [ i.sca for i in images ],
                  'pix_x': [ 128. ] * 8,
                  'pix_y': [ 128. ] * 8
@@ -527,16 +527,16 @@ def sim_image_and_segmap( stupid_provenance, dbclient ):
         ra11, dec11 = wcs.pixel_to_world( 255, 0 )
 
         with DBCon() as dbcon:
-            dbcon.execute( "INSERT INTO l2image(id,provenance_id, pointing, sca, band, ra, dec, "
+            dbcon.execute( "INSERT INTO l2image(id,provenance_id, observation_id, sca, band, ra, dec, "
                            "  ra_corner_00, ra_corner_01, ra_corner_10, ra_corner_11, "
                            "  dec_corner_00, dec_corner_01, dec_corner_10, dec_corner_11, "
                            "  filepath, width, height, format, mjd, exptime) "
-                           "VALUES(%(id)s, %(provid)s, %(point)s, %(sca)s, %(band)s, %(ra)s, %(dec)s, "
+                           "VALUES(%(id)s, %(provid)s, %(obsid)s, %(sca)s, %(band)s, %(ra)s, %(dec)s, "
                            "       %(ra00)s, %(ra01)s, %(ra10)s, %(ra11)s, %(dec00)s, %(dec01)s, %(dec10)s, %(dec11)s, "
                            "       %(path)s, %(w)s, %(h)s, %(format)s, %(mjd)s, %(texp)s)",
                            { 'id': imageid,
                              'provid': stupid_provenance,
-                             'point': 0,
+                             'obsid': '0',
                              'sca': 1,
                              'band': 'R062',
                              'ra': 120.,

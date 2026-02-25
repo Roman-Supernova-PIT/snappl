@@ -54,7 +54,7 @@ def test_imagecollectionou2024_get_image():
     assert img1.flags.dtype == np.dtype('uint32')
     assert img1.flags.shape == ( 4088, 4088 )
 
-    img2 = col.get_image( pointing=13205, band='Y106', sca=1 )
+    img2 = col.get_image( observation_id='13205', band='Y106', sca=1 )
     assert img2.path == img1.path
     assert np.all( img2.data == img1.data )
 
@@ -71,8 +71,9 @@ def test_imagecollectionmanualfits_create():
     with pytest.raises( RuntimeError, match="manual_fits collection needs a base path" ):
         col = ImageCollection.get_collection( 'manual_fits' )
 
-    base_path = '/photometry_Test_data/ou2024/images/simple_model'
-    col = ImageCollection.get_collection( 'manual_fits', base_path='/photometry_Test_data/ou2024/images/simple_model' )
+    base_path = '/home/photometry_test_data/ou2024/images/simple_model'
+    col = ImageCollection.get_collection( 'manual_fits',
+                                          base_path='/home/photometry_test_data/ou2024/images/simple_model' )
     assert isinstance( col, ImageCollectionManualFITS )
     assert col.base_path == pathlib.Path( base_path )
 
@@ -96,7 +97,7 @@ def test_imagecollectiondb( loaded_ou2024_test_l2images, dbclient ):
         nonlocal imcol
         assert image.id == imagedict['id']
         assert image.path == imcol.base_path / imagedict['filepath']
-        for prop in ( 'width', 'height', 'pointing', 'sca', 'ra', 'dec',
+        for prop in ( 'width', 'height', 'observation_id', 'sca', 'ra', 'dec',
                       'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                       'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                       'band', 'mjd', 'position_angle', 'exptime' ):

@@ -185,7 +185,7 @@ class ImageSimulatorImage:
     """NOTE : while working on the image, "noise"  is actually variance!!!!"""
 
     def __init__( self, width=4088, height=4088, ra=0., dec=0., rotation=0., basename='simulated_image',
-                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., pointing=1000):
+                  zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., observation_id='1000'):
 
         if basename is None:
             raise ValueError( "Must pass a basename" )
@@ -216,7 +216,7 @@ class ImageSimulatorImage:
         self.image.zeropoint = zeropoint
         self.image.band = band
         self.image.sca = sca
-        self.image.pointing = pointing
+        self.image.observation_id = observation_id
         self.image.exptime = exptime
 
     def render_sky( self, skymean, skysigma, rng=None ):
@@ -333,7 +333,7 @@ class ImageSimulator:
                   sky_level=[10.],
                   band='R062',
                   sca=1,
-                  pointing=1000,
+                  observation_id='1000',
                   exptime=60.,
                   transient_ra=None,
                   transient_dec=None,
@@ -410,13 +410,15 @@ class ImageSimulator:
         self.no_star_noise = no_star_noise
         self.band = band
         self.sca =  [sca] if not isSequence(sca) else sca
-        self.pointing =[pointing] if not isSequence(pointing) else pointing
+        observation_id = str( observation_id )
+        self.observation_id = ( [str(observation_id)] if not isSequence(observation_id)
+                                else [ str(oi) for oi in observation_id ] )
         if len(self.sca) == 1:
             self.sca = [ self.sca[0] for _ in self.imdata['mjds'] ]
             SNLogger.debug("Using same SCA for all images: %s", self.sca)
-        if len(self.pointing) == 1:
-            self.pointing = [ self.pointing[0] for _ in self.imdata['mjds'] ]
-            SNLogger.debug("Using same pointing for all images: %s", self.pointing)
+        if len(self.observation_id) == 1:
+            self.observation_id = [ str(self.observation_id[0]) for _ in self.imdata['mjds'] ]
+            SNLogger.debug("Using same observation_id for all images: %s", self.observation_id[0] )
         self.exptime = exptime
         self.transient_ra = transient_ra
         self.transient_dec = transient_dec
@@ -473,7 +475,7 @@ class ImageSimulator:
         SNLogger.debug(f"psf class: {self.psf_class}, psf kwargs: {kwargs}")
         for i in range( len( self.imdata['mjds'] ) ):
             print(f"----------------------- IMAGE {i} -----------------------")
-            kwargs["pointing"] = self.pointing[i]
+            kwargs["observation_id"] = self.observation_id[i]
             kwargs["sca"] = self.sca[i]
 
 
@@ -483,8 +485,9 @@ class ImageSimulator:
                                           rotation=self.imdata['rots'][i], basename=self.basename,
                                           zeropoint=self.imdata['zps'][i], mjd=self.imdata['mjds'][i],
                                           pixscale=self.pixscale, band=self.band, sca=self.sca[i], exptime=self.exptime,
-                                          pointing=self.pointing[i] )
-            SNLogger.debug("Image object created with pointing %s and sca %s", image.image.pointing, image.image.sca)
+                                          observation_id=self.observation_id[i] )
+            SNLogger.debug( f"Image object created with observation_id {image.image.observation_id} "
+                            f" and sca {image.image.sca}" )
             kwargs["image"] = image.image
             psf = PSF.get_psf_object(self.psf_class, **kwargs)
             SNLogger.debug(f"Using PSF class {type(psf)} for image simulation.")
@@ -552,9 +555,9 @@ def main():
                          help="Stuck in the BAND Header in the images (default R062)." )
     parser.add_argument( '--sca', default=1, nargs='+',
                          help="Stuck in the SCA Header in the images and used for OU24 PSF calculations (default 1)" )
-    parser.add_argument( '--pointing', default=1000, nargs='+',
-                         help="Stuck in the pointing Header in the images and "
-                         "used for OU24 PSF calculations (default 1000)" )
+    parser.add_argument( '--observation-id', default='1000', type=str, nargs='+',
+                         help="Stuck in the POINTING Header in the images and "
+                         "used for OU24 PSF calculations (default '1000')" )
     parser.add_argument( '--exptime', default=60.,
                          help="Stuck in the EXPTIME Header in the images (default 60)" )
 

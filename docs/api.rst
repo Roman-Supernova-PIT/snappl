@@ -12,23 +12,28 @@ snappl API
 
 .. automodapi:: snappl.diaobject
 
-.. automodapi:: snappl.http
-
-.. automodapi:: snappl.logger
-
 .. automodapi:: snappl.imagecollection
 
 .. automodapi:: snappl.image
 
+.. automodapi:: snappl.image_simulator
+
+.. automodapi:: snappl.lightcurve
+                
+.. automodapi:: snappl.logger
+
+.. automodapi:: snappl.pathedobject
+                
 .. automodapi:: snappl.provenance
 
 .. automodapi:: snappl.psf
 
 .. automodapi:: snappl.sed
 
+.. automodapi:: snappl.segmap
+                
 .. automodapi:: snappl.spectrum1d
-
-.. automodapi:: snappl.wcs
 
 .. automodapi:: snappl.utils
 
+.. automodapi:: snappl.wcs

@@ -40,15 +40,15 @@ def _parse_fits_file( relpath, base_path=None, provid=None ):
     match = re.search( r'^[^_]+_(\d+)_\d+_segm.fits$', relpath.name )
     if match is None:
         raise RuntimeError( f"Failed to parse {relpath.name} to get pointing" )
-    pointing = match.group(1)
+    observation_id = match.group(1)
 
     with snappl.db.db.DBCon() as dbcon:
         # WARNING, not looking at provenance because this whole code is written for a specific
         #   database that's in a specific state
-        rows, _cols = dbcon.execute( "SELECT id FROM l2image WHERE pointing=%(p)s AND sca=%(s)s AND band=%(b)s",
-                                     {'p': pointing, 's': sca, 'b': band } )
+        rows, _cols = dbcon.execute( "SELECT id FROM l2image WHERE observattion_id=%(p)s AND sca=%(s)s AND band=%(b)s",
+                                     {'p': observation_id, 's': sca, 'b': band } )
         if len(rows) == 0:
-            raise ValueError( f"Could not find image in database for pointing {pointing}, sca {sca}, "
+            raise ValueError( f"Could not find image in database for observation_id {observation_id}, sca {sca}, "
                               f"and band {band}" )
         l2image_id = rows[0][0]
 

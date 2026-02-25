@@ -85,7 +85,7 @@ class Lightcurve( PathedObject ):
                * zpt : float (mag_ab = -2.5*log10(flux) + zpt)
                * NEA : float (Noise-equivalent area in pixels²)
                * sky_rms : float (sky noise level, not including galaxy, at this image position in DN/s)
-               * pointing : int/string (the pointing of this image; WARNING, THIS NAME WILL CHANGE LATER)
+               * observation_id : str (the observation id of the exposure)
                * sca : int (the SCA of this image)
                * pix_x : float (The 0-offset position of the SN on the detector)
                * pix_y : float (The 0-offset position of the SN on the detector)
@@ -221,7 +221,7 @@ class Lightcurve( PathedObject ):
         # This list also has the required order.
         # The keys of data_type_dict must match the members of required_data_cols
         required_data_cols = [ 'mjd', 'band', 'flux', 'flux_err', 'zpt', 'NEA', 'sky_rms',
-                               'pointing', 'sca', 'pix_x', 'pix_y' ]
+                               'observation_id', 'sca', 'pix_x', 'pix_y' ]
         data_type_dict = {
             "mjd": numbers.Real,
             "band": str,
@@ -230,7 +230,7 @@ class Lightcurve( PathedObject ):
             "zpt": numbers.Real,
             "NEA": numbers.Real,
             "sky_rms": numbers.Real,
-            "pointing": (numbers.Integral, str),
+            "observation_id": str,
             "sca": numbers.Integral,
             "pix_x": numbers.Real,
             "pix_y": numbers.Real
@@ -317,7 +317,7 @@ class Lightcurve( PathedObject ):
                   "zpt": astropy.units.mag,
                   "NEA": astropy.units.pix ** 2,
                   "sky_rms": astropy.units.count / astropy.units.second,
-                  "pointing": "",
+                  "observation_id": "",
                   "sca": "",
                   "pix_x": astropy.units.pix,
                   "pix_y": astropy.units.pix

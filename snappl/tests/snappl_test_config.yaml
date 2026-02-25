@@ -1,6 +1,6 @@
 replaceable_preloads:
-  - /default_snpit_config.yaml
-  - /home/environment/test-docker-environment/test_config_for_db.yaml
+  - /snpit_test_config.yaml
+  - /test_config_for_db.yaml
 
 system:
   paths:

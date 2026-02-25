@@ -1,0 +1,148 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webserver
+  namespace: romansnpit-rknop-dev
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      workload.user.cattle.io/workloadselector: deployment-romansnpit-rknop-dev-webserver
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        nersc.gov/collab_uids: "101320"
+        nersc.gov/gid: "101320"
+        nersc.gov/gids: 101320,96414
+        nersc.gov/roles: user
+        nersc.gov/uid: "95089"
+        nersc.gov/username: raknop
+      labels:
+        workload.user.cattle.io/workloadselector: deployment-romansnpit-rknop-dev-webserver
+    spec:
+      affinity: {}
+      containers:
+      - env:
+        - name: SNPIT_CONFIG
+          value: /secrets/snpit_config.yaml
+        image: registry.nersc.gov/m4385/snpit-db-webserver:rknop-dev-20260205
+        imagePullPolicy: Always
+        name: webserver
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - CHOWN
+            - DAC_OVERRIDE
+            - FOWNER
+            - SETGID
+            - SETUID
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+        stdin: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        tty: true
+        # command: [ 'tail', '-f', '/etc/issue' ]
+        volumeMounts:
+        - mountPath: /sessions
+          name: webserver-sessions
+        - mountPath: /secrets
+          name: secrets
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+        - name: registry-nersc
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: webserver-sessions
+        persistentVolumeClaim:
+          claimName: webserver-sessions-pvc
+      - name: secrets
+        secret:
+          defaultMode: 292
+          optional: false
+          secretName: secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webserver
+  namespace: romansnpit-rknop-dev
+spec:
+  clusterIP: None
+  clusterIPs:
+  - None
+  ports:
+  - name: default
+    port: 42
+    protocol: TCP
+    targetPort: 42
+  selector:
+    workload.user.cattle.io/workloadselector: deployment-romansnpit-rknop-dev-webserver
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webserver-ingress
+  namespace: romansnpit-rknop-dev
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    workload.user.cattle.io/workloadselector: deployment-romansnpit-rknop-dev-webserver
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webserver
+  namespace: romansnpit-rknop-dev
+spec:
+  rules:
+  - host: webserver.romansnpit-rknop-dev.production.svc.spin.nersc.org
+    http:
+      paths:
+      - backend:
+          service:
+            name: webserver-ingress
+            port:
+              number: 8080
+        pathType: ImplementationSpecific
+  - host: romansnpit-rknop-dev.lbl.gov
+    http:
+      paths:
+      - backend:
+          service:
+            name: webserver-ingress
+            port:
+              number: 8080
+        pathType: ImplementationSpecific
+  tls:
+  - hosts:
+    - romansnpit-rknop-dev.lbl.gov
+    secretName: cert
+---

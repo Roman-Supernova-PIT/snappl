@@ -40,7 +40,7 @@ def test_init_lightcurve():
         "zpt": [25.0, 25.0],
         "NEA": [5.0, 5.0],
         "sky_rms": [200.0, 210.0],
-        "pointing": [1, 2],
+        "observation_id": ['1', '2'],
         "sca": [16, 18],
         "pix_x": [ 128., 64. ],
         "pix_y": [ 13.3, 47.7 ]

@@ -45,7 +45,7 @@ def test_get_and_find_image( loaded_ou2024_test_l2images, dbclient ):
         assert image.id == imagedict['id']
         assert image.full_filepath == ( pathlib.Path( Config.get().value( 'system.ou24.images' ) )
                                         / imagedict['filepath'] )
-        for prop in ( 'width', 'height', 'pointing', 'sca', 'ra', 'dec',
+        for prop in ( 'width', 'height', 'observation_id', 'sca', 'ra', 'dec',
                       'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                       'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                       'band', 'mjd', 'position_angle', 'exptime' ):
@@ -63,18 +63,18 @@ def test_get_and_find_image( loaded_ou2024_test_l2images, dbclient ):
 
     for provargs in [ { 'provenance': images[0]['provenance_id'] },
                       { 'provenance_tag': 'dbou2024_test', 'process': 'import_ou2024_l2images' } ]:
-        ims = Image.find_images( pointing=38645, sca=15, **provargs )
+        ims = Image.find_images( observation_id='38645', sca=15, **provargs )
         assert len(ims) == 1
-        ims = Image.find_images( pointing=38645, sca=15, band='Y106', **provargs )
+        ims = Image.find_images( observation_id='38645', sca=15, band='Y106', **provargs )
         assert len(ims) == 1
-        ims = Image.find_images( pointing=38645, sca=15, band='R062', **provargs )
+        ims = Image.find_images( observation_id='38645', sca=15, band='R062', **provargs )
         assert len(ims) == 0
         ims = Image.find_images( band='Y106', **provargs )
         assert len(ims) == 8
 
         ims = Image.find_images( ra=7.5, dec=-44.92, **provargs )
         assert len(ims) == 1
-        assert ims[0].pointing == 13205
+        assert ims[0].observation_id == '13205'
         assert ims[0].sca == 1
         ims = Image.find_images( ra=7.50, dec=-44.75, **provargs )
         assert len(ims) == 4
@@ -90,7 +90,7 @@ def test_get_and_find_image( loaded_ou2024_test_l2images, dbclient ):
         assert all( i.ra <= 7.54 for i in ims )
         ims = Image.find_images( ra_min=7.52, ra_max=7.54, dec_min=-44.85, dec_max=-44.8, **provargs )
         assert len(ims) == 1
-        assert ims[0].pointing == 19009
+        assert ims[0].observation_id == '19009'
 
         ims = Image.find_images( mjd_min=62450., mjd_max=62470., **provargs )
         assert len(ims) == 2
@@ -615,7 +615,7 @@ def test_ou2024_get_data( ou2024image ):
 def test_ou2024_properties( ou2024image ):
     im = ou2024image
 
-    assert im.pointing == 13205
+    assert im.observation_id == '13205'
     assert im.sca == 1
     assert im.ra == pytest.approx( 7.42991, abs=1e-5 )
     assert im.dec == pytest.approx( -44.8697, abs=1e-5 )
@@ -636,8 +636,8 @@ def test_ou2024_properties( ou2024image ):
 
     # Setting updates properties, but not the header
 
-    im.pointing = 5
-    assert im.pointing == 5
+    im.observation_id = '5'
+    assert im.observation_id == '5'
 
     im.sca = 42
     assert im.sca == 42
