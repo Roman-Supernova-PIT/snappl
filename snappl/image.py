@@ -26,7 +26,7 @@ import roman_datamodels as rdm
 
 from snappl.logger import SNLogger
 from snappl.config import Config
-from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, GWCS
+from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, RDM_GWCS
 from snappl.utils import asUUID, SNPITJsonEncoder
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
@@ -2364,10 +2364,10 @@ class RomanDatamodelImage( Image ):
         return self._dm
 
     def get_wcs( self, wcsclass=None ):
-        wcsclass = "GWCS" if wcsclass is None else wcsclass
+        wcsclass = "RDM_GWCS" if wcsclass is None else wcsclass
         if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
-            if wcsclass == "GWCS":
-                self._wcs = GWCS( gwcs=self.dm.meta.wcs )
+            if wcsclass == "RDM_GWCS":
+                self._wcs = RDM_GWCS( gwcs=self.dm.meta.wcs )
             else:
                 raise NotImplementedError( "RomanDataModelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs

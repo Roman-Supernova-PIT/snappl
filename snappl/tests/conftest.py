@@ -149,6 +149,7 @@ def check_wcs():
                          { 'x': 4087, 'y': 0, 'ra': 7.65461745, 'dec': -44.90311993 },
                          { 'x': 2043.5, 'y': 2043.5, 'ra': 7.53808422, 'dec': -44.87361374 } ]
 
+        # Check passing scalars of (x,y) or (ra,dec)
         for data in testdata:
             ra, dec = wcs.pixel_to_world( data['x'], data['y'] )
             assert isinstance( ra, float )
@@ -165,6 +166,7 @@ def check_wcs():
             assert x == pytest.approx( data['x'], abs=invabs )
             assert y == pytest.approx( data['y'], abs=invabs )
 
+        # Check passing arrays of (x,y) or (ra,dec)
         xvals = np.array( [ t['x'] for t in testdata ] )
         yvals = np.array( [ t['y'] for t in testdata ] )
         ravals = np.array( [ t['ra'] for t in testdata ] )
