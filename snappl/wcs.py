@@ -288,7 +288,7 @@ class GalsimWCS(BaseWCS):
 class GWCS(BaseWCS):
     """A "G" (Generalized?) WCS : https://gwcs.readthedocs.io/en/latest/
 
-    In the current code, these are only read from ASDF files
+    In the current code, these are only read from roman datamodel ASDF files
 
     """
 
@@ -343,3 +343,51 @@ class GWCS(BaseWCS):
         #  Ask Russel.  (He probably told me once and I forgot --Rob.)
         hdr = self._gwcs.to_fits(degree=degree)[0]
         return astropy.wcs.WCS( hdr )
+
+
+# ======================================================================
+
+class RDM_GWCS(GWCS):
+    """A GWCS, specifically from a roman datamodel.
+
+    Uses things that are defined for the Roman datamodel that we're not
+    sure are defined for all GWCSes.
+
+    TODO : find out if _gwcs.pixel_to_world(sc) is the same as _gwcs(x,
+    y) (except for returning a SkyCoord rather than ra, dec).  If not,
+    then have a whole lot of consternation about what the heck the
+    defined pixel_to_world function is actually doing.  Likewise for
+    _gwcs.world_to_pixel(sc) and _gwcs.invert(ra, dec).
+
+    (In test_wcs.py, the corners and center of the test image we are
+    using produce identical results, but it's not clear that the test
+    image we're using has a realistic roman GWCS; it might have a
+    simplified one.)
+
+    """
+
+    def __init_( self, gwcs=None ):
+        super().__init__( gwcs=gwcs )
+
+    def pixel_to_world( self, x, y ):
+        if not isinstance( self._gwcs.output_frame.reference_frame, astropy.coordinates.ICRS ):
+            raise TypeError( "Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, "
+                             "but we need it to be ICRS." )
+
+        if isinstance( x, collections.abc.Sequence ) and not isinstance( x, np.ndarray ):
+            x = np.array( x )
+            y = np.array( y )
+
+        # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)), so no need to convert
+        return self._gwcs( x, y )
+
+    def world_to_pixel( self, ra, dec ):
+        if not isinstance( self._gwcs.output_frame.reference_frame, astropy.coordinates.ICRS ):
+            raise TypeError( "Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, "
+                             "but we need it to be ICRS." )
+
+        if isinstance( dec, collections.abc.Sequence ) and not isinstance( dec, np.ndarray ):
+            ra = np.array( ra )
+            dec = np.array( dec )
+
+        return self._gwcs.invert(ra, dec )

@@ -6,7 +6,7 @@ import simplejson
 
 from snappl.config import Config
 from snappl.snappl_http import retry_post
-from snappl.image import Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders
+from snappl.image import Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders, RomanDatamodelImage
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
 from snappl.utils import SNPITJsonEncoder
@@ -37,6 +37,7 @@ class ImageCollection:
             Name of the collection.  Currently defined collections:
             * ou2024 - Open Universe 2024 FITS images
             * manual_fits - FITS images that aren't really part of a collection
+            * manual_rdm - Roman Datamodel images that aren't really part of a collection or in the database
             * snpitdb - Images from Roman SNPIT internal DB.
 
           subset : str or None
@@ -98,6 +99,9 @@ class ImageCollection:
                 return ImageCollectionManualFITS( threefile=True, **kwargs )
             else:
                 raise ValueError( f"Unknown subset {subset} of manual_fits" )
+
+        elif collection == 'manual_rdm':
+            return ImageCollectionManualRDM( **kwargs )
 
         else:
             raise ValueError( f"Unknown image collection {collection} (subset {subset})" )
@@ -413,6 +417,33 @@ class ImageCollectionManualFITS:
 
         else:
             return FITSImage( path=path, format=-1 )
+
+
+# ======================================================================
+# Roman Datamodel images not in the database
+
+class ImageCollectionManualRDM:
+
+    def __init__( self, base_path=None ):
+        if base_path is None:
+            raise RuntimeError( "manual_rdm collection needs a base_path" )
+        self.base_path = pathlib.Path( base_path )
+
+    def get_image( self, image_id=None, path=None, observation_id=None, band=None, sca=None,
+                   base_path=None, dbclient=None ):
+        if any( i is not None for i in [ image_id, observation_id, band, sca ] ):
+            raise RuntimeError( "Can't do get_image using image_id, observation_id, band, or sca "
+                                "for manual_rdm image collection" )
+        if path is None:
+            raise RuntimeError( "path is required for mahual_rdm image collection get_image" )
+
+        base_path = pathlib.Path( base_path ) if base_path is not None else self.base_path
+
+        full_filepath = base_path / path
+        if not full_filepath.is_file():
+            raise FileNotFoundError( f"{full_filepath} does not exist or is not a regular file." )
+        return RomanDatamodelImage( full_filepath = base_path / path, no_base_path=True )
+
 
 
 # ======================================================================
