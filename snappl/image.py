@@ -208,6 +208,7 @@ class Image( PathedObject ):
             many cases, they will be lazy-loaded from the header.
 
         """
+        SNLogger.debug( f"Initializing {self.__class__.__name__} with full_filepath={full_filepath}, filepath={filepath}, base_path={base_path}, ")
         if path is not None:
             if full_filepath is not None:
                 # This next error message is a bit of a lie.  It's
@@ -227,6 +228,10 @@ class Image( PathedObject ):
 
         super().__init__( filepath=filepath, base_path=base_path, base_dir=base_dir,
                           full_filepath=full_filepath, no_base_path=no_base_path )
+
+        SNLogger.debug(
+            f"Super Initializing {self.__class__.__name__} with full_filepath={self.full_filepath}, filepath={self._filepath}, base_path={self._base_path}, "
+        )
 
         self._declare_consumed_kwargs( { 'path', 'filepath', 'base_path', 'base_dir',
                                          'full_filepath', 'no_base_path', 'id', 'provenance_id',
@@ -318,6 +323,7 @@ class Image( PathedObject ):
                 else:
                     self._no_base_path = False
                     self._base_path = pathlib.Path( Config.get().value( fmtbasepathdef ) ).resolve()
+                    SNLogger.debug(f"set basepath using format {self._format} and config item {fmtbasepathdef} to {self._base_path}" )
 
 
     # The path property is just for backwards compatibilty
