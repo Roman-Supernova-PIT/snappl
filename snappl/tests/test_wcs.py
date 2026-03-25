@@ -4,7 +4,7 @@ import astropy
 import galsim
 import gwcs
 
-from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, GWCS
+from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, GWCS, RDM_GWCS
 
 
 def test_astropywcs( ou2024image, check_wcs ):
@@ -79,9 +79,11 @@ def test_if_ou2024image_wcs_invertible(ou2024image):
 
 
 def test_gwcs( romandatamodel_image, check_wcs ):
-    wcs = romandatamodel_image.get_wcs()
+    # wcs = romandatamodel_image.get_wcs()
+    wcs = GWCS( gwcs=romandatamodel_image.dm.meta.wcs )
     assert isinstance( wcs, BaseWCS )
     assert isinstance( wcs, GWCS )
+    assert not isinstance( wcs, RDM_GWCS )
     assert isinstance( wcs._gwcs, gwcs.wcs.WCS )
 
     # This is just a regression test, since I've only used this code to find the values
@@ -92,6 +94,27 @@ def test_gwcs( romandatamodel_image, check_wcs ):
                  { 'x': 2043.5, 'y': 2043.5, 'ra': 79.92142552, 'dec': 30.03557704 } ]
 
     # These WCSes have more precise inverse than the ones we get from FITS files
+    check_wcs( wcs, testdata, invabs=0.01, arcsecprecision=0.002 )
+
+    # Test the astropy WCS approximation
+    awcs = AstropyWCS( apwcs=wcs.get_astropy_wcs(degree=5) )
+    check_wcs( awcs, testdata, arcsecprecision=0.002 )
+
+
+def test_rdm_gwcs( romandatamodel_image, check_wcs ):
+    wcs = romandatamodel_image.get_wcs()
+    assert isinstance( wcs, RDM_GWCS )
+    assert isinstance( wcs, BaseWCS )
+    assert isinstance( wcs, GWCS )
+    assert isinstance( wcs._gwcs, gwcs.wcs.WCS )
+
+    # Same regression test from test_gwcs
+    testdata = [ { 'x': 0, 'y': 0, 'ra': 79.99384677, 'dec': 29.97428036, },
+                 { 'x': 4087, 'y': 4087, 'ra': 79.84864636, 'dec': 30.09743131 },
+                 { 'x': 0, 'y': 4087, 'ra': 79.99377225, 'dec': 30.09721375 },
+                 { 'x': 4087, 'y': 0, 'ra': 79.84966829, 'dec': 29.97460354 },
+                 { 'x': 2043.5, 'y': 2043.5, 'ra': 79.92142552, 'dec': 30.03557704 } ]
+
     check_wcs( wcs, testdata, invabs=0.01, arcsecprecision=0.002 )
 
     # Test the astropy WCS approximation
