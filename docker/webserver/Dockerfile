@@ -69,8 +69,8 @@ RUN source /venv/bin/activate && \
     pip --no-cache install \
         "astropy>=7.1.0,<8.0.0" \
         "fitsio>=1.2.5,<2.0.0" \
-        "galsim>=2.7.2,<3.0.0" \
-        "gwcs>=0.26.0,<0.27.0" \
+        "galsim>=2.8.4,<3.0.0" \
+        "gwcs>=1.0.3,<2.0.0" \
         "h5py>=3.14.0,<4.0.0" \
         "numpy>=2.2.6,<3.0.0" \
         "pandas>=2.3.3,<3.0.0" \
@@ -80,7 +80,7 @@ RUN source /venv/bin/activate && \
         "pytz>=2025.2" \
         "pyyaml>=6.0.3,<7.0.0" \
         "rkwebutil>=2.5.2,<3.0.0" \
-        "roman-datamodels>=0.28.1,<0.29.0" \
+        "roman-datamodels>=0.30.0,<0.31.0" \
         "scipy>=1.16.2,<2.0.0" \
         "simplejson>=3.20.2,<4.0.0"
 # END TEMPORARY
