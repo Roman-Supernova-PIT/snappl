@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.wcs &#8212; roman_snpit_snappl 0.1.dev1+g6baf3a29b documentation</title>
+    <title>snappl.wcs &#8212; roman_snpit_snappl 0.1.dev1+gbacbd0da1 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=b4ef4976"></script>
+    <script src="../../_static/documentation_options.js?v=2b53e7d7"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -441,7 +441,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">GWCS</span><span class="p">(</span><span class="n">BaseWCS</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A &quot;G&quot; (Generalized?) WCS : https://gwcs.readthedocs.io/en/latest/</span>
 
-<span class="sd">    In the current code, these are only read from ASDF files</span>
+<span class="sd">    In the current code, these are only read from roman datamodel ASDF files</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -509,6 +509,54 @@
         <span class="k">return</span> <span class="n">astropy</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">WCS</span><span class="p">(</span> <span class="n">hdr</span> <span class="p">)</span></div>
 </div>
 
+
+
+<span class="c1"># ======================================================================</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RDM_GWCS</span><span class="p">(</span><span class="n">GWCS</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A GWCS, specifically from a roman datamodel.</span>
+
+<span class="sd">    Uses things that are defined for the Roman datamodel that we&#39;re not</span>
+<span class="sd">    sure are defined for all GWCSes.</span>
+
+<span class="sd">    TODO : find out if _gwcs.pixel_to_world(sc) is the same as _gwcs(x,</span>
+<span class="sd">    y) (except for returning a SkyCoord rather than ra, dec).  If not,</span>
+<span class="sd">    then have a whole lot of consternation about what the heck the</span>
+<span class="sd">    defined pixel_to_world function is actually doing.  Likewise for</span>
+<span class="sd">    _gwcs.world_to_pixel(sc) and _gwcs.invert(ra, dec).</span>
+
+<span class="sd">    (In test_wcs.py, the corners and center of the test image we are</span>
+<span class="sd">    using produce identical results, but it&#39;s not clear that the test</span>
+<span class="sd">    image we&#39;re using has a realistic roman GWCS; it might have a</span>
+<span class="sd">    simplified one.)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init_</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">gwcs</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="n">gwcs</span><span class="o">=</span><span class="n">gwcs</span> <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pixel_to_world</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="o">.</span><span class="n">output_frame</span><span class="o">.</span><span class="n">reference_frame</span><span class="p">,</span> <span class="n">astropy</span><span class="o">.</span><span class="n">coordinates</span><span class="o">.</span><span class="n">ICRS</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, &quot;</span>
+                             <span class="s2">&quot;but we need it to be ICRS.&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span> <span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">x</span> <span class="p">)</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">y</span> <span class="p">)</span>
+
+        <span class="c1"># ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)), so no need to convert</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">world_to_pixel</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="o">.</span><span class="n">output_frame</span><span class="o">.</span><span class="n">reference_frame</span><span class="p">,</span> <span class="n">astropy</span><span class="o">.</span><span class="n">coordinates</span><span class="o">.</span><span class="n">ICRS</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, &quot;</span>
+                             <span class="s2">&quot;but we need it to be ICRS.&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">dec</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span> <span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">dec</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="p">):</span>
+            <span class="n">ra</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">ra</span> <span class="p">)</span>
+            <span class="n">dec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">dec</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="p">)</span>
 </pre></div>
 
           </div>
