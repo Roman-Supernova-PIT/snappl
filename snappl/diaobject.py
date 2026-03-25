@@ -355,6 +355,7 @@ class DiaObject:
         provid = provenance.id if isinstance( provenance, Provenance ) else provenance
 
         if ( provenance_tag is None ) != ( process is None ):
+            SNLogger.debug(f"provenance_tag: {provenance_tag}, process: {process}")
             raise ValueError( "Either both or neither of provenance_tag and process must be given with "
                               "collection='snpitdb'." )
 

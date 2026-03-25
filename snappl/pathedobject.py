@@ -101,12 +101,17 @@ class PathedObject:
         # database, and so want to have manually specified paths.  (Plus, some
         # additional fun from backwards compatibility.)
 
+        from snappl.logger import SNLogger
+
+
+
         if ( base_path is not None ) and ( base_dir is not None ) and ( base_path != base_dir ):
             raise ValueError( "Only give one of base_path or base_dir, they mean the same thing." )
         base_path = base_path if base_path is not None else base_dir if base_dir is not None else None
         self._set_base_path( base_path, no_base_path )
 
         self._filepath = pathlib.Path( filepath ) if filepath is not None else None
+
 
         if full_filepath is not None:
             full_filepath = pathlib.Path( full_filepath ).resolve()
@@ -146,7 +151,6 @@ class PathedObject:
             self._base_path = pathlib.Path( base_path if base_path is not None else
                                             Config.get().value( self._base_path_config_item )
                                            ).resolve()
-
 
 
     @property

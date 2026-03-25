@@ -2377,6 +2377,99 @@ class RomanDatamodelImage( Image ):
                 raise NotImplementedError( "RomanDataModelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs
 
+    def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=True ):
+        """See Image.get_cutout
+        The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
+        """
+        if not all( [ isinstance( x, (int, np.integer) ),
+                      isinstance( y, (int, np.integer) ),
+                      isinstance( xsize, (int, np.integer) ),
+                      ( ysize is None or isinstance( ysize, (int, np.integer) ) )
+                     ] ):
+            raise TypeError( "All of x, y, xsize, and ysize must be integers." )
+
+        if ysize is None:
+            ysize = xsize
+        if xsize % 2 != 1 or ysize % 2 != 1:
+            raise ValueError( f"Size must be odd for a well defined central "
+                              f"pixel, you tried to pass a size of {xsize, ysize}.")
+
+        data, noise, flags = self.get_data( 'all' )
+
+        wcs = self.get_wcs()
+        if isinstance( wcs, GWCS ):
+            wcs = wcs.get_astropy_wcs()
+            SNLogger.warning("Cole is turning a GWCS into an AstropyWCS to use with Cutout2D.  "
+                "Is this a permanent solution?")
+        else:
+            raise NotImplementedError( f"RomanDatamodelImage.get_cutout only works with GWCS wcses, not {wcs.__class__.__name__} wcses." )
+
+        # if ( wcs is not None ) and ( not isinstance( wcs, AstropyWCS ) ):
+        #     raise TypeError( "Error, FITSImage.get_cutout only works with AstropyWCS wcses."
+        #                      f" The wcs is of type {type(wcs)}" )
+        SNLogger.debug(f"type wcs is {type(wcs)}")
+        apwcs = None if wcs is None else wcs # This was wcs._wcs in the FITS version of this function. I
+        # am unclear why I had to change it.
+
+        # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
+
+        astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
+        astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
+        # Because flags are integer, we can't use the same fill_value as the default.
+        # Per the slack channel, it seemed 1 will be used for bad pixels.
+        # https://github.com/spacetelescope/roman_datamodels/blob/main/src/roman_datamodels/dqflags.py
+        astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=1)
+
+        if return_FITS:
+            snappl_cutout = FITSImage(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
+            snappl_cutout._data = astropy_cutout.data
+            snappl_cutout._noise = astropy_noise.data
+        else:
+            snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
+            snappl_cutout.dm.data = astropy_cutout.data
+            snappl_cutout.dm.err = astropy_noise.data
+        #snappl_cutout._header = self.get_fits_header()
+        snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
+
+        snappl_cutout._flags = astropy_flags.data
+        snappl_cutout._is_cutout = True
+        snappl_cutout._width = astropy_cutout.data.shape[1]
+        snappl_cutout._height = astropy_cutout.data.shape[0]
+
+        # TODO : fix _ra* and _dec* fields, they're all WRONG
+
+        for prop in [ '_observation_id', '_sca', '_band', '_mjd', '_position_angle', '_exptime',
+                      '_sky_level', '_zeropoint', '_ra', '_dec',
+                      '_ra_corner_00', '_ra_corner_01', '_ra_corner_10', '_ra_corner_11',
+                      '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
+            setattr( snappl_cutout, prop, getattr( self, prop ) )
+
+        return snappl_cutout
+
+    def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
+        """See Image.get_ra_dec_cutout
+
+
+        The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
+        """
+
+        wcs = self.get_wcs()
+        x, y = wcs.world_to_pixel( ra, dec )
+        x = int( np.floor( x + 0.5 ) )
+        y = int( np.floor( y + 0.5 ) )
+        return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
+
+    @data.setter
+    def data(self, new_value):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.floating)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
+            self._data = new_value
+        else:
+            raise TypeError("Data must be a 2d numpy array of floats.")
+
 
 # ======================================================================
 # This dictionary defines the format field in the database.  The key is the format
