@@ -464,7 +464,6 @@ class ImageCollectionDB:
         if provenance is None:
             raise ValueError( "provenance is required" )
         self.provenance = provenance
-        from snappl.logger import SNLogger
         prov_imclass = self.provenance.params['image_class']
         if prov_imclass not in self.image_class_to_format:
             raise RuntimeError( "Unknown image_class {image_class} in image provenance" )

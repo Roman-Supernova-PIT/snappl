@@ -208,7 +208,6 @@ class Image( PathedObject ):
             many cases, they will be lazy-loaded from the header.
 
         """
-        SNLogger.debug( f"Initializing {self.__class__.__name__} with full_filepath={full_filepath}, filepath={filepath}, base_path={base_path}, ")
         if path is not None:
             if full_filepath is not None:
                 # This next error message is a bit of a lie.  It's
@@ -228,10 +227,6 @@ class Image( PathedObject ):
 
         super().__init__( filepath=filepath, base_path=base_path, base_dir=base_dir,
                           full_filepath=full_filepath, no_base_path=no_base_path )
-
-        SNLogger.debug(
-            f"Super Initializing {self.__class__.__name__} with full_filepath={self.full_filepath}, filepath={self._filepath}, base_path={self._base_path}, "
-        )
 
         self._declare_consumed_kwargs( { 'path', 'filepath', 'base_path', 'base_dir',
                                          'full_filepath', 'no_base_path', 'id', 'provenance_id',
@@ -323,7 +318,6 @@ class Image( PathedObject ):
                 else:
                     self._no_base_path = False
                     self._base_path = pathlib.Path( Config.get().value( fmtbasepathdef ) ).resolve()
-                    SNLogger.debug(f"set basepath using format {self._format} and config item {fmtbasepathdef} to {self._base_path}" )
 
 
     # The path property is just for backwards compatibilty
@@ -2397,17 +2391,15 @@ class RomanDatamodelImage( Image ):
         data, noise, flags = self.get_data( 'all' )
 
         wcs = self.get_wcs()
-        if isinstance( wcs, GWCS ):
+        if isinstance( wcs, RDM_GWCS ):
             wcs = wcs.get_astropy_wcs()
             SNLogger.warning("Cole is turning a GWCS into an AstropyWCS to use with Cutout2D.  "
                 "Is this a permanent solution?")
         else:
-            raise NotImplementedError( f"RomanDatamodelImage.get_cutout only works with GWCS wcses, not {wcs.__class__.__name__} wcses." )
+            raise NotImplementedError( "RomanDatamodelImage.get_cutout only works with GWCS wcses"
+                                       f", not {wcs.__class__.__name__} wcses." )
 
-        # if ( wcs is not None ) and ( not isinstance( wcs, AstropyWCS ) ):
-        #     raise TypeError( "Error, FITSImage.get_cutout only works with AstropyWCS wcses."
-        #                      f" The wcs is of type {type(wcs)}" )
-        SNLogger.debug(f"type wcs is {type(wcs)}")
+
         apwcs = None if wcs is None else wcs # This was wcs._wcs in the FITS version of this function. I
         # am unclear why I had to change it.
 
@@ -2425,10 +2417,10 @@ class RomanDatamodelImage( Image ):
             snappl_cutout._data = astropy_cutout.data
             snappl_cutout._noise = astropy_noise.data
         else:
-            snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
+            snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True,
+                                           width=xsize, height=ysize)
             snappl_cutout.dm.data = astropy_cutout.data
             snappl_cutout.dm.err = astropy_noise.data
-        #snappl_cutout._header = self.get_fits_header()
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
 
         snappl_cutout._flags = astropy_flags.data

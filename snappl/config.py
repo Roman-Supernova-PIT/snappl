@@ -1234,11 +1234,8 @@ class Config:
 
         _dict = self._data if _dict is None else _dict
 
-
-
         for key, val in _dict.items():
             arg = f'{path}{key}'
-
             if isinstance( val, dict ):
                 self.parse_args( args, path=f'{arg}_', _dict=val )
             elif getattr( args, arg ) is not None:

@@ -101,9 +101,6 @@ class PathedObject:
         # database, and so want to have manually specified paths.  (Plus, some
         # additional fun from backwards compatibility.)
 
-        from snappl.logger import SNLogger
-
-
 
         if ( base_path is not None ) and ( base_dir is not None ) and ( base_path != base_dir ):
             raise ValueError( "Only give one of base_path or base_dir, they mean the same thing." )

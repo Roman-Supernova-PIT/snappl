@@ -26,9 +26,6 @@ from roman_imsim.utils import roman_utils
 from snappl.config import Config
 from snappl.logger import SNLogger
 
-import tracemalloc
-
-
 
 class PSF:
     """Wraps a PSF.  All roman snpit photometry code will ideally only use PSF methods defined in this base class.
@@ -1446,11 +1443,6 @@ class ou24PSF_slow( PSF ):
 
             if self._image is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )
-                current, peak = tracemalloc.get_traced_memory()
-                SNLogger.info(f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
-                SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
-                SNLogger.debug( f"ou24PSF_slow wcs fetched at: {x+1, y+1}" )
-                SNLogger.debug( f"ou24PSF_slow wcs: {self._wcs}" )
             else:
                 image_wcs = self._image.get_wcs()
                 if image_wcs is None:
@@ -1459,9 +1451,6 @@ class ou24PSF_slow( PSF ):
                     self._wcs = rmutils.getLocalWCS( x+1, y+1 )
                 else:
                     self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
-                    current, peak = tracemalloc.get_traced_memory()
-                    SNLogger.info(f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
-                    SNLogger.debug( f"ou24PSF_slow wcs fetched at: {x+1, y+1}" )
 
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
             point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, rmutils.bpass )
