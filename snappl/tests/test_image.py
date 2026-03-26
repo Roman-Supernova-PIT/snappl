@@ -745,3 +745,66 @@ def test_romandatamodel_image( romandatamodel_image ):
             assert np.all( res == im.flags )
         else:
             np.testing.assert_allclose( res, getattr(im, prop), rtol=1e-5 )
+
+
+# These are just copied wholesale from the FITSImage tests -Cole
+def test_romandatamodel_get_cutout(romandatamodel_image):
+    image = romandatamodel_image
+    assert image.image_shape == (4088, 4088)
+    cutout = image.get_cutout(200, 400, 11)
+    assert isinstance(cutout, FITSImage)
+    assert isinstance(cutout._data, np.ndarray)
+    assert cutout.image_shape == (11, 11)
+    # Remember numpy arrays are indexed y, x
+    assert np.all(cutout._data == image._data[395:406, 195:206])
+    assert np.all(cutout._noise == image._noise[395:406, 195:206])
+    assert np.all(cutout._flags == image._flags[395:406, 195:206])
+
+    with pytest.raises(astropy.nddata.utils.PartialOverlapError):
+        _ = image.get_cutout(5, 2048, 21)
+
+    with pytest.raises(astropy.nddata.utils.PartialOverlapError):
+        _ = image.get_cutout(2048, 4085, 21)
+
+    with pytest.raises(astropy.nddata.utils.NoOverlapError):
+        _ = image.get_cutout(2048, 4200, 21)
+
+    # Repeat the above but now with mode='partial'
+    cutout = image.get_cutout(5, 2048, 21, mode="partial", fill_value=np.nan)
+    np.testing.assert_equal(cutout._data[:, 0:5], np.nan)
+
+    cutout2 = image.get_cutout(2048, 4085, 21, mode="partial", fill_value=np.nan)
+    np.testing.assert_equal(cutout2._data[-8:, :], np.nan)
+    with pytest.raises(astropy.nddata.utils.NoOverlapError):
+        _ = image.get_cutout(2048, 4200, 21, mode="partial", fill_value=np.nan)
+
+
+def test_romandatamodel_get_ra_dec_cutout(romandatamodel_image):
+    image = romandatamodel_image
+    # Choose the ra, dec around the SN in the test images
+    ra, dec = 7.551093401915147, -44.80718106491529
+
+    wcs = image.get_wcs()
+    x, y = wcs.world_to_pixel(ra, dec)
+    x = int(np.floor(x + 0.5))
+    y = int(np.floor(y + 0.5))
+
+    cutout = image.get_ra_dec_cutout(ra, dec, 5)
+    # assert isinstance( cutout, FITSImage )    # Won't work because we didn't pass a FITSImage...
+    assert cutout.image_shape == (5, 5)
+
+    assert np.all(cutout.data == image.data[y - 2 : y + 3, x - 2 : x + 3])
+
+    # Now we intentionally try to get a no overlap error.
+    with pytest.raises(astropy.nddata.utils.NoOverlapError):
+        ra, dec = 7.7, -45.0
+        cutout = image.get_ra_dec_cutout(ra, dec, 5)
+
+    # Now we intentionally try to get a partial overlap error.
+    with pytest.raises(astropy.nddata.utils.PartialOverlapError):
+        ra, dec = 7.6186202, -44.8483766
+        cutout = image.get_ra_dec_cutout(ra, dec, 55)
+
+    # Now try with mode='partial'
+    cutout = image.get_ra_dec_cutout(ra, dec, 55, mode="partial", fill_value=np.nan)
+    np.testing.assert_equal(np.sum(np.isnan(cutout.data)), 1485)

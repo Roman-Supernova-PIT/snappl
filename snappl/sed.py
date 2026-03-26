@@ -33,6 +33,7 @@ class Flat_SED( SED_collection ):
 
 class Single_CSV_SED( SED_collection ):
     def __init__( self, csv_file ):
+        # READ THE CSV FILE, make a galsim SED in self.sed
         raise NotImplementedError( "Single_CSV_SED is not implemented yet.")
 
     def get_sed( self, **kwargs ):
