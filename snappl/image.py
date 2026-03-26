@@ -2446,7 +2446,7 @@ class RomanDatamodelImage( Image ):
         """
 
         wcs = self.get_wcs()
-        x, y = wcs.world_to_pixel( ra, dec )
+        x, y = wcs.world_to_pixel( ra, dec , with_bounding_box=False)
         x = int( np.floor( x + 0.5 ) )
         y = int( np.floor( y + 0.5 ) )
         return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
