@@ -1,0 +1,1 @@
+Adding functionality for cutouts to ASDF images. Also, including a small fix to the image_simulator.
