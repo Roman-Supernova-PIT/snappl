@@ -32,9 +32,8 @@ class Flat_SED( SED_collection ):
 
 
 class Single_CSV_SED( SED_collection ):
-    def __init__( self, csv_file, sed_wave_type='Angstrom', sed_flux_type='flambda' ):
-        # READ THE CSV FILE, make a galsim SED in self.sed
-        self.sed = galsim.SED(csv_file, wave_type=sed_wave_type, flux_type=sed_flux_type)
+    def __init__( self, csv_file ):
+        raise NotImplementedError( "Single_CSV_SED is not implemented yet.")
 
     def get_sed( self, **kwargs ):
         return self.sed
