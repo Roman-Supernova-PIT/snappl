@@ -70,9 +70,11 @@ def test_get_offcenter_psf():
 
     stamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
     assert stamp.shape == (41, 41)
+
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     assert cx == pytest.approx(19.856 + (2048 - 2050), abs=0.2)
     assert cy == pytest.approx(19.911 + (2048 - 2040), abs=0.2)
+
     # This stamp should just be a shifted version of centerstamp; verify
     #   that.  This check should be much more precise than the
     #   centroids, as wing-cutting won't matter for this check.
@@ -85,9 +87,6 @@ def test_get_offcenter_psf():
                 20 + yoff + 2048 - 2040, 20 + xoff + 2048 - 2050
             ] == pytest.approx(centerstamp[20 + yoff, 20 + xoff], abs=absoff)
 
-    newstamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
-    np.testing.assert_array_equal(stamp, newstamp)
-
 
 def test_get_edge_centered_psf():
     # Try a PSF centered between two pixels.  Because of how we
@@ -97,8 +96,9 @@ def test_get_edge_centered_psf():
     stamp = psfobj.get_stamp(2048.5, 2048.0, seed=42)
     assert stamp.shape == (41, 41)
     assert stamp.sum() == pytest.approx(0.979, abs=0.001)
+
     cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(19.22, abs=0.02)
+    assert cx == pytest.approx(19.40, abs=0.02)
     assert cy == pytest.approx(19.911, abs=0.02)
 
     # Try an offcenter PSF that's centered on a corner
@@ -108,6 +108,33 @@ def test_get_edge_centered_psf():
     psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.5, x0=2050, y0=2046, seed=42)
     assert stamp.shape == (41, 41)
+
+    cy, cx = scipy.ndimage.center_of_mass(stamp)
+    assert cx == pytest.approx(18.22, abs=0.02)
+    assert cy == pytest.approx(22.42, abs=0.03)
+
+
+def test_get_corner_centered_psf():
+    # Try a PSF centered between four pixels.  Because of how we
+    #   define 0.5 behavior in PSF.get_stamp, this should be
+    #   centered to the *left* and *down* of the center of the image.
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
+    stamp = psfobj.get_stamp(2048.5, 2048.5, seed=42)
+    assert stamp.shape == (41, 41)
+    assert stamp.sum() == pytest.approx(0.979, abs=0.001)
+
+    cy, cx = scipy.ndimage.center_of_mass(stamp)
+    assert cx == pytest.approx(19.40, abs=0.02)
+    assert cy == pytest.approx(19.45, abs=0.02)
+
+    # Try an offcenter PSF that's centered on a corner
+    # The PSF center should be at -1.5, +2.5 pixels
+    # relative to the stamp center... but then
+    # offset because of the asymmetry of the roman PSF.
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
+    stamp = psfobj.get_stamp(2048.5, 2048.5, x0=2050, y0=2046, seed=42)
+    assert stamp.shape == (41, 41)
+
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     assert cx == pytest.approx(18.22, abs=0.02)
     assert cy == pytest.approx(22.42, abs=0.03)

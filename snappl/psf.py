@@ -2020,6 +2020,15 @@ class STPSF( PSF ):
             SNLogger.debug( f"Creating oversized stamp of size ({buffered_stamp_size, buffered_stamp_size})" )
 
         if (x, y, stampx, stampy) not in self._stamps:
+            # 2026-03-30: MWV
+            # "source_offset_x" and "source_offset_y" are interpreted in arcseconds of relative angular shift.
+            # This does not depend on orientation of sky, this is just relative to local position in arcseconds instead of pixel
+            # so we can divide by the pixel scale to get the correct shift
+            source_offset_x_arcsec = (x - x0) * wfi.pixelscale
+            source_offset_y_arcsec = (y - y0) * wfi.pixelscale
+            wfi.options["source_offset_x"] = source_offset_x_arcsec
+            wfi.options["source_offset_y"] = source_offset_y_arcsec
+
             buffered_stamp = wfi.calc_psf(fov_pixels=buffered_stamp_size)
             buffered_stamp = buffered_stamp["DET_SAMP"].data
             # Trim stamp to originally requested size
