@@ -1,6 +1,6 @@
 __all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
             'YamlSerialized_OversampledImagePSF', 'A25ePSF',
-            'ou24PSF_slow', 'ou24PSF', 'STPSF' ]
+            'ou24PSF_slow', 'ou24PSF', 'romanisim', 'STPSF' ]
 
 # python standard library imports
 import base64
@@ -22,6 +22,7 @@ import photutils.psf
 from roman_imsim.utils import roman_utils
 import stpsf
 import synphot
+import romanisim
 
 # roman snpit library imports
 from snappl.config import Config
@@ -52,6 +53,7 @@ class PSF:
             * A25ePSF -- YamlSearialized_OversampledImagePSF from Aldoroty et al. 2025
             * ou24PSF_slow -- a PSF from galsim for OpenUniverse 2024
             * ou24PSF -- a PSF from galsim for OpenUniverse 2024
+            * romanisim -- a PSF from romanisim using STPSF
             * STPSF -- a PSF from STScI STPSF
 
           x, y: float
@@ -123,6 +125,7 @@ class PSF:
             "varying_gaussian": VaryingGaussianPSF,
             "ou24PSF_slow_photonshoot": ou24PSF_slow_photonshoot,
             "ou24PSF_photonshoot": ou24PSF_photonshoot,
+            "romanisim": romanisim,
             "STPSF": STPSF,
         }
 
@@ -1773,6 +1776,135 @@ class ou24PSF_slow_photonshoot( ou24PSF_slow ):
 #             self._data = stamp.array
 
 #         return self._data
+
+
+class romanisim( PSF ):
+    """Wrap the romanisim PSFs.
+
+    Each time you call get_stamp it will render a new one, with all the
+    photon ops and so forth.
+
+    However, an object of this class will cache, so if you call get_stamp with
+    identical arguments it will return the cached version).
+
+    https://romanisim.readthedocs.io/en/latest/romanisim/psf.html
+    """
+
+    def __init__( self, sed=None, size=201,
+                  _parent_class=False,  **kwargs
+                 ):
+
+        super().__init__( _parent_class=True, **kwargs )
+        self._consumed_args.update( [ 'sed', 'size' ] )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
+
+        if ( self._band is None ) or ( self._sca is None ):
+            raise ValueError( "Need a band and an sca to make a romanisim" )
+        if ( size % 2 == 0 ) or ( int(size) != size ):
+            raise ValueError( "Size must be an odd integer." )
+        size = int( size )
+
+        if sed is None:
+            SNLogger.warning( "No sed passed to romanisim, using a flat SED between 0.1μm and 2.6μm" )
+            self.sed = galsim.SED( galsim.LookupTable( [1000, 26000], [1, 1], interpolant='linear' ),
+                              wave_type='Angstrom', flux_type='fphotons' )
+        elif not isinstance( sed, galsim.SED ):
+            raise TypeError( f"sed must be a galsim.SED, not a {type(sed)}" )
+        else:
+            self.sed = sed
+
+        self.size = size
+        self.sca_size = 4088
+        self._x = self.sca_size // 2 if self._x is None else self._x
+        self._y = self.sca_size // 2 if self._y is None else self._y
+        self._stamps = {}
+
+    @property
+    def stamp_size( self ):
+        return self.size
+
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None ):
+        """Return a 2d numpy image of the PSF at the image resolution.
+
+        Parameters are as in PSF.get_stamp, plus:
+
+        Parameters
+        ----------
+
+          seed : int
+            A random seed to pass to galsim.BaseDeviate for photonOps.
+            NOTE: this is not part of the base PSF interface (at least,
+            as of yet), so don't use it in production pipeline code.
+            However, it will be useful in tests for purposes of testing
+            reproducibility.
+
+        Notes
+        -----
+        For more details
+          see the romanisim documentation
+        https://romanisim.readthedocs.io/en/latest/
+          and sample Roman WFI romanisim Notebook
+        https://github.com/spacetelescope/stpsf/blob/develop/notebooks/romanisim-Roman_Tutorial.ipynb
+        """
+        SNLogger.debug("Getting romanisim stamp at x=%s, y=%s, x0=%s, y0=%s", x, y, x0, y0)
+
+        # If a position is not given, assume the middle of the SCA
+        #   (within 1/2 pixel; by default, we want to make x and y
+        #   centered on a pixel).
+        x = x if x is not None else float( self._x )
+        y = y if y is not None else float( self._y )
+        wfi.detector_position = (x, y)
+
+        romanisim.psf.make_one_psf(
+            self._sca, self._band,
+            wcs=None, pix=(x, y), chromatic=False,
+            oversample=4, extra_convolution=None,
+            **kw) 
+        )
+
+        xc = int( np.floor( x + 0.5 ) )
+        yc = int( np.floor( y + 0.5 ) )
+        x0 = xc if x0 is None else x0
+        y0 = yc if y0 is None else y0
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+
+        stampx = self.stamp_size // 2 + ( x - x0 )
+        stampy = self.stamp_size // 2 + ( y - y0 )
+
+        if ( ( stampx < -self.stamp_size ) or ( stampx > 2 * self.stamp_size ) or
+             ( stampy < -self.stamp_size ) or ( stampy > 2 * self.stamp_size ) ):
+            raise ValueError( f"PSF would be rendered at ({stampx}, {stampy}), which is too far off of the "
+                              f"edge of a {self.stamp_size}-pixel stamp." )
+
+        x_offset = int( x - x0 )
+        y_offset = int( y - y0 )
+        buffer = max( np.abs( x_offset ), np.abs( y_offset ) )
+        buffered_stamp_size = self.stamp_size + 2 * buffer
+
+        SNLogger.debug( f"Initializing romanisim with band {self._band} and sca {self._sca}" )
+        SNLogger.debug( f"{x_offset, y_offset, buffer, stampx, stampy, x, y, x0, y0, xc, yc}" )
+        if buffer > 0:
+            SNLogger.debug( f"Creating oversized stamp of size ({buffered_stamp_size, buffered_stamp_size})" )
+
+        if (x, y, stampx, stampy) not in self._stamps:
+            buffered_stamp = wfi.calc_psf(fov_pixels=buffered_stamp_size)
+            buffered_stamp = buffered_stamp["DET_SAMP"].data
+            # Trim stamp to originally requested size
+            x_start = buffer - int( x - x0 )
+            x_end = buffer + self.stamp_size - int( x - x0 )
+            y_start = buffer - int( y - y0 )
+            y_end = buffer + self.stamp_size - int( y - y0 )
+
+            if buffer > 0:
+                SNLogger.debug( f"Trimming stamp to ({x_start - x_end}, {y_start - y_end})" )
+            # Since we're explicitly dealing with the array here
+            # we have use row-major [y, x] order when making the sub-selection.
+            stamp = buffered_stamp[y_start:y_end, x_start:x_end]
+
+            self._stamps[(x, y, stampx, stampy)] = stamp
+
+        return self._stamps[(x, y, stampx, stampy)] * flux
 
 
 class STPSF( PSF ):
