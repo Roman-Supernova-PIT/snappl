@@ -1870,7 +1870,7 @@ class romanisim( PSF ):
             self._sca, self._band,
             wcs=None, pix=(x, y), chromatic=False,
             oversample=4, extra_convolution=None,
-            **kw) 
+            **kw
         )
 
         xc = int( np.floor( x + 0.5 ) )
