@@ -1798,6 +1798,17 @@ class romanisim( PSF ):
         self._consumed_args.update( [ 'sed', 'size' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
+        # STPSF calls poppy which will try to GPU accelerate if cupy is installed
+        # 2026-03-30 We currently have an inconsitency on NERSC and don't
+        # have all of the cuda tools available
+        # In SFFT we specified the CUDA backend to get around this
+        # But here I think we're going to try disabling the CUPY acceleration
+        try:
+            import cupy as cp
+            cp.conf._use_cupy = False
+        except:
+            pass
+
         if ( self._band is None ) or ( self._sca is None ):
             raise ValueError( "Need a band and an sca to make a romanisim" )
         if ( size % 2 == 0 ) or ( int(size) != size ):
