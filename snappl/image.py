@@ -2287,6 +2287,8 @@ class RomanDatamodelImage( Image ):
         # I'm hoping it will be duck-typing equivalent to a numpy array.
         # TODO : investigate memory use when you do numpy array things
         # with one of these.
+        # MWV: 2026-02-10.  It is not equivalent.
+        # Could this be np.asarray(self.dm.data)?
         return self.dm.data
 
     @data.setter
