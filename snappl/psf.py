@@ -1873,15 +1873,8 @@ class STPSF( PSF ):
             raise ValueError( f"PSF would be rendered at ({stampx}, {stampy}), which is too far off of the "
                               f"edge of a {self.stamp_size}-pixel stamp." )
 
-        x_offset = int( x - x0 )
-        y_offset = int( y - y0 )
-        buffer = max( np.abs( x_offset ), np.abs( y_offset ) )
-        buffered_stamp_size = self.stamp_size + 2 * buffer
-
         SNLogger.debug( f"Initializing STPSF with band {self._band} and sca {self._sca}" )
-        SNLogger.debug( f"{x_offset, y_offset, buffer, stampx, stampy, x, y, x0, y0, xc, yc}" )
-        if buffer > 0:
-            SNLogger.debug( f"Creating oversized stamp of size ({buffered_stamp_size, buffered_stamp_size})" )
+        SNLogger.debug( f"{stampx, stampy, x, y, x0, y0, xc, yc}" )
 
         if (x, y, x0, y0, stampx, stampy) not in self._stamps:
             # 2026-03-30: MWV
@@ -1893,19 +1886,8 @@ class STPSF( PSF ):
             wfi.options["source_offset_x"] = source_offset_x_arcsec
             wfi.options["source_offset_y"] = source_offset_y_arcsec
 
-            buffered_stamp = wfi.calc_psf(fov_pixels=buffered_stamp_size)
-            buffered_stamp = buffered_stamp["DET_SAMP"].data
-            # Trim stamp to originally requested size
-            x_start = buffer
-            x_end = x_start + self.stamp_size
-            y_start = buffer
-            y_end = y_start + self.stamp_size
-
-            if buffer > 0:
-                SNLogger.debug( f"Trimming stamp to ({x_start}:{x_end}, {y_start}:{y_end})" )
-            # Since we're explicitly dealing with the array here
-            # we have use row-major [y, x] order when making the sub-selection.
-            stamp = buffered_stamp[y_start:y_end, x_start:x_end]
+            stamp = wfi.calc_psf(fov_pixels=self.stamp_size)
+            stamp = stamp["DET_SAMP"].data
 
             self._stamps[(x, y, x0, y0, stampx, stampy)] = stamp
 
