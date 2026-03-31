@@ -1,10 +1,10 @@
 replaceable_preloads:
-  - /Users/wmwv/Roman/pipeline/snappl/snappl/tests/snpit_test_config.yaml
-  - /Users/wmwv/Roman/pipeline/snappl/snappl/tests/test_config_for_db.yaml
+  - /snpit_test_config.yaml
+  - /test_config_for_db.yaml
 
 system:
   paths:
-    spectra1d: /Users/wmwv/Roman/pipeline/snappl/snappl/tests/outdata/spectra1d
-    lightcurves: /Users/wmwv/Roman/pipeline/snappl/snappl/tests/outdata/lightcurves
-    segmaps: /Users/wmwv/Roman/pipeline/snappl/snappl/tests/outdata/segmaps
-    images: /Users/wmwv/Roman/pipeline/snappl/snappl/tests/outdata/images
+    spectra1d: /home/snappl/snappl/tests/spectra1d
+    lightcurves: /home/snappl/snappl/tests/lightcurves
+    segmaps: /home/snappl/snappl/tests/segmaps
+    images: /home/snappl/snappl/tests/images
