@@ -1819,8 +1819,8 @@ class STPSF( PSF ):
     def stamp_size( self ):
         return self.size
 
-    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None ):
-        """Return a 2d numpy image of the PSF at the image resolution.
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_SAMP" ):
+        """Return a 2d numpy image of the PSF at the detector resolution.
 
         Parameters are as in PSF.get_stamp, plus:
 
@@ -1833,6 +1833,10 @@ class STPSF( PSF ):
             as of yet), so don't use it in production pipeline code.
             However, it will be useful in tests for purposes of testing
             reproducibility.
+
+        ext_name : str
+            DET_SAMP is detector resolution.
+            You can choose other planes if you want.
 
         Notes
         -----
@@ -1879,7 +1883,7 @@ class STPSF( PSF ):
         if buffer > 0:
             SNLogger.debug( f"Creating oversized stamp of size ({buffered_stamp_size, buffered_stamp_size})" )
 
-        if (x, y, stampx, stampy) not in self._stamps:
+        if (x, y, x0, y0, stampx, stampy) not in self._stamps:
             # 2026-03-30: MWV
             # "source_offset_x" and "source_offset_y" are interpreted in arcseconds of relative angular shift.
             # This does not depend on orientation of sky, this is just relative to local position in arcseconds instead of pixel
@@ -1892,20 +1896,20 @@ class STPSF( PSF ):
             buffered_stamp = wfi.calc_psf(fov_pixels=buffered_stamp_size)
             buffered_stamp = buffered_stamp["DET_SAMP"].data
             # Trim stamp to originally requested size
-            x_start = buffer - int( x - x0 )
-            x_end = buffer + self.stamp_size - int( x - x0 )
-            y_start = buffer - int( y - y0 )
-            y_end = buffer + self.stamp_size - int( y - y0 )
+            x_start = buffer
+            x_end = x_start + self.stamp_size
+            y_start = buffer
+            y_end = y_start + self.stamp_size
 
             if buffer > 0:
-                SNLogger.debug( f"Trimming stamp to ({x_start - x_end}, {y_start - y_end})" )
+                SNLogger.debug( f"Trimming stamp to ({x_start}:{x_end}, {y_start}:{y_end})" )
             # Since we're explicitly dealing with the array here
             # we have use row-major [y, x] order when making the sub-selection.
             stamp = buffered_stamp[y_start:y_end, x_start:x_end]
 
-            self._stamps[(x, y, stampx, stampy)] = stamp
+            self._stamps[(x, y, x0, y0, stampx, stampy)] = stamp
 
-        return self._stamps[(x, y, stampx, stampy)] * flux
+        return self._stamps[(x, y, x0, y0, stampx, stampy)] * flux
 
 
 class GaussianPSF( PSF ):
