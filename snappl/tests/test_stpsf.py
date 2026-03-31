@@ -131,3 +131,14 @@ def test_get_offset_corner_centered_psf():
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     assert cx == pytest.approx(18.40, abs=0.02)
     assert cy == pytest.approx(22.40, abs=0.03)
+
+
+def test_get_offset_psf():
+    """Test generating a non half-pixel offset."""
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
+    stamp = psfobj.get_stamp(2048.2, 2048.8, seed=42)
+    assert stamp.shape == (41, 41)
+
+    cy, cx = scipy.ndimage.center_of_mass(stamp)
+    assert cx == pytest.approx(20.05, abs=0.05)
+    assert cy == pytest.approx(19.8, abs=0.05)
