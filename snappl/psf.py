@@ -1876,8 +1876,9 @@ class STPSF( PSF ):
         if (x, y, x0, y0, stampx, stampy) not in self._stamps:
             # 2026-03-30: MWV
             # "source_offset_x" and "source_offset_y" are interpreted in arcseconds of relative angular shift.
-            # This does not depend on orientation of sky, this is just relative to local position in arcseconds instead of pixel
-            # so we can divide by the pixel scale to get the correct shift
+            # This does not depend on orientation of sky,
+            # this is just relative to local position in arcseconds instead of pixel
+            # so we can multiply the pixel shift by the pixel scale to get the correct shift
             source_offset_x_arcsec = (x - x0) * wfi.pixelscale
             source_offset_y_arcsec = (y - y0) * wfi.pixelscale
             wfi.options["source_offset_x"] = source_offset_x_arcsec

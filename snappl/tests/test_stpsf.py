@@ -1,6 +1,5 @@
 import pytest
 
-import numpy as np
 import scipy
 
 from snappl.psf import PSF
