@@ -1,6 +1,6 @@
 __all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
             'YamlSerialized_OversampledImagePSF', 'A25ePSF',
-            'ou24PSF_slow', 'ou24PSF', 'romanisim', 'STPSF' ]
+            'ou24PSF_slow', 'ou24PSF', 'STPSF' ]
 
 # python standard library imports
 import base64
@@ -22,7 +22,6 @@ import photutils.psf
 from roman_imsim.utils import roman_utils
 import stpsf
 import synphot
-import romanisim
 
 # roman snpit library imports
 from snappl.config import Config
@@ -53,7 +52,6 @@ class PSF:
             * A25ePSF -- YamlSearialized_OversampledImagePSF from Aldoroty et al. 2025
             * ou24PSF_slow -- a PSF from galsim for OpenUniverse 2024
             * ou24PSF -- a PSF from galsim for OpenUniverse 2024
-            * romanisim -- a PSF from romanisim using STPSF
             * STPSF -- a PSF from STScI STPSF
 
           x, y: float
@@ -125,7 +123,6 @@ class PSF:
             "varying_gaussian": VaryingGaussianPSF,
             "ou24PSF_slow_photonshoot": ou24PSF_slow_photonshoot,
             "ou24PSF_photonshoot": ou24PSF_photonshoot,
-            "romanisim": romanisim,
             "STPSF": STPSF,
         }
 
