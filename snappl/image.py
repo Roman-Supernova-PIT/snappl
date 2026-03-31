@@ -2184,7 +2184,6 @@ class RomanDatamodelImage( Image ):
     See Issue #46 for concerns about performance/memory and imlementation of this object.
 
     """
-
     _detectormatch = re.compile( "^WFI([0-9]{2})$" )
 
     def __init__( self, *args, **kwargs ):
@@ -2427,6 +2426,7 @@ class RomanDatamodelImage( Image ):
         snappl_cutout._is_cutout = True
         snappl_cutout._width = astropy_cutout.data.shape[1]
         snappl_cutout._height = astropy_cutout.data.shape[0]
+        snappl_cutout.band = self.band
 
         # TODO : fix _ra* and _dec* fields, they're all WRONG
 
