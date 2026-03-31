@@ -52,6 +52,7 @@ def test_get_centered_psf():
     assert stamp.shape == (41, 41)
     # 2026-02-14 MWV: H158 comes out to 0.979.  See test_normalization for implicit comparison.
     assert stamp.sum() == pytest.approx(0.979, abs=0.001)
+
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     # The roman PSF is asymmetric, so we don't expect the CoM to be the exact center.
     # The comparison numbers are what MWV go when adapting this test for STPSF
@@ -61,31 +62,33 @@ def test_get_centered_psf():
 
 def test_get_offcenter_psf():
     # Try an offcenter PSF that's still centered on a pixel
-    # The wings of this PSF are monstrous, so the centroiding
-    #   doesn't come out quite precise when the thing is offset
-    #   this much.
+    # The wings of the Roman WFI are quite large, so the centroiding
+    # doesn't come out quite precise when the PSF is offset this much.
 
+    x, y = 2048.0, 2048.0
+    x0, y0 = 2050, 2040
+    stamp_size = 41
     psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
-    centerstamp = psfobj.get_stamp(seed=42)
+    centerstamp = psfobj.get_stamp(x, y, seed=42)
 
-    stamp = psfobj.get_stamp(2048.0, 2048.0, x0=2050, y0=2040, seed=42)
-    assert stamp.shape == (41, 41)
+    stamp = psfobj.get_stamp(x, y, x0=x0, y0=y0, seed=42)
+    assert stamp.shape == (stamp_size, stamp_size)
 
+    # Reversed because we're directly looking at the ndarray which is y, x
     cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(19.856 + (2048 - 2050), abs=0.2)
-    assert cy == pytest.approx(19.911 + (2048 - 2040), abs=0.2)
+    assert cx == pytest.approx(19.856 + (x - x0), abs=0.2)
+    assert cy == pytest.approx(19.911 + (y - y0), abs=0.2)
 
     # This stamp should just be a shifted version of centerstamp; verify
     #   that.  This check should be much more precise than the
     #   centroids, as wing-cutting won't matter for this check.
-    # (Not *exactly* because centerstamp is at 2044,2044, not 2048,
-    #   2048, but the PSF can't vary much over 4 pixels...)
-    absoff = 0.004 * centerstamp[20, 20]
+    # (Not *exactly* because centerstamp is at 2044,2044, not x,
+    #   x, but the PSF can't vary much over 4 pixels...)
+    absoff = 0.004 * centerstamp[stamp_size // 2, stamp_size // 2]
     for xoff in [-1, 0, 1]:
         for yoff in [-1, 0, 1]:
-            assert stamp[
-                20 + yoff + 2048 - 2040, 20 + xoff + 2048 - 2050
-            ] == pytest.approx(centerstamp[20 + yoff, 20 + xoff], abs=absoff)
+            assert stamp[stamp_size // 2 + yoff + int(y - y0), stamp_size // 2 + xoff + int(x - x0)] \
+                    == pytest.approx(centerstamp[stamp_size // 2 + yoff, stamp_size // 2 + xoff], abs=absoff)
 
 
 def test_get_edge_centered_psf():
@@ -101,18 +104,6 @@ def test_get_edge_centered_psf():
     assert cx == pytest.approx(19.40, abs=0.02)
     assert cy == pytest.approx(19.911, abs=0.02)
 
-    # Try an offcenter PSF that's centered on a corner
-    # The PSF center should be at -1.5, +2.5 pixels
-    # relative to the stamp center... but then
-    # offset because of the asymmetry of the roman PSF.
-    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
-    stamp = psfobj.get_stamp(2048.5, 2048.5, x0=2050, y0=2046, seed=42)
-    assert stamp.shape == (41, 41)
-
-    cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(18.22, abs=0.02)
-    assert cy == pytest.approx(22.42, abs=0.03)
-
 
 def test_get_corner_centered_psf():
     # Try a PSF centered between four pixels.  Because of how we
@@ -127,6 +118,8 @@ def test_get_corner_centered_psf():
     assert cx == pytest.approx(19.40, abs=0.02)
     assert cy == pytest.approx(19.45, abs=0.02)
 
+
+def test_get_offset_corner_centered_psf():
     # Try an offcenter PSF that's centered on a corner
     # The PSF center should be at -1.5, +2.5 pixels
     # relative to the stamp center... but then
@@ -136,5 +129,5 @@ def test_get_corner_centered_psf():
     assert stamp.shape == (41, 41)
 
     cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(18.22, abs=0.02)
-    assert cy == pytest.approx(22.42, abs=0.03)
+    assert cx == pytest.approx(18.40, abs=0.02)
+    assert cy == pytest.approx(22.40, abs=0.03)
