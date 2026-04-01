@@ -389,5 +389,5 @@ def test_galaxy_ou2024_photonshoot_stamp():
         x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R=2, bulge_n=3, disk_R=2, disk_n=3
     )
 
-    assert galaxy_stamp.sum() == pytest.approx(994368, rel=1e-3)  # Empirically, only 99.1 % of flux is in 71x71 stamp
+    assert galaxy_stamp.sum() == pytest.approx(997992, rel=1e-3)  # Empirically, only 99.1 % of flux is in 71x71 stamp
     # The no photonshooting value was lower, close to 991866. Is this concerning?

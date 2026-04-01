@@ -1538,6 +1538,7 @@ class ou24PSF_slow( PSF ):
         psf_stamp = self.get_stamp(
             x=self.stamp_size // 2,
             y=self.stamp_size // 2,
+            seed=self._seed,
         )
 
         # Prepare and evaluate the profile
