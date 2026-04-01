@@ -159,6 +159,13 @@ class PSF:
         self._image = image
         self._seed = seed
 
+        if self._band is None:
+            try:
+                self._band = self._image.band
+            except Exception as e:
+                raise ValueError("Unable to determine band for PSF generation. I tried to get the band from the image,"
+                f" but I got an error. The error was {e}. Please provide a band or an image with a band.")
+
 
     @property
     def x( self ):
@@ -1790,7 +1797,9 @@ class STPSF( PSF ):
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         if ( self._band is None ) or ( self._sca is None ):
-            raise ValueError( "Need a band and an sca to make a STPSF" )
+            raise ValueError(
+                f"Need a band and an sca to make a STPSF. I recieved band={self._band}, sca={self._sca}"
+                )
         if ( size % 2 == 0 ) or ( int(size) != size ):
             raise ValueError( "Size must be an odd integer." )
         size = int( size )
@@ -1867,7 +1876,6 @@ class STPSF( PSF ):
                               f"edge of a {self.stamp_size}-pixel stamp." )
 
         SNLogger.debug( f"Initializing STPSF with band {self._band} and sca {self._sca}" )
-        SNLogger.debug( f"{stampx, stampy, x, y, x0, y0, xc, yc}" )
 
         if (x, y, x0, y0, stampx, stampy) not in self._stamps:
             # 2026-03-30: MWV
