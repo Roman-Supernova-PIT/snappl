@@ -380,7 +380,7 @@ def test_galaxy_ou2024_photonshoot_stamp():
 
     # Test total flux
     gpsf = PSF.get_psf_object("ou24PSF_slow_photonshoot", x=0, y=0, band="R062",
-                              stamp_size=71, observation_id="6", sca=17)
+                              stamp_size=71, observation_id="6", sca=17, seed = 42)
     x = 1000.0
     y = 1000.0
     x0 = 1000
