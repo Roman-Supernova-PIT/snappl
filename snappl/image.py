@@ -2226,7 +2226,8 @@ class RomanDatamodelImage( Image ):
         self._band = self.dm.meta.instrument.optical_element
 
     def _get_mjd( self ):
-        self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
+        #self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
+        self.mjd = self.dm.meta.exposure.start_time.mjd
 
     def _get_exptime( self ):
         self._exptime = self.dm.meta.exposure.exposure_time
@@ -2359,6 +2360,19 @@ class RomanDatamodelImage( Image ):
         #   to with FITS files.
         if self._dm is None:
             self._dm = rdm.open( self.full_filepath, mode='r' )
+            # SNLogger.debug( f"Opened {self.full_filepath} with roman_datamodels" )
+            # SNLogger.debug( f"It has the following metadata: {self._dm.meta.exposure}" )
+            # from astropy.time import Time
+
+            # t = Time(self._dm.meta.exposure.start_time, format="isot", scale="utc")
+
+            # mid_time = (self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd) / 2.
+
+            # mid_time_t = Time(mid_time, format="mjd", scale="utc")
+
+            # raise ValueError(
+            #     f"Halting Here with MJD {t.mjd} my way, out of the file it is {self._dm.meta.exposure.start_time.mjd}, path is {self.full_filepath}, mid_time is {mid_time_t.mjd}"
+            # )
         return self._dm
 
     def get_wcs( self, wcsclass=None ):
