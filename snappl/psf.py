@@ -163,16 +163,6 @@ class PSF:
         self._image = image
         self._seed = seed
 
-        if self._band is None:
-            try:
-                self._band = self._image.band
-            except Exception as e:
-                raise ValueError(
-                    "Unable to determine band for PSF generation: "
-                    f"{e}"
-                    "Please provide a band or an Image with a band attribute."
-                )
-
     @property
     def x( self ):
         return self._x
@@ -1806,6 +1796,15 @@ class STPSF( PSF ):
         self._consumed_args.update( [ 'sed', 'size' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
+        if self._band is None:
+            try:
+                self._band = self._image.band
+            except Exception as e:
+                raise ValueError(
+                    "Unable to determine band for PSF generation: "
+                    f"{e}"
+                    "Please provide a band or an Image with a band attribute."
+                )
         if ( self._band is None ) or ( self._sca is None ):
             raise ValueError(
                 f"Need a band and an sca to make a STPSF.  Recieved band={self._band}, sca={self._sca}"
