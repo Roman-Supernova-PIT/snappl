@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>PSF &#8212; roman_snpit_snappl 0.1.dev1+gbacbd0da1 documentation</title>
+    <title>PSF &#8212; roman_snpit_snappl 0.1.dev1+g7e33161e4 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=2b53e7d7"></script>
+    <script src="../_static/documentation_options.js?v=8e782fc2"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -116,6 +116,9 @@ the class method PSF.get_psf_object.</p>
 <p>_called_from_get_psf_object is used internally and should not be
 used outside this module, unless you know what you’re doing and
 intentionally mean to subvert the system.</p>
+<section id="note">
+<h2>Note:<a class="headerlink" href="#note" title="Link to this heading">¶</a></h2>
+<p>If both are set, then <code class="xref py py-obj docutils literal notranslate"><span class="pre">band</span></code> overrides <code class="xref py py-obj docutils literal notranslate"><span class="pre">image.band</span></code></p>
 <p class="rubric">Attributes Summary</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
@@ -207,7 +210,8 @@ object-dependent.</p>
 * YamlSerialized_OversampledImagePSF – OversampledImagePSF with a defined save formatr
 * A25ePSF – YamlSearialized_OversampledImagePSF from Aldoroty et al. 2025
 * ou24PSF_slow – a PSF from galsim for OpenUniverse 2024
-* ou24PSF – a PSF from galsim for OpenUniverse 2024</p></li>
+* ou24PSF – a PSF from galsim for OpenUniverse 2024
+* STPSF – a PSF from STScI STPSF</p></li>
 <li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – <p>The position on the host image that this is the PSF for.
 Usually you want these to have no fractional part (so
 x==floor(x) and y==floor(y)), meaning that you’ve evaluated
@@ -263,7 +267,7 @@ constructor.</p></li>
 <p>There are a distressing number of subtleties here, warranting an
 extended discussion.</p>
 <section id="indexing-images">
-<h2>INDEXING IMAGES<a class="headerlink" href="#indexing-images" title="Link to this heading">¶</a></h2>
+<h3>INDEXING IMAGES<a class="headerlink" href="#indexing-images" title="Link to this heading">¶</a></h3>
 <p>For discussion of pixel positions below, remember the
 conventions for astronomical arrays.  Consider four things:</p>
 <p>First thing to consider: in python, numpy arrays are 0-indexed.
@@ -321,7 +325,7 @@ there is an ambiguity, so we have to pick a convention; that
 convention is described below.</p>
 </section>
 <section id="psf-centering-for-get-stamp">
-<h2>PSF CENTERING FOR get_stamp<a class="headerlink" href="#psf-centering-for-get-stamp" title="Link to this heading">¶</a></h2>
+<h3>PSF CENTERING FOR get_stamp<a class="headerlink" href="#psf-centering-for-get-stamp" title="Link to this heading">¶</a></h3>
 <p>If (x0, y0) are not given, the PSF will be centered as best
 possible on the stamp*†.  So, if x ends in 0.8, it will be left
 of center, and if x ends in 0.2, it will be right of center.  If
@@ -414,7 +418,7 @@ integer; see above.)</p>
 </dd>
 <dt>Define midpix = stamp_size // 2</dt><dd><p>(so, for instance midpix=3 for a 7×7 stamp)</p>
 </dd>
-<dt>Given how we’ve defined the x and y parmaeters to this</dt><dd><p>function, on the original image, the peak of the PSF is at
+<dt>Given how we’ve defined the x and y parameters to this</dt><dd><p>function, on the original image, the peak of the PSF is at
 (x, y) = (xc + fx, yc + fy).</p>
 </dd>
 <dt>Pixel (midpix, midpix) on the stamp corresponds to (x0, y0)</dt><dd><p>on the original image (given the definition of the
@@ -592,7 +596,7 @@ integer; see above.)</p>
 </dd>
 <dt>Define midpix = stamp_size // 2</dt><dd><p>(so, for instance midpix=3 for a 7×7 stamp)</p>
 </dd>
-<dt>Given how we’ve defined the x and y parmaeters to this</dt><dd><p>function, on the original image, the peak of the PSF is at
+<dt>Given how we’ve defined the x and y parameters to this</dt><dd><p>function, on the original image, the peak of the PSF is at
 (x, y) = (xc + fx, yc + fy).</p>
 </dd>
 <dt>Pixel (midpix, midpix) on the stamp corresponds to (x0, y0)</dt><dd><p>on the original image (given the definition of the
@@ -762,6 +766,7 @@ this value.</p>
 </section>
 </dd></dl>
 
+</section>
 </dd></dl>
 
 </section>
