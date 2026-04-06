@@ -2293,11 +2293,15 @@ class RomanDatamodelImage( Image ):
 
     @data.setter
     def data(self, new_value):
+        # 2026-03-31 MWV: I'm not super happy about this:
         if ( isinstance(new_value, np.ndarray)
              and np.issubdtype(new_value.dtype, np.floating)
              and len(new_value.shape) == 2
             ) or (new_value is None):
-            self._data = new_value
+            # Make sure we loaded it
+            _ = self.dm.data
+            # And then assign to it
+            self.dm.data = new_value
         else:
             raise TypeError( "Data must be a 2d numpy array of floats." )
 
