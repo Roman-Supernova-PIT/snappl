@@ -1430,9 +1430,6 @@ class ou24PSF_slow( PSF ):
 
             if self._image is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )
-                SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
-                SNLogger.debug( f"ou24PSF_slow wcs fetched at: {x+1, y+1}" )
-                SNLogger.debug( f"ou24PSF_slow wcs: {self._wcs}" )
             else:
                 image_wcs = self._image.get_wcs()
                 if image_wcs is None:
@@ -1441,7 +1438,6 @@ class ou24PSF_slow( PSF ):
                     self._wcs = rmutils.getLocalWCS( x+1, y+1 )
                 else:
                     self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
-                    SNLogger.debug( f"ou24PSF_slow wcs fetched at: {x+1, y+1}" )
 
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
             point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, rmutils.bpass )
