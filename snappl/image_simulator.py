@@ -410,13 +410,15 @@ class ImageSimulator:
         self.no_star_noise = no_star_noise
         self.band = band
         self.sca =  [sca] if not isSequence(sca) else sca
-        observation_id = str( observation_id )
+        #observation_id = str( observation_id )
         self.observation_id = ( [str(observation_id)] if not isSequence(observation_id)
                                 else [ str(oi) for oi in observation_id ] )
+        SNLogger.debug("first obs id is %s", self.observation_id[0])
         if len(self.sca) == 1:
             self.sca = [ self.sca[0] for _ in self.imdata['mjds'] ]
             SNLogger.debug("Using same SCA for all images: %s", self.sca)
         if len(self.observation_id) == 1:
+
             self.observation_id = [ str(self.observation_id[0]) for _ in self.imdata['mjds'] ]
             SNLogger.debug("Using same observation_id for all images: %s", self.observation_id[0] )
         self.exptime = exptime
@@ -476,6 +478,7 @@ class ImageSimulator:
         for i in range( len( self.imdata['mjds'] ) ):
             print(f"----------------------- IMAGE {i} -----------------------")
             kwargs["observation_id"] = self.observation_id[i]
+            SNLogger.debug("self.observation_id[i]: %s", self.observation_id[i])
             kwargs["sca"] = self.sca[i]
 
 

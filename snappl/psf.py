@@ -1619,6 +1619,7 @@ class ou24PSF( ou24PSF_slow ):
 
 
         """
+        SNLogger.debug(f"Initializing ou24PSF PSF object with {self._observation_id} and sca {self._sca} at x0={x0}, y0={y0}")
         self._rmutils = roman_utils(self.config_file, int(self._observation_id), self._sca)
         self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
         # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
