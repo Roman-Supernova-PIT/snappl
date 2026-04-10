@@ -380,15 +380,16 @@ def test_galaxy_ou2024_photonshoot_stamp():
 
     # Test total flux
     gpsf = PSF.get_psf_object("ou24PSF_slow_photonshoot", x=0, y=0, band="R062",
-                              stamp_size=71, observation_id="6", sca=17, seed = 42)
-                              # Seed is to ensure reproducibility of photon shooting.
+                              stamp_size=71, observation_id="6", sca=17)
+
     x = 1000.0
     y = 1000.0
     x0 = 1000
     y0 = 1000
     galaxy_stamp = get_galaxy_stamp(gpsf,
-        x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R=2, bulge_n=3, disk_R=2, disk_n=3
+        x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R=2, bulge_n=3, disk_R=2, disk_n=3, seed = 42,
     )
+    # Seed is to ensure reproducibility of photon shooting.
 
     assert galaxy_stamp.sum() == pytest.approx(997992, rel=1e-3)  # Empirically, only 99.8 % of flux is in 71x71 stamp
     # The no photonshooting value was lower, close to 991866. Is this concerning?

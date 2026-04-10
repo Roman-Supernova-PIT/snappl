@@ -516,7 +516,7 @@ class ImageSimulator:
 
 
 def get_galaxy_stamp(psf, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
-                        bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
+                        bulge_n=4, disk_R=10, disk_n=1, oversamp=5, seed = None):
     """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution.
     NOTE: This function assumes that the PSF does not significantly change across the stamp, so it just uses the PSF at
     the location of the center of the galaxy. If your galaxy is very large or the PSF changes quickly, this
@@ -533,6 +533,9 @@ def get_galaxy_stamp(psf, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
         The effective radius of the disk component in pixels.
     disk_n : float
         The Sersic index of the disk component.
+    seed: int
+        The seed to use when generating the PSF stamp. This is passed to PSF.get_stamp, and is only relevant if
+        the psf uses photon shooting.
 
         For more detail on the above four parameters, see:
         https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Sersic2D.html
@@ -560,8 +563,10 @@ def get_galaxy_stamp(psf, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
 
     xxrel, yyrel = np.meshgrid(xrel, yrel)
     # The same mesh but now the x value is zeroed at the center of where the galaxy is being centered
-
-    psf_stamp = psf.get_stamp(x=psf.stamp_size//2, y=psf.stamp_size//2)
+    if seed is not None:
+        psf_stamp = psf.get_stamp(x=psf.stamp_size//2, y=psf.stamp_size//2, seed=seed)
+    else:
+        psf_stamp = psf.get_stamp(x=psf.stamp_size//2, y=psf.stamp_size//2)
 
     # Prepare and evaluate the profile
     # Create a galaxy profile from a bulge + disk model
