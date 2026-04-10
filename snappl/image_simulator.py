@@ -50,7 +50,7 @@ class ImageSimulatorPointSource:
         elif shape == "galaxy":
             # unpack list into dict
             galaxy_kwargs_dict = {k: float(v) for k, v in zip(galaxy_kwargs[::2], galaxy_kwargs[1::2])}
-            stamp = psf.get_galaxy_stamp( x, y, x0=x0, y0=y0, flux=flux, **galaxy_kwargs_dict )
+            stamp = get_galaxy_stamp( psf, x, y, x0=x0, y0=y0, flux=flux, **galaxy_kwargs_dict )
         var = np.zeros( stamp.shape )
         if noisy:
             if rng is None:
@@ -518,8 +518,9 @@ class ImageSimulator:
 def get_galaxy_stamp(psf, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
                         bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
     """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution.
-    This is not a standard PSF function, and may not be implemented in all subclasses. It is only really for use
-    in the image simulator.
+    NOTE: This function assumes that the PSF does not significantly change across the stamp, so it just uses the PSF at
+    the location of the center of the galaxy. If your galaxy is very large or the PSF changes quickly, this
+    may not be a good approximation.
 
     Parameters
     ----------
@@ -626,7 +627,7 @@ def main():
                          help="Series of key=value PSF kwargs to pass to PSF.get_psf_object" )
 
     parser.add_argument( '--galaxy-kwargs', '--gk', nargs='*', default=[],
-                         help="Series of key value Galaxy kwargs to pass to PSF.get_galaxy_stamp. For now, the options"
+                         help="Series of key value Galaxy kwargs to pass to get_galaxy_stamp. For now, the options"
                          "are: The HLR of bulge and a disk, bulge_R and bulge_disk, and their Sersic indices"
                          "bulge_n and bulge_disk. They should be entered in the format key1 val1 key2 val2 et cetera." )
     parser.add_argument( '--no-star-noise', action='store_true', default=False,
