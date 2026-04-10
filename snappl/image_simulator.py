@@ -520,7 +520,7 @@ def get_galaxy_stamp(psf, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
 
     Parameters
     ----------
-    psf: subclass of snappl.psf.PSF 
+    psf: subclass of snappl.psf.PSF
         A psf object used to render the stamp.
     x,y,x0,y0,flux : as in PSF.get_stamp
     bulge_R : float
