@@ -14,7 +14,6 @@ from scipy.special import gammaincinv
 from scipy.stats import binned_statistic_2d
 import scipy.signal
 
-
 from astropy.modeling.functional_models import Sersic2D
 
 from snappl.logger import SNLogger
@@ -418,7 +417,6 @@ class ImageSimulator:
         self.no_star_noise = no_star_noise
         self.band = band
         self.sca =  [sca] if not isSequence(sca) else sca
-        # observation_id = str( observation_id )
         self.observation_id = ( [str(observation_id)] if not isSequence(observation_id)
                                 else [ str(oi) for oi in observation_id ] )
         SNLogger.debug("first obs id is %s", self.observation_id[0])
@@ -426,7 +424,6 @@ class ImageSimulator:
             self.sca = [ self.sca[0] for _ in self.imdata['mjds'] ]
             SNLogger.debug("Using same SCA for all images: %s", self.sca)
         if len(self.observation_id) == 1:
-
             self.observation_id = [ str(self.observation_id[0]) for _ in self.imdata['mjds'] ]
             SNLogger.debug("Using same observation_id for all images: %s", self.observation_id[0] )
         self.exptime = exptime
@@ -512,7 +509,6 @@ class ImageSimulator:
             SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
             image.image.save( overwrite=self.overwrite )
 
-# ======================================================================
 
 
 def get_galaxy_stamp(psf, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
@@ -524,6 +520,8 @@ def get_galaxy_stamp(psf, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
 
     Parameters
     ----------
+    psf: subclass of snappl.psf.PSF 
+        A psf object used to render the stamp.
     x,y,x0,y0,flux : as in PSF.get_stamp
     bulge_R : float
         The effective radius of the bulge component in pixels.
@@ -588,7 +586,6 @@ def get_galaxy_stamp(psf, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
     sers_disk = Sersic2D(amplitude=disk_amp, r_eff=disk_R, n=disk_n)
 
     profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
-
 
     # Downsample to image resolution
     profile_stamp, _, _, _= binned_statistic_2d(

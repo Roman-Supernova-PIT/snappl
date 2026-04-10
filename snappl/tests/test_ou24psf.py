@@ -324,7 +324,7 @@ def test_galaxy_ou2024_stamp():
 
     assymtetry_CM_x = 19.716 - 20
     assymtetry_CM_y = 19.922 - 20
-    # Ctrl-F COM justificiation to see an explanation for this in the other test, test_slow_get_stamp.
+    # Ctrl-F COM justification to see an explanation for this in the other test, test_slow_get_stamp.
     # Long story short, the Roman PSF is asymmetric, so the CoM is not exactly at the center of the image.
     # These numbers are what Rob found.
 
@@ -360,7 +360,7 @@ def test_galaxy_ou2024_photonshoot_stamp():
 
     assymtetry_CM_x = 19.716 - 20
     assymtetry_CM_y = 19.922 - 20
-    # Ctrl-F COM justificiation to see an explanation for this in the other test, test_slow_get_stamp.
+    # Ctrl-F COM justification to see an explanation for this in the other test, test_slow_get_stamp.
     # Long story short, the Roman PSF is asymmetric, so the CoM is not exactly at the center of the image.
     # These numbers are what Rob found.
 
