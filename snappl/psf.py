@@ -14,7 +14,6 @@ import scipy.signal
 import yaml
 
 # astro library imports
-import photutils.psf
 import galsim
 import photutils.psf
 from roman_imsim.utils import roman_utils
