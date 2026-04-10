@@ -10,7 +10,7 @@ from scipy.ndimage import center_of_mass
 import snappl.psf
 from snappl.psf import PSF
 from snappl.imagecollection import ImageCollection
-from snapp.image_simulator import get_galaxy_stamp
+from snappl.image_simulator import get_galaxy_stamp
 
 
 
