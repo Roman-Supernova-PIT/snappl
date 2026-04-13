@@ -1,0 +1,1 @@
+Adding a band sanity check when simulating using OU24 PSFs and enabled parallelization over images.
