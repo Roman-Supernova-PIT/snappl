@@ -8,8 +8,8 @@ from snappl.utils import env_as_bool
 from snappl.image_simulator import ImageSimulator
 from snappl.image import FITSImageStdHeaders
 
-
-def test_image_simulator_one_transient_image():
+@pytest.mark.parametrize("nprocs", [(2), (1)])
+def test_image_simulator_one_transient_image(nprocs):
     fnamebase = 'test_image_simulator_one_transient_image'
     assert not pathlib.Path( f'{fnamebase}_image.fits' ).exists()
     assert not pathlib.Path( f'{fnamebase}_noise.fits' ).exists()
@@ -40,6 +40,7 @@ def test_image_simulator_one_transient_image():
             "transient_ra": 120.0,
             "transient_dec": -13.0,
             "numprocs": 1,
+            "numimageprocs": nprocs,
         }
         sim = ImageSimulator( **kwargs )
         sim()
@@ -252,3 +253,56 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
     finally:
         for f in outdir.glob( "test_image_simulator*fits" ):
             f.unlink()
+
+
+def make_simulator(psf_class="ou24PSF", band="R062", observation_id=None, sca=1, **kwargs):
+    """Convenience func to avoid repeating in every test."""
+    return ImageSimulator(
+        psf_class=psf_class,
+        band=band,
+        observation_id=observation_id,
+        sca=sca,
+        star_center=(120.0, -13.0), # random values because these are required
+        image_centers=[120.0, -13.0],
+        mjds = [60000.0],
+        **kwargs,
+    )
+
+
+def test_non_ou24psf_skips_band_validation():
+    """If psf_class doesn't include 'ou24PSF', no band/obs-id logic runs at all."""
+    sim = make_simulator(psf_class="someOtherPSF", band="INVALID", observation_id=None)
+    assert sim.observation_id == ["1000"]  # Didn't do anything for non ou24PSF, so observation_id should just be
+    # the default, which is 1000.
+
+
+EXPECTED_DEFAULT_IDS = [
+    ("R062", "1"),
+    ("Z087", "57"),
+    ("Y106", "112"),
+    ("J129", "167"),
+    ("H158", "222"),
+    ("F184", "277"),
+]
+
+
+@pytest.mark.parametrize("band, expected_id", EXPECTED_DEFAULT_IDS)
+def test_default_observation_id_per_band(band, expected_id):
+    sim = make_simulator(psf_class="ou24PSF", band=band, observation_id=None)
+    assert sim.observation_id == [expected_id]
+
+
+def test_unrecognised_band_with_no_observation_id_raises():
+    with pytest.raises(ValueError, match="not recognized"):
+        make_simulator(psf_class="ou24PSF", band="INVALID", observation_id=None)
+
+# @pytest.mark.parametrize("band, observation_id", EXPECTED_DEFAULT_IDS)
+# def test_matching_band_and_obs_id_passes(band, observation_id):
+#     # If you pass a correct observation ID as an int, it should work fine.
+#     sim = make_simulator(psf_class="ou24PSF", band=band, observation_id=int(observation_id), sca=1)
+#     assert sim.observation_id == [str(observation_id)]
+#     # in addition, for all of these defaults, the next higher observation ID is the same band. So here we can
+#     # check that another observation Id works and isn't accidentally overwritten with the default one.
+
+#     sim = make_simulator(psf_class="ou24PSF", band=band, observation_id=int(observation_id) + 1, sca=1)
+#     assert sim.observation_id == [str(int(observation_id) + 1)]
