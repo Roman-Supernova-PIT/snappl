@@ -387,7 +387,7 @@ class ImageSimulator:
                 "If you want to specify a different observation_id, please do so explicitly when creating"
                 " the ImageSimulator." )
             else:
-                #If they did pass an observation ID, check that it corresponds to the band they passed.
+                # If they did pass an observation ID, check that it corresponds to the band they passed.
                 if isinstance(observation_id, (list, np.ndarray)) and len(observation_id) == 1:
                     observation_id = observation_id[0]
                 config_file = Config.get().value("system.ou24.config_file")

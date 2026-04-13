@@ -8,6 +8,7 @@ from snappl.utils import env_as_bool
 from snappl.image_simulator import ImageSimulator
 from snappl.image import FITSImageStdHeaders
 
+
 @pytest.mark.parametrize("nprocs", [(2), (1)])
 def test_image_simulator_one_transient_image(nprocs):
     fnamebase = 'test_image_simulator_one_transient_image'
