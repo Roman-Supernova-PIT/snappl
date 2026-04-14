@@ -1,6 +1,6 @@
 __all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
             'YamlSerialized_OversampledImagePSF', 'A25ePSF',
-            'ou24PSF_slow', 'ou24PSF' ]
+            'ou24PSF_slow', 'ou24PSF', 'STPSF' ]
 
 # python standard library imports
 import base64
@@ -10,17 +10,15 @@ import pathlib
 # common library imports
 import numpy as np
 import scipy.integrate
-from scipy.special import gammaincinv
-from scipy.stats import binned_statistic_2d
 import scipy.signal
 import yaml
 
-
 # astro library imports
-from astropy.modeling.functional_models import Sersic2D
-import photutils.psf
 import galsim
+import photutils.psf
 from roman_imsim.utils import roman_utils
+import stpsf
+import synphot
 
 # roman snpit library imports
 from snappl.config import Config
@@ -51,6 +49,7 @@ class PSF:
             * A25ePSF -- YamlSearialized_OversampledImagePSF from Aldoroty et al. 2025
             * ou24PSF_slow -- a PSF from galsim for OpenUniverse 2024
             * ou24PSF -- a PSF from galsim for OpenUniverse 2024
+            * STPSF -- a PSF from STScI STPSF
 
           x, y: float
             The position on the host image that this is the PSF for.
@@ -109,41 +108,23 @@ class PSF:
                          'image' : image,
                          'seed' : seed } )
 
-        if psfclass == "photutilsImagePSF":
-            return photutilsImagePSF( _called_from_get_psf_object=True, **kwargs )
+        psfclass_to_function_mapping = {
+            "photutilsImagePSF": photutilsImagePSF,
+            "OversampledImagePSF": OversampledImagePSF,
+            "Sampling_OversampledImagePSF": Sampling_OversampledImagePSF,
+            "YamlSerialized_OversampledImagePSF": YamlSerialized_OversampledImagePSF,
+            "A25ePSF": A25ePSF,
+            "ou24PSF_slow": ou24PSF_slow,
+            "ou24PSF": ou24PSF,
+            "gaussian": GaussianPSF,
+            "varying_gaussian": VaryingGaussianPSF,
+            "ou24PSF_slow_photonshoot": ou24PSF_slow_photonshoot,
+            "ou24PSF_photonshoot": ou24PSF_photonshoot,
+            "STPSF": STPSF,
+        }
 
-        if psfclass == "OversampledImagePSF":
-            return OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "Sampling_OversampledImagePSF":
-            return Sampling_OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "YamlSerialized_OversampledImagePSF":
-            return YamlSerialized_OversampledImagePSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "A25ePSF":
-            return A25ePSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "ou24PSF_slow":
-            return ou24PSF_slow( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "ou24PSF":
-            return ou24PSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "gaussian":
-            return GaussianPSF( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "varying_gaussian":
-            return VaryingGaussianPSF(_called_from_get_psf_object=True, **kwargs)
-
-        if psfclass == "ou24PSF_slow_photonshoot":
-            return ou24PSF_slow_photonshoot( _called_from_get_psf_object=True, **kwargs )
-
-        if psfclass == "ou24PSF_photonshoot":
-            return ou24PSF_photonshoot(_called_from_get_psf_object=True, **kwargs)
-
-        raise ValueError( f"Unknown PSF class {psfclass}" )
-
+        psf_function = psfclass_to_function_mapping[psfclass]
+        return psf_function( _called_from_get_psf_object=True, **kwargs )
 
     # Thought required: how to deal with oversampling.  Right now, the
     # OversampledImagePSF and photutilsImagePSF subclasses provide a
@@ -161,6 +142,10 @@ class PSF:
         used outside this module, unless you know what you're doing and
         intentionally mean to subvert the system.
 
+        Note:
+        -----
+        If both are set, then `band` overrides `image.band`
+
         """
         self._consumed_args = set()
         if not _called_from_get_psf_object:
@@ -174,7 +159,6 @@ class PSF:
         self._sca = sca
         self._image = image
         self._seed = seed
-
 
     @property
     def x( self ):
@@ -366,7 +350,7 @@ class PSF:
             Define midpix = stamp_size // 2
               (so, for instance midpix=3 for a 7×7 stamp)
 
-            Given how we've defined the x and y parmaeters to this
+            Given how we've defined the x and y parameters to this
               function, on the original image, the peak of the PSF is at
               (x, y) = (xc + fx, yc + fy).
 
@@ -1443,6 +1427,7 @@ class ou24PSF_slow( PSF ):
 
             if self._image is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )
+                SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
             else:
                 image_wcs = self._image.get_wcs()
                 if image_wcs is None:
@@ -1518,6 +1503,8 @@ class ou24PSF( ou24PSF_slow ):
 
 
         """
+        SNLogger.debug(f"Initializing ou24PSF PSF object with {self._observation_id} and "
+                       f"sca {self._sca} at x0={x0}, y0={y0}")
         self._rmutils = roman_utils(self.config_file, int(self._observation_id), self._sca)
         self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
         # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
@@ -1787,6 +1774,133 @@ class ou24PSF_slow_photonshoot( ou24PSF_slow ):
 #         return self._data
 
 
+class STPSF( PSF ):
+    """Wrap the STPSF PSFs.
+
+    Each time you call get_stamp it will render a new one, with all the
+    photon ops and so forth.
+
+    However, an object of this class will cache, so if you call get_stamp with
+    identical arguments it will return the cached version).
+    """
+
+    def __init__( self, sed=None, size=201,
+                  _parent_class=False,  **kwargs
+                 ):
+
+        super().__init__( _parent_class=True, **kwargs )
+        self._consumed_args.update( [ 'sed', 'size' ] )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
+
+        if self._band is None:
+            try:
+                self._band = self._image.band
+            except Exception as e:
+                raise ValueError(
+                    "Unable to determine band for PSF generation: "
+                    f"{e}"
+                    "Please provide a band or an Image with a band attribute."
+                )
+        if ( self._band is None ) or ( self._sca is None ):
+            raise ValueError(
+                f"Need a band and an sca to make a STPSF.  Recieved band={self._band}, sca={self._sca}"
+                )
+        if ( size % 2 == 0 ) or ( int(size) != size ):
+            raise ValueError( "Size must be an odd integer." )
+        size = int( size )
+
+        if sed is None:
+            SNLogger.warning( "No sed passed to STPSF, default is 5700K sunlike spectrum." )
+        elif not isinstance( sed, synphot.spectrum.SourceSpectrum ):
+            raise TypeError( f"sed must be a synphot.spectrum.SourceSpectrum, not a {type(sed)}" )
+        else:
+            self.sed = sed
+
+        self.size = size
+        self.sca_size = 4088
+        self._x = self.sca_size // 2 if self._x is None else self._x
+        self._y = self.sca_size // 2 if self._y is None else self._y
+        self._stamps = {}
+
+    @property
+    def stamp_size( self ):
+        return self.size
+
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_SAMP" ):
+        """Return a 2d numpy image of the PSF at the detector resolution.
+
+        Parameters are as in PSF.get_stamp, plus:
+
+        Parameters
+        ----------
+
+          seed : int
+            A random seed to pass to galsim.BaseDeviate for photonOps.
+            NOTE: this is not part of the base PSF interface (at least,
+            as of yet), so don't use it in production pipeline code.
+            However, it will be useful in tests for purposes of testing
+            reproducibility.
+
+        ext_name : str
+            DET_SAMP is detector resolution.
+            You can choose other planes if you want.
+
+        Notes
+        -----
+        For more details
+          see the STPSF documentation
+        https://stpsf.readthedocs.io/en/latest/roman.html
+          and sample Roman WFI STPSF Notebook
+        https://github.com/spacetelescope/stpsf/blob/develop/notebooks/STPSF-Roman_Tutorial.ipynb
+        """
+        SNLogger.debug("Getting STPSF stamp at x=%s, y=%s, x0=%s, y0=%s", x, y, x0, y0)
+
+        wfi = stpsf.roman.WFI()
+        wfi.detector = f"WFI{self._sca:02d}"
+
+        # If a position is not given, assume the middle of the SCA
+        #   (within 1/2 pixel; by default, we want to make x and y
+        #   centered on a pixel).
+        x = x if x is not None else float( self._x )
+        y = y if y is not None else float( self._y )
+        wfi.detector_position = (x, y)
+
+        xc = int( np.floor( x + 0.5 ) )
+        yc = int( np.floor( y + 0.5 ) )
+        x0 = xc if x0 is None else x0
+        y0 = yc if y0 is None else y0
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+
+        stampx = self.stamp_size // 2 + ( x - x0 )
+        stampy = self.stamp_size // 2 + ( y - y0 )
+
+        if ( ( stampx < -self.stamp_size ) or ( stampx > 2 * self.stamp_size ) or
+             ( stampy < -self.stamp_size ) or ( stampy > 2 * self.stamp_size ) ):
+            raise ValueError( f"PSF would be rendered at ({stampx}, {stampy}), which is too far off of the "
+                              f"edge of a {self.stamp_size}-pixel stamp." )
+
+        SNLogger.debug( f"Initializing STPSF with band {self._band} and sca {self._sca}" )
+
+        if (x, y, x0, y0, stampx, stampy) not in self._stamps:
+            # 2026-03-30: MWV
+            # "source_offset_x" and "source_offset_y" are interpreted in arcseconds of relative angular shift.
+            # This does not depend on orientation of sky,
+            # this is just relative to local position in arcseconds instead of pixel
+            # so we can multiply the pixel shift by the pixel scale to get the correct shift
+            source_offset_x_arcsec = (x - x0) * wfi.pixelscale
+            source_offset_y_arcsec = (y - y0) * wfi.pixelscale
+            wfi.options["source_offset_x"] = source_offset_x_arcsec
+            wfi.options["source_offset_y"] = source_offset_y_arcsec
+
+            stamp = wfi.calc_psf(fov_pixels=self.stamp_size)
+            stamp = stamp["DET_SAMP"].data
+
+            self._stamps[(x, y, x0, y0, stampx, stampy)] = stamp
+
+        return self._stamps[(x, y, x0, y0, stampx, stampy)] * flux
+
+
 class GaussianPSF( PSF ):
     """A Gaussian PSF that doesn't vary across the image, for testing purposes.
 
@@ -1907,92 +2021,6 @@ class GaussianPSF( PSF ):
 
         return stamp
 
-
-    def get_galaxy_stamp(self, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
-                         bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
-        """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution.
-        This is not a standard PSF function, and may not be implemented in all subclasses. It is only really for use
-        in the image simulator.
-
-        Parameters
-        ----------
-        x,y,x0,y0,flux : as in PSF.get_stamp
-        bulge_R : float
-            The effective radius of the bulge component in pixels.
-        bulge_n : float
-            The Sersic index of the bulge component.
-        disk_R : float
-            The effective radius of the disk component in pixels.
-        disk_n : float
-            The Sersic index of the disk component.
-
-            For more detail on the above four parameters, see:
-            https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Sersic2D.html
-
-        oversamp : int
-            The oversampling factor to use when rendering the galaxy before downsampling to image resolution.
-
-        """
-        midpix = int( np.floor( self.stamp_size / 2 ) )
-        xc = int( np.floor(x + 0.5 ) )
-        yc = int( np.floor(y + 0.5 ) )
-        x0 = x0 if x0 is not None else xc
-        y0 = y0 if y0 is not None else yc
-        if not ( isinstance( x0, numbers.Integral ) and isinstance( y0, numbers.Integral ) ):
-            raise TypeError( f"x0 and y0 must be integers, got x0 as {type(x0)} and y0 as {type(y0)}" )
-
-        ix = np.linspace(-0.5, self.stamp_size - 0.5, oversamp * self.stamp_size)
-        iy = np.linspace(-0.5, self.stamp_size - 0.5, oversamp * self.stamp_size)
-        ixx, iyy = np.meshgrid(ix, iy)
-        # an underlying mesh of points on which to calculate functions where integer values line up with pixel centers
-
-        # Shift that grid relative to the desired location of the profile
-        xrel = (x0 - x) - midpix + ix
-        yrel = (y0 - y) - midpix + iy
-
-        xxrel, yyrel = np.meshgrid(xrel, yrel)
-        # The same mesh but now the x value is zeroed at the center of where the galaxy is being centered
-
-        psf_stamp = self.get_stamp(x=self.stamp_size//2, y=self.stamp_size//2,)
-
-        # Prepare and evaluate the profile
-        # Create a galaxy profile from a bulge + disk model
-
-        b_bulge = gammaincinv(2.0 * bulge_n, 0.5)
-
-        # Divide the flux equally between bulge and disk, so flux --> flux / 2
-        bulge_amp = flux/2 * b_bulge**(2*bulge_n) /\
-           (2 * np.pi * bulge_n * scipy.special.gamma(2*bulge_n) * np.exp(b_bulge) * bulge_R**2)
-        # The above is inverting the formula for total flux of a sersic profile, see
-        # http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
-        bulge_amp /= oversamp**2
-        sers_bulge = Sersic2D(amplitude=bulge_amp, r_eff=bulge_R, n=bulge_n)
-
-        b_disk = gammaincinv(2.0 * disk_n, 0.5)
-        disk_amp = flux/2 * b_disk**(2*disk_n) /\
-           (2 * np.pi * disk_n * scipy.special.gamma(2*disk_n) * np.exp(b_disk) * disk_R**2)
-        disk_amp /= oversamp**2
-        sers_disk = Sersic2D(amplitude=disk_amp, r_eff=disk_R, n=disk_n)
-
-        profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
-
-
-        # Downsample to image resolution
-        profile_stamp, _, _, _= binned_statistic_2d(
-                y=ixx.flatten(),
-                x=iyy.flatten(),
-                # Note that x and y are flipped here compared to usual convention. I am not sure why this needs to be,
-                # but when it was the other way around, the act of downsampling was swapping x and y.
-                values=profile_stamp.flatten(),
-                statistic='sum',
-                bins=self.stamp_size,
-                range=[[-0.5, self.stamp_size - 0.5], [-0.5, self.stamp_size - 0.5]]
-            )
-
-        profile_stamp = profile_stamp.reshape(self.stamp_size, self.stamp_size)
-        convolved = scipy.signal.convolve2d(profile_stamp, psf_stamp, mode="same", boundary="symm")
-
-        return convolved
 
 
 class VaryingGaussianPSF( GaussianPSF ):
