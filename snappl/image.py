@@ -2373,6 +2373,15 @@ class RomanDatamodelImage( Image ):
     def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=True ):
         """See Image.get_cutout
         The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
+
+        Inputs
+        -------
+        return_FITS: bool, default True
+            If True, the cutout will be returned as a snappl.image.FITSImage.
+            If False, the cutout will be returned as a snappl.image.RomanDatamodelImage.
+
+        Returns
+        -------
         """
         if not all( [ isinstance( x, (int, np.integer) ),
                       isinstance( y, (int, np.integer) ),
@@ -2392,18 +2401,23 @@ class RomanDatamodelImage( Image ):
         wcs = self.get_wcs()
         if isinstance( wcs, RDM_GWCS ):
             wcs = wcs.get_astropy_wcs()
-            SNLogger.warning("Cole is turning a GWCS into an AstropyWCS to use with Cutout2D.  "
+            # Here we convert the GWCS to an AstropyWCS, which is what Cutout2D needs.  This is a little
+            # worrying because we are using a slightly different WCS to get the cutout, though I don't
+            # think it hugely matters since it only needs to be accurate to the pixel level. However,
+            # we should consider implementing a way to get the cutout without converting to an AstropyWCS.
+            SNLogger.warning("This is turning a GWCS into an AstropyWCS to use with Cutout2D.  "
                 "Is this a permanent solution?")
+
         else:
             raise NotImplementedError( "RomanDatamodelImage.get_cutout only works with GWCS wcses"
                                        f", not {wcs.__class__.__name__} wcses." )
 
 
-        apwcs = None if wcs is None else wcs # This was wcs._wcs in the FITS version of this function. I
-        # am unclear why I had to change it.
+        apwcs = None if wcs is None else wcs
+        # This was wcs._wcs in the FITS version of this function. I
+        # am unclear why I had to change it to be just wcs, i.e. not wcs._wcs
 
         # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
-
         astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
         astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
         # Because flags are integer, we can't use the same fill_value as the default.

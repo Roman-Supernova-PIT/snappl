@@ -43,7 +43,7 @@ class BaseWCS:
     def pixel_to_world( self, x, y ):
         """Go from (x, y) coordinates to ICRS (ra, dec)
 
-        Parmaeters
+        Parameters
         ----------
           x: float or sequence of float
              The x position on the image.  The center of the lower-left
@@ -371,6 +371,13 @@ class RDM_GWCS(GWCS):
 
     def pixel_to_world(self, x, y, with_bounding_box=False):
         """ Inputs:
+            - x: float or sequence of float
+                The x position on the image.  The center of the lower-left
+                pixel is at x=0.0
+
+            - y: float or sequence of float
+                The y position on the image.  The center of the lower-left
+                pixel is y=0.0
             - with_bounding_box: bool, default False
                 If True, then if the input ra, dec are outside the bounding box of the WCS,
                 NaN is returned  If False, then it will just return whatever the WCS returns for those ra, dec,
