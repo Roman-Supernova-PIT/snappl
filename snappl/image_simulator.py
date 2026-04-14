@@ -504,6 +504,21 @@ class ImageSimulator:
             "You probably want numprocs to be high. If you are simulating many images with few"
             "stars, i.e. for SMP, you probably want numimageprocs to be high." )
 
+        # Print all of the class variables for debugging purposes
+        SNLogger.debug( f"Initialized ImageSimulator with the following parameters:\n")
+        for var, val in locals().items():
+            SNLogger.debug( f"  {var}: {val}" )
+
+        # # Save the locals into a file for comparison
+        # # get current time
+        # import time
+        # timestamp = 2
+        # locals_dict = dict( ( var, val ) for var, val in locals().items() if var != "self" )
+        # import yaml
+        # with open(f"{self.basename}_locals_{timestamp}.yaml", "w") as f:
+        #     yaml.dump(locals_dict, f, default_flow_style=False)
+
+        # raise ValueError("stopping here")
     def __call__( self ):
         self.base_rng = np.random.default_rng( self.seed )
         self.sky_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
@@ -528,6 +543,7 @@ class ImageSimulator:
                                               fieldrad=self.star_sky_radius,
                                               m0=self.min_star_magnitude, m1=self.max_star_magnitude,
                                               alpha=self.alpha, nstars=self.nstars, rng=self.star_rng )
+        transient = None
         if self.transient_ra is not None and self.transient_dec is not None:
             SNLogger.debug( f"Creating transient at ({self.transient_ra}, {self.transient_dec}) "
                             f"with peak mag {self.transient_peak_mag} at mjd {self.transient_peak_mjd}" )

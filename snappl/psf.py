@@ -1436,7 +1436,6 @@ class ou24PSF_slow( PSF ):
                     self._wcs = rmutils.getLocalWCS( x+1, y+1 )
                 else:
                     self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x+1, y+1 ))
-                    SNLogger.debug( f"ou24PSF_slow wcs fetched at: {x+1, y+1}" )
 
             stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
             point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, rmutils.bpass )
@@ -1522,7 +1521,6 @@ class ou24PSF( ou24PSF_slow ):
             else:
                 SNLogger.debug(f"Using the WCS from the image passed to {self.__class__.__name__}.")
                 self._wcs = image_wcs.get_galsim_wcs().local( image_pos = galsim.PositionD(x0+1, y0+1 ))
-        SNLogger.debug( f"ou24PSF wcs fetched at: {x0, y0}" )
         self._stamp = galsim.Image( self.stamp_size, self.stamp_size, wcs=self._wcs )
         self._point = ( galsim.DeltaFunction() * self.sed ).withFlux( 1, self._rmutils.bpass )
         self._convolved_psf = galsim.Convolve(self._point, self._psf)
