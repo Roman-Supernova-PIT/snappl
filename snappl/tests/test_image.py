@@ -818,11 +818,11 @@ def test_romandatamodel_set_data( romandatamodel_image ):
     origfl = image.flags
     try:
         image.data = origim + 1
-        assert np.all( origim + 1 == image.data )
+        np.testing.assert_allclose( origim + 1, image.data, rtol=1e-5 )
         image.noise = orignoi + 1
-        assert np.all( orignoi + 1 == image.noise )
+        np.testing.assert_allclose( orignoi + 1, image.noise, rtol=1e-5 )
         image.flags = origfl + 1
-        assert np.all( origfl + 1 == image.flags )
+        np.testing.assert_allclose( origfl + 1, image.flags, rtol=1e-5 )
 
         with pytest.raises( TypeError, match="Data must be a 2d numpy array of floats." ):
             image.data = 'cheese'

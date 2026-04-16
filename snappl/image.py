@@ -2285,12 +2285,20 @@ class RomanDatamodelImage( Image ):
         # I'm hoping it will be duck-typing equivalent to a numpy array.
         # TODO : investigate memory use when you do numpy array things
         # with one of these.
-        return self.dm.data
+        # Using the _data property here is so that we can set the data elsewhere. -CFM
+        if getattr(self, '_data', None) is None:
+            self._data = self.dm.data
+
+        return self._data
 
     @property
     def noise( self ):
         # See comment in data
-        return self.dm.err
+        # Using the _noise property here is so that we can set the noise elsewhere. -CFM
+        if getattr(self, '_noise', None) is None:
+            self._noise = self.dm.err
+
+        return self._noise
 
     @property
     def flags( self ):
@@ -2298,7 +2306,11 @@ class RomanDatamodelImage( Image ):
         # TODO : https://roman-pipeline.readthedocs.io/en/latest/roman/dq_init/reference_files.html#reference-files
         # We probably need to do some translation.  We have to think about what we are defining
         #   as a "bad" pixel.
-        return self.dm.dq
+        # Using the _flags property here is so that we can set the flags elsewhere. -CFM
+        if getattr(self, '_flags', None) is None:
+            self._flags = self.dm.dq
+
+        return self._flags
 
     def get_data( self, which='all', always_reload=False, cache=False ):
         """Read the data from disk and return one or more 2d numpy arrays of data.
@@ -2475,11 +2487,33 @@ class RomanDatamodelImage( Image ):
         else:
             raise TypeError("Data must be a 2d numpy array of floats.")
 
+    @noise.setter
+    def noise(self, new_value):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.floating)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
+            self._noise = new_value
+        else:
+            raise TypeError("Noise must be a 2d numpy array of floats.")
+
+    @flags.setter
+    def flags(self, new_value):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.integer)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
+            self._flags = new_value
+        else:
+            raise TypeError("Flags must be a 2d numpy array of integers.")
 
 # ======================================================================
 # This dictionary defines the format field in the database.  The key is the format
 #   integer, the value gives the image class, the base path config value, and eventually
 #    maybe other information
+
 
 Image._format_def = { -1 : { 'description': "Not a database image",
                              'image_class': None,
