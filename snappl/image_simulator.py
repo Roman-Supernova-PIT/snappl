@@ -505,7 +505,7 @@ class ImageSimulator:
             "stars, i.e. for SMP, you probably want numimageprocs to be high." )
 
         # Print all of the class variables for debugging purposes
-        SNLogger.debug( f"Initialized ImageSimulator with the following parameters:\n")
+        SNLogger.debug( "Initialized ImageSimulator with the following parameters:\n")
         for var, val in locals().items():
             SNLogger.debug( f"  {var}: {val}" )
 
