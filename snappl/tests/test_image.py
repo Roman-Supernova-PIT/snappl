@@ -809,6 +809,7 @@ def test_romandatamodel_get_ra_dec_cutout(romandatamodel_image):
     cutout = image.get_ra_dec_cutout(ra, dec, 55, mode="partial", fill_value=np.nan)
     np.testing.assert_equal(int(np.sum(np.isnan(cutout.data))), 2641)
 
+
 def test_romandatamodel_set_data( romandatamodel_image ):
     image = romandatamodel_image
 
