@@ -791,7 +791,6 @@ def test_romandatamodel_get_ra_dec_cutout(romandatamodel_image):
     y = int(np.floor(y + 0.5))
 
     cutout = image.get_ra_dec_cutout(ra, dec, 5)
-    # assert isinstance( cutout, FITSImage )    # Won't work because we didn't pass a FITSImage...
     assert cutout.image_shape == (5, 5)
 
     assert np.all(cutout.data == image.data[y - 2 : y + 3, x - 2 : x + 3])
@@ -809,3 +808,34 @@ def test_romandatamodel_get_ra_dec_cutout(romandatamodel_image):
     # Now try with mode='partial'
     cutout = image.get_ra_dec_cutout(ra, dec, 55, mode="partial", fill_value=np.nan)
     np.testing.assert_equal(int(np.sum(np.isnan(cutout.data))), 2641)
+
+def test_romandatamodel_set_data( romandatamodel_image ):
+    image = romandatamodel_image
+
+    origim = image.data
+    orignoi = image.noise
+    origfl = image.flags
+    try:
+        image.data = origim + 1
+        assert np.all( origim + 1 == image.data )
+        image.noise = orignoi + 1
+        assert np.all( orignoi + 1 == image.noise )
+        image.flags = origfl + 1
+        assert np.all( origfl + 1 == image.flags )
+
+        with pytest.raises( TypeError, match="Data must be a 2d numpy array of floats." ):
+            image.data = 'cheese'
+        with pytest.raises( TypeError, match="Data must be a 2d numpy array of floats." ):
+            image.data = origfl
+        with pytest.raises( TypeError, match="Data must be a 2d numpy array of floats." ):
+            image.data = np.array( [1., 2., 3.] )
+        with pytest.raises( TypeError, match="Flags must be a 2d numpy array of integers." ):
+            image.flags = origim
+        with pytest.raises( TypeError, match="Flags must be a 2d numpy array of integers." ):
+            image.flags = np.array( [1, 2, 3] )
+
+    finally:
+        # Gotta restore the module-scope fixture's data!
+        image._data = origim
+        image._noise = orignoi
+        image._flags = origfl

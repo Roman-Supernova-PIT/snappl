@@ -2420,8 +2420,7 @@ class RomanDatamodelImage( Image ):
         # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
         astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
         astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
-        # Because flags are integer, we can't use the same fill_value as the default.
-        # Per the slack channel, it seemed 1 will be used for bad pixels.
+        # Per the slack channel, it seems 1 will be used for bad pixels.
         # https://github.com/spacetelescope/roman_datamodels/blob/main/src/roman_datamodels/dqflags.py
         astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=1)
 
