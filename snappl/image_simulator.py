@@ -360,6 +360,8 @@ class ImageSimulator:
                   numimageprocs=1,
                   ):
 
+        SNLogger.debug("Sky level {} and sky noise rms {} are in units of electrons.".format(sky_level, sky_noise_rms))
+        import pdb; pdb.set_trace()
         # When using OpenUniverse2024 PSFs, some more thought needs to be given between the relationship between
         # bands and the PSF.
         if 'ou24PSF' in psf_class:
