@@ -379,10 +379,10 @@ class RDM_GWCS(GWCS):
                 The y position on the image.  The center of the lower-left
                 pixel is y=0.0
             - with_bounding_box: bool, default False
-                If True, then if the input x, y are outside the bounding box of the WCS,
-                NaN is returned  If False, then it will just return whatever the WCS returns for those ra, dec,
-                even if they are outside the bounding box. Campari, for instance, needs to be able to find
-                locations outside of the stamp.
+                If True, then if the input ra, dec corresponding to the input x, y are outside the bounding
+                box of the WCS, NaN is returned  If False, then it will just return whatever the WCS returns
+                for those ra, dec, even if they are outside the bounding box. Campari, for instance, 
+                needs to be able to find locations outside of the stamp.
         """
         if not isinstance( self._gwcs.output_frame.reference_frame, astropy.coordinates.ICRS ):
             raise TypeError( "Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, "

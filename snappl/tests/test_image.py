@@ -821,8 +821,10 @@ def test_romandatamodel_set_data( romandatamodel_image ):
         np.testing.assert_allclose( origim + 1, image.data, rtol=1e-5 )
         image.noise = orignoi + 1
         np.testing.assert_allclose( orignoi + 1, image.noise, rtol=1e-5 )
+        # MWV made the good point that this test is robust to integer overflow, so if
+        # image.flags rollsover when we set it to origfl + 1, it will do the same in the assert statement.
         image.flags = origfl + 1
-        np.testing.assert_allclose( origfl + 1, image.flags, rtol=1e-5 )
+        np.testing.assert_array_equal( origfl + 1, image.flags)
 
         with pytest.raises( TypeError, match="Data must be a 2d numpy array of floats." ):
             image.data = 'cheese'
@@ -830,13 +832,16 @@ def test_romandatamodel_set_data( romandatamodel_image ):
             image.data = origfl
         with pytest.raises( TypeError, match="Data must be a 2d numpy array of floats." ):
             image.data = np.array( [1., 2., 3.] )
+
+        with pytest.raises( TypeError, match="Noise must be a 2d numpy array of floats." ):
+            image.noise = 'cheese'
+        with pytest.raises( TypeError, match="Noise must be a 2d numpy array of floats." ):
+            image.noise = origfl
+        with pytest.raises( TypeError, match="Noise must be a 2d numpy array of floats." ):
+            image.noise = np.array( [1., 2., 3.] )
+
         with pytest.raises( TypeError, match="Flags must be a 2d numpy array of integers." ):
             image.flags = origim
         with pytest.raises( TypeError, match="Flags must be a 2d numpy array of integers." ):
             image.flags = np.array( [1, 2, 3] )
 
-    finally:
-        # Gotta restore the module-scope fixture's data!
-        image._data = origim
-        image._noise = orignoi
-        image._flags = origfl
