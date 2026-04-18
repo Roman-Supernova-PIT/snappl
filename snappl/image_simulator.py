@@ -58,7 +58,8 @@ class ImageSimulatorPointSource:
                 rng = np.random.default_rng()
             w = stamp > 0
             var[ w ] = stamp[ w ] / gain
-            stamp[ w ] += rng.normal( 0., np.sqrt( var[w] ) )
+            noise = rng.normal( 0., np.sqrt( var[w] ) )
+            stamp[ w ] += noise
 
         sx0 = 0
         sx1 = stamp.shape[1]
@@ -361,12 +362,11 @@ class ImageSimulator:
                   ):
 
         SNLogger.debug("Sky level {} and sky noise rms {} are in units of electrons.".format(sky_level, sky_noise_rms))
-        import pdb; pdb.set_trace()
         # When using OpenUniverse2024 PSFs, some more thought needs to be given between the relationship between
         # bands and the PSF.
-        if 'ou24PSF' in psf_class:
+        if psf_class is not None and 'ou24PSF' in psf_class:
             # Did they pass an observation ID? If not, default to an observation ID that matches their band of choice.
-            # Cole got these numbers by manuall inpsecting the photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
+            # Cole got these numbers by manually inpsecting the photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
             # file that galsim uses. Ideally, we would load this file and get an appropriate observation ID that way,
             # but as far as I can tell, snappl has no way of accessing this file directly.
             if observation_id is None:
@@ -390,28 +390,27 @@ class ImageSimulator:
                 " the ImageSimulator." )
             else:
                 # If they did pass an observation ID, check that it corresponds to the band they passed.
-                if isinstance(observation_id, (list, np.ndarray)) and len(observation_id) == 1:
-                    observation_id = observation_id[0]
                 config_file = Config.get().value("system.ou24.config_file")
-                if isinstance(observation_id, (int, str)) and isinstance(sca, (int, str)):
-                    rmutils = roman_utils(config_file, int(observation_id), int(sca))
+                observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) else [ observation_id ]
+                scas = sca if isinstance(sca, (list, np.ndarray)) else [ sca ]
+                if len(observation_ids) == 1 and len(scas) > 1:
+                    observation_ids = [ observation_ids[0] ] * len(scas)
+                elif len(scas) == 1 and len(observation_ids) > 1:
+                    scas = [ scas[0] ] * len(observation_ids)
+                elif len(observation_ids) != len(scas):
+                    raise ValueError(
+                        "observation_id and sca must each be either a scalar or a sequence with matching lengths "
+                        f"(or length 1 for broadcasting). I got observation_id length {len(observation_ids)} and "
+                        f"sca length {len(scas)}."
+                    )
+                for oi, s in zip(observation_ids, scas):
+                    rmutils = roman_utils(config_file, int(oi), int(s))
                     expected_band = rmutils.bpass.name
                     if expected_band != band:
-                        raise ValueError( f"Observation ID {observation_id} corresponds to band {expected_band}, but "
+                        raise ValueError( f"Observation ID {oi} corresponds to band {expected_band}, but "
                                           f"band {band} was passed. Please make sure the observation_id and band "
                                           f"are consistent with each other." )
-                elif isinstance(observation_id, (list, np.ndarray)) and isinstance(sca, (list, np.ndarray)):
-                    for oi, s in zip(observation_id, sca):
-                        rmutils = roman_utils(config_file, int(oi), s)
-                        expected_band = rmutils.bpass.name
-                        if expected_band != band:
-                            raise ValueError( f"Observation ID {oi} corresponds to band {expected_band}, but "
-                                              f"band {band} was passed. Please make sure the observation_id and band "
-                                              f"are consistent with each other." )
-                else:
-                    raise ValueError( "observation_id and sca must both be either int/str or list/array. I got "
-                                      f"observation_id: {type(observation_id)}, sca: {type(sca)}" )
-        else:
+        if observation_id is None:
             observation_id = "1000" # backwards compatibility with the old default
 
 
@@ -567,17 +566,14 @@ class ImageSimulator:
         else:
             SNLogger.debug( f"Simulating images in parallel with {self.numimageprocs} processes" )
             with multiprocessing.Pool( self.numimageprocs ) as pool:
-                for i in range( len( self.imdata['mjds'] ) ):
-                    pool.apply_async(self._simulate_one_image, args=(i, stars, transient, static_source, kwargs))
-
-                pool.close()
-                pool.join()
-
+                pool.starmap(self._simulate_one_image,
+                    [( i, stars, transient, static_source, kwargs ) for i in range( len( self.imdata['mjds'] ) )]
+                )
 
 
     def _simulate_one_image(self, i, stars, transient, static_source, kwargs):
         """Simulate one image, given the index i, the objects to include, and the kwargs for the PSF."""
-        print(f"----------------------- IMAGE {i} -----------------------")
+        SNLogger.debug(f"----------------------- IMAGE {i} -----------------------")
         kwargs["observation_id"] = self.observation_id[i]
         SNLogger.debug("self.observation_id[i]: %s", self.observation_id[i])
         kwargs["sca"] = self.sca[i]

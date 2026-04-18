@@ -9,8 +9,8 @@ from snappl.image_simulator import ImageSimulator
 from snappl.image import FITSImageStdHeaders
 
 
-@pytest.mark.parametrize("nprocs", [(2), (1)])
-def test_image_simulator_one_transient_image(nprocs):
+@pytest.mark.parametrize("numimageprocs", [(2), (1)])
+def test_image_simulator_one_transient_image(numimageprocs):
     fnamebase = 'test_image_simulator_one_transient_image'
     assert not pathlib.Path( f'{fnamebase}_image.fits' ).exists()
     assert not pathlib.Path( f'{fnamebase}_noise.fits' ).exists()
@@ -41,7 +41,7 @@ def test_image_simulator_one_transient_image(nprocs):
             "transient_ra": 120.0,
             "transient_dec": -13.0,
             "numprocs": 1,
-            "numimageprocs": nprocs,
+            "numimageprocs": numimageprocs,
         }
         sim = ImageSimulator( **kwargs )
         sim()
@@ -297,13 +297,12 @@ def test_unrecognised_band_with_no_observation_id_raises():
     with pytest.raises(ValueError, match="not recognized"):
         make_simulator(psf_class="ou24PSF", band="INVALID", observation_id=None)
 
-# @pytest.mark.parametrize("band, observation_id", EXPECTED_DEFAULT_IDS)
-# def test_matching_band_and_obs_id_passes(band, observation_id):
-#     # If you pass a correct observation ID as an int, it should work fine.
-#     sim = make_simulator(psf_class="ou24PSF", band=band, observation_id=int(observation_id), sca=1)
-#     assert sim.observation_id == [str(observation_id)]
-#     # in addition, for all of these defaults, the next higher observation ID is the same band. So here we can
-#     # check that another observation Id works and isn't accidentally overwritten with the default one.
+def test_check_band_and_observation_id_consistency():
+    # If they pass an observation ID that doesn't match their band, it should raise an error.
+    with pytest.raises(ValueError, match="Please make sure the observation_id and band are consistent with each other."):
+        make_simulator(psf_class="ou24PSF", band="R062", observation_id="57")
 
-#     sim = make_simulator(psf_class="ou24PSF", band=band, observation_id=int(observation_id) + 1, sca=1)
-#     assert sim.observation_id == [str(int(observation_id) + 1)]
+def test_correct_band_and_observation_id_is_fine():
+    # If they pass an observation ID that does match their band, it should be fine.
+    sim = make_simulator(psf_class="ou24PSF", band="R062", observation_id="1")
+

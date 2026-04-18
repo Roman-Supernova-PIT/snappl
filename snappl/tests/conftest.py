@@ -43,7 +43,7 @@ def output_directories():
 
 @pytest.fixture( scope='session', autouse=True )
 def init_config():
-    Config.init( '/home/snappl/snappl/tests/snappl_test_config.yaml', setdefault=True )
+    Config.init( '/scratch/snappl/snappl/tests/snappl_test_config.yaml', setdefault=True )
 
 
 @pytest.fixture( scope="session" )
