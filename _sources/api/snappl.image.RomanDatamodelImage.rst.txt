@@ -19,7 +19,9 @@ RomanDatamodelImage
 
    .. autosummary::
 
+      ~RomanDatamodelImage.get_cutout
       ~RomanDatamodelImage.get_data
+      ~RomanDatamodelImage.get_ra_dec_cutout
       ~RomanDatamodelImage.get_wcs
 
    .. rubric:: Attributes Documentation
@@ -31,5 +33,7 @@ RomanDatamodelImage
 
    .. rubric:: Methods Documentation
 
+   .. automethod:: get_cutout
    .. automethod:: get_data
+   .. automethod:: get_ra_dec_cutout
    .. automethod:: get_wcs

@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.wcs &#8212; roman_snpit_snappl 0.1.dev1+ga3034e56e documentation</title>
+    <title>snappl.wcs &#8212; roman_snpit_snappl 0.1.dev1+gc52caf410 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=e96ddff9"></script>
+    <script src="../../_static/documentation_options.js?v=89ad40cd"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -138,7 +138,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">pixel_to_world</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Go from (x, y) coordinates to ICRS (ra, dec)</span>
 
-<span class="sd">        Parmaeters</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">          x: float or sequence of float</span>
 <span class="sd">             The x position on the image.  The center of the lower-left</span>
@@ -535,7 +535,21 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">__init_</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">gwcs</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="n">gwcs</span><span class="o">=</span><span class="n">gwcs</span> <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">pixel_to_world</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pixel_to_world</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">with_bounding_box</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Inputs:</span>
+<span class="sd">            - x: float or sequence of float</span>
+<span class="sd">                The x position on the image.  The center of the lower-left</span>
+<span class="sd">                pixel is at x=0.0</span>
+
+<span class="sd">            - y: float or sequence of float</span>
+<span class="sd">                The y position on the image.  The center of the lower-left</span>
+<span class="sd">                pixel is y=0.0</span>
+<span class="sd">            - with_bounding_box: bool, default False</span>
+<span class="sd">                If True, then if the ra, dec calculated from the input x, y are outside the bounding</span>
+<span class="sd">                box of the WCS, NaN is returned  If False, then it will just return whatever the WCS returns</span>
+<span class="sd">                for those ra, dec, even if they are outside the bounding box. Campari, for instance,</span>
+<span class="sd">                needs to be able to refer to locations outside of the stamp.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="o">.</span><span class="n">output_frame</span><span class="o">.</span><span class="n">reference_frame</span><span class="p">,</span> <span class="n">astropy</span><span class="o">.</span><span class="n">coordinates</span><span class="o">.</span><span class="n">ICRS</span> <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, &quot;</span>
                              <span class="s2">&quot;but we need it to be ICRS.&quot;</span> <span class="p">)</span>
@@ -545,9 +559,16 @@
             <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">y</span> <span class="p">)</span>
 
         <span class="c1"># ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)), so no need to convert</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">with_bounding_box</span><span class="o">=</span><span class="n">with_bounding_box</span> <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">world_to_pixel</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">world_to_pixel</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">with_bounding_box</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Inputs:</span>
+<span class="sd">            - with_bounding_box: bool, default False</span>
+<span class="sd">                If True, then if the input ra, dec are outside the bounding box of the WCS,</span>
+<span class="sd">                NaN is returned  If False, then it will just return whatever the WCS returns for those ra, dec,</span>
+<span class="sd">                even if they are outside the bounding box. Campari, for instance,</span>
+<span class="sd">                needs to be able to find locations outside of the stamp.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="o">.</span><span class="n">output_frame</span><span class="o">.</span><span class="n">reference_frame</span><span class="p">,</span> <span class="n">astropy</span><span class="o">.</span><span class="n">coordinates</span><span class="o">.</span><span class="n">ICRS</span> <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, &quot;</span>
                              <span class="s2">&quot;but we need it to be ICRS.&quot;</span> <span class="p">)</span>
@@ -556,7 +577,7 @@
             <span class="n">ra</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">ra</span> <span class="p">)</span>
             <span class="n">dec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">dec</span> <span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gwcs</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">with_bounding_box</span><span class="o">=</span><span class="n">with_bounding_box</span><span class="p">)</span>
 </pre></div>
 
           </div>

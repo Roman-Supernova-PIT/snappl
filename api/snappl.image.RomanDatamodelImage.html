@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>RomanDatamodelImage &#8212; roman_snpit_snappl 0.1.dev1+ga3034e56e documentation</title>
+    <title>RomanDatamodelImage &#8212; roman_snpit_snappl 0.1.dev1+gc52caf410 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=e96ddff9"></script>
+    <script src="../_static/documentation_options.js?v=89ad40cd"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -189,8 +189,14 @@ many cases, they will be lazy-loaded from the header.</p></li>
 <p class="rubric">Methods Summary</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.RomanDatamodelImage.get_data" title="snappl.image.RomanDatamodelImage.get_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_data</span></code></a>([which, always_reload, cache])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.RomanDatamodelImage.get_cutout" title="snappl.image.RomanDatamodelImage.get_cutout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_cutout</span></code></a>(x, y, xsize[, ysize, mode, ...])</p></td>
+<td><p>See Image.get_cutout The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.RomanDatamodelImage.get_data" title="snappl.image.RomanDatamodelImage.get_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_data</span></code></a>([which, always_reload, cache])</p></td>
 <td><p>Read the data from disk and return one or more 2d numpy arrays of data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.RomanDatamodelImage.get_ra_dec_cutout" title="snappl.image.RomanDatamodelImage.get_ra_dec_cutout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ra_dec_cutout</span></code></a>(ra, dec, xsize[, ysize, ...])</p></td>
+<td><p>See Image.get_ra_dec_cutout</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.RomanDatamodelImage.get_wcs" title="snappl.image.RomanDatamodelImage.get_wcs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_wcs</span></code></a>([wcsclass])</p></td>
 <td><p>Get image WCS.</p></td>
@@ -221,6 +227,21 @@ many cases, they will be lazy-loaded from the header.</p></li>
 
 <p class="rubric">Methods Documentation</p>
 <dl class="py method">
+<dt class="sig sig-object py" id="snappl.image.RomanDatamodelImage.get_cutout">
+<span class="sig-name descname"><span class="pre">get_cutout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xsize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ysize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'strict'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">nan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_FITS</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#RomanDatamodelImage.get_cutout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.RomanDatamodelImage.get_cutout" title="Link to this definition">¶</a></dt>
+<dd><p>See Image.get_cutout
+The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.</p>
+<section id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>return_FITS: bool, default True</dt><dd><p>If True, the cutout will be returned as a snappl.image.FITSImage.
+If False, the cutout will be returned as a snappl.image.RomanDatamodelImage.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="snappl.image.RomanDatamodelImage.get_data">
 <span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">always_reload</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#RomanDatamodelImage.get_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.RomanDatamodelImage.get_data" title="Link to this definition">¶</a></dt>
 <dd><p>Read the data from disk and return one or more 2d numpy arrays of data.</p>
@@ -240,6 +261,13 @@ This is not great, because always_reload ought to get a fresh
 copy of the data even if it’s been modified.  To really behave
 that way, though, we’d have to reimplement the class to not hold
 open the roman_datamodels image.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.image.RomanDatamodelImage.get_ra_dec_cutout">
+<span class="sig-name descname"><span class="pre">get_ra_dec_cutout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ra</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xsize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ysize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'strict'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">nan</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#RomanDatamodelImage.get_ra_dec_cutout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.RomanDatamodelImage.get_ra_dec_cutout" title="Link to this definition">¶</a></dt>
+<dd><p>See Image.get_ra_dec_cutout</p>
+<p>The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.</p>
 </dd></dl>
 
 <dl class="py method">

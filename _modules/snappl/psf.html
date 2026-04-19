@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+ga3034e56e documentation</title>
+    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+gc52caf410 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=e96ddff9"></script>
+    <script src="../../_static/documentation_options.js?v=89ad40cd"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -1573,7 +1573,6 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">rmutils</span><span class="o">.</span><span class="n">getLocalWCS</span><span class="p">(</span> <span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">+</span><span class="mi">1</span> <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">image_wcs</span><span class="o">.</span><span class="n">get_galsim_wcs</span><span class="p">()</span><span class="o">.</span><span class="n">local</span><span class="p">(</span> <span class="n">image_pos</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">PositionD</span><span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">+</span><span class="mi">1</span> <span class="p">))</span>
-                    <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;ou24PSF_slow wcs fetched at: </span><span class="si">{</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
 
             <span class="n">stamp</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="p">)</span>
             <span class="n">point</span> <span class="o">=</span> <span class="p">(</span> <span class="n">galsim</span><span class="o">.</span><span class="n">DeltaFunction</span><span class="p">()</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sed</span> <span class="p">)</span><span class="o">.</span><span class="n">withFlux</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="n">rmutils</span><span class="o">.</span><span class="n">bpass</span> <span class="p">)</span>

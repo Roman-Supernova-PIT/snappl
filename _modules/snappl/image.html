@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+ga3034e56e documentation</title>
+    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+gc52caf410 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=e96ddff9"></script>
+    <script src="../../_static/documentation_options.js?v=89ad40cd"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -1768,7 +1768,6 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Size must be odd for a well defined central &quot;</span>
                               <span class="sa">f</span><span class="s2">&quot;pixel, you tried to pass a size of </span><span class="si">{</span><span class="n">xsize</span><span class="p">,</span><span class="w"> </span><span class="n">ysize</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
-        <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cutting out at </span><span class="si">{</span><span class="n">x</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">data</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span> <span class="s1">&#39;all&#39;</span> <span class="p">)</span>
 
         <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
@@ -2374,7 +2373,6 @@
 <span class="sd">    See Issue #46 for concerns about performance/memory and imlementation of this object.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="n">_detectormatch</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span> <span class="s2">&quot;^WFI([0-9]</span><span class="si">{2}</span><span class="s2">)$&quot;</span> <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
@@ -2476,12 +2474,20 @@
         <span class="c1"># I&#39;m hoping it will be duck-typing equivalent to a numpy array.</span>
         <span class="c1"># TODO : investigate memory use when you do numpy array things</span>
         <span class="c1"># with one of these.</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">data</span>
+        <span class="c1"># Using the _data property here is so that we can set the data elsewhere. -CFM</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_data&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">noise</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
         <span class="c1"># See comment in data</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">err</span>
+        <span class="c1"># Using the _noise property here is so that we can set the noise elsewhere. -CFM</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_noise&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">err</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">flags</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
@@ -2489,7 +2495,11 @@
         <span class="c1"># TODO : https://roman-pipeline.readthedocs.io/en/latest/roman/dq_init/reference_files.html#reference-files</span>
         <span class="c1"># We probably need to do some translation.  We have to think about what we are defining</span>
         <span class="c1">#   as a &quot;bad&quot; pixel.</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">dq</span>
+        <span class="c1"># Using the _flags property here is so that we can set the flags elsewhere. -CFM</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_flags&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">dq</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span>
 
 <div class="viewcode-block" id="RomanDatamodelImage.get_data">
 <a class="viewcode-back" href="../../api/snappl.image.RomanDatamodelImage.html#snappl.image.RomanDatamodelImage.get_data">[docs]</a>
@@ -2565,14 +2575,147 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;RomanDataModelImage can&#39;t (yet?) get a WCS of type </span><span class="si">{wcsclass}</span><span class="s2">&quot;</span> <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span></div>
-</div>
 
+
+<div class="viewcode-block" id="RomanDatamodelImage.get_cutout">
+<a class="viewcode-back" href="../../api/snappl.image.RomanDatamodelImage.html#snappl.image.RomanDatamodelImage.get_cutout">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cutout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">xsize</span><span class="p">,</span> <span class="n">ysize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">return_FITS</span><span class="o">=</span><span class="kc">True</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;See Image.get_cutout</span>
+<span class="sd">        The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.</span>
+
+<span class="sd">        Inputs</span>
+<span class="sd">        -------</span>
+<span class="sd">        return_FITS: bool, default True</span>
+<span class="sd">            If True, the cutout will be returned as a snappl.image.FITSImage.</span>
+<span class="sd">            If False, the cutout will be returned as a snappl.image.RomanDatamodelImage.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span> <span class="p">[</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span> <span class="p">),</span>
+                      <span class="nb">isinstance</span><span class="p">(</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span> <span class="p">),</span>
+                      <span class="nb">isinstance</span><span class="p">(</span> <span class="n">xsize</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span> <span class="p">),</span>
+                      <span class="p">(</span> <span class="n">ysize</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">ysize</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+                     <span class="p">]</span> <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="s2">&quot;All of x, y, xsize, and ysize must be integers.&quot;</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ysize</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ysize</span> <span class="o">=</span> <span class="n">xsize</span>
+        <span class="k">if</span> <span class="n">xsize</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">ysize</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Size must be odd for a well defined central &quot;</span>
+                              <span class="sa">f</span><span class="s2">&quot;pixel, you tried to pass a size of </span><span class="si">{</span><span class="n">xsize</span><span class="p">,</span><span class="w"> </span><span class="n">ysize</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+        <span class="n">data</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span> <span class="s1">&#39;all&#39;</span> <span class="p">)</span>
+
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">wcs</span><span class="p">,</span> <span class="n">RDM_GWCS</span> <span class="p">):</span>
+            <span class="n">wcs</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">get_astropy_wcs</span><span class="p">()</span>
+            <span class="c1"># Here we convert the GWCS to an AstropyWCS, which is what Cutout2D needs.  This is a little</span>
+            <span class="c1"># worrying because we are using a slightly different WCS to get the cutout, though I don&#39;t</span>
+            <span class="c1"># think it hugely matters since it only needs to be accurate to the pixel level. However,</span>
+            <span class="c1"># we should consider implementing a way to get the cutout without converting to an AstropyWCS.</span>
+            <span class="n">SNLogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;This is turning a GWCS into an AstropyWCS to use with Cutout2D.  &quot;</span>
+                <span class="s2">&quot;Is this a permanent solution?&quot;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;RomanDatamodelImage.get_cutout only works with GWCS wcses&quot;</span>
+                                       <span class="sa">f</span><span class="s2">&quot;, not </span><span class="si">{</span><span class="n">wcs</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> wcses.&quot;</span> <span class="p">)</span>
+
+
+        <span class="n">apwcs</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">wcs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">wcs</span>
+        <span class="c1"># This was wcs._wcs in the FITS version of this function. I</span>
+        <span class="c1"># am unclear why I had to change it to be just wcs, i.e. not wcs._wcs</span>
+
+        <span class="c1"># Remember that numpy arrays are indexed [y, x] (at least if they&#39;re read with astropy.io.fits)</span>
+        <span class="n">astropy_cutout</span> <span class="o">=</span> <span class="n">Cutout2D</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">ysize</span><span class="p">,</span> <span class="n">xsize</span><span class="p">),</span> <span class="n">wcs</span><span class="o">=</span><span class="n">apwcs</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
+        <span class="n">astropy_noise</span> <span class="o">=</span> <span class="n">Cutout2D</span><span class="p">(</span><span class="n">noise</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">ysize</span><span class="p">,</span> <span class="n">xsize</span><span class="p">),</span> <span class="n">wcs</span><span class="o">=</span><span class="n">apwcs</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
+        <span class="c1"># Per the slack channel, it seems 1 will be used for bad pixels.</span>
+        <span class="c1"># https://github.com/spacetelescope/roman_datamodels/blob/main/src/roman_datamodels/dqflags.py</span>
+        <span class="n">astropy_flags</span> <span class="o">=</span> <span class="n">Cutout2D</span><span class="p">(</span><span class="n">flags</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">ysize</span><span class="p">,</span> <span class="n">xsize</span><span class="p">),</span> <span class="n">wcs</span><span class="o">=</span><span class="n">apwcs</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">return_FITS</span><span class="p">:</span>
+            <span class="n">snappl_cutout</span> <span class="o">=</span> <span class="n">FITSImage</span><span class="p">(</span><span class="n">full_filepath</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">xsize</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">ysize</span><span class="p">)</span>
+            <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">astropy_cutout</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">astropy_noise</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">snappl_cutout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">full_filepath</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">full_filepath</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                           <span class="n">width</span><span class="o">=</span><span class="n">xsize</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">ysize</span><span class="p">)</span>
+            <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">astropy_cutout</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">dm</span><span class="o">.</span><span class="n">err</span> <span class="o">=</span> <span class="n">astropy_noise</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">wcs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">AstropyWCS</span><span class="p">(</span> <span class="n">astropy_cutout</span><span class="o">.</span><span class="n">wcs</span> <span class="p">)</span>
+
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">astropy_flags</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_is_cutout</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="n">astropy_cutout</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">_height</span> <span class="o">=</span> <span class="n">astropy_cutout</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">snappl_cutout</span><span class="o">.</span><span class="n">band</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">band</span>
+
+        <span class="c1"># TODO : fix _ra* and _dec* fields, they&#39;re all WRONG</span>
+
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="p">[</span> <span class="s1">&#39;_observation_id&#39;</span><span class="p">,</span> <span class="s1">&#39;_sca&#39;</span><span class="p">,</span> <span class="s1">&#39;_band&#39;</span><span class="p">,</span> <span class="s1">&#39;_mjd&#39;</span><span class="p">,</span> <span class="s1">&#39;_position_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;_exptime&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;_sky_level&#39;</span><span class="p">,</span> <span class="s1">&#39;_zeropoint&#39;</span><span class="p">,</span> <span class="s1">&#39;_ra&#39;</span><span class="p">,</span> <span class="s1">&#39;_dec&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;_ra_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;_ra_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;_ra_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;_ra_corner_11&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;_dec_corner_00&#39;</span><span class="p">,</span> <span class="s1">&#39;_dec_corner_01&#39;</span><span class="p">,</span> <span class="s1">&#39;_dec_corner_10&#39;</span><span class="p">,</span> <span class="s1">&#39;_dec_corner_11&#39;</span> <span class="p">]:</span>
+            <span class="nb">setattr</span><span class="p">(</span> <span class="n">snappl_cutout</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">prop</span> <span class="p">)</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">snappl_cutout</span></div>
+
+
+<div class="viewcode-block" id="RomanDatamodelImage.get_ra_dec_cutout">
+<a class="viewcode-back" href="../../api/snappl.image.RomanDatamodelImage.html#snappl.image.RomanDatamodelImage.get_ra_dec_cutout">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ra_dec_cutout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">xsize</span><span class="p">,</span> <span class="n">ysize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;See Image.get_ra_dec_cutout</span>
+
+
+<span class="sd">        The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs</span><span class="p">()</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">world_to_pixel</span><span class="p">(</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="p">,</span> <span class="n">with_bounding_box</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span> <span class="n">x</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span> <span class="n">y</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cutout</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">xsize</span><span class="p">,</span> <span class="n">ysize</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span> <span class="p">)</span></div>
+
+
+    <span class="nd">@data</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">new_value</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_value</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">new_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Data must be a 2d numpy array of floats.&quot;</span><span class="p">)</span>
+
+    <span class="nd">@noise</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">new_value</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_value</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">new_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_noise</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Noise must be a 2d numpy array of floats.&quot;</span><span class="p">)</span>
+
+    <span class="nd">@flags</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">new_value</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_value</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">new_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Flags must be a 2d numpy array of integers.&quot;</span><span class="p">)</span></div>
 
 
 <span class="c1"># ======================================================================</span>
 <span class="c1"># This dictionary defines the format field in the database.  The key is the format</span>
 <span class="c1">#   integer, the value gives the image class, the base path config value, and eventually</span>
 <span class="c1">#    maybe other information</span>
+
 
 <span class="n">Image</span><span class="o">.</span><span class="n">_format_def</span> <span class="o">=</span> <span class="p">{</span> <span class="o">-</span><span class="mi">1</span> <span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s2">&quot;Not a database image&quot;</span><span class="p">,</span>
                              <span class="s1">&#39;image_class&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
