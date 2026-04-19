@@ -1607,7 +1607,6 @@ class FITSImage( Numpy2DImage ):
             raise ValueError( f"Size must be odd for a well defined central "
                               f"pixel, you tried to pass a size of {xsize, ysize}.")
 
-        SNLogger.debug(f'Cutting out at {x , y}')
         data, noise, flags = self.get_data( 'all' )
 
         wcs = self.get_wcs()
@@ -2185,7 +2184,6 @@ class RomanDatamodelImage( Image ):
     See Issue #46 for concerns about performance/memory and imlementation of this object.
 
     """
-
     _detectormatch = re.compile( "^WFI([0-9]{2})$" )
 
     def __init__( self, *args, **kwargs ):
@@ -2287,12 +2285,20 @@ class RomanDatamodelImage( Image ):
         # I'm hoping it will be duck-typing equivalent to a numpy array.
         # TODO : investigate memory use when you do numpy array things
         # with one of these.
-        return self.dm.data
+        # Using the _data property here is so that we can set the data elsewhere. -CFM
+        if getattr(self, '_data', None) is None:
+            self._data = self.dm.data
+
+        return self._data
 
     @property
     def noise( self ):
         # See comment in data
-        return self.dm.err
+        # Using the _noise property here is so that we can set the noise elsewhere. -CFM
+        if getattr(self, '_noise', None) is None:
+            self._noise = self.dm.err
+
+        return self._noise
 
     @property
     def flags( self ):
@@ -2300,7 +2306,11 @@ class RomanDatamodelImage( Image ):
         # TODO : https://roman-pipeline.readthedocs.io/en/latest/roman/dq_init/reference_files.html#reference-files
         # We probably need to do some translation.  We have to think about what we are defining
         #   as a "bad" pixel.
-        return self.dm.dq
+        # Using the _flags property here is so that we can set the flags elsewhere. -CFM
+        if getattr(self, '_flags', None) is None:
+            self._flags = self.dm.dq
+
+        return self._flags
 
     def get_data( self, which='all', always_reload=False, cache=False ):
         """Read the data from disk and return one or more 2d numpy arrays of data.
@@ -2372,11 +2382,138 @@ class RomanDatamodelImage( Image ):
                 raise NotImplementedError( "RomanDataModelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs
 
+    def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=True ):
+        """See Image.get_cutout
+        The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
+
+        Inputs
+        -------
+        return_FITS: bool, default True
+            If True, the cutout will be returned as a snappl.image.FITSImage.
+            If False, the cutout will be returned as a snappl.image.RomanDatamodelImage.
+
+        Returns
+        -------
+        """
+        if not all( [ isinstance( x, (int, np.integer) ),
+                      isinstance( y, (int, np.integer) ),
+                      isinstance( xsize, (int, np.integer) ),
+                      ( ysize is None or isinstance( ysize, (int, np.integer) ) )
+                     ] ):
+            raise TypeError( "All of x, y, xsize, and ysize must be integers." )
+
+        if ysize is None:
+            ysize = xsize
+        if xsize % 2 != 1 or ysize % 2 != 1:
+            raise ValueError( f"Size must be odd for a well defined central "
+                              f"pixel, you tried to pass a size of {xsize, ysize}.")
+
+        data, noise, flags = self.get_data( 'all' )
+
+        wcs = self.get_wcs()
+        if isinstance( wcs, RDM_GWCS ):
+            wcs = wcs.get_astropy_wcs()
+            # Here we convert the GWCS to an AstropyWCS, which is what Cutout2D needs.  This is a little
+            # worrying because we are using a slightly different WCS to get the cutout, though I don't
+            # think it hugely matters since it only needs to be accurate to the pixel level. However,
+            # we should consider implementing a way to get the cutout without converting to an AstropyWCS.
+            SNLogger.warning("This is turning a GWCS into an AstropyWCS to use with Cutout2D.  "
+                "Is this a permanent solution?")
+
+        else:
+            raise NotImplementedError( "RomanDatamodelImage.get_cutout only works with GWCS wcses"
+                                       f", not {wcs.__class__.__name__} wcses." )
+
+
+        apwcs = None if wcs is None else wcs
+        # This was wcs._wcs in the FITS version of this function. I
+        # am unclear why I had to change it to be just wcs, i.e. not wcs._wcs
+
+        # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
+        astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
+        astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
+        # Per the slack channel, it seems 1 will be used for bad pixels.
+        # https://github.com/spacetelescope/roman_datamodels/blob/main/src/roman_datamodels/dqflags.py
+        astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=1)
+
+        if return_FITS:
+            snappl_cutout = FITSImage(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
+            snappl_cutout._data = astropy_cutout.data
+            snappl_cutout._noise = astropy_noise.data
+        else:
+            snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True,
+                                           width=xsize, height=ysize)
+            snappl_cutout.dm.data = astropy_cutout.data
+            snappl_cutout.dm.err = astropy_noise.data
+        snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
+
+        snappl_cutout._flags = astropy_flags.data
+        snappl_cutout._is_cutout = True
+        snappl_cutout._width = astropy_cutout.data.shape[1]
+        snappl_cutout._height = astropy_cutout.data.shape[0]
+        snappl_cutout.band = self.band
+
+        # TODO : fix _ra* and _dec* fields, they're all WRONG
+
+        for prop in [ '_observation_id', '_sca', '_band', '_mjd', '_position_angle', '_exptime',
+                      '_sky_level', '_zeropoint', '_ra', '_dec',
+                      '_ra_corner_00', '_ra_corner_01', '_ra_corner_10', '_ra_corner_11',
+                      '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
+            setattr( snappl_cutout, prop, getattr( self, prop ) )
+
+        return snappl_cutout
+
+    def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
+        """See Image.get_ra_dec_cutout
+
+
+        The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
+        """
+
+        wcs = self.get_wcs()
+        x, y = wcs.world_to_pixel( ra, dec , with_bounding_box=False)
+        x = int( np.floor( x + 0.5 ) )
+        y = int( np.floor( y + 0.5 ) )
+        return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
+
+    @data.setter
+    def data(self, new_value):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.floating)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
+            self._data = new_value
+        else:
+            raise TypeError("Data must be a 2d numpy array of floats.")
+
+    @noise.setter
+    def noise(self, new_value):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.floating)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
+            self._noise = new_value
+        else:
+            raise TypeError("Noise must be a 2d numpy array of floats.")
+
+    @flags.setter
+    def flags(self, new_value):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.integer)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
+            self._flags = new_value
+        else:
+            raise TypeError("Flags must be a 2d numpy array of integers.")
 
 # ======================================================================
 # This dictionary defines the format field in the database.  The key is the format
 #   integer, the value gives the image class, the base path config value, and eventually
 #    maybe other information
+
 
 Image._format_def = { -1 : { 'description': "Not a database image",
                              'image_class': None,

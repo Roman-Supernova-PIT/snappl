@@ -43,7 +43,7 @@ class BaseWCS:
     def pixel_to_world( self, x, y ):
         """Go from (x, y) coordinates to ICRS (ra, dec)
 
-        Parmaeters
+        Parameters
         ----------
           x: float or sequence of float
              The x position on the image.  The center of the lower-left
@@ -369,7 +369,21 @@ class RDM_GWCS(GWCS):
     def __init_( self, gwcs=None ):
         super().__init__( gwcs=gwcs )
 
-    def pixel_to_world( self, x, y ):
+    def pixel_to_world(self, x, y, with_bounding_box=False):
+        """ Inputs:
+            - x: float or sequence of float
+                The x position on the image.  The center of the lower-left
+                pixel is at x=0.0
+
+            - y: float or sequence of float
+                The y position on the image.  The center of the lower-left
+                pixel is y=0.0
+            - with_bounding_box: bool, default False
+                If True, then if the ra, dec calculated from the input x, y are outside the bounding
+                box of the WCS, NaN is returned  If False, then it will just return whatever the WCS returns
+                for those ra, dec, even if they are outside the bounding box. Campari, for instance,
+                needs to be able to refer to locations outside of the stamp.
+        """
         if not isinstance( self._gwcs.output_frame.reference_frame, astropy.coordinates.ICRS ):
             raise TypeError( "Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, "
                              "but we need it to be ICRS." )
@@ -379,9 +393,16 @@ class RDM_GWCS(GWCS):
             y = np.array( y )
 
         # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)), so no need to convert
-        return self._gwcs( x, y )
+        return self._gwcs( x, y, with_bounding_box=with_bounding_box )
 
-    def world_to_pixel( self, ra, dec ):
+    def world_to_pixel( self, ra, dec, with_bounding_box=False ):
+        """ Inputs:
+            - with_bounding_box: bool, default False
+                If True, then if the input ra, dec are outside the bounding box of the WCS,
+                NaN is returned  If False, then it will just return whatever the WCS returns for those ra, dec,
+                even if they are outside the bounding box. Campari, for instance,
+                needs to be able to find locations outside of the stamp.
+        """
         if not isinstance( self._gwcs.output_frame.reference_frame, astropy.coordinates.ICRS ):
             raise TypeError( "Error, the gwcs output frame is of type {type(self._gwcs.output_frame)}, "
                              "but we need it to be ICRS." )
@@ -390,4 +411,4 @@ class RDM_GWCS(GWCS):
             ra = np.array( ra )
             dec = np.array( dec )
 
-        return self._gwcs.invert(ra, dec )
+        return self._gwcs.invert(ra, dec, with_bounding_box=with_bounding_box)
