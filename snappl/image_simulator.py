@@ -15,12 +15,14 @@ from scipy.stats import binned_statistic_2d
 import scipy.signal
 
 from astropy.modeling.functional_models import Sersic2D
-
+from roman_imsim.utils import roman_utils
+from snappl.config import Config
 from snappl.logger import SNLogger
 from snappl.utils import isSequence
 from snappl.psf import PSF
 from snappl.image import FITSImageStdHeaders
 from snappl.wcs import AstropyWCS
+
 
 
 
@@ -362,54 +364,54 @@ class ImageSimulator:
         SNLogger.debug("Sky level {} and sky noise rms {} are in units of electrons.".format(sky_level, sky_noise_rms))
         # When using OpenUniverse2024 PSFs, some more thought needs to be given between the relationship between
         # bands and the PSF.
-        # if psf_class is not None and 'ou24PSF' in psf_class:
-        #     # Did they pass an observation ID? If not, default to an observation ID that matches their band of choice.
-        #     # Cole got these numbers by manually inpsecting the
-        #     photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
-        #     # file that galsim uses. Ideally, we would load this file and get an appropriate observation ID that way,
-        #     # but as far as I can tell, snappl has no way of accessing this file directly.
-        #     if observation_id is None:
-        #         if band == 'R062':
-        #             observation_id = '1'
-        #         elif band == 'Z087':
-        #             observation_id = '57'
-        #         elif band == 'Y106':
-        #             observation_id = '112'
-        #         elif band == 'J129':
-        #             observation_id = '167'
-        #         elif band == 'H158':
-        #             observation_id = '222'
-        #         elif band == 'F184':
-        #             observation_id = '277'
-        #         else:
-        #             raise ValueError( f"Band {band} not recognized, and no observation_id passed. Please pass an "
-        #                               f"observation_id corresponding to the desired band, or choose a valid band." )
-        #         SNLogger.warning(f"No observation_id passed, defaulting to {observation_id} for band {band}. "
-        #         "If you want to specify a different observation_id, please do so explicitly when creating"
-        #         " the ImageSimulator." )
-        #     else:
-        #         # If they did pass an observation ID, check that it corresponds to the band they passed.
-        #         config_file = Config.get().value("system.ou24.config_file")
-        #         observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) \
-        # else [ observation_id ]
-        #         scas = sca if isinstance(sca, (list, np.ndarray)) else [ sca ]
-        #         if len(observation_ids) == 1 and len(scas) > 1:
-        #             observation_ids = [ observation_ids[0] ] * len(scas)
-        #         elif len(scas) == 1 and len(observation_ids) > 1:
-        #             scas = [ scas[0] ] * len(observation_ids)
-        #         elif len(observation_ids) != len(scas):
-        #             raise ValueError(
-        #                 "observation_id and sca must each be either a scalar or a sequence with matching lengths "
-        #                 f"(or length 1 for broadcasting). I got observation_id length {len(observation_ids)} and "
-        #                 f"sca length {len(scas)}."
-        #             )
-        #         for oi, s in zip(observation_ids, scas):
-        #             rmutils = roman_utils(config_file, int(oi), int(s))
-        #             expected_band = rmutils.bpass.name
-        #             if expected_band != band:
-        #                 raise ValueError( f"Observation ID {oi} corresponds to band {expected_band}, but "
-        #                                   f"band {band} was passed. Please make sure the observation_id and band "
-        #                                   f"are consistent with each other." )
+        if psf_class is not None and 'ou24PSF' in psf_class:
+            # Did they pass an observation ID? If not, default to an observation ID that matches their band of choice.
+            # Cole got these numbers by manually inpsecting the
+            # photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
+            # file that galsim uses. Ideally, we would load this file and get an appropriate observation ID that way,
+            # but as far as I can tell, snappl has no way of accessing this file directly.
+            if observation_id is None:
+                if band == 'R062':
+                    observation_id = '1'
+                elif band == 'Z087':
+                    observation_id = '57'
+                elif band == 'Y106':
+                    observation_id = '112'
+                elif band == 'J129':
+                    observation_id = '167'
+                elif band == 'H158':
+                    observation_id = '222'
+                elif band == 'F184':
+                    observation_id = '277'
+                else:
+                    raise ValueError( f"Band {band} not recognized, and no observation_id passed. Please pass an "
+                                      f"observation_id corresponding to the desired band, or choose a valid band." )
+                SNLogger.warning(f"No observation_id passed, defaulting to {observation_id} for band {band}. "
+                "If you want to specify a different observation_id, please do so explicitly when creating"
+                " the ImageSimulator." )
+            else:
+                # If they did pass an observation ID, check that it corresponds to the band they passed.
+                config_file = Config.get().value("system.ou24.config_file")
+                observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) \
+        else [ observation_id ]
+                scas = sca if isinstance(sca, (list, np.ndarray)) else [ sca ]
+                if len(observation_ids) == 1 and len(scas) > 1:
+                    observation_ids = [ observation_ids[0] ] * len(scas)
+                elif len(scas) == 1 and len(observation_ids) > 1:
+                    scas = [ scas[0] ] * len(observation_ids)
+                elif len(observation_ids) != len(scas):
+                    raise ValueError(
+                        "observation_id and sca must each be either a scalar or a sequence with matching lengths "
+                        f"(or length 1 for broadcasting). I got observation_id length {len(observation_ids)} and "
+                        f"sca length {len(scas)}."
+                    )
+                for oi, s in zip(observation_ids, scas):
+                    rmutils = roman_utils(config_file, int(oi), int(s))
+                    expected_band = rmutils.bpass.name
+                    if expected_band != band:
+                        raise ValueError( f"Observation ID {oi} corresponds to band {expected_band}, but "
+                                          f"band {band} was passed. Please make sure the observation_id and band "
+                                          f"are consistent with each other." )
         if observation_id is None:
             observation_id = "1000" # backwards compatibility with the old default
 
@@ -613,7 +615,6 @@ class ImageSimulator:
             SNLogger.debug(f"Transient added to image {i}.")
         image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise,
                                 psf=psf, galaxy_kwargs=self.galaxy_kwargs )
-        SNLogger.debug(f"Transient rng used: {transient_rng.__getstate__()} for Image {i}.")
         SNLogger.debug(f"Static source added to image {i}.")
         image.image.noise = np.sqrt( image.image.noise )
         SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
