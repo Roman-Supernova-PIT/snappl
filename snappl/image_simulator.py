@@ -364,52 +364,52 @@ class ImageSimulator:
         SNLogger.debug("Sky level {} and sky noise rms {} are in units of electrons.".format(sky_level, sky_noise_rms))
         # When using OpenUniverse2024 PSFs, some more thought needs to be given between the relationship between
         # bands and the PSF.
-        if psf_class is not None and 'ou24PSF' in psf_class:
-            # Did they pass an observation ID? If not, default to an observation ID that matches their band of choice.
-            # Cole got these numbers by manually inpsecting the photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
-            # file that galsim uses. Ideally, we would load this file and get an appropriate observation ID that way,
-            # but as far as I can tell, snappl has no way of accessing this file directly.
-            if observation_id is None:
-                if band == 'R062':
-                    observation_id = '1'
-                elif band == 'Z087':
-                    observation_id = '57'
-                elif band == 'Y106':
-                    observation_id = '112'
-                elif band == 'J129':
-                    observation_id = '167'
-                elif band == 'H158':
-                    observation_id = '222'
-                elif band == 'F184':
-                    observation_id = '277'
-                else:
-                    raise ValueError( f"Band {band} not recognized, and no observation_id passed. Please pass an "
-                                      f"observation_id corresponding to the desired band, or choose a valid band." )
-                SNLogger.warning(f"No observation_id passed, defaulting to {observation_id} for band {band}. "
-                "If you want to specify a different observation_id, please do so explicitly when creating"
-                " the ImageSimulator." )
-            else:
-                # If they did pass an observation ID, check that it corresponds to the band they passed.
-                config_file = Config.get().value("system.ou24.config_file")
-                observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) else [ observation_id ]
-                scas = sca if isinstance(sca, (list, np.ndarray)) else [ sca ]
-                if len(observation_ids) == 1 and len(scas) > 1:
-                    observation_ids = [ observation_ids[0] ] * len(scas)
-                elif len(scas) == 1 and len(observation_ids) > 1:
-                    scas = [ scas[0] ] * len(observation_ids)
-                elif len(observation_ids) != len(scas):
-                    raise ValueError(
-                        "observation_id and sca must each be either a scalar or a sequence with matching lengths "
-                        f"(or length 1 for broadcasting). I got observation_id length {len(observation_ids)} and "
-                        f"sca length {len(scas)}."
-                    )
-                for oi, s in zip(observation_ids, scas):
-                    rmutils = roman_utils(config_file, int(oi), int(s))
-                    expected_band = rmutils.bpass.name
-                    if expected_band != band:
-                        raise ValueError( f"Observation ID {oi} corresponds to band {expected_band}, but "
-                                          f"band {band} was passed. Please make sure the observation_id and band "
-                                          f"are consistent with each other." )
+        # if psf_class is not None and 'ou24PSF' in psf_class:
+        #     # Did they pass an observation ID? If not, default to an observation ID that matches their band of choice.
+        #     # Cole got these numbers by manually inpsecting the photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
+        #     # file that galsim uses. Ideally, we would load this file and get an appropriate observation ID that way,
+        #     # but as far as I can tell, snappl has no way of accessing this file directly.
+        #     if observation_id is None:
+        #         if band == 'R062':
+        #             observation_id = '1'
+        #         elif band == 'Z087':
+        #             observation_id = '57'
+        #         elif band == 'Y106':
+        #             observation_id = '112'
+        #         elif band == 'J129':
+        #             observation_id = '167'
+        #         elif band == 'H158':
+        #             observation_id = '222'
+        #         elif band == 'F184':
+        #             observation_id = '277'
+        #         else:
+        #             raise ValueError( f"Band {band} not recognized, and no observation_id passed. Please pass an "
+        #                               f"observation_id corresponding to the desired band, or choose a valid band." )
+        #         SNLogger.warning(f"No observation_id passed, defaulting to {observation_id} for band {band}. "
+        #         "If you want to specify a different observation_id, please do so explicitly when creating"
+        #         " the ImageSimulator." )
+        #     else:
+        #         # If they did pass an observation ID, check that it corresponds to the band they passed.
+        #         config_file = Config.get().value("system.ou24.config_file")
+        #         observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) else [ observation_id ]
+        #         scas = sca if isinstance(sca, (list, np.ndarray)) else [ sca ]
+        #         if len(observation_ids) == 1 and len(scas) > 1:
+        #             observation_ids = [ observation_ids[0] ] * len(scas)
+        #         elif len(scas) == 1 and len(observation_ids) > 1:
+        #             scas = [ scas[0] ] * len(observation_ids)
+        #         elif len(observation_ids) != len(scas):
+        #             raise ValueError(
+        #                 "observation_id and sca must each be either a scalar or a sequence with matching lengths "
+        #                 f"(or length 1 for broadcasting). I got observation_id length {len(observation_ids)} and "
+        #                 f"sca length {len(scas)}."
+        #             )
+        #         for oi, s in zip(observation_ids, scas):
+        #             rmutils = roman_utils(config_file, int(oi), int(s))
+        #             expected_band = rmutils.bpass.name
+        #             if expected_band != band:
+        #                 raise ValueError( f"Observation ID {oi} corresponds to band {expected_band}, but "
+        #                                   f"band {band} was passed. Please make sure the observation_id and band "
+        #                                   f"are consistent with each other." )
         if observation_id is None:
             observation_id = "1000" # backwards compatibility with the old default
 
@@ -522,9 +522,15 @@ class ImageSimulator:
         # raise ValueError("stopping here")
     def __call__( self ):
         self.base_rng = np.random.default_rng( self.seed )
-        self.sky_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
+        #self.sky_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
         self.star_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
-        self.transient_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
+        #self.transient_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
+
+        # Generate one seed per image for each rng type, all upfront
+        n = len(self.imdata['mjds'])
+        self.sky_seeds       = self.base_rng.integers(1, 2**31, size=n)
+        self.star_seeds      = self.base_rng.integers(1, 2**31, size=n)
+        self.transient_seeds = self.base_rng.integers(1, 2**31, size=n)
 
         unpack = re.compile( r"^([a-zA-Z0-9_]+)\s*=\s*(.*[^\s])\s*$" )
         kwargs = {}
@@ -574,6 +580,13 @@ class ImageSimulator:
     def _simulate_one_image(self, i, stars, transient, static_source, kwargs):
         """Simulate one image, given the index i, the objects to include, and the kwargs for the PSF."""
         SNLogger.debug(f"----------------------- IMAGE {i} -----------------------")
+
+        sky_rng       = np.random.default_rng(self.sky_seeds[i])
+        star_rng      = np.random.default_rng(self.star_seeds[i])
+        transient_rng = np.random.default_rng(self.transient_seeds[i])
+
+        kwargs = dict(kwargs)  # also fix the shared dict mutation bug
+
         kwargs["observation_id"] = self.observation_id[i]
         SNLogger.debug("self.observation_id[i]: %s", self.observation_id[i])
         kwargs["sca"] = self.sca[i]
@@ -591,15 +604,16 @@ class ImageSimulator:
         kwargs["image"] = image.image
         psf = PSF.get_psf_object(self.psf_class, **kwargs)
         SNLogger.debug(f"Using PSF class {type(psf)} for image simulation.")
-        image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=self.sky_rng )
+        image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
         SNLogger.debug(f"Sky rendered for image {i}.")
-        image.add_stars( stars, self.star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise, psf=psf )
+        image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise, psf=psf )
         SNLogger.debug(f"Stars added to image {i}.")
         if self.transient_ra is not None and self.transient_dec is not None:
-            image.add_transient( transient, rng=self.transient_rng, noisy=not self.no_transient_noise, psf=psf )
+            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf=psf )
             SNLogger.debug(f"Transient added to image {i}.")
-        image.add_static_source(static_source, rng=self.transient_rng, noisy=not self.no_static_source_noise,
+        image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise,
                                 psf=psf, galaxy_kwargs=self.galaxy_kwargs )
+        SNLogger.debug(f"Transient rng used: {transient_rng.__getstate__()} for Image {i}.")
         SNLogger.debug(f"Static source added to image {i}.")
         image.image.noise = np.sqrt( image.image.noise )
         SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
@@ -785,8 +799,8 @@ def main():
     parser.add_argument( '--no-static-source-noise', action='store_true', default=False,
                          help="Set this to not add poisson noise to static sources." )
 
-    parser.add_argument( '--numprocs', type=int, default=12, help="Number of star rendering processes (default 12)" )
-    parser.add_argument( '--numimageprocs', type=int, default=1, help="Number of processes to use when simulating"
+    parser.add_argument( '--numprocs', type=int, default=1, help="Number of star rendering processes (default 12)" )
+    parser.add_argument( '--numimageprocs', type=int, default=60, help="Number of processes to use when simulating"
                         " multiple images (default 1) Note that this and numprocs cannot both be > 1." )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
                          help="Overwrite any existing images with the same filename." )
