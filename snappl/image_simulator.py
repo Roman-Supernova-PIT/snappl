@@ -571,7 +571,6 @@ class ImageSimulator:
                 )
 
 
-<<<<<<< HEAD
     def _simulate_one_image(self, i, stars, transient, static_source, kwargs):
         """Simulate one image, given the index i, the objects to include, and the kwargs for the PSF."""
         SNLogger.debug(f"----------------------- IMAGE {i} -----------------------")
@@ -605,29 +604,6 @@ class ImageSimulator:
         image.image.noise = np.sqrt( image.image.noise )
         SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
         image.image.save( overwrite=self.overwrite )
-=======
-            SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
-            image =  ImageSimulatorImage( self.width, self.height,
-                                          ra=self.imdata['ras'][i], dec=self.imdata['decs'][i],
-                                          rotation=self.imdata['rots'][i], basename=self.basename,
-                                          zeropoint=self.imdata['zps'][i], mjd=self.imdata['mjds'][i],
-                                          pixscale=self.pixscale, band=self.band, sca=self.sca[i], exptime=self.exptime,
-                                          observation_id=self.observation_id[i] )
-            SNLogger.debug( f"Image object created with observation_id {image.image.observation_id} "
-                            f" and sca {image.image.sca}" )
-            kwargs["image"] = image.image
-            psf = PSF.get_psf_object(self.psf_class, **kwargs)
-            SNLogger.debug(f"Using PSF class {type(psf)} for image simulation.")
-            image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
-            image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise, psf=psf )
-            if self.transient_ra is not None and self.transient_dec is not None:
-                image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf=psf )
-            image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise,
-                                    psf=psf, galaxy_kwargs=self.galaxy_kwargs )
-            image.image.noise = np.sqrt( image.image.noise )
-            SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
-            image.image.save( overwrite=self.overwrite )
->>>>>>> main
 
 
 
