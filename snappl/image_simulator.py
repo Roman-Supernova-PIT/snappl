@@ -15,9 +15,7 @@ from scipy.stats import binned_statistic_2d
 import scipy.signal
 
 from astropy.modeling.functional_models import Sersic2D
-from roman_imsim.utils import roman_utils
 
-from snappl.config import Config
 from snappl.logger import SNLogger
 from snappl.utils import isSequence
 from snappl.psf import PSF
@@ -366,7 +364,8 @@ class ImageSimulator:
         # bands and the PSF.
         # if psf_class is not None and 'ou24PSF' in psf_class:
         #     # Did they pass an observation ID? If not, default to an observation ID that matches their band of choice.
-        #     # Cole got these numbers by manually inpsecting the photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
+        #     # Cole got these numbers by manually inpsecting the
+        #     photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
         #     # file that galsim uses. Ideally, we would load this file and get an appropriate observation ID that way,
         #     # but as far as I can tell, snappl has no way of accessing this file directly.
         #     if observation_id is None:
@@ -391,7 +390,8 @@ class ImageSimulator:
         #     else:
         #         # If they did pass an observation ID, check that it corresponds to the band they passed.
         #         config_file = Config.get().value("system.ou24.config_file")
-        #         observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) else [ observation_id ]
+        #         observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) \
+        # else [ observation_id ]
         #         scas = sca if isinstance(sca, (list, np.ndarray)) else [ sca ]
         #         if len(observation_ids) == 1 and len(scas) > 1:
         #             observation_ids = [ observation_ids[0] ] * len(scas)
@@ -522,9 +522,9 @@ class ImageSimulator:
         # raise ValueError("stopping here")
     def __call__( self ):
         self.base_rng = np.random.default_rng( self.seed )
-        #self.sky_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
+        # self.sky_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
         self.star_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
-        #self.transient_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
+        # self.transient_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
 
         # Generate one seed per image for each rng type, all upfront
         n = len(self.imdata['mjds'])

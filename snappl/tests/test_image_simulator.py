@@ -297,12 +297,14 @@ def test_unrecognised_band_with_no_observation_id_raises():
     with pytest.raises(ValueError, match="not recognized"):
         make_simulator(psf_class="ou24PSF", band="INVALID", observation_id=None)
 
+
 def test_check_band_and_observation_id_consistency():
     # If they pass an observation ID that doesn't match their band, it should raise an error.
-    with pytest.raises(ValueError, match="Please make sure the observation_id and band are consistent with each other."):
+    with pytest.raises(ValueError, match="Please make sure the observation_id and"
+                                         " band are consistent with each other."):
         make_simulator(psf_class="ou24PSF", band="R062", observation_id="57")
+
 
 def test_correct_band_and_observation_id_is_fine():
     # If they pass an observation ID that does match their band, it should be fine.
-    sim = make_simulator(psf_class="ou24PSF", band="R062", observation_id="1")
-
+    make_simulator(psf_class="ou24PSF", band="R062", observation_id="1")
