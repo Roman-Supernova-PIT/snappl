@@ -160,6 +160,14 @@ class PSF:
         self._image = image
         self._seed = seed
 
+        if self._band is None:
+            try:
+                self._band = self._image.band
+            except Exception as e:
+                raise ValueError("Unable to determine band for PSF generation. I tried to get the band from the image,"
+                f" but I got an error. The error was {e}. Please provide a band or an image with a band.")
+
+
     @property
     def x( self ):
         return self._x

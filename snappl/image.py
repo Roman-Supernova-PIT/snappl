@@ -576,6 +576,7 @@ class Image( PathedObject ):
     def exptime( self ):
         """Exposure time in seconds."""
         if self._exptime is None:
+            SNLogger.debug("Image object could not find preloaded exptime")
             self._get_exptime()
         return self._exptime
 
@@ -2226,7 +2227,8 @@ class RomanDatamodelImage( Image ):
         self._band = self.dm.meta.instrument.optical_element
 
     def _get_mjd( self ):
-        self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
+        #self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
+        self.mjd = self.dm.meta.exposure.start_time.mjd
 
     def _get_exptime( self ):
         self._exptime = self.dm.meta.exposure.exposure_time
@@ -2371,6 +2373,19 @@ class RomanDatamodelImage( Image ):
         #   to with FITS files.
         if self._dm is None:
             self._dm = rdm.open( self.full_filepath, mode='r' )
+            self._exptime = self.dm.meta.exposure.end_time - self.dm.meta.exposure.start_time
+            self._exptime = self._exptime.to_value( 'second' )
+            # from astropy.time import Time
+
+            # t = Time(self._dm.meta.exposure.start_time, format="isot", scale="utc")
+
+            # mid_time = (self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd) / 2.
+
+            # mid_time_t = Time(mid_time, format="mjd", scale="utc")
+
+            # raise ValueError(
+            #     f"Halting Here with MJD {t.mjd} my way, out of the file it is {self._dm.meta.exposure.start_time.mjd}, path is {self.full_filepath}, mid_time is {mid_time_t.mjd}"
+            # )
         return self._dm
 
     def get_wcs( self, wcsclass=None ):
@@ -2453,6 +2468,8 @@ class RomanDatamodelImage( Image ):
         snappl_cutout._height = astropy_cutout.data.shape[0]
         snappl_cutout.band = self.band
 
+        SNLogger.debug("added exptime to the cutout")
+
         # TODO : fix _ra* and _dec* fields, they're all WRONG
 
         for prop in [ '_observation_id', '_sca', '_band', '_mjd', '_position_angle', '_exptime',
@@ -2461,6 +2478,9 @@ class RomanDatamodelImage( Image ):
                       '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
             setattr( snappl_cutout, prop, getattr( self, prop ) )
 
+        snappl_cutout.exptime = self._exptime
+        SNLogger.debug(self._exptime)
+        SNLogger.debug(f"snappl cutout being returned with exptime {snappl_cutout.exptime}")
         return snappl_cutout
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
