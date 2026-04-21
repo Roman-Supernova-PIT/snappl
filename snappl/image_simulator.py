@@ -198,7 +198,6 @@ class ImageSimulatorImage:
                   zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., observation_id='1000'):
 
         SNLogger.debug(f"Exptime: {exptime}, Zeropoint: {zeropoint}")
-        import pdb; pdb.set_trace()
         if basename is None:
             raise ValueError( "Must pass a basename" )
 
@@ -360,60 +359,60 @@ class ImageSimulator:
                   static_source_mag=None,
                   no_static_source_noise=False,
                   numprocs=12,
-                  numimageprocs=1,
+                  numimageprocs=60,
                   ):
 
         SNLogger.debug("Sky level {} and sky noise rms {} are in units of electrons.".format(sky_level, sky_noise_rms))
         # When using OpenUniverse2024 PSFs, some more thought needs to be given between the relationship between
         # bands and the PSF.
-        if psf_class is not None and 'ou24PSF' in psf_class:
-            # Did they pass an observation ID? If not, default to an observation ID that matches their band of choice.
-            # Cole got these numbers by manually inpsecting the
-            # photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
-            # file that galsim uses. Ideally, we would load this file and get an appropriate observation ID that way,
-            # but as far as I can tell, snappl has no way of accessing this file directly.
-            if observation_id is None:
-                if band == 'R062':
-                    observation_id = '1'
-                elif band == 'Z087':
-                    observation_id = '57'
-                elif band == 'Y106':
-                    observation_id = '112'
-                elif band == 'J129':
-                    observation_id = '167'
-                elif band == 'H158':
-                    observation_id = '222'
-                elif band == 'F184':
-                    observation_id = '277'
-                else:
-                    raise ValueError( f"Band {band} not recognized, and no observation_id passed. Please pass an "
-                                      f"observation_id corresponding to the desired band, or choose a valid band." )
-                SNLogger.warning(f"No observation_id passed, defaulting to {observation_id} for band {band}. "
-                "If you want to specify a different observation_id, please do so explicitly when creating"
-                " the ImageSimulator." )
-            else:
-                # If they did pass an observation ID, check that it corresponds to the band they passed.
-                config_file = Config.get().value("system.ou24.config_file")
-                observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) \
-        else [ observation_id ]
-                scas = sca if isinstance(sca, (list, np.ndarray)) else [ sca ]
-                if len(observation_ids) == 1 and len(scas) > 1:
-                    observation_ids = [ observation_ids[0] ] * len(scas)
-                elif len(scas) == 1 and len(observation_ids) > 1:
-                    scas = [ scas[0] ] * len(observation_ids)
-                elif len(observation_ids) != len(scas):
-                    raise ValueError(
-                        "observation_id and sca must each be either a scalar or a sequence with matching lengths "
-                        f"(or length 1 for broadcasting). I got observation_id length {len(observation_ids)} and "
-                        f"sca length {len(scas)}."
-                    )
-                for oi, s in zip(observation_ids, scas):
-                    rmutils = roman_utils(config_file, int(oi), int(s))
-                    expected_band = rmutils.bpass.name
-                    if expected_band != band:
-                        raise ValueError( f"Observation ID {oi} corresponds to band {expected_band}, but "
-                                          f"band {band} was passed. Please make sure the observation_id and band "
-                                          f"are consistent with each other." )
+        # if psf_class is not None and 'ou24PSF' in psf_class:
+        #     # Did they pass an observation ID? If not, default to an observation ID that matches their band of choice.
+        #     # Cole got these numbers by manually inpsecting the
+        #     # photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
+        #     # file that galsim uses. Ideally, we would load this file and get an appropriate observation ID that way,
+        #     # but as far as I can tell, snappl has no way of accessing this file directly.
+        #     if observation_id is None:
+        #         if band == 'R062':
+        #             observation_id = '1'
+        #         elif band == 'Z087':
+        #             observation_id = '57'
+        #         elif band == 'Y106':
+        #             observation_id = '112'
+        #         elif band == 'J129':
+        #             observation_id = '167'
+        #         elif band == 'H158':
+        #             observation_id = '222'
+        #         elif band == 'F184':
+        #             observation_id = '277'
+        #         else:
+        #             raise ValueError( f"Band {band} not recognized, and no observation_id passed. Please pass an "
+        #                               f"observation_id corresponding to the desired band, or choose a valid band." )
+        #         SNLogger.warning(f"No observation_id passed, defaulting to {observation_id} for band {band}. "
+        #         "If you want to specify a different observation_id, please do so explicitly when creating"
+        #         " the ImageSimulator." )
+        #     else:
+        #         # If they did pass an observation ID, check that it corresponds to the band they passed.
+        #         config_file = Config.get().value("system.ou24.config_file")
+        #         observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) \
+        # else [ observation_id ]
+        #         scas = sca if isinstance(sca, (list, np.ndarray)) else [ sca ]
+        #         if len(observation_ids) == 1 and len(scas) > 1:
+        #             observation_ids = [ observation_ids[0] ] * len(scas)
+        #         elif len(scas) == 1 and len(observation_ids) > 1:
+        #             scas = [ scas[0] ] * len(observation_ids)
+        #         elif len(observation_ids) != len(scas):
+        #             raise ValueError(
+        #                 "observation_id and sca must each be either a scalar or a sequence with matching lengths "
+        #                 f"(or length 1 for broadcasting). I got observation_id length {len(observation_ids)} and "
+        #                 f"sca length {len(scas)}."
+        #             )
+        #         for oi, s in zip(observation_ids, scas):
+        #             rmutils = roman_utils(config_file, int(oi), int(s))
+        #             expected_band = rmutils.bpass.name
+        #             if expected_band != band:
+        #                 raise ValueError( f"Observation ID {oi} corresponds to band {expected_band}, but "
+        #                                   f"band {band} was passed. Please make sure the observation_id and band "
+        #                                   f"are consistent with each other." )
         if observation_id is None:
             observation_id = "1000" # backwards compatibility with the old default
 
@@ -569,7 +568,7 @@ class ImageSimulator:
             static_source = None
 
         SNLogger.debug(f"psf class: {self.psf_class}, psf kwargs: {kwargs}")
-
+        SNLogger.debug(f"using numimageprocs={self.numimageprocs} to simulate {len(self.imdata['mjds'])} images")
         if self.numimageprocs == 1:
             for i in range( len( self.imdata['mjds'] ) ):
                 self._simulate_one_image( i, stars, transient, static_source, kwargs )
@@ -803,7 +802,7 @@ def main():
                          help="Set this to not add poisson noise to static sources." )
 
     parser.add_argument( '--numprocs', type=int, default=1, help="Number of star rendering processes (default 12)" )
-    parser.add_argument( '--numimageprocs', type=int, default=1, help="Number of processes to use when simulating"
+    parser.add_argument( '--numimageprocs', type=int, default=60, help="Number of processes to use when simulating"
                         " multiple images (default 1) Note that this and numprocs cannot both be > 1." )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
                          help="Overwrite any existing images with the same filename." )
