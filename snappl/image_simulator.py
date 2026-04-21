@@ -197,6 +197,8 @@ class ImageSimulatorImage:
     def __init__( self, width=4088, height=4088, ra=0., dec=0., rotation=0., basename='simulated_image',
                   zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., observation_id='1000'):
 
+        SNLogger.debug(f"Exptime: {exptime}, Zeropoint: {zeropoint}")
+        import pdb; pdb.set_trace()
         if basename is None:
             raise ValueError( "Must pass a basename" )
 
@@ -801,11 +803,10 @@ def main():
                          help="Set this to not add poisson noise to static sources." )
 
     parser.add_argument( '--numprocs', type=int, default=1, help="Number of star rendering processes (default 12)" )
-    parser.add_argument( '--numimageprocs', type=int, default=60, help="Number of processes to use when simulating"
+    parser.add_argument( '--numimageprocs', type=int, default=1, help="Number of processes to use when simulating"
                         " multiple images (default 1) Note that this and numprocs cannot both be > 1." )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
                          help="Overwrite any existing images with the same filename." )
-
 
     args = parser.parse_args()
     SNLogger.debug(f"observation_id: {args.observation_id}, sca: {args.sca}")
