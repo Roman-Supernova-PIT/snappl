@@ -2287,12 +2287,20 @@ class RomanDatamodelImage( Image ):
         # I'm hoping it will be duck-typing equivalent to a numpy array.
         # TODO : investigate memory use when you do numpy array things
         # with one of these.
-        return self.dm.data
+        # Using the _data property here is so that we can set the data elsewhere. -CFM
+        if getattr(self, '_data', None) is None:
+            self._data = self.dm.data
+
+        return self._data
 
     @property
     def noise( self ):
         # See comment in data
-        return self.dm.err
+        # Using the _noise property here is so that we can set the noise elsewhere. -CFM
+        if getattr(self, '_noise', None) is None:
+            self._noise = self.dm.err
+
+        return self._noise
 
     @property
     def flags( self ):
@@ -2300,7 +2308,11 @@ class RomanDatamodelImage( Image ):
         # TODO : https://roman-pipeline.readthedocs.io/en/latest/roman/dq_init/reference_files.html#reference-files
         # We probably need to do some translation.  We have to think about what we are defining
         #   as a "bad" pixel.
-        return self.dm.dq
+        # Using the _flags property here is so that we can set the flags elsewhere. -CFM
+        if getattr(self, '_flags', None) is None:
+            self._flags = self.dm.dq
+
+        return self._flags
 
     def get_data( self, which='all', always_reload=False, cache=False ):
         """Read the data from disk and return one or more 2d numpy arrays of data.
@@ -2388,6 +2400,15 @@ class RomanDatamodelImage( Image ):
     def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=True ):
         """See Image.get_cutout
         The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
+
+        Inputs
+        -------
+        return_FITS: bool, default True
+            If True, the cutout will be returned as a snappl.image.FITSImage.
+            If False, the cutout will be returned as a snappl.image.RomanDatamodelImage.
+
+        Returns
+        -------
         """
         if not all( [ isinstance( x, (int, np.integer) ),
                       isinstance( y, (int, np.integer) ),
@@ -2407,22 +2428,26 @@ class RomanDatamodelImage( Image ):
         wcs = self.get_wcs()
         if isinstance( wcs, RDM_GWCS ):
             wcs = wcs.get_astropy_wcs()
-            SNLogger.warning("Cole is turning a GWCS into an AstropyWCS to use with Cutout2D.  "
+            # Here we convert the GWCS to an AstropyWCS, which is what Cutout2D needs.  This is a little
+            # worrying because we are using a slightly different WCS to get the cutout, though I don't
+            # think it hugely matters since it only needs to be accurate to the pixel level. However,
+            # we should consider implementing a way to get the cutout without converting to an AstropyWCS.
+            SNLogger.warning("This is turning a GWCS into an AstropyWCS to use with Cutout2D.  "
                 "Is this a permanent solution?")
+
         else:
             raise NotImplementedError( "RomanDatamodelImage.get_cutout only works with GWCS wcses"
                                        f", not {wcs.__class__.__name__} wcses." )
 
 
-        apwcs = None if wcs is None else wcs # This was wcs._wcs in the FITS version of this function. I
-        # am unclear why I had to change it.
+        apwcs = None if wcs is None else wcs
+        # This was wcs._wcs in the FITS version of this function. I
+        # am unclear why I had to change it to be just wcs, i.e. not wcs._wcs
 
         # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
-
         astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
         astropy_noise = Cutout2D(noise, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
-        # Because flags are integer, we can't use the same fill_value as the default.
-        # Per the slack channel, it seemed 1 will be used for bad pixels.
+        # Per the slack channel, it seems 1 will be used for bad pixels.
         # https://github.com/spacetelescope/roman_datamodels/blob/main/src/roman_datamodels/dqflags.py
         astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=1)
 
@@ -2493,11 +2518,25 @@ class RomanDatamodelImage( Image ):
         else:
             raise TypeError("Noise must be a 2d numpy array of floats.")
 
+<<<<<<< HEAD
+=======
+    @flags.setter
+    def flags(self, new_value):
+        if (
+            isinstance(new_value, np.ndarray)
+            and np.issubdtype(new_value.dtype, np.integer)
+            and len(new_value.shape) == 2
+        ) or (new_value is None):
+            self._flags = new_value
+        else:
+            raise TypeError("Flags must be a 2d numpy array of integers.")
+>>>>>>> main
 
 # ======================================================================
 # This dictionary defines the format field in the database.  The key is the format
 #   integer, the value gives the image class, the base path config value, and eventually
 #    maybe other information
+
 
 Image._format_def = { -1 : { 'description': "Not a database image",
                              'image_class': None,

@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 import scipy.ndimage
 from snappl.psf import PSF
+from snappl.image_simulator import get_galaxy_stamp
 from scipy.ndimage import center_of_mass
 
 
@@ -172,7 +173,7 @@ def test_galaxy_stamp():
             midpix = gpsf.stamp_size // 2
             expected_center_x = midpix + x - x0
             expected_center_y = midpix + y - y0
-            galaxy_stamp = gpsf.get_galaxy_stamp(x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=oversamp)
+            galaxy_stamp = get_galaxy_stamp(gpsf, x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=oversamp)
             cy, cx = center_of_mass(galaxy_stamp)
             assert cx == pytest.approx(expected_center_x, abs=1/oversamp)
             assert cy == pytest.approx(expected_center_y, abs=1/oversamp)
@@ -183,7 +184,7 @@ def test_galaxy_stamp():
     y = 1000.0
     x0 = 1000
     y0 = 1000
-    galaxy_stamp = gpsf.get_galaxy_stamp(x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R = 2, bulge_n=3,
+    galaxy_stamp = get_galaxy_stamp(gpsf, x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R = 2, bulge_n=3,
                                          disk_R= 2, disk_n = 3)
     assert galaxy_stamp.sum() == pytest.approx(991866, rel=1e-3) # Empirically, only 99.1 % of flux is in 71x71 stamp
 

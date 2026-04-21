@@ -11,12 +11,9 @@ import pathlib
 import numpy as np
 import scipy.integrate
 import scipy.signal
-from scipy.special import gammaincinv
-from scipy.stats import binned_statistic_2d
 import yaml
 
 # astro library imports
-from astropy.modeling.functional_models import Sersic2D
 import galsim
 import photutils.psf
 from roman_imsim.utils import roman_utils
@@ -144,6 +141,10 @@ class PSF:
         _called_from_get_psf_object is used internally and should not be
         used outside this module, unless you know what you're doing and
         intentionally mean to subvert the system.
+
+        Note:
+        -----
+        If both are set, then `band` overrides `image.band`
 
         """
         self._consumed_args = set()
@@ -1434,6 +1435,7 @@ class ou24PSF_slow( PSF ):
 
             if self._image is None:
                 self._wcs = rmutils.getLocalWCS( x+1, y+1 )
+                SNLogger.debug("No image passed to ou24PSF; using rmutils.getLocalWCS.")
             else:
                 image_wcs = self._image.get_wcs()
                 if image_wcs is None:
@@ -1509,6 +1511,8 @@ class ou24PSF( ou24PSF_slow ):
 
 
         """
+        SNLogger.debug(f"Initializing ou24PSF PSF object with {self._observation_id} and "
+                       f"sca {self._sca} at x0={x0}, y0={y0}")
         self._rmutils = roman_utils(self.config_file, int(self._observation_id), self._sca)
         self._psf = self._rmutils.getPSF(x0+1, y0+1, pupil_bin=8)
         # TODO : does rmutils.getLocalWCS want 1-indexed or 0-indexed coordinates???
@@ -1796,9 +1800,18 @@ class STPSF( PSF ):
         self._consumed_args.update( [ 'sed', 'size' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
+        if self._band is None:
+            try:
+                self._band = self._image.band
+            except Exception as e:
+                raise ValueError(
+                    "Unable to determine band for PSF generation: "
+                    f"{e}"
+                    "Please provide a band or an Image with a band attribute."
+                )
         if ( self._band is None ) or ( self._sca is None ):
             raise ValueError(
-                f"Need a band and an sca to make a STPSF. I recieved band={self._band}, sca={self._sca}"
+                f"Need a band and an sca to make a STPSF.  Recieved band={self._band}, sca={self._sca}"
                 )
         if ( size % 2 == 0 ) or ( int(size) != size ):
             raise ValueError( "Size must be an odd integer." )
@@ -2016,92 +2029,6 @@ class GaussianPSF( PSF ):
 
         return stamp
 
-
-    def get_galaxy_stamp(self, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
-                         bulge_n=4, disk_R=10, disk_n=1, oversamp=5):
-        """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution.
-        This is not a standard PSF function, and may not be implemented in all subclasses. It is only really for use
-        in the image simulator.
-
-        Parameters
-        ----------
-        x,y,x0,y0,flux : as in PSF.get_stamp
-        bulge_R : float
-            The effective radius of the bulge component in pixels.
-        bulge_n : float
-            The Sersic index of the bulge component.
-        disk_R : float
-            The effective radius of the disk component in pixels.
-        disk_n : float
-            The Sersic index of the disk component.
-
-            For more detail on the above four parameters, see:
-            https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Sersic2D.html
-
-        oversamp : int
-            The oversampling factor to use when rendering the galaxy before downsampling to image resolution.
-
-        """
-        midpix = int( np.floor( self.stamp_size / 2 ) )
-        xc = int( np.floor(x + 0.5 ) )
-        yc = int( np.floor(y + 0.5 ) )
-        x0 = x0 if x0 is not None else xc
-        y0 = y0 if y0 is not None else yc
-        if not ( isinstance( x0, numbers.Integral ) and isinstance( y0, numbers.Integral ) ):
-            raise TypeError( f"x0 and y0 must be integers, got x0 as {type(x0)} and y0 as {type(y0)}" )
-
-        ix = np.linspace(-0.5, self.stamp_size - 0.5, oversamp * self.stamp_size)
-        iy = np.linspace(-0.5, self.stamp_size - 0.5, oversamp * self.stamp_size)
-        ixx, iyy = np.meshgrid(ix, iy)
-        # an underlying mesh of points on which to calculate functions where integer values line up with pixel centers
-
-        # Shift that grid relative to the desired location of the profile
-        xrel = (x0 - x) - midpix + ix
-        yrel = (y0 - y) - midpix + iy
-
-        xxrel, yyrel = np.meshgrid(xrel, yrel)
-        # The same mesh but now the x value is zeroed at the center of where the galaxy is being centered
-
-        psf_stamp = self.get_stamp(x=self.stamp_size//2, y=self.stamp_size//2,)
-
-        # Prepare and evaluate the profile
-        # Create a galaxy profile from a bulge + disk model
-
-        b_bulge = gammaincinv(2.0 * bulge_n, 0.5)
-
-        # Divide the flux equally between bulge and disk, so flux --> flux / 2
-        bulge_amp = flux/2 * b_bulge**(2*bulge_n) /\
-           (2 * np.pi * bulge_n * scipy.special.gamma(2*bulge_n) * np.exp(b_bulge) * bulge_R**2)
-        # The above is inverting the formula for total flux of a sersic profile, see
-        # http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
-        bulge_amp /= oversamp**2
-        sers_bulge = Sersic2D(amplitude=bulge_amp, r_eff=bulge_R, n=bulge_n)
-
-        b_disk = gammaincinv(2.0 * disk_n, 0.5)
-        disk_amp = flux/2 * b_disk**(2*disk_n) /\
-           (2 * np.pi * disk_n * scipy.special.gamma(2*disk_n) * np.exp(b_disk) * disk_R**2)
-        disk_amp /= oversamp**2
-        sers_disk = Sersic2D(amplitude=disk_amp, r_eff=disk_R, n=disk_n)
-
-        profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
-
-
-        # Downsample to image resolution
-        profile_stamp, _, _, _= binned_statistic_2d(
-                y=ixx.flatten(),
-                x=iyy.flatten(),
-                # Note that x and y are flipped here compared to usual convention. I am not sure why this needs to be,
-                # but when it was the other way around, the act of downsampling was swapping x and y.
-                values=profile_stamp.flatten(),
-                statistic='sum',
-                bins=self.stamp_size,
-                range=[[-0.5, self.stamp_size - 0.5], [-0.5, self.stamp_size - 0.5]]
-            )
-
-        profile_stamp = profile_stamp.reshape(self.stamp_size, self.stamp_size)
-        convolved = scipy.signal.convolve2d(profile_stamp, psf_stamp, mode="same", boundary="symm")
-
-        return convolved
 
 
 class VaryingGaussianPSF( GaussianPSF ):
