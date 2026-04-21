@@ -259,4 +259,3 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
     finally:
         for f in outdir.glob( "test_image_simulator*fits" ):
             f.unlink()
-

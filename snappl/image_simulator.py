@@ -15,14 +15,11 @@ from scipy.stats import binned_statistic_2d
 import scipy.signal
 
 from astropy.modeling.functional_models import Sersic2D
-from roman_imsim.utils import roman_utils
-from snappl.config import Config
 from snappl.logger import SNLogger
 from snappl.utils import isSequence
 from snappl.psf import PSF
 from snappl.image import FITSImageStdHeaders
 from snappl.wcs import AstropyWCS
-
 
 
 
@@ -58,8 +55,7 @@ class ImageSimulatorPointSource:
                 rng = np.random.default_rng()
             w = stamp > 0
             var[ w ] = stamp[ w ] / gain
-            noise = rng.normal( 0., np.sqrt( var[w] ) )
-            stamp[ w ] += noise
+            stamp[w] += rng.normal(0.0, np.sqrt(var[w]))
 
         sx0 = 0
         sx1 = stamp.shape[1]
@@ -197,7 +193,6 @@ class ImageSimulatorImage:
     def __init__( self, width=4088, height=4088, ra=0., dec=0., rotation=0., basename='simulated_image',
                   zeropoint=33., mjd=60000., pixscale=0.11, band='R062', sca=1, exptime=60., observation_id='1000'):
 
-        SNLogger.debug(f"Exptime: {exptime}, Zeropoint: {zeropoint}")
         if basename is None:
             raise ValueError( "Must pass a basename" )
 
@@ -344,7 +339,7 @@ class ImageSimulator:
                   sky_level=[10.],
                   band='R062',
                   sca=1,
-                  observation_id=None,
+                  observation_id='1000',
                   exptime=60.,
                   transient_ra=None,
                   transient_dec=None,
@@ -359,9 +354,8 @@ class ImageSimulator:
                   static_source_mag=None,
                   no_static_source_noise=False,
                   numprocs=12,
-                  numimageprocs=60,
+                  numimageprocs=1,
                   ):
-
 
         self.mjds = mjds if mjds is not None else np.arange( 60000., 60065., 5. )
 
@@ -459,21 +453,9 @@ class ImageSimulator:
         for var, val in locals().items():
             SNLogger.debug( f"  {var}: {val}" )
 
-        # # Save the locals into a file for comparison
-        # # get current time
-        # import time
-        # timestamp = 2
-        # locals_dict = dict( ( var, val ) for var, val in locals().items() if var != "self" )
-        # import yaml
-        # with open(f"{self.basename}_locals_{timestamp}.yaml", "w") as f:
-        #     yaml.dump(locals_dict, f, default_flow_style=False)
-
-        # raise ValueError("stopping here")
     def __call__( self ):
         self.base_rng = np.random.default_rng( self.seed )
-        # self.sky_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
         self.star_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
-        # self.transient_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
 
         # Generate one seed per image for each rng type, all upfront
         n = len(self.imdata['mjds'])
@@ -719,7 +701,7 @@ def main():
     parser.add_argument( '--observation-id', default='1000', type=str, nargs='+',
                          help="Stuck in the POINTING Header in the images and "
                          "used for OU24 PSF calculations (default '1000')" )
-    parser.add_argument( '--exptime', default=60.,
+    parser.add_argument( '--exptime', default=1.,
                          help="Stuck in the EXPTIME Header in the images (default 60)" )
 
     parser.add_argument( '--transient-ra', '--tra', type=float, default=None,
@@ -753,7 +735,6 @@ def main():
                          help="Overwrite any existing images with the same filename." )
 
     args = parser.parse_args()
-    SNLogger.debug(f"observation_id: {args.observation_id}, sca: {args.sca}")
     sim = ImageSimulator( **vars(args) )
     sim()
 
