@@ -2518,8 +2518,6 @@ class RomanDatamodelImage( Image ):
         else:
             raise TypeError("Noise must be a 2d numpy array of floats.")
 
-<<<<<<< HEAD
-=======
     @flags.setter
     def flags(self, new_value):
         if (
@@ -2530,7 +2528,6 @@ class RomanDatamodelImage( Image ):
             self._flags = new_value
         else:
             raise TypeError("Flags must be a 2d numpy array of integers.")
->>>>>>> main
 
 # ======================================================================
 # This dictionary defines the format field in the database.  The key is the format
