@@ -46,7 +46,7 @@ class Single_CSV_SED( SED_collection ):
             wave, flux = pd.read_csv(csv_file, comment="#", header=None).values.T
         except ValueError as _:
             try:
-                wave, flux = pd.read_csv(csv_file, comment="#", header=None, sep = "\s+").values.T
+                wave, flux = pd.read_csv(csv_file, comment="#", header=None, sep = r"\s+").values.T
             except ValueError as e:
                 raise ValueError(f"Could not read the SED file {csv_file} as either comma separated or"
                                  f" space separated. Please check the file format. Original error: {e}")

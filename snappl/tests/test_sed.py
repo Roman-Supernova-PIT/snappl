@@ -39,22 +39,22 @@ def test_single_csv_sed():
     df = pd.DataFrame({'wavelength': [1, 2], 'flux': [3, 4]})
 
     for septype in [",", " ", "\t"]:
-        with tempfile.NamedTemporaryFile(suffix='.csv', delete=False, mode='w', encoding='utf-8') as tmp:
+        with tempfile.NamedTemporaryFile(suffix='.csv', delete=True, mode='w', encoding='utf-8') as tmp:
             df.to_csv(tmp.name, index=False, sep=septype, header=False)
             temp_path = tmp.name
 
-        sed_obj = Single_CSV_SED(temp_path)
-        sed = sed_obj.get_sed()
-        lam = sed._spec.x
-        flux = sed._spec.f
-        np.testing.assert_allclose(lam, [1, 2], atol=1e-7)
-        np.testing.assert_allclose(flux, [3, 4], atol=1e-7)
+            sed_obj = Single_CSV_SED(temp_path)
+            sed = sed_obj.get_sed()
+            lam = sed._spec.x
+            flux = sed._spec.f
+            np.testing.assert_allclose(lam, [1, 2], atol=1e-7)
+            np.testing.assert_allclose(flux, [3, 4], atol=1e-7)
 
     for septype in ["-", ";", "/"]:
         with tempfile.NamedTemporaryFile(suffix='.csv', delete=False, mode='w', encoding='utf-8') as tmp:
             df.to_csv(tmp.name, index=False, sep=septype, header=False)
             temp_path = tmp.name
 
-        with pytest.raises(ValueError, match="Could not read the SED file"):
-            sed_obj = Single_CSV_SED(temp_path)
-            sed = sed_obj.get_sed()
+            with pytest.raises(ValueError, match="Could not read the SED file"):
+                sed_obj = Single_CSV_SED(temp_path)
+                sed = sed_obj.get_sed()
