@@ -101,6 +101,8 @@ def test_image_simulator_one_transient_image(numimageprocs):
             "transient_ra": 120.0,
             "transient_dec": -13.0,
             "numprocs": 1,
+            "band": "H158",
+            "observation_id": "1000",
         }
         sim = ImageSimulator(**kwargs)
         sim()
@@ -271,6 +273,7 @@ def make_simulator(psf_class="ou24PSF", band="R062", observation_id=None, sca=1,
         star_center=(120.0, -13.0), # random values because these are required
         image_centers=[120.0, -13.0],
         mjds = [60000.0],
+        numprocs=1, # This is the number of processes used to sim stars
         **kwargs,
     )
 
@@ -287,7 +290,8 @@ EXPECTED_DEFAULT_IDS = [
     ("Z087", "57"),
     ("Y106", "112"),
     ("J129", "167"),
-    ("H158", "222"),
+    ("H158", "1000"), # This is for backwards compatability, since this was the old default,
+    # a lot of test images were generated with this observation ID.
     ("F184", "277"),
 ]
 
