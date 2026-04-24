@@ -9,7 +9,8 @@ from snappl.image_simulator import ImageSimulator
 from snappl.image import FITSImageStdHeaders
 
 
-def test_image_simulator_one_transient_image():
+@pytest.mark.parametrize("numimageprocs", [(2), (1)])
+def test_image_simulator_one_transient_image(numimageprocs):
     fnamebase = 'test_image_simulator_one_transient_image'
     assert not pathlib.Path( f'{fnamebase}_image.fits' ).exists()
     assert not pathlib.Path( f'{fnamebase}_noise.fits' ).exists()
@@ -40,6 +41,7 @@ def test_image_simulator_one_transient_image():
             "transient_ra": 120.0,
             "transient_dec": -13.0,
             "numprocs": 1,
+            "numimageprocs": numimageprocs,
         }
         sim = ImageSimulator( **kwargs )
         sim()
@@ -99,6 +101,8 @@ def test_image_simulator_one_transient_image():
             "transient_ra": 120.0,
             "transient_dec": -13.0,
             "numprocs": 1,
+            "band": "H158",
+            "observation_id": "1000",
         }
         sim = ImageSimulator(**kwargs)
         sim()
@@ -115,6 +119,11 @@ def test_image_simulator_one_transient_image():
         totnoise = np.sqrt((image.noise[y0 - 3 : y0 + 4, x0 - 3 : x0 + 4] ** 2).sum())
         # Make sure noise is sane
         assert totnoise == pytest.approx(np.sqrt(49 * kwargs["sky_noise_rms"][0] ** 2), rel=0.1)
+        # REGRESSION ########
+        # These values were determined empirically.
+        assert totdata == pytest.approx(53367.52, rel = 1e-5)
+        assert totnoise == pytest.approx(736.685, rel = 1e-5)
+        ########################################################
 
         flux = 10 ** ((kwargs["transient_peak_mag"] - kwargs["zeropoints"][0]) / -2.5)
         # assert totdata == pytest.approx(flux, abs=2.0 * totnoise)
@@ -252,3 +261,59 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
     finally:
         for f in outdir.glob( "test_image_simulator*fits" ):
             f.unlink()
+
+
+def make_simulator(psf_class="ou24PSF", band="R062", observation_id=None, sca=1, **kwargs):
+    """Convenience func to avoid repeating in every test."""
+    return ImageSimulator(
+        psf_class=psf_class,
+        band=band,
+        observation_id=observation_id,
+        sca=sca,
+        star_center=(120.0, -13.0), # random values because these are required
+        image_centers=[120.0, -13.0],
+        mjds = [60000.0],
+        numprocs=1, # This is the number of processes used to sim stars
+        **kwargs,
+    )
+
+
+def test_non_ou24psf_skips_band_validation():
+    """If psf_class doesn't include 'ou24PSF', no band/obs-id logic runs at all."""
+    sim = make_simulator(psf_class="someOtherPSF", band="INVALID", observation_id=None)
+    assert sim.observation_id == ["1000"]  # Didn't do anything for non ou24PSF, so observation_id should just be
+    # the default, which is 1000.
+
+
+EXPECTED_DEFAULT_IDS = [
+    ("R062", "1"),
+    ("Z087", "57"),
+    ("Y106", "112"),
+    ("J129", "167"),
+    ("H158", "1000"), # This is for backwards compatability, since this was the old default,
+    # a lot of test images were generated with this observation ID.
+    ("F184", "277"),
+]
+
+
+@pytest.mark.parametrize("band, expected_id", EXPECTED_DEFAULT_IDS)
+def test_default_observation_id_per_band(band, expected_id):
+    sim = make_simulator(psf_class="ou24PSF", band=band, observation_id=None)
+    assert sim.observation_id == [expected_id]
+
+
+def test_unrecognised_band_with_no_observation_id_raises():
+    with pytest.raises(ValueError, match="not recognized"):
+        make_simulator(psf_class="ou24PSF", band="INVALID", observation_id=None)
+
+
+def test_check_band_and_observation_id_consistency():
+    # If they pass an observation ID that doesn't match their band, it should raise an error.
+    with pytest.raises(ValueError, match="Please make sure the observation_id and"
+                                         " band are consistent with each other."):
+        make_simulator(psf_class="ou24PSF", band="R062", observation_id="57")
+
+
+def test_correct_band_and_observation_id_is_fine():
+    # If they pass an observation ID that does match their band, it should be fine.
+    make_simulator(psf_class="ou24PSF", band="R062", observation_id="1")
