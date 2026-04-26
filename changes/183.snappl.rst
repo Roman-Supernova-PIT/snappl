@@ -1,0 +1,1 @@
+Enables parallelization over images for the image simulator.
