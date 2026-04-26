@@ -40,7 +40,7 @@ def test_image_simulator_one_transient_image(numimageprocs):
             "transient_end_mjd": 60060.0,
             "transient_ra": 120.0,
             "transient_dec": -13.0,
-            "numprocs": 1,
+            "numstarprocs": 1,
             "numimageprocs": numimageprocs,
         }
         sim = ImageSimulator( **kwargs )
@@ -100,7 +100,7 @@ def test_image_simulator_one_transient_image(numimageprocs):
             "transient_end_mjd": 60060.0,
             "transient_ra": 120.0,
             "transient_dec": -13.0,
-            "numprocs": 1,
+            "numstarprocs": 1,
         }
         sim = ImageSimulator(**kwargs)
         sim()
@@ -200,7 +200,7 @@ def test_image_simulator_gen_simple_gaussian_test_images( output_directories ):
             "transient_end_mjd": 60060.0,
             "transient_ra": 120.0,
             "transient_dec": -13.0,
-            "numprocs": 12,
+            "numstarprocs": 12,
         }
         sim = ImageSimulator( **kwargs )
         sim()

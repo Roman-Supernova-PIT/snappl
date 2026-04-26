@@ -1,1 +1,1 @@
-Enabling parallelization over images for the image simulator.
+Enables parallelization over images for the image simulator.
