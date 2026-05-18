@@ -729,9 +729,9 @@ def main():
     parser.add_argument( '--no-static-source-noise', action='store_true', default=False,
                          help="Set this to not add poisson noise to static sources." )
 
-    parser.add_argument( '--numstarprocs', type=int, default=1, help="Number of star rendering processes (default 12)" )
+    parser.add_argument( '--numstarprocs', type=int, default=12, help="Number of star rendering processes (default %(default)s)" )
     parser.add_argument( '--numimageprocs', type=int, default=1, help="Number of processes to use when simulating"
-                        " multiple images (default 1) Note that this and numstarprocs cannot both be > 1." )
+                        " multiple images (default %(default)s) Note that this and numstarprocs cannot both be > 1." )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
                          help="Overwrite any existing images with the same filename." )
 
