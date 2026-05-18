@@ -463,6 +463,13 @@ class ImageSimulator:
         self.star_seeds      = self.base_rng.integers(1, 2**31, size=n)
         self.transient_seeds = self.base_rng.integers(1, 2**31, size=n)
 
+        # I do acknowledge it's slightly awkward to have both star_seeds and star_rng, it's because before star_rng was
+        # used for both randomizing
+        # star locations and noise in the star's flux. Now, the latter is inside the function b/c it is called many
+        # times while the star's locations are determined once ahead of time in the StarCollection object.
+        # This way, the StarCollection object still gets the same rng as before, while star_seeds are generated
+        # using base_rng in the same way star_rng was before.
+
         unpack = re.compile( r"^([a-zA-Z0-9_]+)\s*=\s*(.*[^\s])\s*$" )
         kwargs = {}
         for arg in self.psf_kwargs:
@@ -497,15 +504,10 @@ class ImageSimulator:
 
         SNLogger.debug(f"psf class: {self.psf_class}, psf kwargs: {kwargs}")
         SNLogger.debug(f"using numimageprocs={self.numimageprocs} to simulate {len(self.imdata['mjds'])} images")
-        if self.numimageprocs == 1:
-            for i in range( len( self.imdata['mjds'] ) ):
-                self._simulate_one_image( i, stars, transient, static_source, kwargs )
-        else:
-            SNLogger.debug( f"Simulating images in parallel with {self.numimageprocs} processes" )
-            with multiprocessing.Pool( self.numimageprocs ) as pool:
-                pool.starmap(self._simulate_one_image,
-                    [( i, stars, transient, static_source, kwargs ) for i in range( len( self.imdata['mjds'] ) )]
-                )
+        with multiprocessing.Pool( self.numimageprocs ) as pool:
+            pool.starmap(self._simulate_one_image,
+                [( i, stars, transient, static_source, kwargs ) for i in range( len( self.imdata['mjds'] ) )]
+            )
 
 
     def _simulate_one_image(self, i, stars, transient, static_source, psfkwargs):
@@ -516,7 +518,7 @@ class ImageSimulator:
         star_rng      = np.random.default_rng(self.star_seeds[i])
         transient_rng = np.random.default_rng(self.transient_seeds[i])
 
-        psfkwargs = dict(psfkwargs)
+        psfkwargs = psfkwargs.copy()  # I don't want to modify the original dict
 
         psfkwargs["observation_id"] = self.observation_id[i]
         SNLogger.debug("self.observation_id[i]: %s", self.observation_id[i])
