@@ -1781,6 +1781,49 @@ class ou24PSF_slow_photonshoot( ou24PSF_slow ):
 
 #         return self._data
 
+def psfstamp_to_galsimimange(psf, pixelscale, wcs=None, pix=None, extra_convolution=None):
+    """Convert an STPSF/CRDS PSF profile to galsim.Image"""
+
+    # stpsf doesn't do distortion
+    # calc_psf gives something aligned with the pixels, but with
+    # a constant pixel scale equal to wfi.pixelscale / oversample.
+    # we need to get the appropriate rotated WCS that matches this
+    if wcs is not None:
+        local_jacobian = wcs.local(image_pos=galsim.PositionD(pix)).getMatrix()
+        # angle of [du/dx, du/dy]
+        ang = np.arctan2(local_jacobian[0, 1], local_jacobian[0, 0])
+        rotmat = np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]])
+        newwcs = galsim.JacobianWCS(*(rotmat.ravel() * pixelscale))
+        # we are making a new, orthogonal, isotropic matrix for the PSF with the
+        # appropriate pixel scale.  This is intended to be the WCS for the PSF
+        # produced by stpsf.
+    else:
+        newwcs = galsim.JacobianWCS(*(np.array([1, 0, 0, 1]) * pixelscale))
+        # just use a default North = up WCS
+    gimg = galsim.Image(psf, wcs=newwcs)
+
+    # This code block could be used to fix the centroid of Stpsf calculated
+    # PSFs to be zero.  This makes downstream comparisons with Stpsf
+    # PSFs a little harder, and so is currently disabled.  But it is
+    # recommended by Marshall Perrin and is probably what we should do.
+
+    #  centroid = []
+    #  for i, ll in enumerate(psf[0].data.shape):
+    #      cc = np.arange(ll) - (ll - 1) / 2
+    #      newshape = [1] * len(psf[0].data.shape)
+    #      newshape[-(i + 1)] = -1
+    #      cen = np.sum(cc.reshape(newshape) * psf[0].data) / np.sum(psf[0].data)
+    #      centroid.append(cen)
+    #  centroid = np.array(centroid)
+
+    centroid = None
+    intimg = galsim.InterpolatedImage(gimg, normalization="flux", use_true_center=True, offset=centroid)
+
+    if extra_convolution is not None:
+        intimg = galsim.Convolve(intimg, extra_convolution)
+
+    return intimg
+
 
 class STPSF( PSF ):
     """Wrap the STPSF PSFs.
@@ -1901,12 +1944,145 @@ class STPSF( PSF ):
             wfi.options["source_offset_x"] = source_offset_x_arcsec
             wfi.options["source_offset_y"] = source_offset_y_arcsec
 
+            osamp = 1
+            # , oversample = osamp
             stamp = wfi.calc_psf(fov_pixels=self.stamp_size)
-            stamp = stamp["DET_SAMP"].data
+            # pixelscale = wfi.pixelscale / osamp
+            # pix = (x, y) # check this
+            # extra_convolution = None
+            # stamp = psfstamp_to_galsimimange(stamp[0].data, pixelscale, wcs=None, pix=pix,
+            #                     extra_convolution=extra_convolution)
+            # #stamp = np.zeros((self.stamp_size, self.stamp_size))
+            # # downsample to detector resolution
+            # #for i in range(self.stamp_size):
+            # #    for j in range(self.stamp_size):
+            # #        stamp[i, j] = np.sum(stamp_oversamp[osamp*i:osamp*i+osamp, osamp*j:osamp*j+osamp])
 
+
+            # #im1 = galsim.Image(stamp, wcs=stamp.wcs)
+
+            # im1 = galsim.ImageF(self.stamp_size, self.stamp_size)
+            # stamp = stamp.drawImage(im1, method="auto")
+            # stamp = stamp.array
+
+            stamp = stamp["DET_SAMP"].data
             self._stamps[(x, y, x0, y0, stampx, stampy)] = stamp
 
         return self._stamps[(x, y, x0, y0, stampx, stampy)] * flux
+
+
+
+    # def get_stamp(self, x=None, y=None, x0=None, y0=None, flux=1.0, seed=None, ext_name="OVERSAMP", overf=8):
+    #     """Return a 2d numpy image of the PSF at the detector resolution via
+    #     pixel response function construction.
+
+    #     Rather than using STPSF's built-in detector sampling, this method
+    #     computes an oversampled PSF and manually bins it down using a
+    #     sub-pixel offset derived from the fractional pixel position of the
+    #     source.  This produces a pixel response function (PRF) that properly
+    #     accounts for intra-pixel sensitivity variations at the requested
+    #     sub-pixel position.
+
+    #     Parameters
+    #     ----------
+    #     x, y : float, optional
+    #         Pixel position of the source on the detector.  Defaults to the
+    #         centre of the SCA stored in self._x / self._y.
+
+    #     x0, y0 : int, optional
+    #         Integer pixel position that defines the stamp origin.  Defaults
+    #         to the nearest pixel centre to (x, y).
+
+    #     flux : float
+    #         Scale factor applied to the returned stamp.
+
+    #     seed : int
+    #         Unused; kept for interface compatibility with the base PSF class.
+
+    #     ext_name : str
+    #         FITS extension name of the oversampled PSF plane to use.
+    #         Defaults to "OVERSAMP".
+
+    #     overf : int
+    #         Oversampling factor passed to stpsf.calc_psf and used when
+    #         binning back down to detector resolution.  Must match the factor
+    #         used to build the oversampled PSF.  Defaults to 8.
+
+    #     Notes
+    #     -----
+    #     For more details see the STPSF documentation
+    #     https://stpsf.readthedocs.io/en/latest/roman.html
+    #     and sample Roman WFI STPSF Notebook
+    #     https://github.com/spacetelescope/stpsf/blob/develop/notebooks/STPSF-Roman_Tutorial.ipynb
+    #     """
+    #     SNLogger.debug("Getting STPSF PRF stamp at x=%s, y=%s, x0=%s, y0=%s", x, y, x0, y0)
+
+    #     wfi = stpsf.roman.WFI()
+    #     wfi.detector = f"WFI{self._sca:02d}"
+
+    #     # If a position is not given, assume the middle of the SCA
+    #     #   (within 1/2 pixel; by default, we want to make x and y
+    #     #   centered on a pixel).
+    #     x = x if x is not None else float(self._x)
+    #     y = y if y is not None else float(self._y)
+    #     wfi.detector_position = (x, y)
+
+    #     xc = int(np.floor(x + 0.5))
+    #     yc = int(np.floor(y + 0.5))
+    #     x0 = xc if x0 is None else x0
+    #     y0 = yc if y0 is None else y0
+    #     if (not isinstance(x0, numbers.Integral)) or (not isinstance(y0, numbers.Integral)):
+    #         raise TypeError(f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}")
+
+    #     stampx = self.stamp_size // 2 + (x - x0)
+    #     stampy = self.stamp_size // 2 + (y - y0)
+
+    #     if (
+    #         (stampx < -self.stamp_size)
+    #         or (stampx > 2 * self.stamp_size)
+    #         or (stampy < -self.stamp_size)
+    #         or (stampy > 2 * self.stamp_size)
+    #     ):
+    #         raise ValueError(
+    #             f"PSF would be rendered at ({stampx}, {stampy}), which is too far off of the "
+    #             f"edge of a {self.stamp_size}-pixel stamp."
+    #         )
+
+    #     SNLogger.debug(f"Initializing STPSF PRF with band {self._band} and sca {self._sca}")
+
+    #     if (x, y, x0, y0, stampx, stampy) not in self._stamps:
+    #         # Compute the oversampled PSF.  No source_offset is applied here;
+    #         # the sub-pixel shift is handled entirely by the slice offset (i, j)
+    #         # below, which selects the appropriate oversampled column/row.
+    #         stamp = wfi.calc_psf(fov_pixels=self.stamp_size + 1, oversample=overf)
+    #         # The plus one is needed because the downsampling algorithm loses a pixel when we do
+    #         # userange = np.array(s) - overf, which is done to prevent running off the edge of the array
+    #         # when we shift the psf around.
+    #         inpsf = stamp[ext_name].data
+
+    #         s = inpsf.shape
+    #         userange = np.array(s) - overf
+
+    #         # Convert the fractional pixel offset of the source into an integer
+    #         # offset in oversampled-pixel units.  The modulo keeps the index in
+    #         # [0, overf) regardless of the sign of the sub-pixel shift.
+    #         j = int(np.round((x - x0) * overf)) % overf  # column (x) offset
+    #         i = int(np.round((y - y0) * overf)) % overf  # row    (y) offset
+
+    #         # Shift the oversampled array by (i, j) then block-sum overf×overf
+    #         # regions to produce a single detector-resolution PRF plane for this
+    #         # sub-pixel position.
+    #         tmp = inpsf[i : i + userange[0], j : j + userange[1]].reshape(
+    #             userange[0] // overf, overf, userange[1] // overf, overf
+    #         )
+    #         stamp = np.sum(tmp, axis=(1, 3))
+
+    #         SNLogger.debug("stamp size after binning: %s", stamp.shape)
+    #         SNLogger.debug("Meanwhile it's supposed to be %s", self.stamp_size)
+
+    #         self._stamps[(x, y, x0, y0, stampx, stampy)] = stamp
+
+    #     return self._stamps[(x, y, x0, y0, stampx, stampy)] * flux
 
 
 class GaussianPSF( PSF ):

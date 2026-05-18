@@ -9,6 +9,7 @@ import simplejson
 import numpy as np
 import pandas
 import fitsio
+import asdf
 from astropy.io import fits
 from astropy.nddata.utils import Cutout2D
 from astropy.coordinates import SkyCoord
@@ -16,6 +17,7 @@ from astropy.wcs.utils import skycoord_to_pixel
 from astropy.table import Table
 from astropy.modeling.fitting import NonFiniteValueError
 import astropy.units
+import json
 from photutils.aperture import CircularAperture, aperture_photometry, ApertureStats
 from photutils.psf import PSFPhotometry
 from photutils.background import LocalBackground, MMMBackground, Background2D
@@ -31,6 +33,8 @@ from snappl.utils import asUUID, SNPITJsonEncoder
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
 from snappl.pathedobject import PathedObject
+
+from types import SimpleNamespace
 
 
 # ======================================================================
@@ -2166,6 +2170,25 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         return zpt
 
 
+class Map(dict):
+    """
+    Recursively converts a dict to an object with attribute-style access.
+    """
+    def __init__(self, data):
+        for key, value in data.items():
+            # If the value is a dict, convert it recursively
+            if isinstance(value, dict):
+                value = Map(value)
+            # If it's a list, check for dicts inside the list
+            elif isinstance(value, list):
+                value = [Map(i) if isinstance(i, dict) else i for i in value]
+
+            self[key] = value
+            setattr(self, key, value)
+
+data = {"user": {"id": 1, "roles": [{"name": "admin"}, {"name": "editor"}]}}
+obj = Map(data)
+
 # ======================================================================
 # RomanDatamodelImage
 #
@@ -2372,7 +2395,15 @@ class RomanDatamodelImage( Image ):
         #   our input data, and want to be explicit about saving like we are used
         #   to with FITS files.
         if self._dm is None:
+            #try:
+            SNLogger.debug(self.full_filepath)
             self._dm = rdm.open( self.full_filepath, mode='r' )
+
+            # except TypeError as e:
+            #     try:
+            #         self._dm = Map(asdf.open( self.full_filepath, mode='r' ).tree['roman'])
+            #     except Exception as e2:
+            #         raise ValueError( f"Failed to open {self.full_filepath} with rdm and asdf: {e}, {e2}" )
             self._exptime = self.dm.meta.exposure.end_time - self.dm.meta.exposure.start_time
             self._exptime = self._exptime.to_value( 'second' )
             # from astropy.time import Time
