@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.sed &#8212; roman_snpit_snappl 0.1.dev1+gc52caf410 documentation</title>
+    <title>snappl.sed &#8212; roman_snpit_snappl 0.1.dev1+g4919051fd documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=89ad40cd"></script>
+    <script src="../../_static/documentation_options.js?v=3a7e4db3"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -137,9 +137,28 @@
 <div class="viewcode-block" id="Single_CSV_SED">
 <a class="viewcode-back" href="../../api/snappl.sed.Single_CSV_SED.html#snappl.sed.Single_CSV_SED">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Single_CSV_SED</span><span class="p">(</span> <span class="n">SED_collection</span> <span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">csv_file</span> <span class="p">):</span>
-        <span class="c1"># READ THE CSV FILE, make a galsim SED in self.sed</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span> <span class="s2">&quot;Single_CSV_SED is not implemented yet.&quot;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">csv_file</span><span class="p">,</span> <span class="n">sed_wave_type</span> <span class="o">=</span> <span class="s2">&quot;Angstrom&quot;</span><span class="p">,</span> <span class="n">sed_flux_type</span> <span class="o">=</span> <span class="s2">&quot;flambda&quot;</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the SED collection with a single SED from a CSV file.</span>
+<span class="sd">        The CSV file should have two columns: the first column is the wavelength, and the second column is the flux.</span>
+<span class="sd">        The file can be comma separated or space separated, and can have comment lines starting with #.</span>
+<span class="sd">        Inputs:</span>
+<span class="sd">        csv_file: the path to the CSV file containing the SED</span>
+<span class="sd">        sed_wave_type: the type of the wavelength in the SED (default is &quot;Angstrom&quot;)</span>
+<span class="sd">        sed_flux_type: the type of the flux in the SED (default is &quot;flambda&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">csv_file</span><span class="p">,</span> <span class="n">comment</span><span class="o">=</span><span class="s2">&quot;#&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">_</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">csv_file</span><span class="p">,</span> <span class="n">comment</span><span class="o">=</span><span class="s2">&quot;#&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">T</span>
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not read the SED file </span><span class="si">{</span><span class="n">csv_file</span><span class="si">}</span><span class="s2"> as either comma separated or&quot;</span>
+                                 <span class="sa">f</span><span class="s2">&quot; space separated. Please check the file format. Original error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">lookup_table</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">LookupTable</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">interpolant</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sed</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">SED</span><span class="p">(</span> <span class="n">lookup_table</span><span class="p">,</span> <span class="n">wave_type</span><span class="o">=</span><span class="n">sed_wave_type</span><span class="p">,</span> <span class="n">flux_type</span><span class="o">=</span><span class="n">sed_flux_type</span> <span class="p">)</span>
 
 <div class="viewcode-block" id="Single_CSV_SED.get_sed">
 <a class="viewcode-back" href="../../api/snappl.sed.Single_CSV_SED.html#snappl.sed.Single_CSV_SED.get_sed">[docs]</a>

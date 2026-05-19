@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Single_CSV_SED &#8212; roman_snpit_snappl 0.1.dev1+gc52caf410 documentation</title>
+    <title>Single_CSV_SED &#8212; roman_snpit_snappl 0.1.dev1+g4919051fd documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=89ad40cd"></script>
+    <script src="../_static/documentation_options.js?v=3a7e4db3"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -105,8 +105,15 @@
 <h1>Single_CSV_SED<a class="headerlink" href="#single-csv-sed" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.sed.Single_CSV_SED">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.sed.</span></span><span class="sig-name descname"><span class="pre">Single_CSV_SED</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csv_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/sed.html#Single_CSV_SED"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.sed.Single_CSV_SED" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.sed.</span></span><span class="sig-name descname"><span class="pre">Single_CSV_SED</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csv_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sed_wave_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Angstrom'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sed_flux_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'flambda'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/sed.html#Single_CSV_SED"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.sed.Single_CSV_SED" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="snappl.sed.SED_collection.html#snappl.sed.SED_collection" title="snappl.sed.SED_collection"><code class="xref py py-class docutils literal notranslate"><span class="pre">SED_collection</span></code></a></p>
+<p>Initialize the SED collection with a single SED from a CSV file.
+The CSV file should have two columns: the first column is the wavelength, and the second column is the flux.
+The file can be comma separated or space separated, and can have comment lines starting with #.
+Inputs:
+csv_file: the path to the CSV file containing the SED
+sed_wave_type: the type of the wavelength in the SED (default is “Angstrom”)
+sed_flux_type: the type of the flux in the SED (default is “flambda”)</p>
 <p class="rubric">Methods Summary</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
