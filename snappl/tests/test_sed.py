@@ -36,7 +36,7 @@ def test_ou24_get_star_sed():
 
 
 def test_single_csv_sed():
-    df = pd.DataFrame({'wavelength': [1, 2], 'flux': [3, 4]})
+    df = pd.DataFrame({"wavelength": [1, 2], "flux": [3, 4]})
 
     for septype in [",", " ", "\t"]:
         with tempfile.NamedTemporaryFile(suffix='.csv', delete=True, mode='w', encoding='utf-8') as tmp:
