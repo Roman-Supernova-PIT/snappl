@@ -514,7 +514,7 @@ def sim_image_and_segmap( stupid_provenance, dbclient ):
             "transient_end_mjd": 60060.0,
             "transient_ra": 120.0,
             "transient_dec": -13.0,
-            "numprocs": 1,
+            "numstarprocs": 1,
         }
         sim = ImageSimulator( **kwargs )
         sim()
