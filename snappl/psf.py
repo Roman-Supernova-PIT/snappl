@@ -1856,7 +1856,9 @@ class STPSF( PSF ):
 
         wfi = stpsf.roman.WFI()
         wfi.detector = f"WFI{self._sca:02d}"
-        wfi.filter = self._band # wfi defaults to F062, so we must set it manually.
+
+        wfi_band = "F" + self._band[1:] if not self._band.startswith("F") else self._band
+        wfi.filter = wfi_band
 
         # If a position is not given, assume the middle of the SCA
         #   (within 1/2 pixel; by default, we want to make x and y
