@@ -1791,7 +1791,6 @@ class STPSF( PSF ):
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'sed', 'size' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
-
         if self._band is None:
             try:
                 self._band = self._image.band
@@ -1857,6 +1856,7 @@ class STPSF( PSF ):
 
         wfi = stpsf.roman.WFI()
         wfi.detector = f"WFI{self._sca:02d}"
+        wfi.filter = self._band # wfi defaults to F062, so we must set it manually.
 
         # If a position is not given, assume the middle of the SCA
         #   (within 1/2 pixel; by default, we want to make x and y
