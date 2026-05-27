@@ -1857,7 +1857,26 @@ class STPSF( PSF ):
         wfi = stpsf.roman.WFI()
         wfi.detector = f"WFI{self._sca:02d}"
 
-        wfi_band = "F" + self._band[1:] if not self._band.startswith("F") else self._band
+        band_dict = {
+        "F062": "F062",
+        "F087": "F087",
+        "F106": "F106",
+        "F129": "F129",
+        "F158": "F158",
+        "F184": "F184",
+        "F213": "F213",
+        "R062": "F062",
+        "Z087": "F087",
+        "Y106": "F106",
+        "J129": "F129",
+        "H158": "F158",
+        "K213": "F213",
+    }
+
+        wfi_band = band_dict.get(self._band, None)
+        if wfi_band is None:
+            raise ValueError(f"Band {self._band} not recognized for STPSF generation."
+                             f" Recognized bands are: {list(band_dict.keys())}")
         wfi.filter = wfi_band
 
         # If a position is not given, assume the middle of the SCA
