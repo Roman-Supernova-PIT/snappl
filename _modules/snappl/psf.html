@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g1741a1d41 documentation</title>
+    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g903e58133 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=a0bc09e6"></script>
+    <script src="../../_static/documentation_options.js?v=2abb2f84"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -1937,7 +1937,6 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span> <span class="n">_parent_class</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_consumed_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="p">[</span> <span class="s1">&#39;sed&#39;</span><span class="p">,</span> <span class="s1">&#39;size&#39;</span> <span class="p">]</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_warn_unknown_kwargs</span><span class="p">(</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">_parent_class</span><span class="o">=</span><span class="n">_parent_class</span> <span class="p">)</span>
-
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_band</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_band</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image</span><span class="o">.</span><span class="n">band</span>
@@ -2005,6 +2004,28 @@
 
         <span class="n">wfi</span> <span class="o">=</span> <span class="n">stpsf</span><span class="o">.</span><span class="n">roman</span><span class="o">.</span><span class="n">WFI</span><span class="p">()</span>
         <span class="n">wfi</span><span class="o">.</span><span class="n">detector</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;WFI</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sca</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">band_dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;F062&quot;</span><span class="p">:</span> <span class="s2">&quot;F062&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;F087&quot;</span><span class="p">:</span> <span class="s2">&quot;F087&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;F106&quot;</span><span class="p">:</span> <span class="s2">&quot;F106&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;F129&quot;</span><span class="p">:</span> <span class="s2">&quot;F129&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;F158&quot;</span><span class="p">:</span> <span class="s2">&quot;F158&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;F184&quot;</span><span class="p">:</span> <span class="s2">&quot;F184&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;F213&quot;</span><span class="p">:</span> <span class="s2">&quot;F213&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;R062&quot;</span><span class="p">:</span> <span class="s2">&quot;F062&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Z087&quot;</span><span class="p">:</span> <span class="s2">&quot;F087&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Y106&quot;</span><span class="p">:</span> <span class="s2">&quot;F106&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;J129&quot;</span><span class="p">:</span> <span class="s2">&quot;F129&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;H158&quot;</span><span class="p">:</span> <span class="s2">&quot;F158&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;K213&quot;</span><span class="p">:</span> <span class="s2">&quot;F213&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+        <span class="n">wfi_band</span> <span class="o">=</span> <span class="n">band_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_band</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wfi_band</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Band </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_band</span><span class="si">}</span><span class="s2"> not recognized for STPSF generation.&quot;</span>
+                             <span class="sa">f</span><span class="s2">&quot; Recognized bands are: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">band_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">wfi</span><span class="o">.</span><span class="n">filter</span> <span class="o">=</span> <span class="n">wfi_band</span>
 
         <span class="c1"># If a position is not given, assume the middle of the SCA</span>
         <span class="c1">#   (within 1/2 pixel; by default, we want to make x and y</span>
