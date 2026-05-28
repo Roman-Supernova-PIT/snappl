@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g903e58133 documentation</title>
+    <title>snappl.psf &#8212; roman_snpit_snappl 0.1.dev1+g944e3f739 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=2abb2f84"></script>
+    <script src="../../_static/documentation_options.js?v=3b139a44"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -255,6 +255,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_sca</span> <span class="o">=</span> <span class="n">sca</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_image</span> <span class="o">=</span> <span class="n">image</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_seed</span> <span class="o">=</span> <span class="n">seed</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_band</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image</span><span class="p">,</span> <span class="s2">&quot;band&quot;</span> <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_band</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image</span><span class="o">.</span><span class="n">band</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">x</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
@@ -2051,7 +2054,7 @@
 
         <span class="n">SNLogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;Initializing STPSF with band </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_band</span><span class="si">}</span><span class="s2"> and sca </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sca</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
 
-        <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">,</span> <span class="n">ext_name</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">:</span>
             <span class="c1"># 2026-03-30: MWV</span>
             <span class="c1"># &quot;source_offset_x&quot; and &quot;source_offset_y&quot; are interpreted in arcseconds of relative angular shift.</span>
             <span class="c1"># This does not depend on orientation of sky,</span>
@@ -2061,13 +2064,12 @@
             <span class="n">source_offset_y_arcsec</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span> <span class="o">*</span> <span class="n">wfi</span><span class="o">.</span><span class="n">pixelscale</span>
             <span class="n">wfi</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;source_offset_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">source_offset_x_arcsec</span>
             <span class="n">wfi</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;source_offset_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">source_offset_y_arcsec</span>
-
             <span class="n">stamp</span> <span class="o">=</span> <span class="n">wfi</span><span class="o">.</span><span class="n">calc_psf</span><span class="p">(</span><span class="n">fov_pixels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">)</span>
-            <span class="n">stamp</span> <span class="o">=</span> <span class="n">stamp</span><span class="p">[</span><span class="s2">&quot;DET_SAMP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">stamp</span> <span class="o">=</span> <span class="n">stamp</span><span class="p">[</span><span class="n">ext_name</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">[(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">)]</span> <span class="o">=</span> <span class="n">stamp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">[(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">,</span> <span class="n">ext_name</span><span class="p">)]</span> <span class="o">=</span> <span class="n">stamp</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">[(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">)]</span> <span class="o">*</span> <span class="n">flux</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span><span class="p">[(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stampx</span><span class="p">,</span> <span class="n">stampy</span><span class="p">,</span> <span class="n">ext_name</span><span class="p">)]</span> <span class="o">*</span> <span class="n">flux</span></div>
 </div>
 
 
