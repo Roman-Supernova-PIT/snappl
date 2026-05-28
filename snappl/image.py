@@ -2227,8 +2227,7 @@ class RomanDatamodelImage( Image ):
         self._band = self.dm.meta.instrument.optical_element
 
     def _get_mjd( self ):
-        self.mjd = self.dm.meta.exposure.start_time.mjd
-        # Changed from the middle of the exposure for symmetry with romanisim.
+        self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
 
     def _get_exptime( self ):
         self._exptime = self.dm.meta.exposure.exposure_time

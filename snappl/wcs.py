@@ -404,7 +404,7 @@ class RDM_GWCS(GWCS):
                 needs to be able to find locations outside of the stamp.
         """
         if not isinstance( self._gwcs.output_frame.reference_frame, astropy.coordinates.ICRS ):
-            raise TypeError( "Error, the gwcs output frame is of type"
+            raise TypeError( "Error, the gwcs output frame is of type "
                              f"{type(self._gwcs.output_frame.reference_frame)}, but we need it to be ICRS." )
 
         if isinstance( dec, collections.abc.Sequence ) and not isinstance( dec, np.ndarray ):
