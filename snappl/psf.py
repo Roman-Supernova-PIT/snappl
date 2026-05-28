@@ -1829,7 +1829,7 @@ class STPSF( PSF ):
     def stamp_size( self ):
         return self.size
 
-    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_SAMP"):
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_SAMP" ):
         """Return a 2d numpy image of the PSF at the detector resolution.
 
         Parameters are as in PSF.get_stamp, plus:
