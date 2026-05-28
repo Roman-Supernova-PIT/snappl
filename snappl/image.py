@@ -2164,7 +2164,6 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
 
         return zpt
 
-
 # ======================================================================
 # RomanDatamodelImage
 #
@@ -2178,6 +2177,8 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
 #   https://github.com/spacetelescope/rad
 #   https://github.com/spacetelescope/rad/blob/main/src/rad/resources/schemas/exposure-1.3.0.yaml
 #     (check that the version is current on this one!)
+
+
 class RomanDatamodelImage( Image ):
     """An image read from a roman datamodel ASDF file.
 
@@ -2461,6 +2462,7 @@ class RomanDatamodelImage( Image ):
                       '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
             setattr( snappl_cutout, prop, getattr( self, prop ) )
 
+        snappl_cutout.exptime = self.exptime
         return snappl_cutout
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
