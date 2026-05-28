@@ -32,9 +32,28 @@ class Flat_SED( SED_collection ):
 
 
 class Single_CSV_SED( SED_collection ):
-    def __init__( self, csv_file ):
-        # READ THE CSV FILE, make a galsim SED in self.sed
-        raise NotImplementedError( "Single_CSV_SED is not implemented yet.")
+    def __init__( self, csv_file, sed_wave_type = "Angstrom", sed_flux_type = "flambda" ):
+        """Initialize the SED collection with a single SED from a CSV file.
+        The CSV file should have two columns: the first column is the wavelength, and the second column is the flux.
+        The file can be comma separated or space separated, and can have comment lines starting with #.
+        Inputs:
+        csv_file: the path to the CSV file containing the SED
+        sed_wave_type: the type of the wavelength in the SED (default is "Angstrom")
+        sed_flux_type: the type of the flux in the SED (default is "flambda")
+        """
+
+        try:
+            wave, flux = pd.read_csv(csv_file, comment="#", header=None).values.T
+        except ValueError as _:
+            try:
+                wave, flux = pd.read_csv(csv_file, comment="#", header=None, sep = r"\s+").values.T
+            except ValueError as e:
+                raise ValueError(f"Could not read the SED file {csv_file} as either comma separated or"
+                                 f" space separated. Please check the file format. Original error: {e}")
+
+        lookup_table = galsim.LookupTable(wave, flux, interpolant="linear")
+
+        self.sed = galsim.SED( lookup_table, wave_type=sed_wave_type, flux_type=sed_flux_type )
 
     def get_sed( self, **kwargs ):
         return self.sed

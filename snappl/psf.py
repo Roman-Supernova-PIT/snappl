@@ -1790,7 +1790,6 @@ class STPSF( PSF ):
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'sed', 'size' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
-
         if self._band is None:
             try:
                 self._band = self._image.band
@@ -1856,6 +1855,28 @@ class STPSF( PSF ):
 
         wfi = stpsf.roman.WFI()
         wfi.detector = f"WFI{self._sca:02d}"
+
+        band_dict = {
+        "F062": "F062",
+        "F087": "F087",
+        "F106": "F106",
+        "F129": "F129",
+        "F158": "F158",
+        "F184": "F184",
+        "F213": "F213",
+        "R062": "F062",
+        "Z087": "F087",
+        "Y106": "F106",
+        "J129": "F129",
+        "H158": "F158",
+        "K213": "F213",
+    }
+
+        wfi_band = band_dict.get(self._band, None)
+        if wfi_band is None:
+            raise ValueError(f"Band {self._band} not recognized for STPSF generation."
+                             f" Recognized bands are: {list(band_dict.keys())}")
+        wfi.filter = wfi_band
 
         # If a position is not given, assume the middle of the SCA
         #   (within 1/2 pixel; by default, we want to make x and y
