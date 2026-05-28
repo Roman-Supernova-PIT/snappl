@@ -161,7 +161,7 @@ class PSF:
         self._seed = seed
 
         if self._band is None and self._image is not None and hasattr( self._image, "band" ):
-             self._band = self._image.band
+            self._band = self._image.band
 
     @property
     def x( self ):
@@ -1885,7 +1885,7 @@ class STPSF( PSF ):
 
         SNLogger.debug( f"Initializing STPSF with band {self._band} and sca {self._sca}" )
 
-        if (x, y, x0, y0, stampx, stampy) not in self._stamps:
+        if (x, y, x0, y0, stampx, stampy, ext_name) not in self._stamps:
             # 2026-03-30: MWV
             # "source_offset_x" and "source_offset_y" are interpreted in arcseconds of relative angular shift.
             # This does not depend on orientation of sky,
@@ -1898,9 +1898,9 @@ class STPSF( PSF ):
             stamp = wfi.calc_psf(fov_pixels=self.stamp_size)
             stamp = stamp[ext_name].data
 
-            self._stamps[(x, y, x0, y0, stampx, stampy)] = stamp
+            self._stamps[(x, y, x0, y0, stampx, stampy, ext_name)] = stamp
 
-        return self._stamps[(x, y, x0, y0, stampx, stampy)] * flux
+        return self._stamps[(x, y, x0, y0, stampx, stampy, ext_name)] * flux
 
 
 class GaussianPSF( PSF ):
