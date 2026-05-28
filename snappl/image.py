@@ -2232,6 +2232,7 @@ class RomanDatamodelImage( Image ):
     def _get_exptime( self ):
         self._exptime = self.dm.meta.exposure.exposure_time
 
+
     # def _get_sky_level(self):
     #    ...dunno what to do here
 
@@ -2467,9 +2468,7 @@ class RomanDatamodelImage( Image ):
                       '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
             setattr( snappl_cutout, prop, getattr( self, prop ) )
 
-        snappl_cutout.exptime = self._exptime
-        SNLogger.debug(self._exptime)
-        SNLogger.debug(f"snappl cutout being returned with exptime {snappl_cutout.exptime}")
+        snappl_cutout.exptime = self.exptime
         return snappl_cutout
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
