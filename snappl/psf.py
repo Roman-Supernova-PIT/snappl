@@ -1781,49 +1781,6 @@ class ou24PSF_slow_photonshoot( ou24PSF_slow ):
 
 #         return self._data
 
-def psfstamp_to_galsimimange(psf, pixelscale, wcs=None, pix=None, extra_convolution=None):
-    """Convert an STPSF/CRDS PSF profile to galsim.Image"""
-
-    # stpsf doesn't do distortion
-    # calc_psf gives something aligned with the pixels, but with
-    # a constant pixel scale equal to wfi.pixelscale / oversample.
-    # we need to get the appropriate rotated WCS that matches this
-    if wcs is not None:
-        local_jacobian = wcs.local(image_pos=galsim.PositionD(pix)).getMatrix()
-        # angle of [du/dx, du/dy]
-        ang = np.arctan2(local_jacobian[0, 1], local_jacobian[0, 0])
-        rotmat = np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]])
-        newwcs = galsim.JacobianWCS(*(rotmat.ravel() * pixelscale))
-        # we are making a new, orthogonal, isotropic matrix for the PSF with the
-        # appropriate pixel scale.  This is intended to be the WCS for the PSF
-        # produced by stpsf.
-    else:
-        newwcs = galsim.JacobianWCS(*(np.array([1, 0, 0, 1]) * pixelscale))
-        # just use a default North = up WCS
-    gimg = galsim.Image(psf, wcs=newwcs)
-
-    # This code block could be used to fix the centroid of Stpsf calculated
-    # PSFs to be zero.  This makes downstream comparisons with Stpsf
-    # PSFs a little harder, and so is currently disabled.  But it is
-    # recommended by Marshall Perrin and is probably what we should do.
-
-    #  centroid = []
-    #  for i, ll in enumerate(psf[0].data.shape):
-    #      cc = np.arange(ll) - (ll - 1) / 2
-    #      newshape = [1] * len(psf[0].data.shape)
-    #      newshape[-(i + 1)] = -1
-    #      cen = np.sum(cc.reshape(newshape) * psf[0].data) / np.sum(psf[0].data)
-    #      centroid.append(cen)
-    #  centroid = np.array(centroid)
-
-    centroid = None
-    intimg = galsim.InterpolatedImage(gimg, normalization="flux", use_true_center=True, offset=centroid)
-
-    if extra_convolution is not None:
-        intimg = galsim.Convolve(intimg, extra_convolution)
-
-    return intimg
-
 
 class STPSF( PSF ):
     """Wrap the STPSF PSFs.
