@@ -1900,32 +1900,9 @@ class STPSF( PSF ):
             source_offset_y_arcsec = (y - y0) * wfi.pixelscale
             wfi.options["source_offset_x"] = source_offset_x_arcsec
             wfi.options["source_offset_y"] = source_offset_y_arcsec
+            stamp = wfi.calc_psf(fov_pixels=self.stamp_size)
+            stamp = stamp["DET_SAMP"].data
 
-            osamp = oversamp
-            # , oversample = osamp
-            fov_pixels = self.stamp_size
-            stamp = wfi.calc_psf(oversample=osamp, fov_pixels=self.stamp_size * osamp)
-            SNLogger.debug("stamp shape from stpsf calc_psf: %s", stamp[0].data.shape)
-            pixelscale = wfi.pixelscale / osamp
-            pix = (x, y) # check this
-            extra_convolution = None
-            stamp = psfstamp_to_galsimimange(stamp[0].data, pixelscale, wcs=None, pix=pix,
-                                extra_convolution=extra_convolution)
-            SNLogger.debug( f"STPSF calc_psf done for {x, y, x0, y0, stampx, stampy} using roman isim method" )
-            # #stamp = np.zeros((self.stamp_size, self.stamp_size))
-            # # downsample to detector resolution
-            # #for i in range(self.stamp_size):
-            # #    for j in range(self.stamp_size):
-            # #        stamp[i, j] = np.sum(stamp_oversamp[osamp*i:osamp*i+osamp, osamp*j:osamp*j+osamp])
-
-
-            # #im1 = galsim.Image(stamp, wcs=stamp.wcs)
-
-            im1 = galsim.ImageF(self.stamp_size * osamp, self.stamp_size * osamp)
-            stamp = stamp.drawImage(im1, method="auto")
-            stamp = stamp.array
-
-            #stamp = stamp["DET_SAMP"].data
             self._stamps[(x, y, x0, y0, stampx, stampy)] = stamp
 
         return self._stamps[(x, y, x0, y0, stampx, stampy)] * flux
