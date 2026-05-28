@@ -2177,6 +2177,8 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
 #   https://github.com/spacetelescope/rad
 #   https://github.com/spacetelescope/rad/blob/main/src/rad/resources/schemas/exposure-1.3.0.yaml
 #     (check that the version is current on this one!)
+
+
 class RomanDatamodelImage( Image ):
     """An image read from a roman datamodel ASDF file.
 
@@ -2452,7 +2454,6 @@ class RomanDatamodelImage( Image ):
         snappl_cutout._width = astropy_cutout.data.shape[1]
         snappl_cutout._height = astropy_cutout.data.shape[0]
         snappl_cutout.band = self.band
-
 
         # TODO : fix _ra* and _dec* fields, they're all WRONG
 
