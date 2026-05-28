@@ -1834,7 +1834,7 @@ class STPSF( PSF ):
     def stamp_size( self ):
         return self.size
 
-    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_SAMP", oversamp=8 ):
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_SAMP"):
         """Return a 2d numpy image of the PSF at the detector resolution.
 
         Parameters are as in PSF.get_stamp, plus:
@@ -1901,7 +1901,7 @@ class STPSF( PSF ):
             wfi.options["source_offset_x"] = source_offset_x_arcsec
             wfi.options["source_offset_y"] = source_offset_y_arcsec
             stamp = wfi.calc_psf(fov_pixels=self.stamp_size)
-            stamp = stamp["DET_SAMP"].data
+            stamp = stamp[ext_name].data
 
             self._stamps[(x, y, x0, y0, stampx, stampy)] = stamp
 

@@ -33,7 +33,6 @@ from snappl.dbclient import SNPITDBClient
 from snappl.pathedobject import PathedObject
 
 
-
 # ======================================================================
 # The base class for all images.  This is not useful by itself, you need
 #   to instantiate a subclass.  However, everything that you call on an
@@ -2226,12 +2225,11 @@ class RomanDatamodelImage( Image ):
         self._band = self.dm.meta.instrument.optical_element
 
     def _get_mjd( self ):
-        #self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
         self.mjd = self.dm.meta.exposure.start_time.mjd
+        # Changed from the middle of the exposure for symmetry with romanisim.
 
     def _get_exptime( self ):
         self._exptime = self.dm.meta.exposure.exposure_time
-
 
     # def _get_sky_level(self):
     #    ...dunno what to do here
@@ -2373,10 +2371,6 @@ class RomanDatamodelImage( Image ):
         #   to with FITS files.
         if self._dm is None:
             self._dm = rdm.open( self.full_filepath, mode='r' )
-
-            #self._exptime = self.dm.meta.exposure.end_time - self.dm.meta.exposure.start_time
-            #self._exptime = self._exptime.to_value( 'second' )
-
         return self._dm
 
     def get_wcs( self, wcsclass=None ):
