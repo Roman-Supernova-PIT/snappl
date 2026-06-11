@@ -20,6 +20,7 @@ from photutils.aperture import CircularAperture, aperture_photometry, ApertureSt
 from photutils.psf import PSFPhotometry
 from photutils.background import LocalBackground, MMMBackground, Background2D
 
+
 import galsim.roman
 import roman_datamodels as rdm
 
@@ -1308,6 +1309,7 @@ class Numpy2DImage( Image ):
         self._noise = None
         self._flags = None
 
+
 # ======================================================================
 # A base class for FITSImages which use an AstropyWCS wcs.
 #
@@ -1584,6 +1586,7 @@ class FITSImage( Numpy2DImage ):
                             self._header = FITSImage._fitsio_header_to_astropy_header( hdr )
             rval.append( data )
         return rval
+
 
 
     def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan):
