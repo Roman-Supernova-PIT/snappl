@@ -20,7 +20,6 @@ from photutils.aperture import CircularAperture, aperture_photometry, ApertureSt
 from photutils.psf import PSFPhotometry
 from photutils.background import LocalBackground, MMMBackground, Background2D
 
-
 import galsim.roman
 import roman_datamodels as rdm
 
@@ -554,7 +553,9 @@ class Image( PathedObject ):
     def mjd( self ):
         """MJD of the start of the image (defined how? TAI?)"""
         if self._mjd is None:
+            SNLogger.debug("Calling get_mjd")
             self._get_mjd()
+            SNLogger.debug("get_mjd returned {mjd}".format(mjd=self._mjd))
         return self._mjd
 
     @mjd.setter
@@ -1309,7 +1310,6 @@ class Numpy2DImage( Image ):
         self._noise = None
         self._flags = None
 
-
 # ======================================================================
 # A base class for FITSImages which use an AstropyWCS wcs.
 #
@@ -1585,7 +1585,6 @@ class FITSImage( Numpy2DImage ):
                             hdr = f[ hdumap[plane] ].read_header()
                             self._header = FITSImage._fitsio_header_to_astropy_header( hdr )
             rval.append( data )
-
         return rval
 
 
@@ -1624,11 +1623,11 @@ class FITSImage( Numpy2DImage ):
         astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=1)
 
         snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
-        snappl_cutout._data = astropy_cutout.data
+        snappl_cutout._data = astropy_cutout.data.copy()
         snappl_cutout._header = self.get_fits_header()
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
-        snappl_cutout._noise = astropy_noise.data
-        snappl_cutout._flags = astropy_flags.data
+        snappl_cutout._noise = astropy_noise.data.copy()
+        snappl_cutout._flags = astropy_flags.data.copy()
         snappl_cutout._is_cutout = True
         snappl_cutout._width = astropy_cutout.data.shape[1]
         snappl_cutout._height = astropy_cutout.data.shape[0]
@@ -2409,6 +2408,7 @@ class RomanDatamodelImage( Image ):
             raise ValueError( f"Size must be odd for a well defined central "
                               f"pixel, you tried to pass a size of {xsize, ysize}.")
 
+
         data, noise, flags = self.get_data( 'all' )
 
         wcs = self.get_wcs()
@@ -2439,16 +2439,16 @@ class RomanDatamodelImage( Image ):
 
         if return_FITS:
             snappl_cutout = FITSImage(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
-            snappl_cutout._data = astropy_cutout.data
-            snappl_cutout._noise = astropy_noise.data
+            snappl_cutout._data = astropy_cutout.data.copy()
+            snappl_cutout._noise = astropy_noise.data.copy()
         else:
             snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True,
                                            width=xsize, height=ysize)
-            snappl_cutout.dm.data = astropy_cutout.data
-            snappl_cutout.dm.err = astropy_noise.data
+            snappl_cutout.dm.data = astropy_cutout.data.copy()
+            snappl_cutout.dm.err = astropy_noise.data.copy()
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
 
-        snappl_cutout._flags = astropy_flags.data
+        snappl_cutout._flags = astropy_flags.data.copy()
         snappl_cutout._is_cutout = True
         snappl_cutout._width = astropy_cutout.data.shape[1]
         snappl_cutout._height = astropy_cutout.data.shape[0]
