@@ -1585,8 +1585,8 @@ class FITSImage( Numpy2DImage ):
                             hdr = f[ hdumap[plane] ].read_header()
                             self._header = FITSImage._fitsio_header_to_astropy_header( hdr )
             rval.append( data )
-
         return rval
+
 
 
     def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan):
@@ -1624,11 +1624,11 @@ class FITSImage( Numpy2DImage ):
         astropy_flags = Cutout2D(flags, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=1)
 
         snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
-        snappl_cutout._data = astropy_cutout.data
+        snappl_cutout._data = astropy_cutout.data.copy()
         snappl_cutout._header = self.get_fits_header()
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
-        snappl_cutout._noise = astropy_noise.data
-        snappl_cutout._flags = astropy_flags.data
+        snappl_cutout._noise = astropy_noise.data.copy()
+        snappl_cutout._flags = astropy_flags.data.copy()
         snappl_cutout._is_cutout = True
         snappl_cutout._width = astropy_cutout.data.shape[1]
         snappl_cutout._height = astropy_cutout.data.shape[0]
@@ -2439,16 +2439,16 @@ class RomanDatamodelImage( Image ):
 
         if return_FITS:
             snappl_cutout = FITSImage(full_filepath=self.full_filepath, no_base_path=True, width=xsize, height=ysize)
-            snappl_cutout._data = astropy_cutout.data
-            snappl_cutout._noise = astropy_noise.data
+            snappl_cutout._data = astropy_cutout.data.copy()
+            snappl_cutout._noise = astropy_noise.data.copy()
         else:
             snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True,
                                            width=xsize, height=ysize)
-            snappl_cutout.dm.data = astropy_cutout.data
-            snappl_cutout.dm.err = astropy_noise.data
+            snappl_cutout.dm.data = astropy_cutout.data.copy()
+            snappl_cutout.dm.err = astropy_noise.data.copy()
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
 
-        snappl_cutout._flags = astropy_flags.data
+        snappl_cutout._flags = astropy_flags.data.copy()
         snappl_cutout._is_cutout = True
         snappl_cutout._width = astropy_cutout.data.shape[1]
         snappl_cutout._height = astropy_cutout.data.shape[0]
