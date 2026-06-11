@@ -553,9 +553,7 @@ class Image( PathedObject ):
     def mjd( self ):
         """MJD of the start of the image (defined how? TAI?)"""
         if self._mjd is None:
-            SNLogger.debug("Calling get_mjd")
             self._get_mjd()
-            SNLogger.debug("get_mjd returned {mjd}".format(mjd=self._mjd))
         return self._mjd
 
     @mjd.setter
@@ -2407,7 +2405,6 @@ class RomanDatamodelImage( Image ):
         if xsize % 2 != 1 or ysize % 2 != 1:
             raise ValueError( f"Size must be odd for a well defined central "
                               f"pixel, you tried to pass a size of {xsize, ysize}.")
-
 
         data, noise, flags = self.get_data( 'all' )
 
