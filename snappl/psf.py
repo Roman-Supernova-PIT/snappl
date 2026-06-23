@@ -1598,7 +1598,7 @@ class ou24PSF( ou24PSF_slow ):
             photon_ops = [ self._psf ]
             if self._include_photonOps:
                 photon_ops += self._rmutils.photon_ops
-                photon_ops += [ ChargeDiff(rng=rmutils.rng) ]
+                photon_ops += [ ChargeDiff(rng=self._rmutils.rng) ]
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
