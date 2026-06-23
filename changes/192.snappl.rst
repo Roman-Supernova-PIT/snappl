@@ -1,0 +1,1 @@
+Add ``ChargeDiff`` to the list of default photon operations in ``snappl.psf``.
