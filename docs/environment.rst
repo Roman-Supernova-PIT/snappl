@@ -11,6 +11,7 @@ Overview
 
 Eventually, if possible, we would like all SNPIT Code to run in the same environment.  This will simplify life for the people who are eventually going to be deploying and managing the entire pipeline.  However, if your code absolutely requires its own environment, as long as we can containerize it, we *might* be able to live with that.
 
+To update the enviornment, see :ref:`releasenewenv`.
 
 Containers vs. Native
 ---------------------
@@ -62,20 +63,28 @@ The following test/development databases are currently up and running.  (The col
     </tr>
   </thead>
   <tbody>
+    <tr class="row-odd">
+      <td>Generic NERSC Tests</td>
+      <td><tt>roman_snpit_db_rknop_dev</tt></td>
+      <td>NERSC</td>
+      <td><tt>interactive-podman-rknop-dev.sh</tt></td>
+    </tr>
+    <tr class="row-even">
+      <td>NERSC OU2024</td>
+      <td><tt>roman_snpit_db_ou2024</tt></td>
+      <td>NERSC</td>
+      <td><tt>interactive-podman-ou2024.sh</tt></td>
+    </tr>
+  </tbody>
+  </table>
+
+..
     <tr class="row-even">
       <td>The nov2025 test database</td>
       <td><tt>roman_snpit_ou2024_nov_ou2024nov</tt></td>
       <td>NERSC</td>
       <td><tt>interactive-podman-nov2025.sh</tt></td>
     </tr>
-    <tr class="row-odd">
-      <td>Rob's tests</td>
-      <td><tt>roman_snpit_db_rknop_dev</tt></td>
-      <td>NERSC</td>
-      <td><tt>interactive-podman-rknop-dev.sh</tt></td>
-    </tr>
-  </tbody>
-  </table>
 
 
 
@@ -85,7 +94,7 @@ Running on NERSC
 Using Conda
 -----------
 
-TODO
+This is not fully supported.  Use the container.
 
 
 Using the Container
@@ -293,5 +302,3 @@ For example, if you want to run the snappl tests on a branch of snappl, make sur
   pip install -e .[test]
   cd snappl/tests
   pytest -v
-
-

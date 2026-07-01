@@ -3,7 +3,288 @@ Environment and Database Maintainer's Guide
 ###########################################
 
 .. contents::
-   :depth: 3
+   :depth: 4
+
+.. _releasenewenv:
+
+Releasing a new Environment
+===========================
+
+This needs to be fleshed out.  Here are the steps for releasing a new environment:
+
+.. _snapplrelease:
+
+Release snappl
+--------------
+
+Make sure you have the current version
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Make sure you've checked out the current version of snappl:
+
+.. code-block:: console
+
+  git checkout main
+  git pull -a --no-rebase
+
+Figure out if the current version is already released
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run:
+
+.. code-block:: console
+
+  git log -1
+
+You will see something like:
+
+.. code-block:: text
+
+  commit 9beba83c0007c7faded348128ab9879ea0b61247 (HEAD -> main, tag: 0.44.0, origin/main, origin/HEAD)
+  Merge: 944e3f7 192326b
+  Author: Cole Meldorf <59845905+ColeFMeldorf@users.noreply.github.com>
+  Date:   Thu Jun 11 15:05:23 2026 -0400
+
+      Merge pull request #191 from Roman-Supernova-PIT/u/cole/memfix
+
+      memory issues fixed
+
+The thing to look for is the stuff in the parentheses on the first line.  If you don't see ``HEAD -> main`` inside the parentheses, **stop here and panic**.
+
+If you see ``tag: x.y.z``, that says that the current main has already been tagged with a release.  Go to `the snappl page on pypi <https://pypi.org/project/roman-snpit-snappl/>`_ and see if the version there matches the version in the tag.  If so, snappl is already up to date and move on to :ref:`envbuild`.
+
+Tag the new snappl version
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If the latest ``main`` does *not* have a tag that looks like ``x.y.z`` where ``x``, ``y``, and ``z`` are all numbers matching a `semantic versioning convention <https://semver.org/>`_, then tag it.  First, figure out what you should tag it as.  Do two things.  Look at `the snappl page on pypi <https://pypi.org/project/roman-snpit-snappl/>`_, and also run ``git tag``.  Find the *highest* tag between the two, and then increment the middle number.  (Unless you really know what you're doing, in which case you might increment the last number, or increment the first number and set the middle number to 0.)  Set this tag with:
+
+.. code-block:: console
+
+  git tag x.y.z
+
+So, for example, suppose that we saw that the latest released version is ``0.44.0``, but we've merged a new pull request.  You could tag the new version with:
+
+.. code-block:: console
+
+  git tag 0.45.0
+
+Then, push the tag up to github with:
+
+.. code-block:: console
+
+  git push --tag
+
+(Note: it's possible you don't have permissions to do this!  Talk to Ben, MWV, Rob, or maybe somebody else, if this is the case.)
+
+Build the new snappl release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You will need to be inside a virtual environment with the right stuff installed for this to work.  If you haven't set this up before, then, in the directory above your snappl checkout, do something like:
+
+.. code-block:: console
+
+  python -mvenv venv
+  source venv/bin/activate
+  cd snappl
+  pip install -e .[doc,build]
+  pip install build
+
+That last step may take a little while and will download a distressing amount of stuff to your venv directory.
+
+(If you haven't used venvs a lot, the ``activate`` command puts you inside the venv.  You can tell you are inside it because ``(venv)`` will be at the beginning of your command prompt.  To leave the venv, just run ``deactivate``.)
+
+You only need to create the virtual environment once.  Once you're inside it, make sure you're at the top directory of your ``snappl`` checkout, and build the snappl package with:
+
+.. code-block:: console
+
+  python -m build -s -o dist
+
+If all is well, that will end with text something like:
+
+.. code-block:: text
+
+  Successfully built roman_snpit_snappl-0.45.0.tar.gz
+
+Upload the new snappl release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**To do this, you have to have permissions to upload to the ``roman-snpit-snappl`` pypi archive, and you must have set up a PyPi API key.**  If you don't know how to do that... panic.
+
+Upload the new package with:
+
+.. code-block:: console
+
+  twine upload dist/roman_snpit_snappl-0.45.0.tar.gz
+
+of course substituting the actual name of the package you just built.  It will prompt you for your PyPI API key.  Paste it in and hit Enter.
+
+Congratulations.  You've released a new snappl.  (Empirically, it can take a few minutes before anybody is actually able to ``pip install`` that package from PyPi.)
+
+.. _envbuild:
+
+Update the environment
+----------------------
+
+Make sure you've checked out the `roman snpit environment <https://github.com/Roman-Supernova-PIT/environment>`_ repo, and that you're on the latest version.  (I.e., run:
+
+.. code-block:: console
+
+  git checkout main
+  git pull -a
+
+in your environment checkout!)
+
+Do whatever needs to be done.  Almost always, that will involve the next few steps:
+
+Update snappl
+^^^^^^^^^^^^^
+
+Edit ``requirements-cpu.txt``, find the line that starts ``roman-snpit-snappl==``, and replace the version at the end with the version of :ref:`snappl you just released<snapplrelease>`.
+
+Figure out the new version
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run ``git tag`` and find the former latest version.  To be safe, also go trolling around the various container registires to see what the latest version we have there is.
+
+Figure out the new version number, usually by increasing ``z`` by one where ``x.y.z`` is the current version number.
+
+Edit the scripts for the new version number
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are a bunch of ``.sh`` scripts that have the version number coded into them.  You need to edit these scripts to have the current version number.  As of this writing, those scripts are:
+
+* `interactive-podman-nov2025.sh`
+* `interactive-podman-ou2024.sh`
+* `interactive-podman-rknop-dev.sh`
+
+but there may be more!  Edit each one, and, *wherever it is* (it will be different for different scripts based on whether they are podman or singularity based!), update the version number on the image to the new version you just figured out.
+
+Commit changes
+^^^^^^^^^^^^^^
+
+Run a:
+
+.. code-block:: console
+
+  git commit -a
+
+to commit the changes you made to ``requirements-cpu.txt`` and the various ``.sh`` files.  (**Note**: to do this right, really, you sould do this on a branch, do a PR, get the code reviewed, etc.  In pratice, I (Rob), right now, cheat and just update things directly.)
+
+Tag the new version
+^^^^^^^^^^^^^^^^^^^
+
+Run:
+
+.. code-block:: console
+
+  git tag x.y.z
+
+where ``x.y.z`` is the new version you just figured out.
+
+Push changes
+^^^^^^^^^^^^
+
+Run:
+
+.. code-block:: console
+
+  git push
+  git push --tag
+
+This may not work if you don't have enough permissions to push to the environment repo directly.   (See parenthetical comment above about doing things right and Rob cheating.)
+
+Build the new environment
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**WARNING**: this step is long and potentially error prone.  You must have docker installed.  Also, **I strongly recommend you run this on an x86_64 architecture machine** (which means it won't work on a Mac).  If you don't know what that means, then probably you shouldn't be trying to release a new environment.  Right now, we don't deal with muilti-arch images.  Everywhere we run (both Perlmutter and SMDC) is on the ``x86_64`` architecture, so that's what we need.
+
+Run:
+
+.. code-block:: console
+
+  make VER=x.y.z docker-images
+
+where ``x.y.z`` is the new version you just figured out.  This will take a while and will build four docker images, and give each image four names.
+
+Push the environment
+^^^^^^^^^^^^^^^^^^^^
+
+At the top level of the ``environment`` checkout, run:
+
+.. code-block:: console
+
+  make VER=x.y.z push-docker-images
+
+This will push to ``registry.nersc.gov/m4385`` and ``ghcr.io/roman-supernova-pit``.  It's possible you will get permission denied errors.  If that happens, then you will need to run one or both of:
+
+.. code-block:: console
+
+  docker login registry.nersc.gov
+  docker login ghcr.io/roman-supernova-pit
+
+and give it the right passwords and so forth.  Try the ``make`` again.
+
+Next, run:
+
+.. code-block:: console
+
+  make VER=x.y.z push-rknop-docker-images
+
+
+This will push to Rob's space on DockerHub, and will only work for Rob.
+
+Pull the environment on NERSC
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On NERSC, run:
+
+.. code-block:: console
+
+  podman-hpc login registry.nersc.gov
+
+and then run all of:
+
+.. code-block:: console
+
+  podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-x.y.z
+  podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev-x.y.z
+  podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cuda-x.y.z
+  podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cuda-dev-x.y.z
+
+where ``x.y.z`` is the new version you figured out.
+
+Next, pull the alisa images, so that the "latest version" will be your current version.  **Note:** as of this writing, the standard ``podman-hpc`` doesn't support pulling squashed alias images, hence the absolute path to an alternate ``podman-hpc`` executable.
+
+.. code-block:: console
+
+   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu
+   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
+   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cuda
+   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
+
+Fix permissions on NERSC
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+(We should really look into ACLs to see if we can make this step not necessary.  You aren't supposed to use ACLs on cfs, but I think they're on on scratch.)
+
+Unfortunately, the previous step will have pulled podman images in such a way that they're not readable by anybody but you.  You need to run the following to fix that:
+
+.. code-block:: console
+
+   find . -type d -not -perm 2775 -exec chmod 2775 \{\} \;
+   find . -type f -not -perm 0664 -exec chmod 0664 \{\} \;
+
+You *will* get some "Operation not permitted" errors.  If those are all on files with ``._dbindex`` in their name, then that's OK.  If it happens on other files, then there are problems.
+
+(Note: depending on your bash configuration, this command may not work with some or all of the backslashes above.  If it doesn't, try experimenting, or, as always, just panic.)
+
+
+
+Pull the environment on SMDC
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+TODO
+
 
 Installing a new database on NERSC Spin
 =======================================
@@ -15,21 +296,29 @@ Installing a new database on NERSC Spin
 Figure out your Spin namespace
 ------------------------------
 
-Assuming you're doing this for the Roman SNPIT, you will will be working with the ``m4385`` nersc account.  First, make sure you can run spin by, on Perlmutter, doing::
+Assuming you're doing this for the Roman SNPIT, you will will be working with the ``m4385`` nersc account.  First, make sure you can run spin by, on Perlmutter, doing:
+
+.. code-block:: console
 
   module load spin
 
-Then, select the right account with::
+Then, select the right account with:
+
+.. code-block:: console
 
   rancher context switch
 
 Find the number that corresponds to ``production`` and ``m4385``, and give it that number.  If you don't see ``m4385`` on the list, then you don't yet have access to the Roman SNPIT spin area.
 
-See what namespaces currently exist with::
+See what namespaces currently exist with:
+
+.. code-block:: console
 
   rancher namespaces
 
-If you know you want to work in one of those (and you will know if you know; if you're setting up a new thing, you prbably don't want to work in one of those), good, remember it.  If not, you will need to make a new namespace with::
+If you know you want to work in one of those (and you will know if you know; if you're setting up a new thing, you prbably don't want to work in one of those), good, remember it.  If not, you will need to make a new namespace with:
+
+.. code-block:: console
 
   rancher namespace create <namespace> --description "<comment>"
 
@@ -57,18 +346,24 @@ You need to do this in a checkout of the `snappl repo <https://github.com/roman-
 Build the postgres docker image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From your snappl checkout::
+From your snappl checkout:
+
+.. code-block:: console
 
   cd docker/postgres
   docker build --target postgres -t registry.nersc.gov/m4385/snpit-db-postgres:<tag> .
 
 where ``<tag>`` is the :ref:`image tag<docker-image-tag>` you chose above.
 
-Assuming all is well, push the docker image up to NERSC with::
+Assuming all is well, push the docker image up to NERSC with:
+
+.. code-block:: console
 
   docker push registry.nersc.gov/m4385/snpit-db-postgres:<tag>
 
-If it yells at you that you don't have access, you may need to log into the NERSC image registry with::
+If it yells at you that you don't have access, you may need to log into the NERSC image registry with:
+
+.. code-block:: console
 
   docker login registry.nersc.gov
 
@@ -79,13 +374,17 @@ Give it your usual NERSC username and password (*without* the 6-digit OTP).
 Build the webserver docker image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From the top directory of your snappl checkout::
+From the top directory of your snappl checkout:
+
+.. code-block:: console
 
   docker build --target webserver -t registry.nersc.gov/m4385/snpit-db-webserver:<tag> -f docker/webserver/Dockerfile .
 
 where ``<tag>`` is the :ref:`image tag<docker-image-tag>` you chose above.
 
-Assuming all is well, push the docker image up to NERSC with::
+Assuming all is well, push the docker image up to NERSC with:
+
+.. code-block:: console
 
   docker push registry.nersc.gov/m4385/snpit-db-webserver:<tag>
 
@@ -97,7 +396,9 @@ again logging first if necessary.
 Pick a postgres password
 ------------------------
 
-This actually doesn't need to be all that secure, because the postgres server is not going to be accessible from anywhere other than the small collection of virtual machines you'll be running on Spin within your namespace.  However, there's no reason not just to do it right.  Pick a good password.  Here is a python snippit that will do that::
+This actually doesn't need to be all that secure, because the postgres server is not going to be accessible from anywhere other than the small collection of virtual machines you'll be running on Spin within your namespace.  However, there's no reason not just to do it right.  Pick a good password.  Here is a python snippit that will do that:
+
+.. code-block:: console
 
   import secrets
   chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -130,7 +431,9 @@ Copy all the files in the ``spin/rknop_dev`` directory (*except* for ``shell.yam
 
 * **Update secrets.yaml** : This one is a bit more involved.
 
-  * First, you have to create a config file.  Create a file with these contents::
+  * First, you have to create a config file.  Create a file with these contents:
+
+    .. code-block:: yaml
 
       system:
         webserver:
@@ -155,13 +458,17 @@ Copy all the files in the ``spin/rknop_dev`` directory (*except* for ``shell.yam
 
     Replace the three things above that are in ``<ALL CAPS>``.  For the postgres password, put in the one you :ref:`created above<postgres-password>`.  For the flask secret key, generate another "good" password; it can be anything, it just shouldn't be the same as what's used anywhere else, and nobody else should have access to it.
 
-  * Run::
+  * Run:
+
+    .. code-block:: console
 
       base64 -w 0 <configfile> > barf
 
     where ``<configfile>`` is the config file you created and edited.  Then, in ``secrets.yaml``, edit the line starting ``snpit_config.yaml:`` and replace ``PUT THE RIGHT THING HERE`` with the contents of the file ``barf``.
 
-  * base64 encode your :ref:`postgres password<postgres-password>` with::
+  * base64 encode your :ref:`postgres password<postgres-password>` with:
+
+    .. code-block:: console
 
       echo -n "<postgres password>" | base64 - && echo
 
@@ -173,7 +480,9 @@ Copy all the files in the ``spin/rknop_dev`` directory (*except* for ``shell.yam
 Run the Initial Spin Servers and Create the Database Tables
 -----------------------------------------------------------
 
-Apply all (well, most) of the yaml files::
+Apply all (well, most) of the yaml files:
+
+.. code-block:: console
 
     export NAMESPACE=<your namespace>
     rancher kubectl --namespace $NAMESPACE apply -f secrets.yaml
@@ -184,13 +493,17 @@ Apply all (well, most) of the yaml files::
 
 Stop if you get error messages after any of these, and try to figure out what's going on.
 
-Once you've done all of this, run::
+Once you've done all of this, run:
+
+.. code-block:: console
 
   rancher kubectl --namespace $NAMESPACE get pods
 
 If all is well, you should see the postgres and webserver
 
-Next, migrate the database.  Get a shell on the webserver machine (which currently isn't actually running the webserver) with::
+Next, migrate the database.  Get a shell on the webserver machine (which currently isn't actually running the webserver) with:
+
+.. code-block:: console
 
   rancher kubectl --namespace $NAMESPACE exec -it <podname> -- /bin/bash
 
@@ -237,7 +550,9 @@ What to do once you actually see the error messages... is hard.
 Get a DNS name for the webserver
 --------------------------------
 
-This is potentially complicated.  Your webserver does actually already have a DNS name which was created by Spin.  To find the default Spin DNS name, look at the file ``webserver.yaml`` you created.  Find the line ``kind: Ingress``, and find the first line starting with ``- host:`` below that.  The hostname on that line is the Spin DNS name.  It will be::
+This is potentially complicated.  Your webserver does actually already have a DNS name which was created by Spin.  To find the default Spin DNS name, look at the file ``webserver.yaml`` you created.  Find the line ``kind: Ingress``, and find the first line starting with ``- host:`` below that.  The hostname on that line is the Spin DNS name.  It will be:
+
+.. code-block:: text
 
   webserver.<namespace>.production.svc.spin.nersc.org
 
@@ -254,7 +569,9 @@ You can just use this as the database webserver, but it will *not* have a valid 
 Get a Certificate for your DNS name
 -----------------------------------
 
-You can generate a privatey key and a certificate signing request with (on NERSC, or any system that has ``openssl`` installed)::
+You can generate a privatey key and a certificate signing request with (on NERSC, or any system that has ``openssl`` installed):
+
+.. code-block:: console
 
   openssl req -new -newkey rsa:2048 -pubkey -keyout your_server_name.priv -out your_server_name.csr -nodes
 
@@ -264,7 +581,9 @@ You will use the ``.csr`` file you created to get a signed certificate.  If you'
 
 Once you get the certificate, save it in the file ``your_server_name.cert``.  If you got your certificate from ``certificates.lbl.gov``, you want to save the "Certificate (w/ issue after), PEM encoded" certificate to that file.
 
-Base64 encode both your private key and your certificate::
+Base64 encode both your private key and your certificate:
+
+.. code-block:: console
 
   base64 -w 0 your_server_name.cert > cert.barf
   base64 -w 0 your_server_name.priv > priv.barf
@@ -289,15 +608,21 @@ Update the webserver to actually run the webserver
 
     * Remember to save the file.
 
-  * Run::
+  * Run:
+
+    .. code-block:: console
 
       rancher kubectl --namespace $NAMESPACE apply -f webserver.yaml
 
-    This will restart the webserver, now actually running the webserver.  Do::
+    This will restart the webserver, now actually running the webserver.  Do:
+
+    ..code-block:: console
 
       rancher kubectl --namespace $NAMESPACE get pods
 
-    until you see the webserver is running.  Then, do::
+    until you see the webserver is running.  Then, do:
+
+    ..code-block:: console
 
       rancher kubectl --namespace $NAMESPACE logs <podname>
 
@@ -340,6 +665,10 @@ Start with the following yaml, and copy it into a new ``.yaml`` file:
 
 For now, don't worry about all the paths.  Eventually, those will need to be right.  They *are* already right for running inside a container, but you will also need to set up the command that launches the container.  (TODO: document that.)  Replace ``YOUR WEBSERVER DNS NAME`` with the `name you secured for your webserver <webserver-dns-name>`_.  For ``SECRETS FILE NAME``, pick the name of a file that you will put in your secrets directory (see :doc:`environment` for more information about that).  It should not be short, but should probably be something like ``roman_snpit_db_rknop_dev``, replacing ``rknop_dev`` with something specific to the database you're setting up.  In this secrets file on your system, put the password you made for the user on the webserver in `create-database-table`_.
 
+Create a script for starting the environment
+--------------------------------------------
+
+TODO
 
 
 Test that you can connect to the database
