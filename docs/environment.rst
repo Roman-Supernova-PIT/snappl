@@ -11,7 +11,7 @@ Overview
 
 Eventually, if possible, we would like all SNPIT Code to run in the same environment.  This will simplify life for the people who are eventually going to be deploying and managing the entire pipeline.  However, if your code absolutely requires its own environment, as long as we can containerize it, we *might* be able to live with that.
 
-To update the enviornment, see :ref:`releasenewenv`.
+To update the environment, see :ref:`releasenewenv`.
 
 Containers vs. Native
 ---------------------
@@ -48,13 +48,13 @@ Next actually test your code in the docker environment.  Some common gotchas are
 Databases currently supported
 =============================
 
-The following test/development databases are currently up and running.  (Colums are referenced by other instructions below.):
+The following test/development databases are currently up and running.  (Columns are referenced by other instructions below.):
 
 * **Database**: a brief description of what database this is
 * **Secrets File**: The name of the :ref:`password file<env_password_file>` you must have in your secrets directory
 * **System**: Which system you must be on to run with this database
 * **Launcher**: The name of the script to launch the environment.  On NERSC, these are in ``/global/cfs/cdirs/m4385/env``
-* **Config File**: The name of the config file.  On NERSC, these is in ``/global/cfs/cdirs/m4385/env/configs``.  You usually don't have to worry about it, the launcher will set this up for you.  However, you *might* need to think about this :ref:`need_own_config`.  (Follow exactly what's in that section, though, and you shouldn't need to think about it.)
+* **Config File**: The name of the config file.  On NERSC, these are in ``/global/cfs/cdirs/m4385/env/configs``.  You usually don't have to worry about it, the launcher will set this up for you.  However, you *might* need to think about this :ref:`need_own_config`.  (Follow exactly what's in that section, though, and you shouldn't need to think about it.)
   
 
 ..
@@ -85,7 +85,7 @@ The following test/development databases are currently up and running.  (Colums 
       <td><tt>roman_snpit_db_ou2024</tt></td>
       <td>NERSC</td>
       <td><tt>interactive-podman-ou2024.sh</tt></td>
-      <td><tt>ou2024_container.config.yaml</td></td>
+      <td><tt>ou2024_container_config.yaml</td></td>
     </tr>
   </tbody>
   </table>
@@ -245,9 +245,10 @@ This will be more involved.  You have to create *two* bash scripts.  First, crea
 
    #!/bin/bash
 
+   cd /home
    python phrosty/phrosty/be_awesome.py --solve-cosmology --identify-dark-energy --nobel-prizes=3
 
-This script will run *inside a container* running the snpit image.
+This script will run *inside a container* running the snpit image.  If you :ref:`use your own custom config file<need_own_config>`, then you would add a line ``export SNPIT_CONFIG=...`` early in this script.  You can do whatever other environment setup you need to do.
 
 Next, create a second script, which we shall call ``dothings_sbatch.sh``, though again you can name it whatever you want.
 
@@ -259,9 +260,9 @@ Next, create a second script, which we shall call ``dothings_sbatch.sh``, though
    #SBATCH --nodes=1
    #SBATCH --constraint=cpu
 
-   bash /global/cfs/cdirs/m4385/env/<envscript> /home/dothings.sh
+   bash /global/cfs/cdirs/m4385/env/<launcher> /home/dothings.sh
 
-Where you replace ``<envscript>`` with the Launcher from :ref:`database_list`.  You will want to edit the various ``#SBATCH`` directives to go to the queue you want, to get a GPU if you need it, to increase (or decrease) the time.  You may also want additional directives about number of tasks, number of cpus, memory (if you're on the shared queue).  All of this presumes you know how to use ``sbatch``.
+Where you replace ``<launcher>`` with the Launcher from :ref:`database_list`.  You should generally *not* add any commands other than the single ``bash`` command here.  (You can if you know what you're doing.)  You will want to edit the various ``#SBATCH`` directives to go to the queue you want, to get a GPU if you need it, to increase (or decrease) the time.  You may also want additional directives about number of tasks, number of cpus, memory (if you're on the shared queue).  All of this presumes you know how to use ``sbatch``.
 
 If you didn't name your first script ``dothings.sh``, also change that name here.
 
@@ -297,7 +298,7 @@ TODO
 Using the Container
 -------------------
 
-**Warning**: Currently, we are only able to build our containers for ``x86_64`` (also called ``amd64``) systems.  We have not succeeded in building our containers for ``ARM`` (also called ``arm64``) systems— which includes all Macs.  You *might* be able to run a container from a different architecture on your machine, but performance is likely to be very poor.  This means that for development, you really want to be using an ``x86_64`` Linux machine if that's at all possible.  (We do hope to get the container working for ``ARM``, but it's a thorny problem and not a high proirity.  If you want to figure out how to make it work, please do.)
+**Warning**: Currently, we are only able to build our containers for ``x86_64`` (also called ``amd64``) systems.  We have not succeeded in building our containers for ``ARM`` (also called ``arm64``) systems— which includes all Macs.  You *might* be able to run a container from a different architecture on your machine, but performance is likely to be very poor.  This means that for development, you really want to be using an ``x86_64`` Linux machine if that's at all possible.  (We do hope to get the container working for ``ARM``, but it's a thorny problem and not a high priority.  If you want to figure out how to make it work, please do.)
 
 TODO
 
