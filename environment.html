@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Roman SNPIT Environment &#8212; roman_snpit_snappl 0.1.dev1+g9beba83c0 documentation</title>
+    <title>Roman SNPIT Environment &#8212; roman_snpit_snappl 0.1.dev1+gc97e4184f documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
-    <script src="_static/documentation_options.js?v=897783e4"></script>
+    <script src="_static/documentation_options.js?v=d3cf7099"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -118,15 +118,16 @@
 <ul>
 <li><p><a class="reference internal" href="#using-conda" id="id12">Using Conda</a></p></li>
 <li><p><a class="reference internal" href="#using-the-container" id="id13">Using the Container</a></p></li>
-<li><p><a class="reference internal" href="#running-a-test-environment" id="id14">Running a Test Environment</a></p></li>
+<li><p><a class="reference internal" href="#submitting-batch-jobs" id="id14">Submitting batch jobs</a></p></li>
+<li><p><a class="reference internal" href="#running-a-test-environment" id="id15">Running a Test Environment</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#running-on-smdc" id="id15">Running on SMDC</a></p></li>
-<li><p><a class="reference internal" href="#running-locally-on-your-machine" id="id16">Running locally on your machine</a></p>
+<li><p><a class="reference internal" href="#running-on-smdc" id="id16">Running on SMDC</a></p></li>
+<li><p><a class="reference internal" href="#running-locally-on-your-machine" id="id17">Running locally on your machine</a></p>
 <ul>
-<li><p><a class="reference internal" href="#using-pip-or-conda" id="id17">Using Pip or Conda</a></p></li>
-<li><p><a class="reference internal" href="#id2" id="id18">Using the Container</a></p></li>
-<li><p><a class="reference internal" href="#id3" id="id19">Running a Test Environment</a></p></li>
+<li><p><a class="reference internal" href="#using-pip-or-conda" id="id18">Using Pip or Conda</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id19">Using the Container</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id20">Running a Test Environment</a></p></li>
 </ul>
 </li>
 </ul>
@@ -136,9 +137,11 @@
 <section id="overview">
 <h2><a class="toc-backref" href="#id6" role="doc-backlink">Overview</a><a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
 <p>Eventually, if possible, we would like all SNPIT Code to run in the same environment.  This will simplify life for the people who are eventually going to be deploying and managing the entire pipeline.  However, if your code absolutely requires its own environment, as long as we can containerize it, we <em>might</em> be able to live with that.</p>
+<p>To update the environment, see <a class="reference internal" href="maintainers.html#releasenewenv"><span class="std std-ref">Releasing a new Environment</span></a>.</p>
 <section id="containers-vs-native">
 <h3><a class="toc-backref" href="#id7" role="doc-backlink">Containers vs. Native</a><a class="headerlink" href="#containers-vs-native" title="Link to this heading">¶</a></h3>
 <p>Currently, at least on NERSC, we support two different Roman SNPIT environments: one that is just a conda environment, and the other that runs inside a container using <code class="docutils literal notranslate"><span class="pre">podman-hpc</span></code> (which is similar to using <code class="docutils literal notranslate"><span class="pre">docker</span></code> on your own system).  Because the goal is to get all code running in containers, we urge you to move to using the containerized environment on NERSC as soon as possible.</p>
+<p><strong>Note</strong>: The conda environment has not been kept up to date and may not work for many things.  Only the containerized environment is maintained.</p>
 </section>
 <section id="databases-filesystems-and-config-files">
 <h3><a class="toc-backref" href="#id8" role="doc-backlink">Databases, Filesystems, and Config Files</a><a class="headerlink" href="#databases-filesystems-and-config-files" title="Link to this heading">¶</a></h3>
@@ -159,7 +162,14 @@
 </section>
 <section id="databases-currently-supported">
 <span id="database-list"></span><h2><a class="toc-backref" href="#id10" role="doc-backlink">Databases currently supported</a><a class="headerlink" href="#databases-currently-supported" title="Link to this heading">¶</a></h2>
-<p>The following test/development databases are currently up and running.  (The columns are all used in other instructions below.)</p>
+<p>The following test/development databases are currently up and running.  (Columns are referenced by other instructions below.):</p>
+<ul class="simple">
+<li><p><strong>Database</strong>: a brief description of what database this is</p></li>
+<li><p><strong>Secrets File</strong>: The name of the <a class="reference internal" href="#env-password-file"><span class="std std-ref">password file</span></a> you must have in your secrets directory</p></li>
+<li><p><strong>System</strong>: Which system you must be on to run with this database</p></li>
+<li><p><strong>Launcher</strong>: The name of the script to launch the environment.  On NERSC, these are in <code class="docutils literal notranslate"><span class="pre">/global/cfs/cdirs/m4385/env</span></code></p></li>
+<li><p><strong>Config File</strong>: The name of the config file.  On NERSC, these are in <code class="docutils literal notranslate"><span class="pre">/global/cfs/cdirs/m4385/env/configs</span></code>.  You usually don’t have to worry about it, the launcher will set this up for you.  However, you <em>might</em> need to think about this <a class="reference internal" href="#need-own-config"><span class="std std-ref">If you need your own config file</span></a>.  (Follow exactly what’s in that section, though, and you shouldn’t need to think about it.)</p></li>
+</ul>
 <table class="docutils align-default">
 <thead>
   <tr class="row-odd">
@@ -167,20 +177,23 @@
     <th class="head">Secrets File</th>
     <th class="head">System</th>
     <th class="head">Launcher</th>
+    <th class="head">Config File</th>
   </tr>
 </thead>
 <tbody>
   <tr class="row-even">
-    <td>The nov2025 test database</td>
-    <td><tt>roman_snpit_ou2024_nov_ou2024nov</tt></td>
-    <td>NERSC</td>
-    <td><tt>interactive-podman-nov2025.sh</tt></td>
-  </tr>
-  <tr class="row-odd">
-    <td>Rob's tests</td>
+    <td>Generic NERSC Tests</td>
     <td><tt>roman_snpit_db_rknop_dev</tt></td>
     <td>NERSC</td>
     <td><tt>interactive-podman-rknop-dev.sh</tt></td>
+    <td><tt>rknop_dev_container_config.yaml</tt></td>
+  </tr>
+  <tr class="row-odd">
+    <td>NERSC OU2024</td>
+    <td><tt>roman_snpit_db_ou2024</tt></td>
+    <td>NERSC</td>
+    <td><tt>interactive-podman-ou2024.sh</tt></td>
+    <td><tt>ou2024_container_config.yaml</td></td>
   </tr>
 </tbody>
 </table></section>
@@ -188,7 +201,7 @@
 <h2><a class="toc-backref" href="#id11" role="doc-backlink">Running on NERSC</a><a class="headerlink" href="#running-on-nersc" title="Link to this heading">¶</a></h2>
 <section id="using-conda">
 <h3><a class="toc-backref" href="#id12" role="doc-backlink">Using Conda</a><a class="headerlink" href="#using-conda" title="Link to this heading">¶</a></h3>
-<p>TODO</p>
+<p>This is not fully supported.  Use the container.</p>
 </section>
 <section id="using-the-container">
 <h3><a class="toc-backref" href="#id13" role="doc-backlink">Using the Container</a><a class="headerlink" href="#using-the-container" title="Link to this heading">¶</a></h3>
@@ -218,7 +231,7 @@
 <p>You only ever need to do this once.</p>
 </section>
 <section id="create-the-password-file-for-the-database-you-wish-to-connect-to">
-<h4>Create the password file for the database you wish to connect to<a class="headerlink" href="#create-the-password-file-for-the-database-you-wish-to-connect-to" title="Link to this heading">¶</a></h4>
+<span id="env-password-file"></span><h4>Create the password file for the database you wish to connect to<a class="headerlink" href="#create-the-password-file-for-the-database-you-wish-to-connect-to" title="Link to this heading">¶</a></h4>
 <p>Figure out two things: the name of the secrets file (see <a class="reference internal" href="#database-list">database_list</a>) and the actual password.  (For the latter, you need to talk to Rob, or whoever set up the database you’re connecting to.)</p>
 <p>Once you know these two things, create the password file with the right name in your <code class="docutils literal notranslate"><span class="pre">secrets</span></code> directory.  It should have one line, which is the password.  Do this however you like to do these things (text editor, whatever), or run the following on NERSC:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd ~/secrets</span>
@@ -233,7 +246,7 @@
 <p>You only need to do this once for each different database you want to connect to.</p>
 </section>
 <section id="pick-a-directory-you-re-going-to-work-in">
-<h4>Pick a directory you’re going to work in<a class="headerlink" href="#pick-a-directory-you-re-going-to-work-in" title="Link to this heading">¶</a></h4>
+<span id="env-workdir"></span><h4>Pick a directory you’re going to work in<a class="headerlink" href="#pick-a-directory-you-re-going-to-work-in" title="Link to this heading">¶</a></h4>
 <p>You can put this under your home directory, but probably don’t want to do that, as the space you’re allowed in your home directory is very limited.  Either make yourself a subdirectory on scratch under <code class="docutils literal notranslate"><span class="pre">$SCRATCH</span></code> (being aware that files will be purged off of that disk after a while, so make sure you’ve committed anything you want to keep to git), or make yourself a directory underneath <code class="docutils literal notranslate"><span class="pre">/global/cfs/cdirs/m4385/users/&lt;yourname&gt;</span></code>.</p>
 <p>In this directory, check out all the various things that you want to work on.  If you’re working on photometry, you probably want to git clone the <a class="reference external" href="https://github.com/roman-Supernova-PIT/photometry_test_data">photometry test data</a>.  You <em>might</em> want to clone <a class="reference external" href="https://github.com/roman-Supernova-PIT/snappl">snappl</a> (but probably don’t need to, because snappl is built into the Dockerfile you’ll be running.)  And, of course, make sure the directory of the code you’re working on is here, and has no symlinks that point outside of itself.</p>
 </section>
@@ -261,7 +274,7 @@
 <p>(It’s not really a big deal, but if you don’t do that, somewhere the system keeps a record of your exited container, and you probably don’t need that.)</p>
 </section>
 <section id="if-you-need-your-own-config-file">
-<h4>If you need your own config file<a class="headerlink" href="#if-you-need-your-own-config-file" title="Link to this heading">¶</a></h4>
+<span id="need-own-config"></span><h4>If you need your own config file<a class="headerlink" href="#if-you-need-your-own-config-file" title="Link to this heading">¶</a></h4>
 <p>The containers come with a config file that has the database connection baked in.  If you’re using the snappl config system yourself, you probably have your own config file with things in it that configure your own application.  In order to use the container config’s database together with your config file, put the following lines at the top of your config <code class="docutils literal notranslate"><span class="pre">.yaml</span></code> file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">preloads</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/snpit_env/configs/${SNPIT_DEFAULT_CONFIG}</span>
@@ -274,33 +287,57 @@
 </div>
 <p>Now, when you run anything, snappl will connect to the database designed for the container, but will also include all of your own configuration data.</p>
 </section>
-<section id="submitting-batch-jobs">
-<h4>Submitting batch jobs<a class="headerlink" href="#submitting-batch-jobs" title="Link to this heading">¶</a></h4>
-<p>This will be more involved.  What you will need to do is copy and edit the “NERSC Launcher” script.  If you’re lucky, all you’ll have to do is replace <code class="docutils literal notranslate"><span class="pre">/bin/bash</span></code> on the last line with the command that you want to run, and edit the top to have all the necessary <code class="docutils literal notranslate"><span class="pre">#SBATCH</span></code> directives.  Then <code class="docutils literal notranslate"><span class="pre">sbatch</span></code> your copied and edited script from your work directory.</p>
 </section>
+<section id="submitting-batch-jobs">
+<h3><a class="toc-backref" href="#id14" role="doc-backlink">Submitting batch jobs</a><a class="headerlink" href="#submitting-batch-jobs" title="Link to this heading">¶</a></h3>
+<p>This will be more involved.  You have to create <em>two</em> bash scripts.  First, create the script that actually does the stuff you want to do.  We’ll call it <code class="docutils literal notranslate"><span class="pre">dothings.sh</span></code> here, but you can name it whatever you want.  It should live in the <a class="reference internal" href="#env-workdir"><span class="std std-ref">directory you picked to work in</span></a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+
+<span class="nb">cd</span><span class="w"> </span>/home
+python<span class="w"> </span>phrosty/phrosty/be_awesome.py<span class="w"> </span>--solve-cosmology<span class="w"> </span>--identify-dark-energy<span class="w"> </span>--nobel-prizes<span class="o">=</span><span class="m">3</span>
+</pre></div>
+</div>
+<p>This script will run <em>inside a container</em> running the snpit image.  If you <a class="reference internal" href="#need-own-config"><span class="std std-ref">use your own custom config file</span></a>, then you would add a line <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">SNPIT_CONFIG=...</span></code> early in this script.  You can do whatever other environment setup you need to do.</p>
+<p>Next, create a second script, which we shall call <code class="docutils literal notranslate"><span class="pre">dothings_sbatch.sh</span></code>, though again you can name it whatever you want.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH --qos=debug</span>
+<span class="c1">#SBATCH --time=00:20:00</span>
+<span class="c1">#SBATCH --nodes=1</span>
+<span class="c1">#SBATCH --constraint=cpu</span>
+
+bash<span class="w"> </span>/global/cfs/cdirs/m4385/env/&lt;launcher&gt;<span class="w"> </span>/home/dothings.sh
+</pre></div>
+</div>
+<p>Where you replace <code class="docutils literal notranslate"><span class="pre">&lt;launcher&gt;</span></code> with the Launcher from <a class="reference internal" href="#database-list"><span class="std std-ref">Databases currently supported</span></a>.  You should generally <em>not</em> add any commands other than the single <code class="docutils literal notranslate"><span class="pre">bash</span></code> command here.  (You can if you know what you’re doing.)  You will want to edit the various <code class="docutils literal notranslate"><span class="pre">#SBATCH</span></code> directives to go to the queue you want, to get a GPU if you need it, to increase (or decrease) the time.  You may also want additional directives about number of tasks, number of cpus, memory (if you’re on the shared queue).  All of this presumes you know how to use <code class="docutils literal notranslate"><span class="pre">sbatch</span></code>.</p>
+<p>If you didn’t name your first script <code class="docutils literal notranslate"><span class="pre">dothings.sh</span></code>, also change that name here.</p>
+<p>Now, you should be able to submit your job with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">sbatch dothings_sbatch.sh</span>
+</pre></div>
+</div>
+<p>of course replacing <code class="docutils literal notranslate"><span class="pre">dothings_sbatch.sh</span></code> with whatever you named your second script.</p>
 </section>
 <section id="running-a-test-environment">
-<h3><a class="toc-backref" href="#id14" role="doc-backlink">Running a Test Environment</a><a class="headerlink" href="#running-a-test-environment" title="Link to this heading">¶</a></h3>
+<h3><a class="toc-backref" href="#id15" role="doc-backlink">Running a Test Environment</a><a class="headerlink" href="#running-a-test-environment" title="Link to this heading">¶</a></h3>
 <p>TODO.  Haven’t fully figured out yet how to get this working on NERSC.</p>
 </section>
 </section>
 <section id="running-on-smdc">
-<h2><a class="toc-backref" href="#id15" role="doc-backlink">Running on SMDC</a><a class="headerlink" href="#running-on-smdc" title="Link to this heading">¶</a></h2>
+<h2><a class="toc-backref" href="#id16" role="doc-backlink">Running on SMDC</a><a class="headerlink" href="#running-on-smdc" title="Link to this heading">¶</a></h2>
 <p>TODO</p>
 </section>
 <section id="running-locally-on-your-machine">
-<h2><a class="toc-backref" href="#id16" role="doc-backlink">Running locally on your machine</a><a class="headerlink" href="#running-locally-on-your-machine" title="Link to this heading">¶</a></h2>
+<h2><a class="toc-backref" href="#id17" role="doc-backlink">Running locally on your machine</a><a class="headerlink" href="#running-locally-on-your-machine" title="Link to this heading">¶</a></h2>
 <section id="using-pip-or-conda">
-<h3><a class="toc-backref" href="#id17" role="doc-backlink">Using Pip or Conda</a><a class="headerlink" href="#using-pip-or-conda" title="Link to this heading">¶</a></h3>
+<h3><a class="toc-backref" href="#id18" role="doc-backlink">Using Pip or Conda</a><a class="headerlink" href="#using-pip-or-conda" title="Link to this heading">¶</a></h3>
 <p>TODO</p>
 </section>
 <section id="id2">
-<h3><a class="toc-backref" href="#id18" role="doc-backlink">Using the Container</a><a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
-<p><strong>Warning</strong>: Currently, we are only able to build our containers for <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> (also called <code class="docutils literal notranslate"><span class="pre">amd64</span></code>) systems.  We have not succeeded in building our containers for <code class="docutils literal notranslate"><span class="pre">ARM</span></code> (also called <code class="docutils literal notranslate"><span class="pre">arm64</span></code>) systems— which includes all Macs.  You <em>might</em> be able to run a container from a different architecture on your machine, but performance is likely to be very poor.  This means that for development, you really want to be using an <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> Linux machine if that’s at all possible.  (We do hope to get the container working for <code class="docutils literal notranslate"><span class="pre">ARM</span></code>, but it’s a thorny problem and not a high proirity.  If you want to figure out how to make it work, please do.)</p>
+<h3><a class="toc-backref" href="#id19" role="doc-backlink">Using the Container</a><a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<p><strong>Warning</strong>: Currently, we are only able to build our containers for <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> (also called <code class="docutils literal notranslate"><span class="pre">amd64</span></code>) systems.  We have not succeeded in building our containers for <code class="docutils literal notranslate"><span class="pre">ARM</span></code> (also called <code class="docutils literal notranslate"><span class="pre">arm64</span></code>) systems— which includes all Macs.  You <em>might</em> be able to run a container from a different architecture on your machine, but performance is likely to be very poor.  This means that for development, you really want to be using an <code class="docutils literal notranslate"><span class="pre">x86_64</span></code> Linux machine if that’s at all possible.  (We do hope to get the container working for <code class="docutils literal notranslate"><span class="pre">ARM</span></code>, but it’s a thorny problem and not a high priority.  If you want to figure out how to make it work, please do.)</p>
 <p>TODO</p>
 </section>
 <section id="id3">
-<h3><a class="toc-backref" href="#id19" role="doc-backlink">Running a Test Environment</a><a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<h3><a class="toc-backref" href="#id20" role="doc-backlink">Running a Test Environment</a><a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
 <p>TODO</p>
 <p>In the mean time, in your working directory (i.e. the directory that has subdirectories which are checkouts of the other git archives you’re working on), clone the <a class="reference external" href="https://github.com/Roman-Supernova-PIT/environment">roman SNPIT environment repo</a>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/Roman-Supernova-PIT/environment.git</span>
