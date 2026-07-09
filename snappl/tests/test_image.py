@@ -844,3 +844,9 @@ def test_romandatamodel_set_data( romandatamodel_image ):
         image.flags = origim
     with pytest.raises( TypeError, match="Flags must be a 2d numpy array of integers." ):
         image.flags = np.array( [1, 2, 3] )
+
+    # Also test self.free(). 
+    image.free()
+    assert image._data is None
+    assert image._noise is None
+    assert image._flags is None
