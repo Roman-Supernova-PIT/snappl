@@ -2511,6 +2511,11 @@ class RomanDatamodelImage( Image ):
         else:
             raise TypeError("Flags must be a 2d numpy array of integers.")
 
+    def free( self ):
+        self._data = None
+        self._noise = None
+        self._flags = None
+
 # ======================================================================
 # This dictionary defines the format field in the database.  The key is the format
 #   integer, the value gives the image class, the base path config value, and eventually
