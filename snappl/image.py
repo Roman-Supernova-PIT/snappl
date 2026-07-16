@@ -2511,6 +2511,14 @@ class RomanDatamodelImage( Image ):
         else:
             raise TypeError("Flags must be a 2d numpy array of integers.")
 
+    def free( self ):
+        SNLogger.warning( 'WARNING: self.free() has been called for the RomanDatamodelImage class. \
+                           This does not actually free memory. This function is included for \
+                           compatibility reasons.' )
+        self._data = None
+        self._noise = None
+        self._flags = None
+
 # ======================================================================
 # This dictionary defines the format field in the database.  The key is the format
 #   integer, the value gives the image class, the base path config value, and eventually
