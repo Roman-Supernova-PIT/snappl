@@ -1,0 +1,2 @@
+Adding a catch to ensure that the correct band is used when simulating with ou24PSFs.
+
