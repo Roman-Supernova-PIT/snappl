@@ -17,6 +17,7 @@ import yaml
 import galsim
 import photutils.psf
 from roman_imsim.utils import roman_utils
+from roman_imsim import ChargeDiff
 import stpsf
 import synphot
 
@@ -1448,6 +1449,7 @@ class ou24PSF_slow( PSF ):
             photon_ops = [ rmutils.getPSF( x+1, y+1, pupil_bin=8 ) ]
             if self._include_photonOps:
                 photon_ops += rmutils.photon_ops
+                photon_ops += [ ChargeDiff(rng=rmutils.rng) ]
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
@@ -1596,6 +1598,7 @@ class ou24PSF( ou24PSF_slow ):
             photon_ops = [ self._psf ]
             if self._include_photonOps:
                 photon_ops += self._rmutils.photon_ops
+                photon_ops += [ ChargeDiff(rng=self._rmutils.rng) ]
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
@@ -1766,6 +1769,7 @@ class ou24PSF_slow_photonshoot( ou24PSF_slow ):
 #             photon_ops = [ rmutils.getPSF( x+1, y+1, pupil_bin=8 ) ]
 #             if self.include_photonOps:
 #                 photon_ops += rmutils.photon_ops
+#                 photon_ops += [ ChargeDiff(rng=rmutils.rng) ]
 
 #             point.drawImage( rmutils.bpass, method='phot', rng=rmutils.rng, photon_ops=photon_ops,
 #                              n_photons=self.n_photons, maxN=self.n_photons, poisson_flux=False,
