@@ -1,0 +1,1 @@
+Specific commit of roman_imsim in pyproject.toml; bump dockerfiles to postgres-17 and base on debian trixie (current stable).
