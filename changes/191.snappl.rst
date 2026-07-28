@@ -1,0 +1,2 @@
+Cutout now creates copies of the data, noise, and flags arrays to prevent memory leaks, as the
+extra reference prevented the array from being deleted.

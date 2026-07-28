@@ -11,11 +11,14 @@ Overview
 
 Eventually, if possible, we would like all SNPIT Code to run in the same environment.  This will simplify life for the people who are eventually going to be deploying and managing the entire pipeline.  However, if your code absolutely requires its own environment, as long as we can containerize it, we *might* be able to live with that.
 
+To update the environment, see :ref:`releasenewenv`.
 
 Containers vs. Native
 ---------------------
 
 Currently, at least on NERSC, we support two different Roman SNPIT environments: one that is just a conda environment, and the other that runs inside a container using ``podman-hpc`` (which is similar to using ``docker`` on your own system).  Because the goal is to get all code running in containers, we urge you to move to using the containerized environment on NERSC as soon as possible.
+
+**Note**: The conda environment has not been kept up to date and may not work for many things.  Only the containerized environment is maintained.
 
 
 Databases, Filesystems, and Config Files
@@ -45,7 +48,14 @@ Next actually test your code in the docker environment.  Some common gotchas are
 Databases currently supported
 =============================
 
-The following test/development databases are currently up and running.  (The columns are all used in other instructions below.)
+The following test/development databases are currently up and running.  (Columns are referenced by other instructions below.):
+
+* **Database**: a brief description of what database this is
+* **Secrets File**: The name of the :ref:`password file<env_password_file>` you must have in your secrets directory
+* **System**: Which system you must be on to run with this database
+* **Launcher**: The name of the script to launch the environment.  On NERSC, these are in ``/global/cfs/cdirs/m4385/env``
+* **Config File**: The name of the config file.  On NERSC, these are in ``/global/cfs/cdirs/m4385/env/configs``.  You usually don't have to worry about it, the launcher will set this up for you.  However, you *might* need to think about this :ref:`need_own_config`.  (Follow exactly what's in that section, though, and you shouldn't need to think about it.)
+  
 
 ..
   RST is very annoying.  Among other things, its tables superficially look clean and simple, and in practice are very annoying.  In fact, it's annoying that the world decided it needed markdown in the first place and people didn't just learn HTML.  Of course, HTML (and especially CSS) is also annoying, but less so than most markdown, at least from the point of view of making things do what you want.
@@ -59,23 +69,34 @@ The following test/development databases are currently up and running.  (The col
       <th class="head">Secrets File</th>
       <th class="head">System</th>
       <th class="head">Launcher</th>
+      <th class="head">Config File</th>
     </tr>
   </thead>
   <tbody>
+    <tr class="row-even">
+      <td>Generic NERSC Tests</td>
+      <td><tt>roman_snpit_db_rknop_dev</tt></td>
+      <td>NERSC</td>
+      <td><tt>interactive-podman-rknop-dev.sh</tt></td>
+      <td><tt>rknop_dev_container_config.yaml</tt></td>
+    </tr>
+    <tr class="row-odd">
+      <td>NERSC OU2024</td>
+      <td><tt>roman_snpit_db_ou2024</tt></td>
+      <td>NERSC</td>
+      <td><tt>interactive-podman-ou2024.sh</tt></td>
+      <td><tt>ou2024_container_config.yaml</td></td>
+    </tr>
+  </tbody>
+  </table>
+
+..
     <tr class="row-even">
       <td>The nov2025 test database</td>
       <td><tt>roman_snpit_ou2024_nov_ou2024nov</tt></td>
       <td>NERSC</td>
       <td><tt>interactive-podman-nov2025.sh</tt></td>
     </tr>
-    <tr class="row-odd">
-      <td>Rob's tests</td>
-      <td><tt>roman_snpit_db_rknop_dev</tt></td>
-      <td>NERSC</td>
-      <td><tt>interactive-podman-rknop-dev.sh</tt></td>
-    </tr>
-  </tbody>
-  </table>
 
 
 
@@ -85,7 +106,7 @@ Running on NERSC
 Using Conda
 -----------
 
-TODO
+This is not fully supported.  Use the container.
 
 
 Using the Container
@@ -125,6 +146,8 @@ We do not store the passwords for databases anywhere in github.  As such, there 
 
 You only ever need to do this once.
 
+.. _env_password_file:
+
 Create the password file for the database you wish to connect to
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -146,6 +169,8 @@ Verify that the password is right with:
   cat ~/secrets/<passwordfile>
 
 You only need to do this once for each different database you want to connect to.
+
+.. _env_workdir:
 
 Pick a directory you're going to work in
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -188,6 +213,8 @@ When you're done, just ``exit`` the container.  Probably also be a good citizen 
 
 (It's not really a big deal, but if you don't do that, somewhere the system keeps a record of your exited container, and you probably don't need that.)
 
+.. _need_own_config:
+
 If you need your own config file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -210,9 +237,42 @@ Now, when you run anything, snappl will connect to the database designed for the
 
 
 Submitting batch jobs
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
-This will be more involved.  What you will need to do is copy and edit the "NERSC Launcher" script.  If you're lucky, all you'll have to do is replace ``/bin/bash`` on the last line with the command that you want to run, and edit the top to have all the necessary ``#SBATCH`` directives.  Then ``sbatch`` your copied and edited script from your work directory.
+This will be more involved.  You have to create *two* bash scripts.  First, create the script that actually does the stuff you want to do.  We'll call it ``dothings.sh`` here, but you can name it whatever you want.  It should live in the :ref:`directory you picked to work in<env_workdir>`.
+
+.. code-block:: bash
+
+   #!/bin/bash
+
+   cd /home
+   python phrosty/phrosty/be_awesome.py --solve-cosmology --identify-dark-energy --nobel-prizes=3
+
+This script will run *inside a container* running the snpit image.  If you :ref:`use your own custom config file<need_own_config>`, then you would add a line ``export SNPIT_CONFIG=...`` early in this script.  You can do whatever other environment setup you need to do.
+
+Next, create a second script, which we shall call ``dothings_sbatch.sh``, though again you can name it whatever you want.
+
+.. code-block:: bash
+
+   #!/bin/bash
+   #SBATCH --qos=debug
+   #SBATCH --time=00:20:00
+   #SBATCH --nodes=1
+   #SBATCH --constraint=cpu
+
+   bash /global/cfs/cdirs/m4385/env/<launcher> /home/dothings.sh
+
+Where you replace ``<launcher>`` with the Launcher from :ref:`database_list`.  You should generally *not* add any commands other than the single ``bash`` command here.  (You can if you know what you're doing.)  You will want to edit the various ``#SBATCH`` directives to go to the queue you want, to get a GPU if you need it, to increase (or decrease) the time.  You may also want additional directives about number of tasks, number of cpus, memory (if you're on the shared queue).  All of this presumes you know how to use ``sbatch``.
+
+If you didn't name your first script ``dothings.sh``, also change that name here.
+
+Now, you should be able to submit your job with:
+
+.. code-block:: console
+
+   sbatch dothings_sbatch.sh
+
+of course replacing ``dothings_sbatch.sh`` with whatever you named your second script.
 
 
 Running a Test Environment
@@ -238,7 +298,7 @@ TODO
 Using the Container
 -------------------
 
-**Warning**: Currently, we are only able to build our containers for ``x86_64`` (also called ``amd64``) systems.  We have not succeeded in building our containers for ``ARM`` (also called ``arm64``) systems— which includes all Macs.  You *might* be able to run a container from a different architecture on your machine, but performance is likely to be very poor.  This means that for development, you really want to be using an ``x86_64`` Linux machine if that's at all possible.  (We do hope to get the container working for ``ARM``, but it's a thorny problem and not a high proirity.  If you want to figure out how to make it work, please do.)
+**Warning**: Currently, we are only able to build our containers for ``x86_64`` (also called ``amd64``) systems.  We have not succeeded in building our containers for ``ARM`` (also called ``arm64``) systems— which includes all Macs.  You *might* be able to run a container from a different architecture on your machine, but performance is likely to be very poor.  This means that for development, you really want to be using an ``x86_64`` Linux machine if that's at all possible.  (We do hope to get the container working for ``ARM``, but it's a thorny problem and not a high priority.  If you want to figure out how to make it work, please do.)
 
 TODO
 
@@ -293,5 +353,3 @@ For example, if you want to run the snappl tests on a branch of snappl, make sur
   pip install -e .[test]
   cd snappl/tests
   pytest -v
-
-

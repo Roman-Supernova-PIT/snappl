@@ -6,9 +6,17 @@ import argparse
 import functools
 import multiprocessing
 
+import numbers
 import numpy as np
 import astropy.wcs
+import scipy
+from scipy.special import gammaincinv
+from scipy.stats import binned_statistic_2d
+import scipy.signal
 
+from astropy.modeling.functional_models import Sersic2D
+from roman_imsim.utils import roman_utils
+from snappl.config import Config
 from snappl.logger import SNLogger
 from snappl.utils import isSequence
 from snappl.psf import PSF
@@ -42,14 +50,14 @@ class ImageSimulatorPointSource:
         elif shape == "galaxy":
             # unpack list into dict
             galaxy_kwargs_dict = {k: float(v) for k, v in zip(galaxy_kwargs[::2], galaxy_kwargs[1::2])}
-            stamp = psf.get_galaxy_stamp( x, y, x0=x0, y0=y0, flux=flux, **galaxy_kwargs_dict )
+            stamp = get_galaxy_stamp( psf, x, y, x0=x0, y0=y0, flux=flux, **galaxy_kwargs_dict )
         var = np.zeros( stamp.shape )
         if noisy:
             if rng is None:
                 rng = np.random.default_rng()
             w = stamp > 0
             var[ w ] = stamp[ w ] / gain
-            stamp[ w ] += rng.normal( 0., np.sqrt( var[w] ) )
+            stamp[w] += rng.normal(0.0, np.sqrt(var[w]))
 
         sx0 = 0
         sx1 = stamp.shape[1]
@@ -226,7 +234,7 @@ class ImageSimulatorImage:
         self.image.data += rng.normal( skymean, skysigma, size=self.image.data.shape )
         self.image.noise += np.full( self.image.noise.shape, skysigma**2 )
 
-    def add_stars( self, stars, rng=None, noisy=False, numprocs=12, psf = None ):
+    def add_stars( self, stars, rng=None, noisy=False, numstarprocs=12, psf = None ):
         if rng is None:
             rng = np.random.default_rng()
 
@@ -245,8 +253,8 @@ class ImageSimulatorImage:
             SNLogger.error( str(x) )
             self._bad_things_have_happened = True
 
-        SNLogger.info( f"Adding stars in {numprocs} processes" )
-        if numprocs == 1:
+        SNLogger.info( f"Adding stars in {numstarprocs} processes" )
+        if numstarprocs == 1:
             for i, star in enumerate( stars.stars ):
                 x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                 try:
@@ -256,7 +264,7 @@ class ImageSimulatorImage:
                 except Exception as ex:
                     omg( ex )
         else:
-            with multiprocessing.Pool( numprocs ) as pool:
+            with multiprocessing.Pool( numstarprocs ) as pool:
                 for i, star in enumerate( stars.stars ):
                     x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                     doer = functools.partial( star.render_star,
@@ -347,8 +355,65 @@ class ImageSimulator:
                   static_source_dec=None,
                   static_source_mag=None,
                   no_static_source_noise=False,
-                  numprocs=12,
+                  numstarprocs=12,
+                  numimageprocs=1,
                   ):
+
+        SNLogger.debug("Sky level {} and sky noise rms {} are in units of electrons.".format(sky_level, sky_noise_rms))
+        # When using OpenUniverse2024 PSFs, some more thought needs to be given between the relationship between
+        # bands and the PSF.
+        if psf_class is not None and 'ou24PSF' in psf_class:
+            # Did they pass an observation ID? If not, default to an observation ID that matches their band of choice.
+            # Cole got these numbers by manually inpsecting the
+            # photometry_test_data/ou2024/Roman_TDS_obseq_11_6_23.fits
+            # file that galsim uses. Ideally, we would load this file and get an appropriate observation ID that way,
+            # but as far as I can tell, snappl has no way of accessing this file directly.
+            if observation_id is None:
+                if band == 'R062':
+                    observation_id = '1'
+                elif band == 'Z087':
+                    observation_id = '57'
+                elif band == 'Y106':
+                    observation_id = '112'
+                elif band == 'J129':
+                    observation_id = '167'
+                elif band == 'H158':
+                    observation_id = '1000' # This is for backwards compatability, since this was
+                    # the old default, a lot of test images were generated with this observation ID.
+                elif band == 'F184':
+                    observation_id = '277'
+                else:
+                    raise ValueError( f"Band {band} not recognized, and no observation_id passed. Please pass an "
+                                      f"observation_id corresponding to the desired band, or choose a valid band." )
+                SNLogger.warning(f"No observation_id passed, defaulting to {observation_id} for band {band}. "
+                "If you want to specify a different observation_id, please do so explicitly when creating"
+                " the ImageSimulator." )
+            else:
+                # If they did pass an observation ID, check that it corresponds to the band they passed.
+                config_file = Config.get().value("system.ou24.config_file")
+                observation_ids = observation_id if isinstance(observation_id, (list, np.ndarray)) \
+        else [ observation_id ]
+                scas = sca if isinstance(sca, (list, np.ndarray)) else [ sca ]
+                if len(observation_ids) == 1 and len(scas) > 1:
+                    observation_ids = [ observation_ids[0] ] * len(scas)
+                elif len(scas) == 1 and len(observation_ids) > 1:
+                    scas = [ scas[0] ] * len(observation_ids)
+                elif len(observation_ids) != len(scas):
+                    raise ValueError(
+                        "observation_id and sca must each be either a scalar or a sequence with matching lengths "
+                        f"(or length 1 for broadcasting). I got observation_id length {len(observation_ids)} and "
+                        f"sca length {len(scas)}."
+                    )
+                for oi, s in zip(observation_ids, scas):
+                    rmutils = roman_utils(config_file, int(oi), int(s))
+                    expected_band = rmutils.bpass.name
+                    if expected_band != band:
+                        raise ValueError( f"Observation ID {oi} corresponds to band {expected_band}, but "
+                                          f"band {band} was passed. Please make sure the observation_id and band "
+                                          f"are consistent with each other." )
+        if observation_id is None:
+            observation_id = "1000" # backwards compatibility with the old default
+
 
         self.mjds = mjds if mjds is not None else np.arange( 60000., 60065., 5. )
 
@@ -410,9 +475,9 @@ class ImageSimulator:
         self.no_star_noise = no_star_noise
         self.band = band
         self.sca =  [sca] if not isSequence(sca) else sca
-        observation_id = str( observation_id )
         self.observation_id = ( [str(observation_id)] if not isSequence(observation_id)
                                 else [ str(oi) for oi in observation_id ] )
+        SNLogger.debug("first obs id is %s", self.observation_id[0])
         if len(self.sca) == 1:
             self.sca = [ self.sca[0] for _ in self.imdata['mjds'] ]
             SNLogger.debug("Using same SCA for all images: %s", self.sca)
@@ -433,13 +498,35 @@ class ImageSimulator:
         self.no_static_source_noise = no_static_source_noise
 
         self.overwrite = overwrite
-        self.numprocs = numprocs
+        self.numstarprocs = numstarprocs
+        self.numimageprocs = numimageprocs
+        if numstarprocs > 1 and numimageprocs > 1:
+            raise ValueError( "numstarprocs and numimageprocs cannot both be greater than 1."
+            " Please choose one or the other. If you are simulating one large image with many stars"
+            "You probably want numstarprocs to be high. If you are simulating many images with few"
+            "stars, i.e. for SMP, you probably want numimageprocs to be high." )
+
+        # Print all of the class variables for debugging purposes
+        SNLogger.debug( "Initialized ImageSimulator with the following parameters:\n")
+        for var, val in locals().items():
+            SNLogger.debug( f"  {var}: {val}" )
 
     def __call__( self ):
-        base_rng = np.random.default_rng( self.seed )
-        sky_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
-        star_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
-        transient_rng = np.random.default_rng( base_rng.integers( 1, 2147483648 ) )
+        self.base_rng = np.random.default_rng( self.seed )
+        self.star_rng = np.random.default_rng( self.base_rng.integers( 1, 2147483648 ) )
+
+        # Generate one seed per image for each rng type, all upfront
+        n = len(self.imdata['mjds'])
+        self.sky_seeds       = self.base_rng.integers(1, 2**31, size=n)
+        self.star_seeds      = self.base_rng.integers(1, 2**31, size=n)
+        self.transient_seeds = self.base_rng.integers(1, 2**31, size=n)
+
+        # I do acknowledge it's slightly awkward to have both star_seeds and star_rng, it's because before star_rng was
+        # used for both randomizing
+        # star locations and noise in the star's flux. Now, the latter is inside the function b/c it is called many
+        # times while the star's locations are determined once ahead of time in the StarCollection object.
+        # This way, the StarCollection object still gets the same rng as before, while star_seeds are generated
+        # using base_rng in the same way star_rng was before.
 
         unpack = re.compile( r"^([a-zA-Z0-9_]+)\s*=\s*(.*[^\s])\s*$" )
         kwargs = {}
@@ -458,7 +545,8 @@ class ImageSimulator:
         stars = ImageSimulatorStarCollection( ra=self.star_center_ra, dec=self.star_center_dec,
                                               fieldrad=self.star_sky_radius,
                                               m0=self.min_star_magnitude, m1=self.max_star_magnitude,
-                                              alpha=self.alpha, nstars=self.nstars, rng=star_rng )
+                                              alpha=self.alpha, nstars=self.nstars, rng=self.star_rng )
+        transient = None
         if self.transient_ra is not None and self.transient_dec is not None:
             SNLogger.debug( f"Creating transient at ({self.transient_ra}, {self.transient_dec}) "
                             f"with peak mag {self.transient_peak_mag} at mjd {self.transient_peak_mjd}" )
@@ -473,36 +561,150 @@ class ImageSimulator:
             static_source = None
 
         SNLogger.debug(f"psf class: {self.psf_class}, psf kwargs: {kwargs}")
-        for i in range( len( self.imdata['mjds'] ) ):
-            print(f"----------------------- IMAGE {i} -----------------------")
-            kwargs["observation_id"] = self.observation_id[i]
-            kwargs["sca"] = self.sca[i]
+        SNLogger.debug(f"using numimageprocs={self.numimageprocs} to simulate {len(self.imdata['mjds'])} images")
+        with multiprocessing.Pool( self.numimageprocs ) as pool:
+            pool.starmap(self._simulate_one_image,
+                [( i, stars, transient, static_source, kwargs ) for i in range( len( self.imdata['mjds'] ) )]
+            )
 
 
-            SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
-            image =  ImageSimulatorImage( self.width, self.height,
-                                          ra=self.imdata['ras'][i], dec=self.imdata['decs'][i],
-                                          rotation=self.imdata['rots'][i], basename=self.basename,
-                                          zeropoint=self.imdata['zps'][i], mjd=self.imdata['mjds'][i],
-                                          pixscale=self.pixscale, band=self.band, sca=self.sca[i], exptime=self.exptime,
-                                          observation_id=self.observation_id[i] )
-            SNLogger.debug( f"Image object created with observation_id {image.image.observation_id} "
-                            f" and sca {image.image.sca}" )
-            kwargs["image"] = image.image
-            psf = PSF.get_psf_object(self.psf_class, **kwargs)
-            SNLogger.debug(f"Using PSF class {type(psf)} for image simulation.")
-            image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
-            image.add_stars( stars, star_rng, numprocs=self.numprocs, noisy=not self.no_star_noise, psf=psf )
-            if self.transient_ra is not None and self.transient_dec is not None:
-                image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf=psf )
-            image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise, psf=psf)
-            image.image.noise = np.sqrt( image.image.noise )
-            SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
-            image.image.save( overwrite=self.overwrite )
+    def _simulate_one_image(self, i, stars, transient, static_source, psfkwargs):
+        """Simulate one image, given the index i, the objects to include, and the kwargs for the PSF."""
+        SNLogger.debug(f"----------------------- IMAGE {i} -----------------------")
+
+        sky_rng       = np.random.default_rng(self.sky_seeds[i])
+        star_rng      = np.random.default_rng(self.star_seeds[i])
+        transient_rng = np.random.default_rng(self.transient_seeds[i])
+
+        psfkwargs = psfkwargs.copy()  # I don't want to modify the original dict
+
+        psfkwargs["observation_id"] = self.observation_id[i]
+        SNLogger.debug("self.observation_id[i]: %s", self.observation_id[i])
+        psfkwargs["sca"] = self.sca[i]
+
+        SNLogger.debug( f"Simulating image {i} of {len(self.imdata['mjds'])}" )
+        image =  ImageSimulatorImage( self.width, self.height,
+                                        ra=self.imdata['ras'][i], dec=self.imdata['decs'][i],
+                                        rotation=self.imdata['rots'][i], basename=self.basename,
+                                        zeropoint=self.imdata['zps'][i], mjd=self.imdata['mjds'][i],
+                                        pixscale=self.pixscale, band=self.band, sca=self.sca[i], exptime=self.exptime,
+                                        observation_id=self.observation_id[i] )
+        SNLogger.debug( f"Image object created with observation_id {image.image.observation_id} "
+                        f" and sca {image.image.sca}" )
+        psfkwargs["image"] = image.image
+        psf = PSF.get_psf_object(self.psf_class, **psfkwargs)
+        SNLogger.debug(f"Using PSF class {type(psf)} for image simulation.")
+        image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
+        SNLogger.debug(f"Sky rendered for image {i}.")
+        image.add_stars( stars, star_rng, numstarprocs=self.numstarprocs, noisy=not self.no_star_noise, psf=psf )
+        SNLogger.debug(f"Stars added to image {i}.")
+        if self.transient_ra is not None and self.transient_dec is not None:
+            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf=psf )
+            SNLogger.debug(f"Transient added to image {i}.")
+        image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise,
+                                psf=psf, galaxy_kwargs=self.galaxy_kwargs )
+        SNLogger.debug(f"Static source added to image {i}.")
+        image.image.noise = np.sqrt( image.image.noise )
+        SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
+        image.image.save( overwrite=self.overwrite )
 
 
+
+def get_galaxy_stamp(psf, x=None, y=None, x0=None, y0=None, flux=1., bulge_R=3,
+                        bulge_n=4, disk_R=10, disk_n=1, oversamp=5, seed = None):
+    """Return a 2d numpy image of a galaxy convolved with the PSF at the image resolution.
+    NOTE: This function assumes that the PSF does not significantly change across the stamp, so it just uses the PSF at
+    the location of the center of the galaxy. If your galaxy is very large or the PSF changes quickly, this
+    may not be a good approximation.
+
+    Parameters
+    ----------
+    psf: subclass of snappl.psf.PSF
+        A psf object used to render the stamp.
+    x,y,x0,y0,flux : as in PSF.get_stamp
+    bulge_R : float
+        The effective radius of the bulge component in pixels.
+    bulge_n : float
+        The Sersic index of the bulge component.
+    disk_R : float
+        The effective radius of the disk component in pixels.
+    disk_n : float
+        The Sersic index of the disk component.
+    seed: int
+        The seed to use when generating the PSF stamp. This is passed to PSF.get_stamp, and is only relevant if
+        the psf uses photon shooting.
+
+        For more detail on the above four parameters, see:
+        https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Sersic2D.html
+
+    oversamp : int
+        The oversampling factor to use when rendering the galaxy before downsampling to image resolution.
+
+    """
+    midpix = int( np.floor( psf.stamp_size / 2 ) )
+    xc = int( np.floor(x + 0.5 ) )
+    yc = int( np.floor(y + 0.5 ) )
+    x0 = x0 if x0 is not None else xc
+    y0 = y0 if y0 is not None else yc
+    if not ( isinstance( x0, numbers.Integral ) and isinstance( y0, numbers.Integral ) ):
+        raise TypeError( f"x0 and y0 must be integers, got x0 as {type(x0)} and y0 as {type(y0)}" )
+
+    ix = np.linspace(-0.5, psf.stamp_size - 0.5, oversamp * psf.stamp_size)
+    iy = np.linspace(-0.5, psf.stamp_size - 0.5, oversamp * psf.stamp_size)
+    ixx, iyy = np.meshgrid(ix, iy)
+    # an underlying mesh of points on which to calculate functions where integer values line up with pixel centers
+
+    # Shift that grid relative to the desired location of the profile
+    xrel = (x0 - x) - midpix + ix
+    yrel = (y0 - y) - midpix + iy
+
+    xxrel, yyrel = np.meshgrid(xrel, yrel)
+    # The same mesh but now the x value is zeroed at the center of where the galaxy is being centered
+    if seed is not None:
+        psf_stamp = psf.get_stamp(x=psf.stamp_size//2, y=psf.stamp_size//2, seed=seed)
+    else:
+        psf_stamp = psf.get_stamp(x=psf.stamp_size//2, y=psf.stamp_size//2)
+
+    # Prepare and evaluate the profile
+    # Create a galaxy profile from a bulge + disk model
+
+    b_bulge = gammaincinv(2.0 * bulge_n, 0.5)
+
+    # Divide the flux equally between bulge and disk, so flux --> flux / 2
+    bulge_amp = flux/2 * b_bulge**(2*bulge_n) /\
+        (2 * np.pi * bulge_n * scipy.special.gamma(2*bulge_n) * np.exp(b_bulge) * bulge_R**2)
+    # The above is inverting the formula for total flux of a sersic profile, see
+    # http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
+    bulge_amp /= oversamp**2
+    sers_bulge = Sersic2D(amplitude=bulge_amp, r_eff=bulge_R, n=bulge_n)
+
+    b_disk = gammaincinv(2.0 * disk_n, 0.5)
+    disk_amp = flux/2 * b_disk**(2*disk_n) /\
+        (2 * np.pi * disk_n * scipy.special.gamma(2*disk_n) * np.exp(b_disk) * disk_R**2)
+    disk_amp /= oversamp**2
+    sers_disk = Sersic2D(amplitude=disk_amp, r_eff=disk_R, n=disk_n)
+
+    profile_stamp = sers_bulge(xxrel, yyrel) + sers_disk(xxrel, yyrel)
+
+    # Downsample to image resolution
+    profile_stamp, _, _, _= binned_statistic_2d(
+            y=ixx.flatten(),
+            x=iyy.flatten(),
+            # Note that x and y are flipped here compared to usual convention. I am not sure why this needs to be,
+            # but when it was the other way around, the act of downsampling was swapping x and y.
+            values=profile_stamp.flatten(),
+            statistic='sum',
+            bins=psf.stamp_size,
+            range=[[-0.5, psf.stamp_size - 0.5], [-0.5, psf.stamp_size - 0.5]]
+        )
+
+    profile_stamp = profile_stamp.reshape(psf.stamp_size, psf.stamp_size)
+    convolved = scipy.signal.convolve2d(profile_stamp, psf_stamp, mode="same", boundary="symm")
+
+    return convolved
 
 # ======================================================================
+
 
 def main():
     parser = argparse.ArgumentParser( 'image_simulator', description="Quick and cheesy image simulator" )
@@ -526,7 +728,7 @@ def main():
                          help="Series of key=value PSF kwargs to pass to PSF.get_psf_object" )
 
     parser.add_argument( '--galaxy-kwargs', '--gk', nargs='*', default=[],
-                         help="Series of key value Galaxy kwargs to pass to PSF.get_galaxy_stamp. For now, the options"
+                         help="Series of key value Galaxy kwargs to pass to get_galaxy_stamp. For now, the options"
                          "are: The HLR of bulge and a disk, bulge_R and bulge_disk, and their Sersic indices"
                          "bulge_n and bulge_disk. They should be entered in the format key1 val1 key2 val2 et cetera." )
     parser.add_argument( '--no-star-noise', action='store_true', default=False,
@@ -558,7 +760,7 @@ def main():
     parser.add_argument( '--observation-id', default='1000', type=str, nargs='+',
                          help="Stuck in the POINTING Header in the images and "
                          "used for OU24 PSF calculations (default '1000')" )
-    parser.add_argument( '--exptime', default=60.,
+    parser.add_argument( '--exptime', default=1.,
                          help="Stuck in the EXPTIME Header in the images (default 60)" )
 
     parser.add_argument( '--transient-ra', '--tra', type=float, default=None,
@@ -585,12 +787,12 @@ def main():
     parser.add_argument( '--no-static-source-noise', action='store_true', default=False,
                          help="Set this to not add poisson noise to static sources." )
 
-    parser.add_argument( '--numprocs', type=int, default=12, help="Number of star rendering processes (default 12)" )
+    parser.add_argument( '--numstarprocs', type=int, default=12, help="Number of star rendering processes"
+                         " (default %(default)s)" )
+    parser.add_argument( '--numimageprocs', type=int, default=1, help="Number of processes to use when simulating"
+                        " multiple images (default %(default)s) Note that this and numstarprocs cannot both be > 1." )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
                          help="Overwrite any existing images with the same filename." )
-
-
-
 
     args = parser.parse_args()
     sim = ImageSimulator( **vars(args) )

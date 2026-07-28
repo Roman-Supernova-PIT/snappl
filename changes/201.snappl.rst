@@ -1,0 +1,1 @@
+Add spin config files for rknop-dev, rknop-dev-smdc, ou2024-smdc

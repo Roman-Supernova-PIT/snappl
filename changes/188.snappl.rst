@@ -1,0 +1,1 @@
+Bump photutils and roman_datamodels versions to get roman_datamodels>=1.0.0

@@ -36,7 +36,7 @@ class SNPITDBClient( rkAuthClient ):
         """Create a SNPITDBClient
 
         All arguments are optional.  Will pull the url, and username
-        from config options systm.db.url and system.db.username
+        from config options system.db.url and system.db.username
         respectively.  If system.db.password is null, will read the
         password from the file system.db.passwordfile, otherwise will
         use the password in system.db.password.  (NOTE: you should leave
