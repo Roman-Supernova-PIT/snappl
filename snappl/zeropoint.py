@@ -1,0 +1,292 @@
+import uuid
+from image import Image
+
+
+class Zeropoint:
+    """A class encapsulating a zeropoint.
+
+    So that we are very clear what we mean by zeropoint, this is the definition.
+
+    First, imagine that you have an Image (i.e. an object of the class
+    defined in image.py).  That image's data property is a
+    two-dimensional array of floats.  Define "counts" as the units of
+    that two dimensional array.  In particular, we need to be clear that
+    THIS is the definition of "counts" in this context.  Counts is NOT
+    necessarily a number of photons, or a number of pixels.  Indeed,
+    it's entirely possible that the underlying physical units of the
+    pixel values of the image is something proportional to number of
+    photoelectrons per second, rather than just number of electrions.
+    However, *however* they came to be, "counts" is what this class
+    defines as the units of that two dimensional array.
+
+    Second, imagine that we have a series of astronomical sources
+    (stars, to make it concrete), and we have images of those stars
+    taken by the telescope.  Although this is not definitional, we are
+    going to assume that the number of counts in the Image.data array is
+    proportional to the number of photons that entered the telescope's
+    aperture.  (Let's assume that our thought-experiment stars are not
+    at all variable, so it doesn't matter if we're talking about the
+    number of photons that entered the aperture during the time of the
+    exposure, or per second.)  In reality, diffraction and electronic
+    effects will mean that some of the light energy that entered the
+    telescope aperture will miss the detector, but for now, let's assume
+    that that is negligible.  Also, for definitional purposes, assume
+    that there are absolutely no astronomical sources contributing to
+    the light of hitting the detector than the star we're currently
+    pointing at.
+
+    For purposes of definition, at the moment assume that the starlight
+    is 100% monochromatic.  We'll relax this later (see COLOR TERMS
+    below), but for right now, that assumption lets us not worry about
+    whehter we're talking about energy or photons, as it's just a single
+    constant factor of hc/λ that converts between the two.
+
+    Third, when we divide the image into pixels, we want the gain of
+    every pixel to be exactly the same.  Again, this sounds like a
+    simple thing to say, but reality makes it more complicated.  So, to
+    start, let's assume that each pixel on the detector has exactly the
+    same area A_pix.  Let's assume that there are no electronic effects
+    that cause photoelectrons to redirect to different neighboring
+    pixels based on how full pixel wells currently are.  Let's assume
+    that every pixel has exactly the same quantum efficiency.  To the
+    extent that these assumptions are not true, see CORRECTING FOR PIXEL
+    RESPONSE below.
+
+    Fourth, let's assume that all backgrounds (i.e. light from anything
+    other than the one star we're looking at) has been subtracted from
+    the image.
+
+    Under these assumptions, we define the zeropoint zp to be:
+
+       m = -2.5 * log10( counts ) + zp
+
+    where m is an AB magnitude.  An AB magnitude is defined (at least if
+    Wikipedia can be truested) so that a source with flux density f_ν
+    3631 Jy has mAB=0.  (Assuming this number is good to ±1 in the last
+    digit, this means that our very definition of magntiude is only good
+    to 0.03%.  It's not clear what "millimag" photometry really is, but
+    if it means that you're right to ±0.001 magnitudes, that means
+    you're right to ±0.09%, so this definition will not be the limiting
+    factor, but nor is it an order of magnitude insignificant!)
+
+    CORRECTING FOR PIXEL RESPONSE
+
+    For our definition to work, it means that we're assuming some
+    preprocessing has been done to the image by the time we receive it.
+    Neglecting all issues of pixel area, that means pixel-to-pixel gain
+    variables have been corrected by flatfielding, so the same zeropoint
+    applies to every pixel on the image.
+
+    When it comes to pixel area issues, it also assumes that
+    preprocessing has corrected for this.  For purely geometric area
+    issues, no correction need to be done for our definition here;
+    however, it does mean that actual photometry would have to correct
+    for it.  (That is, a PSF (or PRF) used in PSF photometry would have
+    to be spatially-dependent and take that into account, and an
+    aperture correction for aperture phtometry would have to be
+    spatially dependent and take that into account.)  For electronic
+    effects, it means that *something* has to be done to the image to
+    take those effects out.
+
+    ACTUAL PHOTOMETRY
+
+    PSF/PRF photometry : this is done by either fitting a pixel response
+    profile, or weighting pixels by a pixel response profile, and
+    summing them.  Importantly, the zeropoint we've defined here DOES
+    NOT take into account any aperture size, nor does it take into
+    account any particular realization of a PSF.  That means to use this zeropoint:
+
+       * Aperture photometry values must be properly "aperture
+         corrected" before the counts are fed into the zeropoint
+         formula.  Ideally, when things aren't too complicated, this
+         correction is just a single factor that multiplies the number
+         of counts in the aperture to give an effective "infinite
+         aperture" number of counts.  This factor will, of course, be
+         different for apertures of different sizes (and shapes), and
+         will also in principle be different at different positions on a
+         detector array.
+
+       * PSF photometry must use PSFs that are properly normalized to
+         fit the defintion here.  The PSFs derived from psf.py::PSF are
+         *supposed to be* normalized this way.  What this means is that
+         in practice, if you call the get_stamp method of a PSF object,
+         and the PSF object is instantiated so that the stamp size is
+         infinite, the sum of the values in the stamp is 1.  In reality,
+         of course you can't get bakc an infite 2d array, so the sum of
+         the values in the stamp will be something less than 1, though
+         for a big enough stamp very close to 1.
+
+         IT IS POSSIBLE that some further calibration post-processing of
+         photometry after the zeropoint is applied may be entirely
+         convolved with the definition of the PSF.  At the moment,
+         snappl's class structure does not support this, but we will
+         adapt if necessary.  However, we should ONLY adapt if it really
+         is necessary! If it's just a matter of normalizing your PSFs
+         differently, then just normalize them differently to fit our
+         definitions!
+
+    COLOR TERMS
+
+    In reality, astronomical sources are not monochromatic.  The
+    defintion of AB magnitude provides us with a reference spectral
+    energy defintion, i.e. one with a constant f_ν (in units of Energy
+    per Time per Frequency Bin per Collecting Area).
+
+    The detector is going to have some spectral response D(ν), which we
+    will define "the number of counts detected per frequency bin for
+    light of frequency ν for a source with f(ν)=3631 Jy".  This means
+    that D(ν) has units of s (or, more clearly, Hz⁻¹) (or, maybe, if you
+    don't think of counts as dimensionless, units of counts/Hz).  The
+    actual light soruce is going to have some SED f(ν) (in units of
+    Energy/Time/Flux Bin/Area).
+
+    The total number of counts detected, therefore, is
+
+        counts = ∫ S(ν) D(ν) / (3631Jy) dν
+
+    (Presumably D(ν) goes to zero outside some finite range of ν so we
+    don't have to think about infinite numbers.)
+    
+    Under this definition, the zeropoint is defined as :
+
+        zp = 2.5 log10( ∫ D(ν) dν )
+
+    (To see this: consider S(ν) = 3631 Jy for all ν, which is the definition of a m_AB=0 source.  In this case:
+
+       0  = -2.5 log10(counts) + zp
+          = -2.5 log10( ∫ (3631Jy) D(ν) / (3631Jy) dν ) + zp
+          = -2.5 log10( ∫ D(ν) dν ) + zp
+       zp = 2.5 log10( ∫ D(ν) dν )
+    )
+
+    A flat-spectrum source with flux density S₀ at all ν has AB
+    magnitude:
+
+       m_AB = -2.5 log10( S₀ / 3631Jy ) = -2.5 log10( S₀/Jy ) + 8.900
+
+    (which is where "8.900 is the AB zeropoint" comes from).
+
+    The number of counts from such a source would be:
+
+       counts = ∫ S₀ D(ν) / (3631Jy) dν = S₀ / 3631Jy * ∫ D(ν) dν
+
+    or
+
+       counts / ( ∫ D(ν) dν ) = S₀ / 3631Jy
+
+    Taking logs of both sides:
+
+       -2.5 log10( counts ) + 2.5 log10( ∫ D(ν) dν ) = -2.5 log10( S₀/Jy ) + 2.5 log10( 3631 )
+       -2.5 log10( counts ) + zp = -2.5 log10( S₀ ) + 8.900 = m_AB
+
+    Where it gets painful is when S(ν) is not constant with ν.  In this
+    case, the magnitude you will calculate from the zeropoint is:
+
+      m_calc = -2.5 log10( counts ) + zp
+             = -2.5 log10( ∫ S(ν) D(ν) / (3631Jy) dν ) + 2.5 log10( ∫ D(ν) dν )
+
+    but the true AB magnitude is ill-defined, because it's different for
+    every ν!  So, for a given filter, we have to define a fiducial
+    frequency ν₀ (which corresponds to a fiducial wavelength λ₀ by the
+    usual ν₀=hc/λ₀).  We could then define the "true" magnitude of the object with SED S(ν) as
+
+      m = -2.5 log10( S(ν₀) / 3631 Jy )
+
+    We then have a SED correction:
+
+      cor_sed ≡ m - m_calc
+              = -2.5 log10( S(ν₀) / 3631 Jy ) + 2.5 log10( ∫ S(ν) D(ν) / (3631Jy) dν ) + 2.5 log10( ∫ D(ν) dν )
+              = 2.5 log10( ∫ S(ν) D(ν) / S(ν₀) dν ) + 2.5 log10( ∫ D(ν) dν )
+    
+    Every object will need to calculate its own cor_sed once it has an
+    estimate of the shape of its SED to get its "true" magnitude... with
+    the understanding that this "true" magnitude is defined for ν₀.
+    (Note that you don't need to know S(ν), you only need to know
+    S(ν)/S(ν₀), which is why I say you need to estimate the "shape of
+    its SED", not "its SED".)
+
+    I think all the Roman filters have a defined fiducial wavelength, so
+    we should just use that for ν₀, but we need to document it somewhere
+    if we ever start tabulating these color terms.
+    
+    WHAT THE CLASS STORES
+
+    It's going to be a letdown, because after all of that, this is just
+    a class to store two numbers and an image id.
+
+    """
+
+    def __init__( self, zp, dzp, imageid=None, provenance_id=None, id=None )
+        """Instantiate a Zeropoint."""
+
+        self._id = id
+        self._zp = zp
+        self._dzp = zp
+        self.imageid = imageid
+        self.provenance_id = provenance_id
+
+    @property
+    def zp( self ):
+        reuturn self._zp
+
+    @zp.setter
+    def zp( self, val ):
+        # Type checking?
+        self._zp = val
+
+    @property
+    def dzp( self ):
+        return self._dzp
+
+    @zp.setter
+    def dzp( self, val ):
+        # Type checking?
+        self._dzp = val
+
+    def get_image( self, dbclient=None ):
+        """Return the L2 Image object associated with this zeropoint."""
+
+        if self._imageid is None:
+            raise RuntimeError( "No image associated with this zeropoint." )
+
+        return Image.get_image( self._imageid, dbclient=dbclient )
+
+    def save( self, overwrite=False, dbclient=None ):
+        if self._imageid is None:
+            raise RuntimeError( "Can't save zeropoint to database, no imageid." )
+        if self.provenance_id is None:
+            raise RuntimeError( "Can't save zeropoint, no provenance_id." )
+
+        _id = self._id if self._id is not None else uuid.uuid4()
+        
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
+        result = dbclient.send( f"/savezp",
+                                json={ 'id': self._id, 'imageid': self.imageid, "provenance_id": self.provenance_id,
+                                       'zp': self._zp, 'dzp': self._dzp } )
+        raise RuntimeError( "Write the code to check the response." )
+        
+        
+    @classmethod
+    def get_for_image( self, imageid, dbclient=None ):
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
+        result = dbclient.send( f"/getzpforimage", json={ 'imageid': imageid } );
+        if ( "error" in result ):
+            raise RuntimeError( f"Error response from ZeroPoint.get_for_image: {result['error']}" )
+
+        return ZeroPoint( result['zp'], result['dzp'],
+                          imageid=result['imageid'],
+                          provenance_id=result['provenance_id'],
+                          id=result['id'] )
+
+    
+    @classmethod
+    def get_by_id( self, zpid, dbclient=None ):
+        dbclient = SNPITDBClient.get() if dbclient is None else dbclient
+        result = dbclient.send( f"/getzp", json={ 'id': zpid } );
+        if ( "error" in result ):
+            raise RuntimeError( f"Error response from ZeroPoint.get_by_id: {result['error']}" )
+
+        return ZeroPoint( result['zp'], result['dzp'],
+                          imageid=result['imageid'],
+                          provenance_id=result['provenance_id'],
+                          id=result['id'] )
