@@ -14,9 +14,9 @@ class Zeropoint:
     two-dimensional array of floats.  Define "counts" as the units of
     that two dimensional array.  In particular, we need to be clear that
     THIS is the definition of "counts" in this context.  Counts is NOT
-    necessarily a number of photons, or a number of pixels.  Indeed,
-    it's entirely possible that the underlying physical units of the
-    pixel values of the image is something proportional to number of
+    necessarily a number of photons, or a number of photoelectrons.
+    Indeed, it's entirely possible that the underlying physical units of
+    the pixel values of the image is something proportional to number of
     photoelectrons per second, rather than just number of electrions.
     However, *however* they came to be, "counts" is what this class
     defines as the units of that two dimensional array.
