@@ -1,6 +1,7 @@
 __all__ = [ 'setup_flask_app' ]
 
 import uuid
+import math
 
 import flask
 import flask_session
@@ -8,6 +9,7 @@ from psycopg import sql
 
 from rkwebutil import rkauth_flask
 
+from snappl.utils import asUUID
 from snappl.config import Config
 from snappl.db import db
 from snappl.db.baseview import BaseView
@@ -547,6 +549,101 @@ class BulkSaveL2Images( BaseView ):
 
 # ======================================================================
 
+class SaveZeroPoint( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected zeropoint info in json POST: didn't get any.", 422
+        data = self.check_json_keys( { 'image_id', 'provenance_id', 'zp', 'dzp' },
+                                     { 'image_id', 'provenance_id', 'zp', 'dzp', 'id' } )
+        with db.DBCon( dictcursor=True ) as dbcon:
+            dbcon.execute_nofetch( "LOCK TABLE zeropoint" )
+            q = sql.SQL( "SELECT * FROM zeropoint WHERE image_id={imageid} AND provenance_id={provid}"
+                        ).format( imageid=data['image_id'], provid=data['provenance_id'] )
+            rows = dbcon.execute( q )
+            if len(rows) > 0:
+                if len(rows) > 1:
+                    return ( f"Zeropoint for image {data['image_id']} provenance {data['provenance_id']} "
+                             f"is multiply defined; this should not happen." ), 422
+                # How to decide if the zeropoint is the same?  id is obvious.  For
+                #  zp and dzp, we'll call it the same if dzp is within 1% and zp is within 0.01*dzp
+                row = rows[0]
+                if ( data['id'] is not None )  and ( row['id'] != asUUID(data['id']) ):
+                    return ( f"Zeropoint in databsae for image {data['image_id']} provenance {data['provenance_id']} "
+                             f"has id {row['id']} but you passed {data['id']}, which does not match" ), 422
+                if ( ( math.fabs( row['dzp'] - data['dzp'] ) > 0.01 * row['dzp'] )
+                     or ( math.fabs( row['zp'] - data['zp'] ) > 0.01 * row['dzp'] ) ):
+                    return ( f"Zeropoint in databsae for image {data['image_id']} provenance {data['provenance_id']} "
+                             f"is {row['zp']:.4f}±{row['dzp']:.4f}, "
+                             f"but you passed {data['zp']:.4f}±{data['dzp']:.4f}" ), 422
+                dbcon.rollback()
+                return row
+            else:
+                _id = asUUID( data['id'] ) if data['id'] is not None else uuid.uuid4()
+                q = sql.SQL( "INSERT INTO zeropoint(id,image_id,provenance_id,zp,dzp) "
+                             "VALUES ({id},{imageid},{provid},{zp},{dzp})"
+                            ).format( id=_id, imageid=data['image_id'], provid=data['provenance_id'],
+                                      zp=data['zp'], dzp=data['dzp'] )
+                dbcon.execute_nofetch( q )
+                dbcon.commit()
+                return { 'id': _id, 'image_id': data['image_id'], 'provenance_id': data['provenance_id'],
+                         'zp': data['zp'], 'dzp': data['dzp'] }
+
+
+# ======================================================================
+
+class GetZeroPointForImage( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected zeropoint search info json POST: didn't get any.", 422
+        expected_keys = { 'image_id' }
+        allowed_keys = { 'provid', 'provtag', 'process' }.union( expected_keys )
+        data = self.check_json_keys( expected_keys, allowed_keys )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            if data['provid'] is not None:
+                provid = asUUID( data['provid'] )
+            else:
+                res = dbcon.execute( sql.SQL( "SELECT provenance_id FROM provenance_tag "
+                                              "WHERE tag={tag} AND process={process}" )
+                                     .format( tag=data['provtag'], process=data['process'] ) )
+                if len(res) == 0:
+                    return ( f"Could not find provenance for provenance tag {data['provtag']} "
+                             f"and process {data['process']}" ), 422
+                if len(res) > 1:
+                    return ( f"Database corruption error, provenance tag {data['provtag']} and "
+                             f"process {data['process']} mutiply defined" ), 422
+                provid = res['provenance_id']
+
+            res = dbcon.execute( sql.SQL( "SELECT * FROM zeropoint "
+                                          "WHERE provenance_id={provid} "
+                                          "  AND image_id={imageid}" )
+                                 .format( provid=provid, imageid=data['image_id'] ) )
+            if len(res) == 0:
+                return f"Zeropoint not found for provenance {provid} and image {data['image_id']}", 422
+            elif len(res) > 1:
+                return ( f"Database corruption error: more than one zeropoint for provenance {provid} "
+                         f"and image {data['image_id']}" ), 422
+            else:
+                return res
+
+
+# ======================================================================
+
+class GetZeroPoint( BaseView ):
+    def do_the_things( self, zpid ):
+        with db.DBCon( dictcursor=True ) as dbcon:
+            res = dbcon.execute( sql.SQL( "SELECT * FROM zeropoint WHERE id={id}" )
+                                 .format( id=asUUID(zpid) ) )
+            if len(res) == 0:
+                return f"Unknown zeropoint {zpid}", 422
+            elif len(res) > 1:
+                return "This should never happen", 422
+            else:
+                return res
+
+
+# ======================================================================
+
 class SaveSegmentationMap( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
@@ -791,6 +888,10 @@ urls = {
     "/findl2images": FindL2Images,
     "/savel2image": SaveL2Image,
     "/bulksavel2images": BulkSaveL2Images,
+
+    "/savezp": SaveZeroPoint,
+    "/getzpforimage": GetZeroPointForImage,
+    "/getzp": GetZeroPoint,
 
     "/savesegmap": SaveSegmentationMap,
     "/getsegmap/<segmapid>": GetSegmentationMap,
