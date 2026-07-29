@@ -85,15 +85,16 @@ class Zeropoint:
 
     When it comes to pixel area issues, it also assumes that
     preprocessing has corrected for this.  For purely geometric area
-    issues, no correction need to be done for our definition here;
-    however, it does mean that actual photometry would have to correct
-    for it.  (That is, a PSF (or PRF) used in PSF photometry would have
-    to be spatially-dependent and take that into account, and an
-    aperture correction for aperture phtometry would have to be
-    spatially dependent and take that into account.)  For electronic
-    effects, espeically ones that depend on how full the well is, it
-    means that *something* has to be done to the image to take those
-    effects out.  (Thushara, save us!)
+    (or, really, angular area projected on to the geometric position of
+    the pixel on the detector), no correction need to be done for
+    our definition here; however, it does mean that actual photometry
+    would have to correct for it.  (That is, a PSF (or PRF) used in PSF
+    photometry would have to be spatially-dependent and take that into
+    account, and an aperture correction for aperture phtometry would
+    have to be spatially dependent and take that into account.)  For
+    electronic effects, espeically ones that depend on how full the well
+    is, it means that *something* has to be done to the image to take
+    those effects out.  (Thushara, save us!)
 
     ACTUAL PHOTOMETRY
 
