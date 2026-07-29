@@ -567,7 +567,7 @@ class SaveZeroPoint( BaseView ):
                 # How to decide if the zeropoint is the same?  id is obvious.  For
                 #  zp and dzp, we'll call it the same if dzp is within 1% and zp is within 0.01*dzp
                 row = rows[0]
-                if ( data['id'] is not None )  and ( row['id'] != asUUID(data['id']) ):
+                if ( 'id' in data ) and ( data['id'] is not None )  and ( row['id'] != asUUID(data['id']) ):
                     return ( f"Zeropoint in databsae for image {data['image_id']} provenance {data['provenance_id']} "
                              f"has id {row['id']} but you passed {data['id']}, which does not match" ), 422
                 if ( ( math.fabs( row['dzp'] - data['dzp'] ) > 0.01 * row['dzp'] )
@@ -578,7 +578,7 @@ class SaveZeroPoint( BaseView ):
                 dbcon.rollback()
                 return row
             else:
-                _id = asUUID( data['id'] ) if data['id'] is not None else uuid.uuid4()
+                _id = asUUID( data['id'] ) if ('id' in data and data['id'] is not None) else uuid.uuid4()
                 q = sql.SQL( "INSERT INTO zeropoint(id,image_id,provenance_id,zp,dzp) "
                              "VALUES ({id},{imageid},{provid},{zp},{dzp})"
                             ).format( id=_id, imageid=data['image_id'], provid=data['provenance_id'],
@@ -612,7 +612,7 @@ class GetZeroPointForImage( BaseView ):
                 if len(res) > 1:
                     return ( f"Database corruption error, provenance tag {data['provtag']} and "
                              f"process {data['process']} mutiply defined" ), 422
-                provid = res['provenance_id']
+                provid = res[0]['provenance_id']
 
             res = dbcon.execute( sql.SQL( "SELECT * FROM zeropoint "
                                           "WHERE provenance_id={provid} "
@@ -624,7 +624,7 @@ class GetZeroPointForImage( BaseView ):
                 return ( f"Database corruption error: more than one zeropoint for provenance {provid} "
                          f"and image {data['image_id']}" ), 422
             else:
-                return res
+                return res[0]
 
 
 # ======================================================================
@@ -639,7 +639,7 @@ class GetZeroPoint( BaseView ):
             elif len(res) > 1:
                 return "This should never happen", 422
             else:
-                return res
+                return res[0]
 
 
 # ======================================================================
@@ -891,7 +891,7 @@ urls = {
 
     "/savezp": SaveZeroPoint,
     "/getzpforimage": GetZeroPointForImage,
-    "/getzp": GetZeroPoint,
+    "/getzp/<zpid>": GetZeroPoint,
 
     "/savesegmap": SaveSegmentationMap,
     "/getsegmap/<segmapid>": GetSegmentationMap,

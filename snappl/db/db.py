@@ -1093,6 +1093,7 @@ class Zeropoint( DBBase ):
     _tablemeta = None
     _pk = [ 'id' ]
 
+
 # ======================================================================
 
 class SegMap( DBBase ):

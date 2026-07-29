@@ -1,7 +1,7 @@
-from snappl.utils import asUUID
+from snappl.dbclient import SNPITDBClient
 from snappl.image import Image
 from snappl.logger import SNLogger
-from snappl.dbclient import SNPITDBClient
+from snappl.utils import asUUID
 
 
 class Zeropoint:
@@ -257,12 +257,32 @@ class Zeropoint:
         self._id = None if id is None else asUUID(id)
         self._zp = zp
         self._dzp = zp
-        self.image_id = image_id
-        self.provenance_id = provenance_id
+        self._image_id = None if image_id is None else asUUID( image_id )
+        self._provenance_id = None if provenance_id is None else asUUID( provenance_id )
 
     @property
     def id( self ):
         return self._id
+
+    @id.setter
+    def id( self, val ):
+        self._id = None if val is None else asUUID( val )
+
+    @property
+    def image_id( self ):
+        return self._image_id
+
+    @image_id.setter
+    def image_id( self, val ):
+        self._image_id = None if val is None else asUUID( val )
+
+    @property
+    def provenance_id( self ):
+        return self._provenance_id
+
+    @provenance_id.setter
+    def provenance_id( self, val ):
+        self._provenance_id = None if val is None else asUUID( val )
 
     @property
     def zp( self ):
@@ -285,31 +305,38 @@ class Zeropoint:
     def get_image( self, dbclient=None ):
         """Return the L2 Image object associated with this zeropoint."""
 
-        if self._image_id is None:
+        if self.image_id is None:
             raise RuntimeError( "No image associated with this zeropoint." )
 
-        return Image.get_image( self._image_id, dbclient=dbclient )
+        return Image.get_image( self.image_id, dbclient=dbclient )
 
     def save( self, overwrite=False, dbclient=None ):
         """Save the zeropoint if it doesn't already exist.
 
-        If it does already exist, fields will be updated to match what's in the database.
-        If dzp and zp are within 0.1*dzp of the saved values, this will be assumed to be consistent.
+        Will fill in the id field if it's not yet set.
+
+        If dzp and zp are within 0.1*dzp of the saved values, this will
+        be assumed to be consistent (i.e. the "same" zeropoint).
+
+        WARNING: If it does already exist in the database, zp and dzp
+        will be updated to match what's in the database.
 
         """
 
-        if self._image_id is None:
+        if self.image_id is None:
             raise RuntimeError( "Can't save zeropoint to database, no image_id." )
         if self.provenance_id is None:
             raise RuntimeError( "Can't save zeropoint, no provenance_id." )
 
-        data = { 'image_id': self.image_id, 'provenance_id': self.provenance_id, 'zp': self._zp, 'dzp': self._dzp }
+        data = { 'image_id': str(self.image_id),
+                 'provenance_id': str(self.provenance_id),
+                 'zp': self._zp, 'dzp': self._dzp }
         if self._id is not None:
-            data['id'] = self._id
+            data['id'] = str(self._id)
 
         dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         result = dbclient.send( "/savezp", json=data )
-        self._id = asUUID( result['id'] )
+        self.id = result['id']
         self.zp = result['zp']
         self.dzp = result['dzp']
 
@@ -325,10 +352,10 @@ class Zeropoint:
                 zp_prov_tag = None
                 zp_process = None
         dbclient = SNPITDBClient.get() if dbclient is None else dbclient
-        result = dbclient.send( "/getzpforimage", json={ 'image_id': image_id,
-                                                          'provid': zp_prov_id,
-                                                          'provtag': zp_prov_tag,
-                                                          'process': zp_process } )
+        result = dbclient.send( "/getzpforimage", json={ 'image_id': str(image_id),
+                                                         'provid': str(zp_prov_id) if zp_prov_id is not None else None,
+                                                         'provtag': zp_prov_tag,
+                                                         'process': zp_process } )
         return Zeropoint( result['zp'], result['dzp'],
                           image_id=result['image_id'],
                           provenance_id=result['provenance_id'],
