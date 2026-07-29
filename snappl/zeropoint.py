@@ -17,7 +17,7 @@ class Zeropoint:
     necessarily a number of photons, or a number of photoelectrons.
     Indeed, it's entirely possible that the underlying physical units of
     the pixel values of the image is something proportional to number of
-    photoelectrons per second, rather than just number of electrions.
+    photoelectrons per second, rather than just number of electrons.
     However, *however* they came to be, "counts" is what this class
     defines as the units of that two dimensional array.
 
@@ -62,14 +62,18 @@ class Zeropoint:
 
        m = -2.5 * log10( counts ) + zp
 
-    where m is an AB magnitude.  An AB magnitude is defined (at least if
-    Wikipedia can be truested) so that a source with flux density f_ν
-    3631 Jy has m=0.  (Assuming this number is good to ±1 in the last
-    digit, this means that our very definition of magntiude is only good
-    to 0.03%.  It's not clear what "millimag" photometry really is, but
-    if it means that you're right to ±0.001 magnitudes, that means
-    you're right to ±0.09%, so this definition will not be the limiting
-    factor, but nor is it an order of magnitude insignificant!)
+    where counts is the sum of the whole data array, and m is an AB
+    magnitude.  An AB magnitude is defined (at least if Wikipedia can be
+    truested) so that a source with flux density f_ν 3631 Jy has m=0.
+    (Assuming this number is good to ±1 in the last digit (wikipedia
+    uses this scary "≈" — really I should be tracking down the original
+    reference and undestsand how AB magnitude is actulally defined in
+    the literature), this means that our very definition of magntiude is
+    only good to 0.03%.  It's not clear what "millimag" photometry
+    really is, but if it means that you're right to ±0.001 magnitudes,
+    that means you're right to ±0.09%, so this definition will not be
+    the limiting factor, but nor is it an order of magnitude
+    insignificant!)
 
     CORRECTING FOR PIXEL RESPONSE
 
