@@ -121,7 +121,7 @@ class Zeropoint:
          get_stamp method of a PSF object, and the PSF object is
          instantiated so that the stamp size is infinite, the sum of the
          values in the stamp is 1.  In reality, of course you can't get
-         bakc an infite 2d array, so the sum of the values in the stamp
+         back an infite 2d array, so the sum of the values in the stamp
          will be something less than 1, though for a big enough stamp
          very close to 1.
 
@@ -148,7 +148,7 @@ class Zeropoint:
     or, really really, "system response".]  This means that D(ν) has
     units of s (or, more clearly, Hz⁻¹) (or, maybe, if you don't think
     of counts as dimensionless, units of counts/Hz).  The actual light
-    source is going to have some SED f(ν) (in units of Energy/Time/Flux
+    source is going to have some SED S(ν) (in units of Energy/Time/Flux
     Binwidth/Area).
 
     The total number of counts detected, therefore, is::
@@ -222,8 +222,12 @@ class Zeropoint:
     (Do not become confused by the fact that zp is in cor_sed; we're not
     subtracting out the zeropoint from the final magnitude formula,
     because it's added back, sorta, inside the integral in cor_sed, we
-    just can't separate it out to a zp or anything ecause it's inside
-    the integral.)
+    just can't separate it out to another obvious +zp because it's
+    inside the integral, and while I've known named-chair professors of
+    physics (but not astronomy) to claim that we were all doing cosmology
+    wrong and making it too complicated because he freely factored
+    variable things out of integrals, you aren't really supposed to do
+    that.)
 
     Every object will need to calculate its own cor_sed once it has an
     estimate of the shape of its SED to get its "true" magnitude... with
