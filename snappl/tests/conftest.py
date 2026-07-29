@@ -479,25 +479,28 @@ def stupid_object( stupid_provenance ):
 # So far, this next fixture is only used by zeropoints, which only need an imageid.  If other things
 #   want to use it later, we might need to fill in other fields with realistic values.
 @pytest.fixture( scope="module" )
-def stupid_image( stupid_provenance ):
-    imgid = uuid.uuid4()
+def stupid_images( stupid_provenance ):
+    imgids = [ uuid.uuid4() for i in range(3) ]
+    fnames = [ 'for', 'bar', 'baz' ]
     try:
         with DBCon() as con:
-            q = sql.SQL( textwrap.dedent(
-                """\
-                INSERT INTO l2image(id, provenance_id, band, ra, dec,
-                                    ra_corner_00, ra_corner_01, ra_corner_10, ra_corner_11,
-                                    dec_corner_00, dec_corner_01, dec_corner_10, dec_corner_11,
-                                    filepath, mjd, exptime)
-                VALUES( {id}, {provid}, 'r', 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 'fee', 60000., 10. )
-                """
-            ) ).format( id=imgid, provid=stupid_provenance )
-            con.execute_nofetch( q )
+            for imgid, fname in zip( imgids, fnames ):
+                q = sql.SQL( textwrap.dedent(
+                    """\
+                    INSERT INTO l2image(id, provenance_id, band, ra, dec,
+                                        ra_corner_00, ra_corner_01, ra_corner_10, ra_corner_11,
+                                        dec_corner_00, dec_corner_01, dec_corner_10, dec_corner_11,
+                                        filepath, mjd, exptime)
+                    VALUES( {id}, {provid}, 'r', 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., {fname}, 60000., 10. )
+                    """
+                ) ).format( id=imgid, fname=fname, provid=stupid_provenance )
+                con.execute_nofetch( q )
             con.commit()
-        yield imgid
+        yield imgids
     finally:
         with DBCon() as con:
-            con.execute_nofetch( sql.SQL( "DELETE FROM l2image WHERE id={id}" ).format( id=imgid ) )
+            con.execute_nofetch( sql.SQL( "DELETE FROM l2image WHERE id=ANY(ARRAY[{ids}])" )
+                                 .format( ids=sql.SQL(",").join(i for i in imgids) ) )
             con.commit()
 
 

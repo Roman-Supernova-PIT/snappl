@@ -1,6 +1,6 @@
 from snappl.utils import asUUID
 from snappl.image import Image
-from snappl.logger import SCLogger
+from snappl.logger import SNLogger
 from snappl.dbclient import SNPITDBClient
 
 
@@ -234,16 +234,20 @@ class Zeropoint:
     we should just use that for ν₀, but we need to document it somewhere
     if we ever start tabulating these color terms.
 
-    WHAT THE CLASS STORES
+    WHAT AN OBJECT OF THIS CLASS STORES
 
     It's going to be a letdown, because after all of that, this is just
-    a class to store two numbers, an id, and an image id.
+    a class to store two numbers, plus an id, an image id, and a
+    provenance id.
 
     Color corrections are *not* stored here, because the ZeroPoint is a
-    property of the image, whereas the color correction is a property of
-    the object and the detector, filter, and telescope.  (Actually,
-    color correction is a property of detector, filter, telescope, and
-    image, because D(ν) probably changes over time!)
+    property of the just image, whereas the color correction is a
+    property of the object and the detector, filter, telescope.  In
+    terms of the definitions about, color correction depends on D(ν) and
+    S(ν), whereas zeropoint only depends on D(ν).  (Actually, color
+    correction is a property of object observed, detector, filter,
+    telescope, object being observed, *and image*, because D(ν) probably
+    changes over time!)
 
     """
 
@@ -317,7 +321,7 @@ class Zeropoint:
                 raise ValueError( "Must give either zp_prov_id or both of zp_prov_tag and process" )
         else:
             if ( zp_prov_tag is not None ) or ( zp_process is not None ):
-                SCLogger.warning( "zp_prov_id given, ignoring zp_prov_tag and zp_process" )
+                SNLogger.warning( "zp_prov_id given, ignoring zp_prov_tag and zp_process" )
                 zp_prov_tag = None
                 zp_process = None
         dbclient = SNPITDBClient.get() if dbclient is None else dbclient
