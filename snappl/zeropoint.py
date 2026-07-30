@@ -9,7 +9,7 @@ class Zeropoint:
 
     So that we are very clear what we mean by zeropoint, this is the definition.
 
-    First, imagine that you have an Image (i.e. an object of the class
+    First, imagine that you have an Image (i.e., an object of the class
     defined in image.py).  That image's data property is a
     two-dimensional array of floats.  Define "counts" as the units of
     that two dimensional array.  In particular, we need to be clear that
@@ -54,7 +54,7 @@ class Zeropoint:
     extent that these assumptions are not true, see CORRECTING FOR PIXEL
     RESPONSE below.
 
-    Fourth, let's assume that all backgrounds (i.e. light from anything
+    Fourth, let's assume that all backgrounds (i.e., light from anything
     other than the one star we're looking at) has been subtracted from
     the image.
 
@@ -63,17 +63,15 @@ class Zeropoint:
        m = -2.5 * log10( counts ) + zp
 
     where counts is the sum of the whole data array, and m is an AB
-    magnitude.  An AB magnitude is defined (at least if Wikipedia can be
-    truested) so that a source with flux density f_ν 3631 Jy has m=0.
-    (Assuming this number is good to ±1 in the last digit (wikipedia
-    uses this scary "≈" — really I should be tracking down the original
-    reference and undestsand how AB magnitude is actulally defined in
-    the literature), this means that our very definition of magntiude is
-    only good to 0.03%.  It's not clear what "millimag" photometry
-    really is, but if it means that you're right to ±0.001 magnitudes,
-    that means you're right to ±0.09%, so this definition will not be
-    the limiting factor, but nor is it an order of magnitude
-    insignificant!)
+    magnitude.  An AB magnitude is defined by::
+
+       m_AB = -2.5 log10( f_ν / (erg s⁻¹ Hz⁻¹ cm⁻¹) ) - 48.60
+
+    (at least if Wikipedia can be trusted).  This means that a source
+    with a flux density 3631×10⁻²³ erg s⁻¹ Hz⁻¹ cm⁻¹=3631 Jy has m_AB=0.
+    (Closer to 3.63078054770099×10³ Jy assuming 48.60 is a definition
+    (not a measurement with uncertainty), but 4 sig figs is plenty for a
+    docstring.)
 
     CORRECTING FOR PIXEL RESPONSE
 
@@ -85,9 +83,9 @@ class Zeropoint:
 
     When it comes to pixel area issues, it also assumes that
     preprocessing has corrected for this.  For purely geometric area
-    (or, really, angular area projected through the opticalsystem on to
+    (or, really, angular area projected through the optical system on to
     the geometric position of the pixel on the detector), no correction
-    need to be done for our definition here; however, it does mean that
+    needs to be done for our definition here; however, it does mean that
     actual photometry would have to correct for it.  (That is, a PSF (or
     PRF) used in PSF photometry would have to be spatially-dependent and
     take that into account, and an aperture correction for aperture
@@ -138,7 +136,7 @@ class Zeropoint:
 
     In reality, astronomical sources are not monochromatic.  The
     defintion of AB magnitude provides us with a reference spectral
-    energy defintion, i.e. one with a constant f_ν (in units of Energy
+    energy defintion, i.e., one with a constant f_ν (in units of Energy
     per Time per Frequency Binwidth per Collecting Area).
 
     The detector is going to have some spectral response D(ν), which we
@@ -325,7 +323,7 @@ class Zeropoint:
         Will fill in the id field if it's not yet set.
 
         If dzp and zp are within 0.1*dzp of the saved values, this will
-        be assumed to be consistent (i.e. the "same" zeropoint).
+        be assumed to be consistent (i.e., the "same" zeropoint).
 
         WARNING: If it does already exist in the database, zp and dzp
         will be updated to match what's in the database.
