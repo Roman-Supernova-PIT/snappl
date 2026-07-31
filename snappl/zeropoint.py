@@ -1,5 +1,8 @@
+import numbers
+
 from snappl.dbclient import SNPITDBClient
 from snappl.image import Image
+from snappl.provenance import Provenance
 from snappl.logger import SNLogger
 from snappl.utils import asUUID
 
@@ -11,31 +14,21 @@ class Zeropoint:
 
     First, imagine that you have an Image (i.e., an object of the class
     defined in image.py).  That image's data property is a
-    two-dimensional array of floats.  Define "kaglorkys" as the units of
-    that two dimensional array.  To highlight this:
+    two-dimensional array of floats.  Define "DAV" (for "data array
+    value") as the units of that two dimensional array.  To highlight
+    this:
 
-       THE KAGLORKY IS THE UNIT OF THE NUMBERS WE GET IN THE DATA ARRAY
+       THE DAV IS THE UNIT OF THE NUMBERS WE GET IN THE DATA ARRAY
 
-    Whatever that actually is.  I wanted to use counts, or DN, but it
-    was impossible to ever have a conversation on Slack that used this
-    word without getting a long lecture from Stefano, so we're going to
-    use the kaglorky as the unit of whatever it is that we get in our
-    data arrays.  Kaglorkys is NOT necessarily a number of photons, or a
-    number of photoelectrons, nor is it necessarily something (or
-    something proportional to) a rate of photons or a rate of
-    photoelectrons.  It is what it is.  It is just a way so that we can
-    talk about the units that are in the data arrays we get, and all we
-    need for this discussion is a way of saying "the units of the data
-    array" without having to spell out all six of those words every
-    time. *However* they came to be, "kaglorkys" is what this
-    class defines as the units of that two dimensional array.  For
-    purposes of discussion, we do not have to know if this is a rate or
-    not; it just is whatever the units of the data array is.
+    Whatever that actually is.  Importantly, this definition is agnostic
+    as to whether the data array represents something like "counts" or
+    "counts per second" or whatever else.  It is just "what we get in
+    the data array".  All of the definitions below are based on this.
 
     Second, imagine that we have a series of astronomical sources
     (stars, to make it concrete), and we have images of those stars
     taken by the telescope.  Although this is not definitional, we are
-    going to assume that the number of kaglorkys in the Image.data array is
+    going to assume that the number of DAVs in the Image.data array is
     proportional to the number of photons that entered the telescope's
     aperture.  (Let's assume that our thought-experiment stars are not
     at all variable, so it doesn't matter if we're talking about the
@@ -71,9 +64,9 @@ class Zeropoint:
 
     Under these assumptions, we define the zeropoint zp to be::
 
-       m = -2.5 * log10( kaglorkys ) + zp
+       m = -2.5 * log10( DAVs ) + zp
 
-    where kaglorkys is the sum of the whole data array, and m is an AB
+    where DAVs is the sum of the whole data array, and m is an AB
     magnitude.  An AB magnitude is defined by::
 
        m_AB = -2.5 log10( f_ν / (erg s⁻¹ Hz⁻¹ cm⁻¹) ) - 48.60
@@ -92,18 +85,33 @@ class Zeropoint:
     variables have been corrected by flatfielding, so the same zeropoint
     applies to every pixel on the image.
 
-    When it comes to pixel area issues, it also assumes that
-    preprocessing has corrected for this.  For purely geometric area
-    (or, really, angular area projected through the optical system on to
-    the geometric position of the pixel on the detector), no correction
-    needs to be done for our definition here; however, it does mean that
-    actual photometry would have to correct for it.  (That is, a PSF (or
-    PRF) used in PSF photometry would have to be spatially-dependent and
-    take that into account, and an aperture correction for aperture
-    phtometry would have to be spatially dependent and take that into
-    account.)  For electronic effects, espeically ones that depend on
-    how full the well is, it means that *something* has to be done to
-    the image to take those effects out.  (Thushara, save us!)
+    PIXEL AREA ISSUE
+
+    Ideally, differences in pixel area would have been corrected before
+    we receive the images.  Alas, it sounds like this will not be the
+    case for the L2 images we will get from the SOC.  This is going to
+    make everything more complicated.
+
+    Because we cannot assume that each pixel maps to exactly the same
+    angular area on the sky, and because the SOC's L2 processing is
+    leaveing things in units of "per steradian" rather than correcting
+    that out (i.e. they are giving us surface brightness, not
+    brightness, which is maybe more like what you'd want for doing
+    galaxy morphology stuff, but not what you want for measuing point
+    sources), everything is going to be more complicated.
+
+    Practically speaking, we're going to HOPE that pixel area as a
+    function of positoin on the detector is a smooth function.  We can
+    then replace zp with zp(x,y), where x,y is a pixel position on the
+    detector, and it will be preceise enough as long as we get x, y
+    wihin ± a few.
+
+    This is just purgely optical/geometric effects.  For electronic
+    effects, espeically ones that depend on how full the well is, we
+    cannot provide a class that gives you the zeropoint as a property of
+    image and position on image.  Something further has to be done to
+    the image, or to measurements on the image, to take those effects
+    out.  (Thushara, save us!)
 
     ACTUAL PHOTOMETRY
 
@@ -114,14 +122,14 @@ class Zeropoint:
     this zeropoint:
 
        * Aperture photometry values must be properly "aperture
-         corrected" before the kaglorkys are fed into the zeropoint
-         formula.  Ideally, when things aren't too complicated, this
-         correction is just a single factor that multiplies the number
-         of kaglorkys in the aperture to give an effective "infinite
-         aperture" number of kaglorkys.  This factor will, of course, be
-         different for apertures of different sizes (and shapes), and
-         will also in principle be different at different positions on a
-         detector array.
+         corrected" before the DAVs are fed into the zeropoint formula.
+         Ideally, when things aren't too complicated, this correction is
+         just a single factor that multiplies the number of DAVs in the
+         aperture to give an effective "infinite aperture" number of
+         DAVs.  This factor will, of course, be different for apertures
+         of different sizes (and shapes), and will also in principle be
+         different at different positions on a detector array.  (For
+         small apertures, it's also very difficult to do right.)
 
        * PSF (or PRF) photometry must use PSFs (or PRFs) that are
          properly normalized to fit the defintion here.  The PSFs
@@ -151,18 +159,18 @@ class Zeropoint:
     per Time per Frequency Binwidth per Collecting Area).
 
     The detector is going to have some spectral response D(ν), which we
-    will define "the number of kaglorkys detected per frequency bin for
+    will define "the number of DAVs detected per frequency bin for
     light of frequency ν for a source with f(ν)=3631 Jy".  [ASIDE: I say
     "detector response", but really I mean "detector + filter response",
     or, really really, "system response".]  This means that D(ν) has
     units of s (or, more clearly, Hz⁻¹) (or, maybe, if you don't think
-    of kaglorkys as dimensionless, units of kaglorky/Hz).  The actual light
+    of DAVs as dimensionless, units of DAV/Hz).  The actual light
     source is going to have some SED S(ν) (in units of Energy/Time/Flux
     Binwidth/Area).
 
-    The total number of kaglorkys detected, therefore, is::
+    The total number of DAVs detected, therefore, is::
 
-        kaglorkys = ∫ S(ν) D(ν) / (3631Jy) dν
+        DAVs = ∫ S(ν) D(ν) / (3631Jy) dν
 
     (Presumably D(ν) goes to zero outside some finite range of ν so we
     don't have to think about infinite numbers.)
@@ -173,7 +181,7 @@ class Zeropoint:
 
     (To see this: consider S(ν) = 3631 Jy for all ν, which is the definition of a m_AB=0 source.  In this case::
 
-       0  = -2.5 log10(kaglorkys) + zp
+       0  = -2.5 log10(DAVs) + zp
           = -2.5 log10( ∫ (3631Jy) D(ν) / (3631Jy) dν ) + zp
           = -2.5 log10( ∫ D(ν) dν ) + zp
        zp = 2.5 log10( ∫ D(ν) dν )
@@ -190,23 +198,23 @@ class Zeropoint:
     zeropoint where the flux density is in nJy rather than Jy, as
     2.5log10(10⁹)=22.5.)
 
-    The number of kaglorkys from such a source would be::
+    The number of DAVs from such a source would be::
 
-       kaglorkys = ∫ S₀ D(ν) / (3631Jy) dν = S₀ / 3631Jy * ∫ D(ν) dν
+       DAVs = ∫ S₀ D(ν) / (3631Jy) dν = S₀ / 3631Jy * ∫ D(ν) dν
 
     or::
 
-       kaglorkys / ( ∫ D(ν) dν ) = S₀ / 3631Jy
+       DAVs / ( ∫ D(ν) dν ) = S₀ / 3631Jy
 
     Taking logs of both sides::
 
-       -2.5 log10( kaglorkys ) + 2.5 log10( ∫ D(ν) dν ) = -2.5 log10( S₀/Jy ) + 2.5 log10( 3631 )
-       -2.5 log10( kaglorkys ) + zp = -2.5 log10( S₀ ) + 8.900 = m_AB
+       -2.5 log10( DAVs ) + 2.5 log10( ∫ D(ν) dν ) = -2.5 log10( S₀/Jy ) + 2.5 log10( 3631 )
+       -2.5 log10( DAVs ) + zp = -2.5 log10( S₀ ) + 8.900 = m_AB
 
     Where it gets painful is when S(ν) is not constant with ν.  In this
     case, the magnitude you will calculate from the zeropoint would be::
 
-      m_calc = -2.5 log10( kaglorkys ) + zp
+      m_calc = -2.5 log10( DAVs ) + zp
              = -2.5 log10( ∫ S(ν) D(ν) / (3631Jy) dν ) + 2.5 log10( ∫ D(ν) dν )
 
     but the true AB magnitude is ill-defined, because it's different for
@@ -226,7 +234,7 @@ class Zeropoint:
 
     The magnitude of an object is then::
 
-       m = -2.5 log10( kaglorkys ) + zp + cor_sed
+       m = -2.5 log10( DAVs ) + zp + cor_sed
 
     (Do not become confused by the fact that zp is in cor_sed; we're not
     subtracting out the zeropoint from the final magnitude formula,
@@ -252,13 +260,23 @@ class Zeropoint:
     we should just use that for ν₀, but we need to document it somewhere
     if we ever start tabulating these color terms.
 
-    WHAT AN OBJECT OF THIS CLASS STORES
+    HOW THIS CLASS WORKS
 
-    It's going to be a letdown, because after all of that, this is just
-    a class to store two numbers, plus an id, an image id, and a
-    provenance id.
+    The class is instantiated with an Image, and the value of the
+    zeropoint and uncertainly on the zeropoint *at the center of the
+    image*.  (That is, if the image is nx×ny, the zeropoint is at pixel
+    position ((nx-1)/2., (ny-1)/2.), assuming 0-center-indexed pixels.)
 
-    Color corrections are *not* stored here, because the ZeroPoint is a
+    However, usually, you don't want to instantiate the class directly!
+    Instead, you want to call the get_zeropoint() class method.  That
+    will give you an object of the right subtype, assuming you pass the
+    right things to it.
+
+    To get a zeropoint, you call the method zp(x, y) (and maybe dzp(x,
+    y)), where you give the pixel position (x, y) on the image where you
+    want the zeropoint.
+
+    Color corrections are *not* stored here, because the Zeropoint is a
     property of the just image, whereas the color correction is a
     property of the object and the detector, filter, telescope.  In
     terms of the definitions about, color correction depends on D(ν) and
@@ -269,14 +287,178 @@ class Zeropoint:
 
     """
 
-    def __init__( self, zp, dzp, image_id=None, provenance_id=None, id=None ):
-        """Instantiate a Zeropoint."""
+    @classmethod
+    def get_zeropoint( cls, image=None, provenance=None, provenance_tag=None, process=None,
+                      zp=None, dzp=None, meta=None, subclass=None, id=None ):
+        """Get a Zeropoint object (or an object of a Zeropoint subclass).
 
-        self._id = None if id is None else asUUID(id)
+        Must specify one of:
+           id
+           image, provenance
+           image, provenance_tag, process
+           image, params
+           image, zp, dzp
+           image, zp, dzp, meta, subclass
+
+        Parameters
+        ----------
+          image : UUID or Image (or Image subclass) or None
+            The Image that this is the zeropoint for.  If this is a UUID, it's assumed that this
+            is an Image that can be pulled from the database l2image table.
+
+            If you specify image without either provenance or
+            provenance_tag, then this class assumes you are creating a
+            new zeropoint that won't be saved in the databse.  In this
+            case, you need to specify at least zp and dzp, and almost
+            certainly want to specify at least meta and subclass.  And
+            you have to do it rgith.
+
+            You almost never want this to be None, but it's here to
+            support edge cases that want to make a zeropoint object for
+            some reason without being explicit about the image.
+
+          provenance : Provenance or UUID or None
+            The zeropoint provenance, or the id of the zeropoint
+            provenance that can be pulled from the database.  Cannot be
+            specified together with either provenance_tag or process.
+
+          provenance_tag : str or None
+            The provenance tag of the provenance in the database for
+            this zeropoint.  You must also specify process; the two together
+            are used to find the provenance in the database.
+
+          process : str or None
+            The process to go along with provenance_tag for finding the
+            zeropoint provenance in the database.
+
+          zp : float or None
+            The zeropoint at the center of the image.  If this is None,
+            then the assumption is that the zeropoint needs to be loaded
+            frome the database.
+
+          dzp : float or None
+            Uncertainty (1σ) on zp.  Should be None if zp is None, or
+            not None if zp is not None.
+
+          meta : dict or None
+            If you specify zp and dzp, then you might want to specify
+            this as well, and what you give should be what the subclass
+            specified by subclass expects.  You have to know what you're
+            doing.
+
+          subclass : str, default None
+            The name of the subclass of the type of zeropoint you want.
+            Usually you don't specify this, but let this function figure
+            out the right subclass from the database.  If you want the
+            object to just encapsulate a single, non-spatially-variable
+            zeropoint, then leave this at None.
+
+          id : UUID or None
+            If you specify this, it means load the zeropoint from the
+            database.  In this case, you must leave off ALL of the other
+            parameters.
+
+        """
+
+        # Short-circuit : if given an id, then just load the damn thing from the database
+        if id is not None:
+            if any( i is not None for i in ( image, provenance, provenance_tag, process,
+                                             zp, dzp, meta, subclass ) ):
+                raise ValueError( "If you pass an id, you can't pass anything else." )
+            return cls.get_by_id( id )
+
+        # First, the image.  If we didn't get one, then we're trying to do a raw zeropoint.
+        # If we got one, it's either an Image or an id; in the latter case, get the Image from the database.
+        if image is None:
+            if any ( i is not None for i in ( provenance, provenance_tag, process ) ):
+                raise ValueError( "Can't pass a provenance when image is None." )
+            if ( zp is None ) or ( dzp is None ):
+                raise ValueError( "When image is None, must specify both zp and dzp." )
+        elif not isinstance( image, Image ):
+            image = Image.get_image( image )
+
+        # Figure out the provenance
+        if not isinstance( provenance, Provenance ):
+            if provenance is not None:
+                if ( provenance_tag is not None ) or ( process is not None ):
+                    raise ValueError( "Cannot give provenance_tag/process if you give provenance" )
+                provenance = Provenance.get_by_id( asUUID(provenance) )
+            else:
+                if ( provenance_tag is None ) != ( process is None ):
+                    raise ValueError( "Must specify either both or neither or provenance_tag and process" )
+                provenance = Provenance.get_provs_for_tag( provenance_tag, process )
+
+            if ( not isinstance( provenance.params, dict ) ) or ( 'subclass' not in provenance.params ):
+                raise ValueError( "Invalid zeropoint provenance, it doesn't include subclass in params" )
+
+        else:
+            # Provenance is None
+            if ( zp is None ) or ( dzp is None ):
+                raise ValueError( "When provenance not given, must specify both zp and dzp" )
+
+        # Figure out the subclass
+        if subclass is None:
+            subclass = "Zeropoint" if provenance is None else provenance.params[ "subclass" ]
+        else:
+            if ( provenance is not None ) and ( subclass != provenance.params[ "subclass" ] ):
+                raise ValueError( f"subclass mismatch; you asked for {subclass}, but the provenance "
+                                  f"has subclass {provenance.params['subclass']}" )
+
+        subclasses = { "Zeropoint": Zeropoint,
+                       "RomanL2Zeropoint": RomanL2Zeropoint }
+        if subclass not in subclasses:
+            raise ValueError( f"Unknown zeropoint subclass {subclass}" )
+        subclass = subclasses[ subclass ]
+
+        # Make sure either both or neither of zp and zp are given, and that if so they're floats
+        if ( zp is None ) != ( dzp is None ):
+            raise ValueError( "Must specify both or neither of zp and dzp, can't give both." )
+        if zp is not None:
+            if not all( isinstance( i, numbers.Real ) for i in ( zp, dzp ) ):
+                raise TypeError( f"zp and dzp must be floats, got {type(zp)} for zp an {type(dzp)} for dzp" )
+
+        if zp is not None:
+            # If zp and dzp were given, then just instantiate the object.
+            # If it turns out to be inconsistent with what's in the
+            # database, things will happen when somebody tries to save it.
+            # (I.e. consistency is saving's problem, and if the user creates
+            # an inconsistent one and uses it, that's on them.)
+            return subclass( zp, dzp,
+                             image_id=None if image is None else image.id,
+                             provenance_id=None if provenance is None else provenance.id,
+                             meta=meta,
+                             _allowed_to_call=True )
+        else:
+            # If zp is not given, then try to load it from the database
+            return Zeropoint.get_for_image( image.id, provenance.id )
+
+
+    def __init__( self, zp, dzp, image_id=None, provenance_id=None, meta={}, id=None, _allowed_to_call=False ):
+        """Instantiate a Zeropoint.
+
+        Parameter definitions are the same as in
+        Zeropoint.get_zeropoint.  (Don't use _allowed_to_call, that's
+        only used internally.)
+
+        The base Zeropoint class assumes a non-spatially varaible zeropoint.
+
+        """
+
+        if not _allowed_to_call:
+            raise RuntimeError( "Don't instantiate a Zeropoint directly, call Zeropoint.get_zeropoint" )
+
+        self.id = id
         self._zp = zp
-        self._dzp = zp
-        self._image_id = None if image_id is None else asUUID( image_id )
-        self._provenance_id = None if provenance_id is None else asUUID( provenance_id )
+        self._dzp = dzp
+        self.image_id = image_id
+        self.provenance_id = provenance_id
+        self.meta = meta if meta is not None else {}
+
+        # Each subclass should valid the meta field; put this in the __init__ for each subclass
+        # Here is the validation for objects that aren't instances of a subclass
+        if self.__class__ == Zeropoint:
+            if self._meta != {}:
+                raise ValueError( "For the base Zeropoint class, meta must be {}" )
 
     @property
     def id( self ):
@@ -303,38 +485,68 @@ class Zeropoint:
         self._provenance_id = None if val is None else asUUID( val )
 
     @property
-    def zp( self ):
-        return self._zp
+    def meta( self ):
+        return self._meta
 
-    @zp.setter
-    def zp( self, val ):
-        # Type checking?
-        self._zp = val
+    @meta.setter
+    def meta( self, val ):
+        if not isinstance( val, dict ):
+            raise TypeError( f"meta must be a dict, not a {type(val)}" )
+        self._meta = val
 
-    @property
-    def dzp( self ):
-        return self._dzp
+    def zp( self, x, y, dzp=False ):
+        """Return the zeropoint.
 
-    @dzp.setter
-    def dzp( self, val ):
-        # Type checking?
-        self._dzp = val
+        This is the zp that you can stuff into::
+
+           m = -2.5 log10( dav ) + zp
+
+        where dav ("data array values") is the *complete* sum of of data
+        values from the Image.data array for the object in question
+        (i.e., aperture corrections have been applied, or PSFs used were
+        properly normalized).  m is an AB magnitude.
+
+        Parameters
+        ----------
+          x, y : float
+             Pixel position on the image.
+
+          dzp : bool, default False
+              See Returns below.
+
+        Returns
+        -------
+          float, or ( float, float )
+
+            if dzp is False, then returns a single float, the zeropoint.
+            If dzp is true, then returns a 2-element tuple, the
+            zeropoint and the uncertainty on the zeropoint.
+
+        """
+
+        # Default zeropoint class doesn't handle spatial variation
+        return ( self._zp, self._dzp ) if dzp else self._zp
+
 
     def get_image( self, dbclient=None ):
-        """Return the L2 Image object associated with this zeropoint."""
+        """Return the Image object associated with this zeropoint."""
 
         if self.image_id is None:
             raise RuntimeError( "No image associated with this zeropoint." )
 
         return Image.get_image( self.image_id, dbclient=dbclient )
 
+
     def save( self, overwrite=False, dbclient=None ):
         """Save the zeropoint if it doesn't already exist.
 
         Will fill in the id field if it's not yet set.
 
-        If dzp and zp are within 0.1*dzp of the saved values, this will
-        be assumed to be consistent (i.e., the "same" zeropoint).
+        Assumes that the provenance already exists in the database.
+
+        If an entry already exists for this iamge and provenance, and
+        dzp and zp are within 0.1*dzp of the saved values, this will be
+        assumed to be consistent (i.e., the "same" zeropoint).
 
         WARNING: If it does already exist in the database, zp and dzp
         will be updated to match what's in the database.
@@ -346,17 +558,20 @@ class Zeropoint:
         if self.provenance_id is None:
             raise RuntimeError( "Can't save zeropoint, no provenance_id." )
 
-        data = { 'image_id': str(self.image_id),
-                 'provenance_id': str(self.provenance_id),
-                 'zp': self._zp, 'dzp': self._dzp }
+        data = { 'image_id': None if self.image_id is None else str(self.image_id),
+                 'provenance_id': None if self.provenance_id is None else str(self.provenance_id),
+                 'zp': self._zp, 'dzp': self._dzp,
+                 'meta': self._meta }
         if self._id is not None:
+            # Don't even include the id key if it's not known; that's what the server expects
             data['id'] = str(self._id)
 
         dbclient = SNPITDBClient.get() if dbclient is None else dbclient
         result = dbclient.send( "/savezp", json=data )
         self.id = result['id']
-        self.zp = result['zp']
-        self.dzp = result['dzp']
+        self._zp = result['zp']
+        self._dzp = result['dzp']
+        self.meta = result['meta']
 
 
     @classmethod
@@ -377,7 +592,9 @@ class Zeropoint:
         return Zeropoint( result['zp'], result['dzp'],
                           image_id=result['image_id'],
                           provenance_id=result['provenance_id'],
-                          id=result['id'] )
+                          meta=result['meta'],
+                          id=result['id'],
+                          _allowed_to_call=True )
 
 
     @classmethod
@@ -390,4 +607,34 @@ class Zeropoint:
         return Zeropoint( result['zp'], result['dzp'],
                           image_id=result['image_id'],
                           provenance_id=result['provenance_id'],
-                          id=result['id'] )
+                          meta=result['meta'],
+                          id=result['id'],
+                          _allowed_to_call=True )
+
+
+# ======================================================================
+
+class RomanL2Zeropoint( Zeropoint ):
+    """Encapsulates a zeropoint for a Roman L2 image, where the pixels give us surface brightness.
+
+    That is, DAV are something per steradian rather than something.  If
+    it varies between pixels, then this has to be normalized out.
+
+    This class will use the pixel area files grabbed
+    from... somewhere... to normalize this out, and, hopefully, define
+    it all so that the _zp and _dzp values it stores are consistent with
+    all that.
+
+    Not implemented yet.
+
+    """
+
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
+
+        # Validate self._meta... once we know how
+        raise NotImplementedError( "RomanL2Zeropoint isn't implemented yet." )
+
+
+    def zp( self, x, y, dzp=False ):
+        raise NotImplementedError( "RomanL2Zeropoint isn't implemented yet." )

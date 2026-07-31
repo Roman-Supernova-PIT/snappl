@@ -2,9 +2,11 @@ __all__ = [ 'setup_flask_app' ]
 
 import uuid
 import math
+import numbers
 
 import flask
 import flask_session
+import psycopg.types.json
 from psycopg import sql
 
 from rkwebutil import rkauth_flask
@@ -553,12 +555,21 @@ class SaveZeroPoint( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
             return "Expected zeropoint info in json POST: didn't get any.", 422
-        data = self.check_json_keys( { 'image_id', 'provenance_id', 'zp', 'dzp' },
-                                     { 'image_id', 'provenance_id', 'zp', 'dzp', 'id' } )
+        data = self.check_json_keys( { 'image_id', 'provenance_id', 'zp', 'dzp', 'meta' },
+                                     { 'image_id', 'provenance_id', 'zp', 'dzp', 'meta', 'id' } )
+        # Type checks
+        if not isinstance( data['meta'], dict ):
+            return f"Type error, meta must be a dict, not a {type(data['meta'])}", 422
+        if not all( isinstance( data[i], numbers.Real ) for i in ( 'zp', 'dzp' ) ):
+            return ( f"Type error, zp and dzp must both be floats, but got {type(data['zp'])} for zp "
+                     f"and {type(data['dzp'])} for dzp" ), 422
+        image_id = asUUID( data['image_id'] )
+        provenance_id = asUUID( data['provenance_id'] )
+
         with db.DBCon( dictcursor=True ) as dbcon:
             dbcon.execute_nofetch( "LOCK TABLE zeropoint" )
             q = sql.SQL( "SELECT * FROM zeropoint WHERE image_id={imageid} AND provenance_id={provid}"
-                        ).format( imageid=data['image_id'], provid=data['provenance_id'] )
+                        ).format( imageid=image_id, provid=provenance_id )
             rows = dbcon.execute( q )
             if len(rows) > 0:
                 if len(rows) > 1:
@@ -570,6 +581,8 @@ class SaveZeroPoint( BaseView ):
                 if ( 'id' in data ) and ( data['id'] is not None )  and ( row['id'] != asUUID(data['id']) ):
                     return ( f"Zeropoint in databsae for image {data['image_id']} provenance {data['provenance_id']} "
                              f"has id {row['id']} but you passed {data['id']}, which does not match" ), 422
+                if row['meta'] != data['meta']:
+                    return "Passed meta does not match what's already saved for this zeropoint in the database", 422
                 if ( ( math.fabs( row['dzp'] - data['dzp'] ) > 0.01 * row['dzp'] )
                      or ( math.fabs( row['zp'] - data['zp'] ) > 0.01 * row['dzp'] ) ):
                     return ( f"Zeropoint in databsae for image {data['image_id']} provenance {data['provenance_id']} "
@@ -579,14 +592,15 @@ class SaveZeroPoint( BaseView ):
                 return row
             else:
                 _id = asUUID( data['id'] ) if ('id' in data and data['id'] is not None) else uuid.uuid4()
-                q = sql.SQL( "INSERT INTO zeropoint(id,image_id,provenance_id,zp,dzp) "
-                             "VALUES ({id},{imageid},{provid},{zp},{dzp})"
-                            ).format( id=_id, imageid=data['image_id'], provid=data['provenance_id'],
-                                      zp=data['zp'], dzp=data['dzp'] )
+                q = sql.SQL( "INSERT INTO zeropoint(id,image_id,provenance_id,zp,dzp,meta) "
+                             "VALUES ({id},{imageid},{provid},{zp},{dzp},{meta})"
+                            ).format( id=_id, imageid=image_id, provid=provenance_id,
+                                      zp=data['zp'], dzp=data['dzp'],
+                                      meta=psycopg.types.json.Jsonb(data['meta']) )
                 dbcon.execute_nofetch( q )
                 dbcon.commit()
                 return { 'id': _id, 'image_id': data['image_id'], 'provenance_id': data['provenance_id'],
-                         'zp': data['zp'], 'dzp': data['dzp'] }
+                         'zp': data['zp'], 'dzp': data['dzp'], 'meta': data['meta'] }
 
 
 # ======================================================================

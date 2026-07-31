@@ -3,7 +3,8 @@ CREATE TABLE zeropoint(
     image_id UUID NOT NULL,
     provenance_id UUID NOT NULL,
     zp real NOT NULL,
-    dzp real NOT NULL
+    dzp real NOT NULL,
+    meta JSONB default '{}'::JSONB
 );
 CREATE INDEX ix_zeropoint_image_id ON zeropoint(image_id);
 CREATE INDEX ix_zeropoint_provenance_id ON zeropoint(provenance_id);
