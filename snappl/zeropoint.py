@@ -12,7 +12,11 @@ class Zeropoint:
     First, imagine that you have an Image (i.e., an object of the class
     defined in image.py).  That image's data property is a
     two-dimensional array of floats.  Define "kaglorkys" as the units of
-    that two dimensional array.  I wanted to use counts, or DN, but it
+    that two dimensional array.  To highlight this:
+
+       THE KAGLORKY IS THE UNIT OF THE NUMBERS WE GET IN THE DATA ARRAY
+
+    Whatever that actually is.  I wanted to use counts, or DN, but it
     was impossible to ever have a conversation on Slack that used this
     word without getting a long lecture from Stefano, so we're going to
     use the kaglorky as the unit of whatever it is that we get in our
