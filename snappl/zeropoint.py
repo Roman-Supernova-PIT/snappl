@@ -20,15 +20,17 @@ class Zeropoint:
     was impossible to ever have a conversation on Slack that used this
     word without getting a long lecture from Stefano, so we're going to
     use the kaglorky as the unit of whatever it is that we get in our
-    data rrays.  Kaglorkys is NOT necessarily a number of photons, or a
-    number of photoelectrons.  Indeed, it's entirely possible that the
-    underlying physical units of the pixel values of the image is
-    something proportional to number of photoelectrons per second,
-    rather than just number of electrons.  However, *however* they came
-    to be, "kaglorkys" is what this class defines as the units of that
-    two dimensional array.  For purposes of discussion, we do not have
-    to know if this is a rate or not; it just is whatever the units of
-    the data array is.
+    data arrays.  Kaglorkys is NOT necessarily a number of photons, or a
+    number of photoelectrons, nor is it necessarily something (or
+    something proportional to) a rate of photons or a rate of
+    photoelectrons.  It is what it is.  It is just a way so that we can
+    talk about the units that are in the data arrays we get, and all we
+    need for this discussion is a way of saying "the units of the data
+    array" without having to spell out all six of those words every
+    time. *However* they came to be, "kaglorkys" is what this
+    class defines as the units of that two dimensional array.  For
+    purposes of discussion, we do not have to know if this is a rate or
+    not; it just is whatever the units of the data array is.
 
     Second, imagine that we have a series of astronomical sources
     (stars, to make it concrete), and we have images of those stars
