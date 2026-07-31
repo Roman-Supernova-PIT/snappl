@@ -11,20 +11,25 @@ class Zeropoint:
 
     First, imagine that you have an Image (i.e., an object of the class
     defined in image.py).  That image's data property is a
-    two-dimensional array of floats.  Define "counts" as the units of
-    that two dimensional array.  In particular, we need to be clear that
-    THIS is the definition of "counts" in this context.  Counts is NOT
-    necessarily a number of photons, or a number of photoelectrons.
-    Indeed, it's entirely possible that the underlying physical units of
-    the pixel values of the image is something proportional to number of
-    photoelectrons per second, rather than just number of electrons.
-    However, *however* they came to be, "counts" is what this class
-    defines as the units of that two dimensional array.
+    two-dimensional array of floats.  Define "kaglorkys" as the units of
+    that two dimensional array.  I wanted to use counts, or DN, but it
+    was impossible to ever have a conversation on Slack that used this
+    word without getting a long lecture from Stefano, so we're going to
+    use the kaglorky as the unit of whatever it is that we get in our
+    data rrays.  Kaglorkys is NOT necessarily a number of photons, or a
+    number of photoelectrons.  Indeed, it's entirely possible that the
+    underlying physical units of the pixel values of the image is
+    something proportional to number of photoelectrons per second,
+    rather than just number of electrons.  However, *however* they came
+    to be, "kaglorkys" is what this class defines as the units of that
+    two dimensional array.  For purposes of discussion, we do not have
+    to know if this is a rate or not; it just is whatever the units of
+    the data array is.
 
     Second, imagine that we have a series of astronomical sources
     (stars, to make it concrete), and we have images of those stars
     taken by the telescope.  Although this is not definitional, we are
-    going to assume that the number of counts in the Image.data array is
+    going to assume that the number of kaglorkys in the Image.data array is
     proportional to the number of photons that entered the telescope's
     aperture.  (Let's assume that our thought-experiment stars are not
     at all variable, so it doesn't matter if we're talking about the
@@ -60,9 +65,9 @@ class Zeropoint:
 
     Under these assumptions, we define the zeropoint zp to be::
 
-       m = -2.5 * log10( counts ) + zp
+       m = -2.5 * log10( kaglorkys ) + zp
 
-    where counts is the sum of the whole data array, and m is an AB
+    where kaglorkys is the sum of the whole data array, and m is an AB
     magnitude.  An AB magnitude is defined by::
 
        m_AB = -2.5 log10( f_ν / (erg s⁻¹ Hz⁻¹ cm⁻¹) ) - 48.60
@@ -103,11 +108,11 @@ class Zeropoint:
     this zeropoint:
 
        * Aperture photometry values must be properly "aperture
-         corrected" before the counts are fed into the zeropoint
+         corrected" before the kaglorkys are fed into the zeropoint
          formula.  Ideally, when things aren't too complicated, this
          correction is just a single factor that multiplies the number
-         of counts in the aperture to give an effective "infinite
-         aperture" number of counts.  This factor will, of course, be
+         of kaglorkys in the aperture to give an effective "infinite
+         aperture" number of kaglorkys.  This factor will, of course, be
          different for apertures of different sizes (and shapes), and
          will also in principle be different at different positions on a
          detector array.
@@ -140,18 +145,18 @@ class Zeropoint:
     per Time per Frequency Binwidth per Collecting Area).
 
     The detector is going to have some spectral response D(ν), which we
-    will define "the number of counts detected per frequency bin for
+    will define "the number of kaglorkys detected per frequency bin for
     light of frequency ν for a source with f(ν)=3631 Jy".  [ASIDE: I say
     "detector response", but really I mean "detector + filter response",
     or, really really, "system response".]  This means that D(ν) has
     units of s (or, more clearly, Hz⁻¹) (or, maybe, if you don't think
-    of counts as dimensionless, units of counts/Hz).  The actual light
+    of kaglorkys as dimensionless, units of kaglorky/Hz).  The actual light
     source is going to have some SED S(ν) (in units of Energy/Time/Flux
     Binwidth/Area).
 
-    The total number of counts detected, therefore, is::
+    The total number of kaglorkys detected, therefore, is::
 
-        counts = ∫ S(ν) D(ν) / (3631Jy) dν
+        kaglorkys = ∫ S(ν) D(ν) / (3631Jy) dν
 
     (Presumably D(ν) goes to zero outside some finite range of ν so we
     don't have to think about infinite numbers.)
@@ -162,7 +167,7 @@ class Zeropoint:
 
     (To see this: consider S(ν) = 3631 Jy for all ν, which is the definition of a m_AB=0 source.  In this case::
 
-       0  = -2.5 log10(counts) + zp
+       0  = -2.5 log10(kaglorkys) + zp
           = -2.5 log10( ∫ (3631Jy) D(ν) / (3631Jy) dν ) + zp
           = -2.5 log10( ∫ D(ν) dν ) + zp
        zp = 2.5 log10( ∫ D(ν) dν )
@@ -179,23 +184,23 @@ class Zeropoint:
     zeropoint where the flux density is in nJy rather than Jy, as
     2.5log10(10⁹)=22.5.)
 
-    The number of counts from such a source would be::
+    The number of kaglorkys from such a source would be::
 
-       counts = ∫ S₀ D(ν) / (3631Jy) dν = S₀ / 3631Jy * ∫ D(ν) dν
+       kaglorkys = ∫ S₀ D(ν) / (3631Jy) dν = S₀ / 3631Jy * ∫ D(ν) dν
 
     or::
 
-       counts / ( ∫ D(ν) dν ) = S₀ / 3631Jy
+       kaglorkys / ( ∫ D(ν) dν ) = S₀ / 3631Jy
 
     Taking logs of both sides::
 
-       -2.5 log10( counts ) + 2.5 log10( ∫ D(ν) dν ) = -2.5 log10( S₀/Jy ) + 2.5 log10( 3631 )
-       -2.5 log10( counts ) + zp = -2.5 log10( S₀ ) + 8.900 = m_AB
+       -2.5 log10( kaglorkys ) + 2.5 log10( ∫ D(ν) dν ) = -2.5 log10( S₀/Jy ) + 2.5 log10( 3631 )
+       -2.5 log10( kaglorkys ) + zp = -2.5 log10( S₀ ) + 8.900 = m_AB
 
     Where it gets painful is when S(ν) is not constant with ν.  In this
     case, the magnitude you will calculate from the zeropoint would be::
 
-      m_calc = -2.5 log10( counts ) + zp
+      m_calc = -2.5 log10( kaglorkys ) + zp
              = -2.5 log10( ∫ S(ν) D(ν) / (3631Jy) dν ) + 2.5 log10( ∫ D(ν) dν )
 
     but the true AB magnitude is ill-defined, because it's different for
@@ -215,7 +220,7 @@ class Zeropoint:
 
     The magnitude of an object is then::
 
-       m = -2.5 log10( counts ) + zp + cor_sed
+       m = -2.5 log10( kaglorkys ) + zp + cor_sed
 
     (Do not become confused by the fact that zp is in cor_sed; we're not
     subtracting out the zeropoint from the final magnitude formula,
