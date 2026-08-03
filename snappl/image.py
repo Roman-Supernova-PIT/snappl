@@ -19,7 +19,7 @@ import astropy.units
 from photutils.aperture import CircularAperture, aperture_photometry, ApertureStats
 from photutils.psf import PSFPhotometry
 from photutils.background import LocalBackground, MMMBackground, Background2D
-
+from astropy.time import Time
 
 import galsim.roman
 import roman_datamodels as rdm
@@ -2241,10 +2241,11 @@ class RomanDatamodelImage( Image ):
 
     def _get_band( self ):
         self._band = self.dm.meta.instrument.optical_element
-
     def _get_mjd( self ):
-        self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
-
+        try:
+            self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
+        except:
+            self._mjd = Time(self.dm.meta.exposure.start_time).mjd
     def _get_exptime( self ):
         self._exptime = self.dm.meta.exposure.exposure_time
 
@@ -2521,6 +2522,7 @@ class RomanDatamodelImage( Image ):
         x, y = wcs.world_to_pixel( ra, dec , with_bounding_box=False)
         x = int( np.floor( x + 0.5 ) )
         y = int( np.floor( y + 0.5 ) )
+        SNLogger.debug(f"Attempting Cutout at {x}, {y}")
         return self.get_cutout( x, y, xsize, ysize, mode=mode, fill_value=fill_value )
 
     @data.setter
