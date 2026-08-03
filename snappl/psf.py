@@ -1945,7 +1945,8 @@ class STPSF( PSF ):
         "H158": "F158",
         "K213": "F213",
     }
-
+        wfi = stpsf.roman.WFI()
+        wfi.detector = f"WFI{self._sca:02d}"
         wfi_band = band_dict.get(self._band, None)
         if wfi_band is None:
             raise ValueError(f"Band {self._band} not recognized for STPSF generation."
@@ -1955,8 +1956,11 @@ class STPSF( PSF ):
         # If a position is not given, assume the middle of the SCA
         #   (within 1/2 pixel; by default, we want to make x and y
         #   centered on a pixel).
-        x = x if x is not None else float( self._x )
-        y = y if y is not None else float( self._y )
+        x = self._x
+        y = self._y
+        x0 = None
+        y0 = None
+        ext_name = "DET_SAMP"
         wfi.detector_position = (x, y)
 
         xc = int( np.floor( x + 0.5 ) )
@@ -1980,13 +1984,13 @@ class STPSF( PSF ):
         source_offset_y_arcsec = (y - y0) * wfi.pixelscale
         wfi.options["source_offset_x"] = source_offset_x_arcsec
         wfi.options["source_offset_y"] = source_offset_y_arcsec
-        oversampl_fac = oversample_fac if not imagesampled else 1.
+        oversample_fac = oversample_fac if not imagesampled else 1.
         stamp = wfi.calc_psf(fov_pixels=self.stamp_size, oversample=oversample_fac)
         stamp = stamp[ext_name].data
 
-        return stamp
+        return photutils.psf.ImagePSF( stamp, x_0=self._x, y_0=self._y, oversampling = oversample_fac)
 
-        
+
 
 class GaussianPSF( PSF ):
     """A Gaussian PSF that doesn't vary across the image, for testing purposes.
