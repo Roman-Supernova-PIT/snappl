@@ -1,4 +1,4 @@
-__all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
+_all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
             'YamlSerialized_OversampledImagePSF', 'A25ePSF',
             'ou24PSF_slow', 'ou24PSF', 'STPSF' ]
 
@@ -1926,6 +1926,51 @@ class STPSF( PSF ):
 
         return self._stamps[(x, y, x0, y0, stampx, stampy, ext_name)] * flux
 
+
+    # DO NOT MERGE THIS, the interface isn't the same, this is a quick test,
+    #  much thought needed.  Somebody doing code review, reject this.
+    def getImagePSF( self, imagesampled=True, oversample_fac=1. ):
+        wfi_band = band_dict.get(self._band, None)
+        if wfi_band is None:
+            raise ValueError(f"Band {self._band} not recognized for STPSF generation."
+                             f" Recognized bands are: {list(band_dict.keys())}")
+        wfi.filter = wfi_band
+
+        # If a position is not given, assume the middle of the SCA
+        #   (within 1/2 pixel; by default, we want to make x and y
+        #   centered on a pixel).
+        x = x if x is not None else float( self._x )
+        y = y if y is not None else float( self._y )
+        wfi.detector_position = (x, y)
+
+        xc = int( np.floor( x + 0.5 ) )
+        yc = int( np.floor( y + 0.5 ) )
+        x0 = xc if x0 is None else x0
+        y0 = yc if y0 is None else y0
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+
+        stampx = self.stamp_size // 2 + ( x - x0 )
+        stampy = self.stamp_size // 2 + ( y - y0 )
+
+        if ( ( stampx < -self.stamp_size ) or ( stampx > 2 * self.stamp_size ) or
+             ( stampy < -self.stamp_size ) or ( stampy > 2 * self.stamp_size ) ):
+            raise ValueError( f"PSF would be rendered at ({stampx}, {stampy}), which is too far off of the "
+                              f"edge of a {self.stamp_size}-pixel stamp." )
+
+        SNLogger.debug( f"Initializing STPSF with band {self._band} and sca {self._sca}" )
+
+        source_offset_x_arcsec = (x - x0) * wfi.pixelscale
+        source_offset_y_arcsec = (y - y0) * wfi.pixelscale
+        wfi.options["source_offset_x"] = source_offset_x_arcsec
+        wfi.options["source_offset_y"] = source_offset_y_arcsec
+        oversampl_fac = oversample_fac if not imagesampled else 1.
+        stamp = wfi.calc_psf(fov_pixels=self.stamp_size, oversample=oversample_fac)
+        stamp = stamp[ext_name].data
+
+        return stamp
+
+        
 
 class GaussianPSF( PSF ):
     """A Gaussian PSF that doesn't vary across the image, for testing purposes.

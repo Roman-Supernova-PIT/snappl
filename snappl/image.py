@@ -962,8 +962,9 @@ class Image( PathedObject ):
         return ap_results
 
 
+    # OMG HACKED DON'T COMMIT
     def psf_phot( self, init_params, psf, forced_phot=True, fit_shape=(5, 5),
-                  bginner=15, bgouter=25, return_resid_image=False ):
+                  bginner=15, bgouter=25, return_resid_image=False, oversample_fac=1. ):
         """Do psf photometry.
 
         Does local background subtraction.
@@ -1003,7 +1004,7 @@ class Image( PathedObject ):
         if 'flux_init' not in init_params.colnames:
             raise Exception('Astropy table passed to kwarg init_params must contain column \"flux_init\".')
 
-        psfmod = psf.getImagePSF()
+        psfmod = psf.getImagePSF( imagesampled=False, oversample_fac=oversample_fac )
         if forced_phot:
             SNLogger.debug( 'psf_phot: x, y are fixed!' )
             psfmod.x_0.fixed = True
