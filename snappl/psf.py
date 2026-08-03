@@ -1930,6 +1930,22 @@ class STPSF( PSF ):
     # DO NOT MERGE THIS, the interface isn't the same, this is a quick test,
     #  much thought needed.  Somebody doing code review, reject this.
     def getImagePSF( self, imagesampled=True, oversample_fac=1. ):
+        band_dict = {
+        "F062": "F062",
+        "F087": "F087",
+        "F106": "F106",
+        "F129": "F129",
+        "F158": "F158",
+        "F184": "F184",
+        "F213": "F213",
+        "R062": "F062",
+        "Z087": "F087",
+        "Y106": "F106",
+        "J129": "F129",
+        "H158": "F158",
+        "K213": "F213",
+    }
+
         wfi_band = band_dict.get(self._band, None)
         if wfi_band is None:
             raise ValueError(f"Band {self._band} not recognized for STPSF generation."
