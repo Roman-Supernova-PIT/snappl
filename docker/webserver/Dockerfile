@@ -1,9 +1,13 @@
 # Build this from the top level of the checkout.
 #
 # Build it with
-#   docker build --target webserver -t registy.nersc.gov/m4385/rknop/roman-snpit-db:<VER> \
+#   docker build --build-arg HOST_ADDRESS=dns.name \
+#      --target webserver \
+#      -t registy.nersc.gov/m4385/rknop/roman-snpit-db:<VER> \
 #      -f docker/webserver/Dockerfile .
 #
+# The HOST_ADDRESS arg is just used for setting up dehydrated/letsencrypt,
+#   so you can ignore it if you don't need that.
 
 # ======================================================================
 
@@ -19,7 +23,7 @@ RUN  apt-get update \
     && apt-get -y upgrade \
     && apt-get -y install -y \
          python3 locales netcat-openbsd gnupg curl elinks postgresql-client make rlwrap socat \
-         ca-certificates \
+         ca-certificates dehydrated \
          tmux emacs-nox less procps bzip2 \
     && apt-get -y autoremove \
     && apt-get clean \
@@ -156,6 +160,20 @@ ENV PYTHONPATH=/roman-snpit-db
 COPY docker/webserver/roman-snpit-server.py /roman-snpit-db/
 
 RUN mkdir /sessions
+
+# For using dehydrated to get a LetsEncrypt cert.
+# Manual work will still be required; gunicorn doesn't use these certs,
+#   as the asumption is there's an ingress server, so the certs will
+#   need to get moved to the ingress server.
+# ALSO, important, you will need to save the account key that
+#   gets created in /var/lib/dehydrated/accounts (the full directory),
+#   and then later copy that back in before running dehydrated -c!
+#   (...in fact... make /var/lib/dehydrated a pvc)
+ARG HOST_ADDRESS=invalid.hostname
+RUN mkdir /tmp/.well-known
+RUN cat /etc/dehydrated/config | perl -pe 's/^WELLKNOWN=.*$/WELLKNOWN=\/tmp\/.well-known/' > /etc/dehydrated.config-new \
+  && mv /etc/dehydrated.config-new /etc/dehydrated/config && rm -f /etc/dehydrated.config-new
+RUN echo ${HOST_ADDRESS} >> /etc/dehydrated/domains.txt
 
 EXPOSE 8080
 # ENTRYPOINT [ "/venv/bin/gunicorn", "-b", "0.0.0.0:8080", "--access-logfile", "-", "--error-logfile", "-", "-k", "gevent", "--timeout", "300", "--workers", "10", "roman-snpit-server:application" ]

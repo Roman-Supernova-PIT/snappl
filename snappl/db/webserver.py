@@ -1,8 +1,10 @@
 __all__ = [ 'setup_flask_app' ]
 
+import re
 import uuid
 import math
 import numbers
+import pathlib
 
 import flask
 import flask_session
@@ -15,7 +17,7 @@ from snappl.utils import asUUID
 from snappl.config import Config
 from snappl.db import db
 from snappl.db.baseview import BaseView
-# from snappl.logger import SNLogger
+from snappl.logger import SNLogger
 
 
 # ======================================================================
@@ -879,6 +881,19 @@ class FindSpectra1d( BaseView ):
 
 # ======================================================================
 
+class LetsEncrypt( flask.views.View ):
+    def dispatch_request( self, f ):
+        if not re.search( r'^[a-zA-Z0-9_\-\$\.]+$', f ):
+            SNLogger.error( f"Got filename {f} which is invalid." )
+            raise RuntimeError( "Invalid filename" )
+        p = pathlib.Path( "/tmp/.well-known" ) / f
+        with open(p) as ifp:
+            text = ifp.read()
+        return text, 200
+
+
+# ======================================================================
+
 urls = {
     "/": MainPage,
     "/test/<param>": TestEndpoint,
@@ -918,4 +933,6 @@ urls = {
     "/savespectrum1d": SaveSpectrum1d,
     "/getspectrum1d/<spectrumid>": GetSpectrum1d,
     "/findspectra1d": FindSpectra1d,
+
+    "/.well-known/acme-challenge/<f>": LetsEncrypt
 }
