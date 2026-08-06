@@ -29,23 +29,6 @@ import synphot
 from snappl.config import Config
 from snappl.logger import SNLogger
 
-band_dict = {
-        "F062": "F062",
-        "F087": "F087",
-        "F106": "F106",
-        "F129": "F129",
-        "F158": "F158",
-        "F184": "F184",
-        "F213": "F213",
-        "R062": "F062",
-        "Z087": "F087",
-        "Y106": "F106",
-        "J129": "F129",
-        "H158": "F158",
-        "K213": "F213",
-    }
-
-
 
 class PSF:
     """Wraps a PSF.  All roman snpit photometry code will ideally only use PSF methods defined in this base class.
@@ -1129,10 +1112,8 @@ class OversampledImagePSF( PSF ):
         # That's also where the factor a=4 comes from
         a = 4
 
-
         psfwid = oversampled_data.shape[0]
         stampwid = self.stamp_size
-
 
         psfdex1d = np.arange( -( psfwid//2), psfwid//2+1, dtype=int )
 
@@ -1901,7 +1882,7 @@ class STPSF( PSF ):
     def stamp_size( self ):
         return self.size
 
-    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_DIST" ):
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_SAMP" ):
         """Return a 2d numpy image of the PSF at the detector resolution.
 
         Parameters are as in PSF.get_stamp, plus:
@@ -1933,6 +1914,21 @@ class STPSF( PSF ):
         wfi = stpsf.roman.WFI()
         wfi.detector = f"WFI{self._sca:02d}"
 
+        band_dict = {
+        "F062": "F062",
+        "F087": "F087",
+        "F106": "F106",
+        "F129": "F129",
+        "F158": "F158",
+        "F184": "F184",
+        "F213": "F213",
+        "R062": "F062",
+        "Z087": "F087",
+        "Y106": "F106",
+        "J129": "F129",
+        "H158": "F158",
+        "K213": "F213",
+    }
 
         wfi_band = band_dict.get(self._band, None)
         if wfi_band is None:
@@ -1995,7 +1991,7 @@ class GaussianPSF( PSF ):
 
     """
 
-    def __init__( self, sigmax=0.43, sigmay=0.43, theta=0., stamp_size=None, _parent_class=False, **kwargs ):
+    def __init__( self, sigmax=1., sigmay=1., theta=0., stamp_size=None, _parent_class=False, **kwargs ):
         """Create an object that renders a Gaussian PSF.
 
         Parmeters are as passed to PSF.__init__() plus:
@@ -2015,7 +2011,7 @@ class GaussianPSF( PSF ):
             Must be an odd integer if given.  If not given, stamp size will be 2*floor(5*FWHM)+1 (using
             the larger of σ_x, σ_y to determine FWHM).
         """
-        SNLogger.debug( f"Initializing GaussianPSF with sigmax={sigmax}, sigmay={sigmay}, theta={theta} ")
+
         super().__init__( _parent_class=True, **kwargs )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
