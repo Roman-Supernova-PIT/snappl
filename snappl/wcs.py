@@ -454,7 +454,6 @@ class RDM_CRDS_GWCS(RDM_GWCS):
         if parent_image is None:
             raise RuntimeError( "Can't make an RDM_CRDS_GWCS without the parent image" )
         super().__init__( gwcs=gwcs )
-        import pdb; pdb.set_trace()
         self.fix_gwcs_for_rick_sims( parent_image )
 
 

@@ -861,7 +861,6 @@ def test_romandatamodelimage_needscrdswcs( ricksim_image_and_truthtab ):
     dy = calcy - truth.y_det
     dpos = np.sqrt( dx*dx + dy*dy )
 
-    import pdb; pdb.set_trace()
     assert dpos.mean() == pytest.approx( 0., abs=0.001 )
     assert dpos.std() == pytest.approx( 0.01, abs=0.01 )
     assert dx.mean() == pytest.approx( 0., abs=0.001 )
