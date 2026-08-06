@@ -1,5 +1,5 @@
 __all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'CompressedFITSImage', 'FITSImageOnDisk',
-            'OpenUniverse2024FITSImage', 'RomanDatamodelImage' ]
+            'OpenUniverse2024FITSImage', 'RomanDatamodelImage', 'RomanDataModelImage_NeedsCRDSWCS' ]
 
 import re
 import pathlib
@@ -20,13 +20,12 @@ from photutils.aperture import CircularAperture, aperture_photometry, ApertureSt
 from photutils.psf import PSFPhotometry
 from photutils.background import LocalBackground, MMMBackground, Background2D
 
-
 import galsim.roman
 import roman_datamodels as rdm
 
 from snappl.logger import SNLogger
 from snappl.config import Config
-from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, RDM_GWCS
+from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, RDM_GWCS, RDM_CRDS_GWCS
 from snappl.utils import asUUID, SNPITJsonEncoder
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
@@ -2519,6 +2518,20 @@ class RomanDatamodelImage( Image ):
         self._noise = None
         self._flags = None
 
+
+# ======================================================================
+
+class RomanDataModelImage_NeedsCRDSWCS( RomanDatamodelImage ):
+    def get_wcs( self, wcsclass=None ):
+        wcsclass = "RDM_CRDS_GWCS" if wcsclass is None else wcsclass
+        if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
+            if wcsclass == "RDM_CRDS_GWCS":
+                self._wcs = RDM_CRDS_GWCS( gwcs=self.dm.meta.wcs, i_know_what_i_am_doing=True, parent_image=self.dm )
+            else:
+                raise NotImplementedError( "RomanDataModelImage_NeedsCRDSWCS can't get a WCS of type {wcsclass}" )
+        return self._wcs
+
+
 # ======================================================================
 # This dictionary defines the format field in the database.  The key is the format
 #   integer, the value gives the image class, the base path config value, and eventually
@@ -2543,6 +2556,10 @@ Image._format_def = { -1 : { 'description': "Not a database image",
                           },
                       100: { 'description': "Basic Roman Data Model Image at standard database location",
                              'image_class': RomanDatamodelImage,
+                             'base_path_config': 'system.paths.images'
+                            },
+                      101: { 'description': "RDM image from Rick Sims 2026-08 that need a CRDS WCScorrection",
+                             'image_class': RomanDataModelImage_NeedsCRDSWCS,
                              'base_path_config': 'system.paths.images'
                             },
                      }

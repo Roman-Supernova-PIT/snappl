@@ -8,6 +8,7 @@ import simplejson
 import numpy as np
 import psycopg.types
 from psycopg import sql
+import pandas
 
 from astropy.io import fits
 
@@ -15,7 +16,7 @@ import tox # noqa: F401
 from tox.pytest import init_fixture # noqa: F401
 
 from snappl.imagecollection import ImageCollection
-from snappl.image import FITSImage, FITSImageStdHeaders, RomanDatamodelImage
+from snappl.image import FITSImage, FITSImageStdHeaders, RomanDatamodelImage, RomanDataModelImage_NeedsCRDSWCS
 from snappl.image_simulator import ImageSimulator
 from snappl.diaobject import DiaObject
 from snappl.lightcurve import Lightcurve
@@ -98,6 +99,19 @@ def romandatamodel_image( romandatamodel_image_path ):
     image = RomanDatamodelImage( romandatamodel_image_path )
     return image
 
+
+@pytest.fixture
+def ricksim_image_paths():
+    return ( '/home/photometry_test_data/ricksim_data/SNPIT_VISIT606900000_WFI10_F087_L2.asdf',
+             '/home/photometry_test_data/ricksim_data/TRUTH_VISIT606900000_WFI10_F087_L1.dat.gz' )
+
+
+@pytest.fixture
+def ricksim_image_and_truthtab( ricksim_image_paths ):
+    impath, trupath = ricksim_image_paths
+    image = RomanDataModelImage_NeedsCRDSWCS( impath )
+    truth = pandas.read_csv( trupath )
+    return image, truth
 
 
 # If you use this next fixture, you aren't supposed

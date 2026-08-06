@@ -120,3 +120,5 @@ def test_rdm_gwcs( romandatamodel_image, check_wcs ):
     # Test the astropy WCS approximation
     awcs = AstropyWCS( apwcs=wcs.get_astropy_wcs(degree=5) )
     check_wcs( awcs, testdata, arcsecprecision=0.002 )
+
+# NOTE : RDM_CRDS_GWCS is (quickly) tested in test_image.py::test_romandatamodelimage_needscrdswcs
