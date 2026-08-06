@@ -7,7 +7,7 @@
 
 # ======================================================================
 
-FROM debian:trixie-20260112 AS base
+FROM debian:trixie-20260623 AS base
 LABEL maintainer="Rob Knop <rknop@pobox.com>"
 
 SHELL ["/bin/bash", "-c"]
