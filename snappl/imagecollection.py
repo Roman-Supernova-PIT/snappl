@@ -416,7 +416,7 @@ class ImageCollectionManualFITS:
             return FITSImageStdHeaders( path=base_path / path, std_imagenames=True, format=-1 )
 
         else:
-            return FITSImage( path=path, format=-1 )
+            return FITSImage( path=base_path / path, format=-1 )
 
 
 # ======================================================================
