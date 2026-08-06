@@ -1,6 +1,6 @@
 __all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
             'YamlSerialized_OversampledImagePSF', 'A25ePSF',
-            'ou24PSF_slow', 'ou24PSF', 'STPSF', 'CachedSTPSF' ]
+            'ou24PSF_slow', 'ou24PSF', 'STPSF' ]
 
 # python standard library imports
 import base64
@@ -24,23 +24,6 @@ import synphot
 # roman snpit library imports
 from snappl.config import Config
 from snappl.logger import SNLogger
-
-band_dict = {
-        "F062": "F062",
-        "F087": "F087",
-        "F106": "F106",
-        "F129": "F129",
-        "F158": "F158",
-        "F184": "F184",
-        "F213": "F213",
-        "R062": "F062",
-        "Z087": "F087",
-        "Y106": "F106",
-        "J129": "F129",
-        "H158": "F158",
-        "K213": "F213",
-    }
-
 
 
 class PSF:
@@ -139,7 +122,6 @@ class PSF:
             "ou24PSF_slow_photonshoot": ou24PSF_slow_photonshoot,
             "ou24PSF_photonshoot": ou24PSF_photonshoot,
             "STPSF": STPSF,
-            "CachedSTPSF": CachedSTPSF,
         }
 
         psf_function = psfclass_to_function_mapping[psfclass]
@@ -574,7 +556,6 @@ class PSF:
 
         """
         # Subclasses that can return an oversampled PSF will want to override this method.
-        SNLogger.debug(f"Fetching PSF Image at {self._x}, {self._y} for band {self._band}")
         return photutils.psf.ImagePSF( self.get_stamp(), x_0=self._x, y_0=self._y )
 
 
@@ -1080,10 +1061,8 @@ class OversampledImagePSF( PSF ):
         # That's also where the factor a=4 comes from
         a = 4
 
-
         psfwid = oversampled_data.shape[0]
         stampwid = self.stamp_size
-
 
         psfdex1d = np.arange( -( psfwid//2), psfwid//2+1, dtype=int )
 
@@ -1852,7 +1831,7 @@ class STPSF( PSF ):
     def stamp_size( self ):
         return self.size
 
-    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_DIST" ):
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_SAMP" ):
         """Return a 2d numpy image of the PSF at the detector resolution.
 
         Parameters are as in PSF.get_stamp, plus:
@@ -1884,6 +1863,21 @@ class STPSF( PSF ):
         wfi = stpsf.roman.WFI()
         wfi.detector = f"WFI{self._sca:02d}"
 
+        band_dict = {
+        "F062": "F062",
+        "F087": "F087",
+        "F106": "F106",
+        "F129": "F129",
+        "F158": "F158",
+        "F184": "F184",
+        "F213": "F213",
+        "R062": "F062",
+        "Z087": "F087",
+        "Y106": "F106",
+        "J129": "F129",
+        "H158": "F158",
+        "K213": "F213",
+    }
 
         wfi_band = band_dict.get(self._band, None)
         if wfi_band is None:
@@ -1946,7 +1940,7 @@ class GaussianPSF( PSF ):
 
     """
 
-    def __init__( self, sigmax=0.43, sigmay=0.43, theta=0., stamp_size=None, _parent_class=False, **kwargs ):
+    def __init__( self, sigmax=1., sigmay=1., theta=0., stamp_size=None, _parent_class=False, **kwargs ):
         """Create an object that renders a Gaussian PSF.
 
         Parmeters are as passed to PSF.__init__() plus:
@@ -1966,7 +1960,7 @@ class GaussianPSF( PSF ):
             Must be an odd integer if given.  If not given, stamp size will be 2*floor(5*FWHM)+1 (using
             the larger of σ_x, σ_y to determine FWHM).
         """
-        SNLogger.debug( f"Initializing GaussianPSF with sigmax={sigmax}, sigmay={sigmay}, theta={theta} ")
+
         super().__init__( _parent_class=True, **kwargs )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
@@ -2011,8 +2005,6 @@ class GaussianPSF( PSF ):
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
 
         midpix = int( np.floor( self.stamp_size / 2 ) )
-        x = midpix if x is None else x
-        y = midpix if y is None else y
         xc = int( np.floor(x + 0.5 ) )
         yc = int( np.floor(y + 0.5 ) )
         x0 = x0 if x0 is not None else xc
@@ -2099,108 +2091,3 @@ class VaryingGaussianPSF( GaussianPSF ):
         gPSF = PSF.get_psf_object( "gaussian", sigmax=self.sigmax, sigmay=self.sigmay, theta=self.theta,
                                   stamp_size=self.stamp_size )
         return gPSF.get_stamp(x=x, y=y, x0=x0, y0=y0, flux=flux)
-
-
-class CachedSTPSF(OversampledImagePSF):
-    """A OversampledImagePSF loaded from the cached grid of STPSF
-    PSFs produced by generate_stpsf_cache.py, instead of calling STPSF (slow!!!!).
-
-    Given the (x, y, sca, band) you ask for, this
-    finds the grid point nearest to (x, y) on the gridsize x gridsize grid
-    used when the cache was generated, and loads the corresponding cached
-    file.
-
-    NOTE: This is currently just the closest appropriate PSF, not a wrapper.
-
-    """
-
-    def __init__(self, gridsize=8, detector_size=4088, cache_dir=None,
-                 _parent_class=False, **kwargs):
-        """Make a CachedSTPSF, reading the nearest cached grid PSF from disk.
-
-        Parameters
-        ----------
-          gridsize : int, default 8
-            Must match the --gridsize used when the cache was generated.
-
-          detector_size : int, default 4088
-            Pixels per side of one SCA. Must match the detector size
-            assumed when the cache was generated.
-
-          cache_dir : str or pathlib.Path, default None
-            Where the cache lives on disk. If not given, falls back to the
-            'system.paths.snappl.STPSF_cache_path' config value.
-
-          x, y, band, sca : as passed to PSF.get_psf_object; all required.
-
-        """
-        if any(i in kwargs for i in ["oversample_factor", "data", "enforce_odd"]):
-            # We set these ourselves from the cached file; nobody outside
-            # this constructor should be passing them in.
-            raise ValueError("Cannot pass oversample_factor, data, or enforce_odd "
-                              "to CachedSTPSF constructor.")
-
-        super().__init__(_parent_class=True, enforce_odd=True, **kwargs)
-        self._warn_unknown_kwargs(kwargs, _parent_class=_parent_class)
-
-        if (self._x is None) or (self._y is None) or (self._sca is None) or (self._band is None):
-            raise ValueError("Must supply x, y, sca, and band to construct a CachedSTPSF.")
-
-        if cache_dir is None:
-            # maybe a snappl config could be added for this? -Cole
-            raise ValueError("Must supply cache_dir to construct a CachedSTPSF.")
-        basepath = pathlib.Path(cache_dir)
-
-        wfi_filter = band_dict.get(self._band, None)
-        if wfi_filter is None:
-            raise ValueError(f"Band {self._band} not recognized for CachedSTPSF; "
-                              f"recognized bands are: {list(band_dict.keys())}")
-
-        # Same grid-point convention as Lauren's A25ePSF and Cole's generate_stpsf_cache.py:
-        # the detector is divided into gridsize x gridsize equal boxes, and
-        # a PSF was cached at the center of each box.
-        cutoutsize = int(detector_size / gridsize)
-        grid_centers = np.linspace(0.5 * cutoutsize, detector_size - 0.5 * cutoutsize, gridsize)
-
-        dist_x = np.abs(grid_centers - self._x)
-        dist_y = np.abs(grid_centers - self._y)
-        x_idx = np.argmin(dist_x)
-        y_idx = np.argmin(dist_y)
-        x_cen = grid_centers[x_idx]
-        y_cen = grid_centers[y_idx]
-
-        psfpath = (basepath / wfi_filter / str(self._sca) /
-                   f"{cutoutsize}_{x_cen:.1f}_{y_cen:.1f}_-_STPSF_-_{wfi_filter}_{self._sca}.psf")
-
-        if not psfpath.exists():
-            raise FileNotFoundError(
-                f"No cached STPSF file found at {psfpath}. Has the cache been generated "
-                f"for SCA {self._sca}, filter {wfi_filter}, with gridsize={gridsize}?"
-            )
-
-        SNLogger.debug(f"CachedSTPSF: requested (x={self._x:.1f}, y={self._y:.1f}), "
-                       f"using grid point (x={x_cen:.1f}, y={y_cen:.1f}) from {psfpath}")
-
-        self.read(psfpath)
-
-    def read(self, filepath):
-        """Load a cached PSF file written by generate_stpsf_cache.py.
-
-        Same YAML schema as YamlSerialized_OversampledImagePSF.read(), just
-        reimplemented here since that parent class enforces an odd
-        oversample_factor and ours is even.
-
-        NOTE: this overwrites self._x/self._y with the grid center stored
-        in the file (not the position you originally asked for) -- this
-        matches A25ePSF's existing behavior, and is required for the
-        interpolation in get_stamp() to work out correctly.
-        """
-        y = yaml.safe_load(open(filepath))
-        self._x = y["x0"]
-        self._y = y["y0"]
-        self._oversamp = y["oversamp"]
-        data = np.frombuffer(base64.b64decode(y["data"]), dtype=y["dtype"])
-        data = data.reshape((y["shape0"], y["shape1"]))
-        self.oversampled_data = data
-        SNLogger.debug(f"CachedSTPSF: loaded PSF from {filepath} with oversample_factor={self._oversamp}, "
-                          f"shape={data.shape}, x0={self._x:.1f}, y0={self._y:.1f}")

@@ -1,18 +1,21 @@
 __all__ = [ 'BaseWCS', 'AstropyWCS', 'GalsimWCS', 'GWCS' ]
 
+import os
 import collections.abc
 
 import numpy as np
 import astropy.coordinates
+import astropy.modeling.models
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import astropy.wcs
+import gwcs.geometry
+import gwcs.wcs
+import gwcs.coordinate_frames
 
-import galsim
 import roman_datamodels as rdm
 
-from galsim import roman
-from romanisim.models import roman_isim_wcs
+from snappl.logger import SNLogger
 
 # ASTROPY NOTE:
 #
@@ -192,6 +195,7 @@ class AstropyWCS(BaseWCS):
         return self._wcs.to_header( relax=True )
 
     def get_galsim_wcs( self ):
+        import galsim
         return galsim.AstropyWCS( wcs=self._wcs )
 
     def get_astropy_wcs( self, readonly=True ):
@@ -247,6 +251,7 @@ class GalsimWCS(BaseWCS):
           GalsimWCS
 
         """
+        import galsim
         wcs = GalsimWCS()
         wcs._gsimwcs = galsim.AstropyWCS( header=AstropyWCS._fix_wcs_tan_with_pv1_0( header ) )
         return wcs
@@ -369,7 +374,7 @@ class RDM_GWCS(GWCS):
 
     """
 
-    def __init_( self, gwcs=None ):
+    def __init__( self, gwcs=None ):
         super().__init__( gwcs=gwcs )
 
     def pixel_to_world(self, x, y, with_bounding_box=False):
@@ -416,8 +421,11 @@ class RDM_GWCS(GWCS):
 
         return self._gwcs.invert(ra, dec, with_bounding_box=with_bounding_box)
 
+
+# ======================================================================
+
 class RDM_CRDS_GWCS(RDM_GWCS):
-    """A GWCS, specifically from a roman datamodel.
+    """A GWCS, specifically from a roman datamodel for Rick's Aug 2026 sims.
 
     This version of the class specifically uses the CRDS distortion correction,
     which is not included in the RDM_GWCS class. It is currently unclear if this
@@ -434,11 +442,226 @@ class RDM_CRDS_GWCS(RDM_GWCS):
         """Load the WCS from the specified ASDF image file.  (Also see RomanDatamodelImage.get_wcs.)"""
         # read the ASDF file and get the WCS
         dm = rdm.open(asdf_file)
-        imwcs = roman_isim_wcs.get_wcs(dm.meta, usecrds=True)
-
+        wcs = GWCS()
+        wcs._gwcs = dm.meta.wcs
+        wcs.fix_gwcs_for_rick_sims( dm )
         return wcs
 
-    def __init_( self, gwcs=None ):
+    def __init__( self, gwcs=None, i_know_what_i_am_doing=False, parent_image=None ):
+        if not i_know_what_i_am_doing:
+            raise RuntimeError( "Initializing RDM_CRDS_GWCSes are hazardous.  Don't do it if you don't really "
+                                "understand everything Rob and Cole talked about on August 6, 2026." )
+        if parent_image is None:
+            raise RuntimeError( "Can't make an RDM_CRDS_GWCS without the parent image" )
         super().__init__( gwcs=gwcs )
+        import pdb; pdb.set_trace()
+        self.fix_gwcs_for_rick_sims( parent_image )
 
-    def fix_gwcs_for_rick_sims()
+
+    def fix_gwcs_for_rick_sims( self, dm ):
+        # Lots of code stolen from:
+        #   https://github.com/spacetelescope/romanisim/blob/44767fa3c9c14ebcfc9dbfcf62126354eba3ef1a/romanisim/models/wcs.py#L94
+        # which is under a BSD license just like this, so it's all legit.
+        # It is Copyright (C) 2022 Association of Universities for Research in Astronomy (AURA)
+
+        import crds
+
+        if type(dm) is not rdm.datamodels.ImageModel:
+            raise RuntimeError( "Wrong time of image passed." )
+        shape = dm.data.shape
+
+        world_pos = astropy.coordinates.SkyCoord(
+            dm.meta.wcsinfo.ra_ref * u.deg,
+            dm.meta.wcsinfo.dec_ref * u.deg,
+        )
+
+        dist_name = crds.getreferences(
+            dm.get_crds_parameters(),
+            reftypes=["distortion"],
+            observatory="roman",
+        )["distortion"]
+        dm.meta.ref_file["distortion"] = os.path.basename(dist_name)
+
+        dist_model = rdm.datamodels.DistortionRefModel(dist_name)
+        distortion = dist_model.coordinate_distortion_transform
+
+        wcs = self.make_wcs(
+            world_pos,
+            distortion,
+            v2_ref=dm.meta.wcsinfo.v2_ref,
+            v3_ref=dm.meta.wcsinfo.v3_ref,
+            roll_ref=dm.meta.wcsinfo.roll_ref,
+            scale_factor=dm.meta.velocity_aberration.scale_factor,
+        )
+        wcs.bounding_box = ((-0.5, shape[-1] - 0.5), (-0.5, shape[-2] - 0.5))
+
+        self._gwcs = wcs
+
+    # Also copied and modified from https://github.com/spacetelescope/romanisim
+    #  romanisim/models/wcs.py
+    # The goal is so that this class will work even in an environment that doesn't
+    #  import romanisim
+    @classmethod
+    def make_wcs(
+            cls,
+            targ_pos,
+            distortion,
+            roll_ref=0,
+            v2_ref=0,
+            v3_ref=0,
+            wrap_v2_at=180,
+            wrap_lon_at=360,
+            scale_factor=1.0,
+    ):
+        """Create a gWCS from a target position, a roll, and a distortion map.
+
+        Parameters
+        ----------
+        targ_pos : astropy.coordinates.SkyCoord
+            The celestial coordinates of the boresight or science aperture.
+
+        distortion : callable
+            The distortion mapping pixel coordinates to V2/V3 coordinates for a
+            detector.
+
+        roll_ref : float
+            The angle of the V3 axis relative to north, increasing from north to
+            east, at the boresight or science aperture.
+            Note that the V3 axis is rotated by +60 degree to the +Y axis.
+
+        v2_ref : float
+            The v2 coordinate (arcsec) corresponding to targ_pos
+
+        v3_ref : float
+            The v3 coordinate (arcsec) corresponding to targ_pos
+
+        scale_factor : float
+            The scale factor induced by velocity aberration
+
+        Returns
+        -------
+        gwcs.wcs object representing WCS for observation
+        """
+
+        # it seems to me like the distortion mappings have v2_ref = v3_ref = 0,
+        # which is easiest, so let me just keep those for now?
+        # eventually to have greater ~realism, we'd want to set v2_ref and v3_ref
+        # to whatever they'll end up being, different for each SCA.
+        # We'd still need to get the ra_ref and dec_ref for each SCA using
+        # this routine, though, with v2_ref = v3_ref = 0.  I need to think
+        # a bit harder about whether we will also need to compute a separate
+        # roll_ref for each SCA, and how that would best be done; if nothing else,
+        # we do some finite differences to get the direction +V3 on the sky and
+        # compute an angle wrt north.
+        ra_ref = targ_pos.ra.to(u.deg).value
+        dec_ref = targ_pos.dec.to(u.deg).value
+
+        # v2_ref, v3_ref are in arcsec, but RotationSequence3D wants degrees,
+        # so start by scaling by 3600.
+        rot = astropy.modeling.models.RotationSequence3D(
+            [v2_ref / 3600, -v3_ref / 3600, roll_ref, dec_ref, -ra_ref], "zyxyz"
+        )
+
+        # V2V3 are in arcseconds, while SphericalToCartesian expects degrees,
+        # so again start by scaling by 3600
+        tel2sky = (
+            (astropy.modeling.models.Scale(1 / 3600) & astropy.modeling.models.Scale(1 / 3600))
+            | gwcs.geometry.SphericalToCartesian(wrap_lon_at=wrap_v2_at)
+            | rot
+            | gwcs.geometry.CartesianToSpherical(wrap_lon_at=wrap_lon_at)
+        )
+        tel2sky.name = "v23tosky"
+
+        detector = gwcs.coordinate_frames.Frame2D(
+            name="detector", axes_order=(0, 1), unit=(u.pix, u.pix)
+        )
+        v2v3 = gwcs.coordinate_frames.Frame2D(
+            name="v2v3",
+            axes_order=(0, 1),
+            axes_names=("v2", "v3"),
+            unit=(u.arcsec, u.arcsec),
+        )
+        v2v3vacorr = gwcs.coordinate_frames.Frame2D(
+            name="v2v3vacorr",
+            axes_order=(0, 1),
+            axes_names=("v2", "v3"),
+            unit=(u.arcsec, u.arcsec),
+        )
+        world = gwcs.coordinate_frames.CelestialFrame(
+            reference_frame=astropy.coordinates.ICRS(), name="world"
+        )
+
+        # Compute differential velocity aberration (DVA) correction:
+        va_corr = cls.dva_corr_model(
+            va_scale=scale_factor, v2_ref=v2_ref, v3_ref=v3_ref
+        )
+
+        pipeline = [
+            gwcs.wcs.Step(detector, distortion),
+            gwcs.wcs.Step(v2v3, va_corr),
+            gwcs.wcs.Step(v2v3vacorr, tel2sky),
+            gwcs.wcs.Step(world, None),
+        ]
+        return gwcs.wcs.WCS(pipeline)
+
+
+    # Also copied and modified from https://github.com/spacetelescope/romanisim
+    #  romanisim/models/wcs.py
+    @classmethod
+    def dva_corr_model(cls, va_scale, v2_ref, v3_ref):
+        """Create transformation that accounts for differential velocity aberration (scale).
+
+        Parameters
+        ----------
+        va_scale : float, None
+            Ratio of the apparent plate scale to the true plate scale. When
+            ``va_scale`` is `None`, it is assumed to be identical to ``1`` and
+            an ``astropy.modeling.models.Identity`` model will be returned.
+
+        v2_ref : float, None
+            Telescope ``v2`` coordinate of the reference point in ``arcsec``. When
+            ``v2_ref`` is `None`, it is assumed to be identical to ``0``.
+
+        v3_ref : float, None
+            Telescope ``v3`` coordinate of the reference point in ``arcsec``. When
+            ``v3_ref`` is `None`, it is assumed to be identical to ``0``.
+
+        Returns
+        -------
+        va_corr : astropy.modeling.CompoundModel, astropy.modeling.models.Identity
+            A 2D compound model that corrects DVA. If ``va_scale`` is `None` or 1
+            then `astropy.modeling.models.Identity` will be returned.
+
+        """
+        if va_scale is None or va_scale == 1:
+            return astropy.modeling.models.Identity(2)
+
+        if va_scale <= 0:
+            SNLogger.warning( f"Velocity aberration scale must be a positive number: {va_scale}; "
+                              f"Defaulting to scale of 1.0" )
+            va_scale = 1.0
+
+        va_corr = astropy.modeling.models.Scale(va_scale, name="dva_scale_v2") & astropy.modeling.models.Scale(
+            va_scale, name="dva_scale_v3"
+        )
+
+        if v2_ref is None:
+            v2_ref = 0
+
+        if v3_ref is None:
+            v3_ref = 0
+
+        if v2_ref == 0 and v3_ref == 0:
+            return va_corr
+
+        # NOTE: it is assumed that v2, v3 angles and va scale are small enough
+        # so that for expected scale factors the issue of angle wrapping
+        # (180 degrees) can be neglected.
+        v2_shift = (1 - va_scale) * v2_ref
+        v3_shift = (1 - va_scale) * v3_ref
+
+        va_corr |= astropy.modeling.models.Shift(v2_shift, name="dva_v2_shift") & astropy.modeling.models.Shift(
+            v3_shift, name="dva_v3_shift"
+        )
+        va_corr.name = "DVA_Correction"
+        return va_corr
