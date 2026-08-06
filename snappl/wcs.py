@@ -11,6 +11,9 @@ import astropy.wcs
 import galsim
 import roman_datamodels as rdm
 
+from galsim import roman
+from romanisim.models import roman_isim_wcs
+
 # ASTROPY NOTE:
 #
 # We have played with astropy, and using pixel_to_world DOES include
@@ -412,3 +415,30 @@ class RDM_GWCS(GWCS):
             dec = np.array( dec )
 
         return self._gwcs.invert(ra, dec, with_bounding_box=with_bounding_box)
+
+class RDM_CRDS_GWCS(RDM_GWCS):
+    """A GWCS, specifically from a roman datamodel.
+
+    This version of the class specifically uses the CRDS distortion correction,
+    which is not included in the RDM_GWCS class. It is currently unclear if this
+    correction will be needed for real data but in the meantime we need it for this set of simulations.
+    Note, to function, you will need to have access to the CRDS database. Run the following:
+
+    export CRDS_SERVER_URL=https://roman-crds.stsci.edu
+    export CRDS_PATH=${HOME}/crds_cache
+
+    """
+
+    @classmethod
+    def from_adsf( cls, asdf_file ):
+        """Load the WCS from the specified ASDF image file.  (Also see RomanDatamodelImage.get_wcs.)"""
+        # read the ASDF file and get the WCS
+        dm = rdm.open(asdf_file)
+        imwcs = roman_isim_wcs.get_wcs(dm.meta, usecrds=True)
+
+        return wcs
+
+    def __init_( self, gwcs=None ):
+        super().__init__( gwcs=gwcs )
+
+    def fix_gwcs_for_rick_sims()
