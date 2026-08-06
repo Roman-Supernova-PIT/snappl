@@ -1,0 +1,1 @@
+Fix bug in ImageCollectionManualFITS so that it now uses the required base_path argument when returning FITSImages if self.threefile=False.
