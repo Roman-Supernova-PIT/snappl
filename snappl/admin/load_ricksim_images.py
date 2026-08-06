@@ -109,7 +109,10 @@ class RDM_L2image_loader:
         subdirs = []
         imagefiles = []
 
-        SNLogger.debug( f"trolling directory {pathlib.Path(relpath).resolve()}" )
+        SNLogger.debug( f"trolling directory {relpath}" )
+
+        import pdb; pdb.set_trace()
+        pass
 
         for fullpath in ( self.source_path / relpath ).iterdir():
             fullpath = fullpath.resolve()
@@ -118,10 +121,64 @@ class RDM_L2image_loader:
             if self.regex_image.search( fullpath.name ):
                 imagefiles.append( fullpath.relative_to( self.source_path ) )
 
-        for subdir in subdirs:
-            imagefiles.extend( self.collect_image_paths(subdir) )
 
-        return imagefiles
+        # HACK ALERT
+
+        # This block is what we really want to do...
+        # for subdir in subdirs:
+        #     imagefiles.extend( self.collect_image_paths(subdir) )
+        #
+        # return imagefiles
+
+        # ...but the Aug 2026 sims did every exposure at five different
+        #   roll angles.  We do not want to load in duplicate exposures
+        #   (well, mostly duplicate).  Really, we want just one exposure
+        #   at any given MJD.  So, go through all of the images and
+        #   cycle through the subdirectories taking one exposure from
+        #   any given subdirectory.  The filenames at a given time are
+        #   all the same (which is how I caught this!), so we can use
+        #   that as a key.
+
+        if relpath == '.':
+            if len(imagefiles) != 0:
+                raise RuntimeError( "Unexpected images at top level directory." )
+
+            subdirfiles = []
+            for subdir in subdirs:
+                subdirfiles.append( self.collect_image_paths(subdir ) )
+
+            # Do all kinds of fancy stuff to make sure we get all images
+            images = {}
+            blah = None
+            for subdir in subdirfiles:
+                for f in subdir:
+                    if blah is None:
+                        blah = f.name
+                    if f.name not in images:
+                        images[f.name] = [ f ]
+                    else:
+                        images[f.name].append[ f ]
+
+            expected_num = len(images[blah])
+            if not all( len(i) == expected_num for i in images.values() ):
+                raise RuntimeError( "Different numbers of images for different images, I am sad." )
+
+            dex = 0
+            for imglist in images.values():
+                imagefiles.append( imglist[dex] )
+                dex += 1
+                if dex >= expected_num:
+                    dex = 0
+
+            return imagefiles
+
+        else:
+            for subdir in subdirs:
+                imagefiles.extend( self.collect_image_paths(subdir) )
+            return imagefiles
+
+        # END OF HACK ALERT
+
 
     def save_to_db( self ):
         if len( self.images ) > 0:
