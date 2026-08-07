@@ -30,9 +30,17 @@ def _parse_rdm_file( sourcepath=None, dest_base_path=None, dest_subdir=None, pro
     # remote_pdb.RemotePdb( '127.0.0.1', random.randint( 4000, 5000 ) ).set_trace()
     image = RomanDatamodelImage( sourcepath, no_base_path=True )
 
+    # HACK ALERT
+    # Try to extract the roll angle from the filename
+    mat = re.search( r'ROLL(\d\d)$', sourcepath.parent.name )
+    if mat is None:
+        raise RuntimeError( "Failed to parse filename {sourcepath} for roll angle" )
+    roll = mat.group(1)
+    # END OF HACK ALERT (except that the result is used in params below)
+
     t = astropy.time.Time( image.mjd, format='mjd' )
     ymd = f'{t.datetime.year:04d}{t.datetime.month:02d}{t.datetime.day:02d}'
-    filepath = pathlib.Path( dest_subdir ) / str(provid) / image.band / ymd / sourcepath.name
+    filepath = pathlib.Path( dest_subdir ) / str(provid) / image.band / ymd / f'roll{roll}' / sourcepath.name
     writepath = pathlib.Path( dest_base_path ) / filepath
 
     params = { 'id': uuid.uuid4(),
@@ -111,9 +119,6 @@ class RDM_L2image_loader:
 
         SNLogger.debug( f"trolling directory {relpath}" )
 
-        import pdb; pdb.set_trace()
-        pass
-
         for fullpath in ( self.source_path / relpath ).iterdir():
             fullpath = fullpath.resolve()
             if fullpath.is_dir():
@@ -157,7 +162,7 @@ class RDM_L2image_loader:
                     if f.name not in images:
                         images[f.name] = [ f ]
                     else:
-                        images[f.name].append[ f ]
+                        images[f.name].append( f )
 
             expected_num = len(images[blah])
             if not all( len(i) == expected_num for i in images.values() ):
