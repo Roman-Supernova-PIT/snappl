@@ -850,3 +850,20 @@ def test_romandatamodel_set_data( romandatamodel_image ):
     assert image._data is None
     assert image._noise is None
     assert image._flags is None
+
+
+def test_romandatamodelimage_needscrdswcs( ricksim_image_and_truthtab ):
+    # Also tests RDM_CRDS_GWCS, which is the whole raison d'etre for RomanDataModelImage_NeedsCRDSWCS
+    image, truth = ricksim_image_and_truthtab
+
+    calcx, calcy = image.get_wcs().world_to_pixel( truth.ra, truth.dec )
+    dx = calcx - truth.x_det
+    dy = calcy - truth.y_det
+    dpos = np.sqrt( dx*dx + dy*dy )
+
+    assert dpos.mean() == pytest.approx( 0., abs=0.001 )
+    assert dpos.std() == pytest.approx( 0.01, abs=0.01 )
+    assert dx.mean() == pytest.approx( 0., abs=0.001 )
+    assert dx.std() == pytest.approx( 0.01, abs=0.01 )
+    assert dy.mean() == pytest.approx( 0., abs=0.001 )
+    assert dy.std() == pytest.approx( 0.01, abs=0.01 )

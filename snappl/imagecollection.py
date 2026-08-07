@@ -457,7 +457,8 @@ class ImageCollectionDB:
                               'ou2024_nativelocation': 2,
                               'ou2024_stdlocation': 1,
                               'ou2024nov2025': 1,
-                              'roman_datamodel': 100
+                              'roman_datamodel': 100,
+                              'roman_datamodel_needscrdswcs': 101
                               }
 
     def __init__( self, provenance=None, base_path=None ):

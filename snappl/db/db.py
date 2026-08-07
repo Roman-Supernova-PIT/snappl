@@ -1088,6 +1088,14 @@ class SummedImage( DBBase ):
 
 # ======================================================================
 
+class Zeropoint( DBBase ):
+    __tablename__ = "zeropoint"
+    _tablemeta = None
+    _pk = [ 'id' ]
+
+
+# ======================================================================
+
 class SegMap( DBBase ):
     __tablename__ = "segmap"
     _tablemeta = None

@@ -1,17 +1,23 @@
 __all__ = [ 'setup_flask_app' ]
 
+import re
 import uuid
+import math
+import numbers
+import pathlib
 
 import flask
 import flask_session
+import psycopg.types.json
 from psycopg import sql
 
 from rkwebutil import rkauth_flask
 
+from snappl.utils import asUUID
 from snappl.config import Config
 from snappl.db import db
 from snappl.db.baseview import BaseView
-# from snappl.logger import SNLogger
+from snappl.logger import SNLogger
 
 
 # ======================================================================
@@ -547,6 +553,113 @@ class BulkSaveL2Images( BaseView ):
 
 # ======================================================================
 
+class SaveZeroPoint( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected zeropoint info in json POST: didn't get any.", 422
+        data = self.check_json_keys( { 'image_id', 'provenance_id', 'zp', 'dzp', 'meta' },
+                                     { 'image_id', 'provenance_id', 'zp', 'dzp', 'meta', 'id' } )
+        # Type checks
+        if not isinstance( data['meta'], dict ):
+            return f"Type error, meta must be a dict, not a {type(data['meta'])}", 422
+        if not all( isinstance( data[i], numbers.Real ) for i in ( 'zp', 'dzp' ) ):
+            return ( f"Type error, zp and dzp must both be floats, but got {type(data['zp'])} for zp "
+                     f"and {type(data['dzp'])} for dzp" ), 422
+        image_id = asUUID( data['image_id'] )
+        provenance_id = asUUID( data['provenance_id'] )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            dbcon.execute_nofetch( "LOCK TABLE zeropoint" )
+            q = sql.SQL( "SELECT * FROM zeropoint WHERE image_id={imageid} AND provenance_id={provid}"
+                        ).format( imageid=image_id, provid=provenance_id )
+            rows = dbcon.execute( q )
+            if len(rows) > 0:
+                if len(rows) > 1:
+                    return ( f"Zeropoint for image {data['image_id']} provenance {data['provenance_id']} "
+                             f"is multiply defined; this should not happen." ), 422
+                # How to decide if the zeropoint is the same?  id is obvious.  For
+                #  zp and dzp, we'll call it the same if dzp is within 1% and zp is within 0.01*dzp
+                row = rows[0]
+                if ( 'id' in data ) and ( data['id'] is not None )  and ( row['id'] != asUUID(data['id']) ):
+                    return ( f"Zeropoint in databsae for image {data['image_id']} provenance {data['provenance_id']} "
+                             f"has id {row['id']} but you passed {data['id']}, which does not match" ), 422
+                if row['meta'] != data['meta']:
+                    return "Passed meta does not match what's already saved for this zeropoint in the database", 422
+                if ( ( math.fabs( row['dzp'] - data['dzp'] ) > 0.01 * row['dzp'] )
+                     or ( math.fabs( row['zp'] - data['zp'] ) > 0.01 * row['dzp'] ) ):
+                    return ( f"Zeropoint in databsae for image {data['image_id']} provenance {data['provenance_id']} "
+                             f"is {row['zp']:.4f}±{row['dzp']:.4f}, "
+                             f"but you passed {data['zp']:.4f}±{data['dzp']:.4f}" ), 422
+                dbcon.rollback()
+                return row
+            else:
+                _id = asUUID( data['id'] ) if ('id' in data and data['id'] is not None) else uuid.uuid4()
+                q = sql.SQL( "INSERT INTO zeropoint(id,image_id,provenance_id,zp,dzp,meta) "
+                             "VALUES ({id},{imageid},{provid},{zp},{dzp},{meta})"
+                            ).format( id=_id, imageid=image_id, provid=provenance_id,
+                                      zp=data['zp'], dzp=data['dzp'],
+                                      meta=psycopg.types.json.Jsonb(data['meta']) )
+                dbcon.execute_nofetch( q )
+                dbcon.commit()
+                return { 'id': _id, 'image_id': data['image_id'], 'provenance_id': data['provenance_id'],
+                         'zp': data['zp'], 'dzp': data['dzp'], 'meta': data['meta'] }
+
+
+# ======================================================================
+
+class GetZeroPointForImage( BaseView ):
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected zeropoint search info json POST: didn't get any.", 422
+        expected_keys = { 'image_id' }
+        allowed_keys = { 'provid', 'provtag', 'process' }.union( expected_keys )
+        data = self.check_json_keys( expected_keys, allowed_keys )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            if data['provid'] is not None:
+                provid = asUUID( data['provid'] )
+            else:
+                res = dbcon.execute( sql.SQL( "SELECT provenance_id FROM provenance_tag "
+                                              "WHERE tag={tag} AND process={process}" )
+                                     .format( tag=data['provtag'], process=data['process'] ) )
+                if len(res) == 0:
+                    return ( f"Could not find provenance for provenance tag {data['provtag']} "
+                             f"and process {data['process']}" ), 422
+                if len(res) > 1:
+                    return ( f"Database corruption error, provenance tag {data['provtag']} and "
+                             f"process {data['process']} mutiply defined" ), 422
+                provid = res[0]['provenance_id']
+
+            res = dbcon.execute( sql.SQL( "SELECT * FROM zeropoint "
+                                          "WHERE provenance_id={provid} "
+                                          "  AND image_id={imageid}" )
+                                 .format( provid=provid, imageid=data['image_id'] ) )
+            if len(res) == 0:
+                return f"Zeropoint not found for provenance {provid} and image {data['image_id']}", 422
+            elif len(res) > 1:
+                return ( f"Database corruption error: more than one zeropoint for provenance {provid} "
+                         f"and image {data['image_id']}" ), 422
+            else:
+                return res[0]
+
+
+# ======================================================================
+
+class GetZeroPoint( BaseView ):
+    def do_the_things( self, zpid ):
+        with db.DBCon( dictcursor=True ) as dbcon:
+            res = dbcon.execute( sql.SQL( "SELECT * FROM zeropoint WHERE id={id}" )
+                                 .format( id=asUUID(zpid) ) )
+            if len(res) == 0:
+                return f"Unknown zeropoint {zpid}", 422
+            elif len(res) > 1:
+                return "This should never happen", 422
+            else:
+                return res[0]
+
+
+# ======================================================================
+
 class SaveSegmentationMap( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
@@ -768,6 +881,19 @@ class FindSpectra1d( BaseView ):
 
 # ======================================================================
 
+class LetsEncrypt( flask.views.View ):
+    def dispatch_request( self, f ):
+        if not re.search( r'^[a-zA-Z0-9_\-\$\.]+$', f ):
+            SNLogger.error( f"Got filename {f} which is invalid." )
+            raise RuntimeError( "Invalid filename" )
+        p = pathlib.Path( "/tmp/.well-known" ) / f
+        with open(p) as ifp:
+            text = ifp.read()
+        return text, 200
+
+
+# ======================================================================
+
 urls = {
     "/": MainPage,
     "/test/<param>": TestEndpoint,
@@ -792,6 +918,10 @@ urls = {
     "/savel2image": SaveL2Image,
     "/bulksavel2images": BulkSaveL2Images,
 
+    "/savezp": SaveZeroPoint,
+    "/getzpforimage": GetZeroPointForImage,
+    "/getzp/<zpid>": GetZeroPoint,
+
     "/savesegmap": SaveSegmentationMap,
     "/getsegmap/<segmapid>": GetSegmentationMap,
     "/findsegmaps": FindSegmentationMap,
@@ -803,4 +933,6 @@ urls = {
     "/savespectrum1d": SaveSpectrum1d,
     "/getspectrum1d/<spectrumid>": GetSpectrum1d,
     "/findspectra1d": FindSpectra1d,
+
+    "/.well-known/acme-challenge/<f>": LetsEncrypt
 }
