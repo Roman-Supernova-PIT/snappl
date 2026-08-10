@@ -1,2 +1,2 @@
-preload:
+preloads:
   - ${TEST_PRELOAD_ENVVAR}

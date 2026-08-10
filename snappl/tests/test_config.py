@@ -583,14 +583,26 @@ def test_substitutions():
 
 
 def test_env_var_in_preload():
-    cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
+    try:
+        with pytest.raises( RuntimeError, match=r"Failed to find substitution in \${TEST_PRELOAD_ENVVAR}" ):
+            cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
 
-    os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_1.yaml'
-    cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
-    assert cfg.value( 'test_preload_envvar' ) == 'cat'
-    
-    os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_2.yaml'
-    cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
-    assert cfg.value( 'test_preload_envvar' ) == 'dog'
+        os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_1.yaml'
+        cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
+        assert cfg.value( 'test_preload_envvar' ) == 'cat'
+        del Config._configs[ '/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' ]
 
-    del os.environ[ "TEST_PRELOAD_ENVVAR" ]
+        os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_1.yaml'
+        cfg = Config.get( "/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml" )
+        assert cfg.value( 'test_preload_envvar' ) == 'cat'
+        del Config._configs[ '/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' ]
+
+        os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_2.yaml'
+        cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
+        assert cfg.value( 'test_preload_envvar' ) == 'dog'
+
+    finally:
+        if "TEST_PRELOAD_ENVVAR" in os.environ:
+            del os.environ[ "TEST_PRELOAD_ENVVAR" ]
+        if '/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' in Config._configs:
+            del Config._configs[ '/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' ]
