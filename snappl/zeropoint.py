@@ -588,7 +588,7 @@ class Zeropoint:
                                                          'provtag': zp_prov_tag,
                                                          'process': zp_process } )
         if result['class'] not in cls._subclasses:
-            raise ValueError( f"Unknown zeropoint subclass {subclass} for zeropoint {result['id']}" )
+            raise ValueError( f"Unknown zeropoint subclass {result['class']} for zeropoint {result['id']}" )
 
         return cls._subclasses[result['class']]( result['zp'], result['dzp'],
                                                  image_id=result['image_id'],
@@ -604,8 +604,8 @@ class Zeropoint:
         if ( "error" in result ):
             raise RuntimeError( f"Error response from Zeropoint.get_by_id: {result['error']}" )
         if result['class'] not in cls._subclasses:
-            raise ValueError( f"Unknown zeropoint subclass {subclass} for zeropoint {result['id']}" )
-    
+            raise ValueError( f"Unknown zeropoint subclass {result['class']} for zeropoint {result['id']}" )
+
         return cls._subclasses[result['class']]( result['zp'], result['dzp'],
                                                  image_id=result['image_id'],
                                                  provenance_id=result['provenance_id'],
@@ -657,9 +657,9 @@ class RomanL2Zeropoint( Zeropoint ):
     def zp( self, x, y, dzp=False ):
         raise NotImplementedError( "RomanL2Zeropoint isn't implemented yet." )
 
+
 # ======================================================================
 
 Zeropoint._subclasses = { "Zeropoint": Zeropoint,
                           "TotallyFakeZeropoint": TotallyFakeZeropoint,
                           "RomanL2Zeropoint": RomanL2Zeropoint }
-

@@ -619,8 +619,9 @@ class GetZeroPointForImage( BaseView ):
             if data['provid'] is not None:
                 provid = asUUID( data['provid'] )
             else:
-                res = dbcon.execute( sql.SQL( "SELECT provenance_id FROM provenance_tag "
-                                              "WHERE tag={tag} AND process={process}" )
+                res = dbcon.execute( sql.SQL( "SELECT DISTINCT ON(p.id) * FROM provenance p\n"
+                                              "INNER JOIN provenance_tag t ON t.provenance_id=p.id\n"
+                                              "WHERE t.tag={tag} AND t.process={process}" )
                                      .format( tag=data['provtag'], process=data['process'] ) )
                 if len(res) == 0:
                     return ( f"Could not find provenance for provenance tag {data['provtag']} "
@@ -628,7 +629,11 @@ class GetZeroPointForImage( BaseView ):
                 if len(res) > 1:
                     return ( f"Database corruption error, provenance tag {data['provtag']} and "
                              f"process {data['process']} mutiply defined" ), 422
-                provid = res[0]['provenance_id']
+                provid = res[0]['id']
+                if 'class' not in res['params']:
+                    return ( f"Database corruption error, invalid zeropoint provenance: no 'class' in params "
+                             f"for zeropoint {res['id']}" ), 422
+                zpclass = res['params']['class']
 
             res = dbcon.execute( sql.SQL( "SELECT * FROM zeropoint "
                                           "WHERE provenance_id={provid} "
@@ -640,6 +645,7 @@ class GetZeroPointForImage( BaseView ):
                 return ( f"Database corruption error: more than one zeropoint for provenance {provid} "
                          f"and image {data['image_id']}" ), 422
             else:
+                res[0]['class'] = zpclass
                 return res[0]
 
 
@@ -648,13 +654,20 @@ class GetZeroPointForImage( BaseView ):
 class GetZeroPoint( BaseView ):
     def do_the_things( self, zpid ):
         with db.DBCon( dictcursor=True ) as dbcon:
-            res = dbcon.execute( sql.SQL( "SELECT * FROM zeropoint WHERE id={id}" )
+            res = dbcon.execute( sql.SQL( "SELECT z.*, p.params FROM zeropoint\n"
+                                          "INNER JOIN provenance p ON z.provenance_id=p.id\n"
+                                          "WHERE z.id={id}" )
                                  .format( id=asUUID(zpid) ) )
             if len(res) == 0:
                 return f"Unknown zeropoint {zpid}", 422
             elif len(res) > 1:
                 return "This should never happen", 422
             else:
+                if 'class' not in res[0]['params']:
+                    return ( f"Database corruption error, invalid zeropoint provenance: no 'class' in params "
+                             f"for zeropoint {res['id']}" ), 422
+                res[0]['class'] = res[0]['params']['class']
+                del res[0]['params']
                 return res[0]
 
 
