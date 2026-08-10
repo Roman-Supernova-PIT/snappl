@@ -12,6 +12,7 @@ from snappl.imagecollection import ImageCollectionDB
 from snappl.logger import SNLogger
 from snappl.utils import asUUID
 
+
 # apers=[2, 3, 5, 10, 15, 20, 25, 30]
 
 def get_image_zeropoint( image, apers=[2, 3, 5, 10, 15, 20, 25, 30], confusionrad=45, minstars=50,

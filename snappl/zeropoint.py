@@ -405,6 +405,7 @@ class Zeropoint:
                                   f"has subclass {provenance.params['subclass']}" )
 
         subclasses = { "Zeropoint": Zeropoint,
+                       "TotallyFakeZeropoint": TotallyFakeZeropoint,
                        "RomanL2Zeropoint": RomanL2Zeropoint }
         if subclass not in subclasses:
             raise ValueError( f"Unknown zeropoint subclass {subclass}" )
@@ -589,6 +590,7 @@ class Zeropoint:
                                                          'provid': str(zp_prov_id) if zp_prov_id is not None else None,
                                                          'provtag': zp_prov_tag,
                                                          'process': zp_process } )
+        raise RuntimeError( "The next line is wrong, it should call class method get_zeropoint." )
         return Zeropoint( result['zp'], result['dzp'],
                           image_id=result['image_id'],
                           provenance_id=result['provenance_id'],
@@ -604,12 +606,25 @@ class Zeropoint:
         if ( "error" in result ):
             raise RuntimeError( f"Error response from Zeropoint.get_by_id: {result['error']}" )
 
+        raise RuntimeError( "The next line is wrong, it should call class method get_zeropoint." )
         return Zeropoint( result['zp'], result['dzp'],
                           image_id=result['image_id'],
                           provenance_id=result['provenance_id'],
                           meta=result['meta'],
                           id=result['id'],
                           _allowed_to_call=True )
+
+
+# ======================================================================
+
+class TotallyFakeZeropoint( Zeropoint ):
+    """Used for testing code when we don't have something correct implemetned."""
+
+    def zp( self, x, y, dzp=False ):
+        return (24., 0.001) if dzp else 24.
+
+    def save( self, overwrite=False, dbclient=None ):
+        raise RuntimeError( "Can't save a TotallyFakeZeropoint." )
 
 
 # ======================================================================
