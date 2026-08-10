@@ -287,10 +287,6 @@ class Zeropoint:
 
     """
 
-    _subclasses = { "Zeropoint": Zeropoint,
-                    "TotallyFakeZeropoint": TotallyFakeZeropoint,
-                    "RomanL2Zeropoint": RomanL2Zeropoint }
-    
     @classmethod
     def get_zeropoint( cls, image=None, provenance=None, provenance_tag=None, process=None,
                       zp=None, dzp=None, meta=None, subclass=None, id=None ):
@@ -391,12 +387,6 @@ class Zeropoint:
                 if ( provenance_tag is None ) != ( process is None ):
                     raise ValueError( "Must specify either both or neither or provenance_tag and process" )
                 provenance = Provenance.get_provs_for_tag( provenance_tag, process )
-                if len(provenance) == 0:
-                    raise ValueError( f"No provenance with tag {provenance_tag} and process {process}" )
-                elif len(provenance) > 1:
-                    raise RuntimeError( f"Database corruption error: multiple provenances with "
-                                        f"tag {provenance_tag} and process {process}" )
-                provenance = provenacne[0]
 
             if ( not isinstance( provenance.params, dict ) ) or ( 'class' not in provenance.params ):
                 raise ValueError( "Invalid zeropoint provenance, it doesn't include class in params" )
@@ -666,3 +656,10 @@ class RomanL2Zeropoint( Zeropoint ):
 
     def zp( self, x, y, dzp=False ):
         raise NotImplementedError( "RomanL2Zeropoint isn't implemented yet." )
+
+# ======================================================================
+
+Zeropoint._subclasses = { "Zeropoint": Zeropoint,
+                          "TotallyFakeZeropoint": TotallyFakeZeropoint,
+                          "RomanL2Zeropoint": RomanL2Zeropoint }
+
