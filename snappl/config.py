@@ -203,7 +203,10 @@ class Config:
     This substitution is done at the end, after all includes have been
     pulled in, so "forward references" are possible, though I would
     recommend avoiding using that as you're just likely to confuse
-    yourself.  Keep it simple.
+    yourself.  Keep it simple.  EXCEPTION: strings in the includes list
+    (see below) are substituted as they are read in.  Do NOT use forward
+    references here (probably), only use this to interpolate environment
+    varaibles.
 
 
     INCLUDES: SPECIAL KEYS
@@ -666,11 +669,13 @@ class Config:
 
                 preloaddict = {}
                 for preloadfile in imports['preloads']:
+                    preloadfile = self._substitutions_in_one_string( preloadfile )
                     cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True, _recursed=True )
                     preloaddict = self._merge_trees( '', preloaddict, cfg._data, mode='augment' )
 
                 workingdict = {}
                 for preloadfile in imports['replaceable_preloads']:
+                    preloadfile = self._substitutions_in_one_string( preloadfile )
                     cfg = Config( self._pathify(preloadfile), files_read=files_read, _ok_to_call=True, _recursed=True )
                     workingdict = self._merge_trees( '', workingdict, cfg._data, mode='destructive_append' )
 
@@ -678,15 +683,19 @@ class Config:
                 self._data = self._merge_trees( '', preloaddict, workingdict, mode='augment' )
 
                 for augmentfile in imports['augments']:
+                    augmentfile = self._substitutions_in_one_string( augmentfile )
                     self._merge_file( augmentfile, 'augment', files_read=files_read )
 
                 for overridefile in imports['overrides']:
+                    overridefile = self._substitutions_in_one_string( overridefile )
                     self._merge_file( overridefile, 'override', files_read=files_read )
 
                 for appendfile in imports['destructive_appends']:
+                    appendfile = self._substitutions_in_one_string( appendfile )
                     self._merge_file( appendfile, 'destructive_append', files_read=files_read )
 
                 for appendfile in imports['appends']:
+                    appendfile = self._substitutions_in_one_string( appendfile )
                     self._merge_file( appendfile, mode='append', files_read=files_read )
 
                 if not _recursed:
@@ -1115,6 +1124,20 @@ class Config:
                 replacement = os.environ.get( subvar )
 
             return val.replace( fullsub, replacement )
+
+
+    def _substitutions_in_one_string( self, val, maxiterations=10 ):
+        orig = val
+        n = 0
+        while not done:
+            n += 1
+            if ( n > maxiterations ):
+                raise runtimeError( "Too many iterations in _substitute_one_string of {orig}" )
+            lastval = val
+            val = self._one_substutition( val )
+            if val == lastval:
+                done = True
+        return val
 
 
     def _perform_substitutions( self, tree=None, prefix="" ):

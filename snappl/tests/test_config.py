@@ -580,3 +580,17 @@ def test_substitutions():
     assert cfg.value( 'top.backwardsub_list0' ) == 'pre_backwardsub1'
     assert cfg.value( 'top.backwardsub_list1' ) == 'pre_backwardsub2'
     assert cfg.value( 'top.forwardsub' ) == 'from_override'
+
+
+def test_env_var_in_preload():
+    cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
+
+    os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_1.yaml'
+    cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
+    assert cfg.value( 'test_preload_envvar' ) == 'cat'
+    
+    os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_2.yaml'
+    cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
+    assert cfg.value( 'test_preload_envvar' ) == 'dog'
+
+    del os.environ[ "TEST_PRELOAD_ENVVAR" ]
