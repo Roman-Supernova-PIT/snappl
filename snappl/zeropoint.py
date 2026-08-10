@@ -287,6 +287,10 @@ class Zeropoint:
 
     """
 
+    _subclasses = { "Zeropoint": Zeropoint,
+                    "TotallyFakeZeropoint": TotallyFakeZeropoint,
+                    "RomanL2Zeropoint": RomanL2Zeropoint }
+    
     @classmethod
     def get_zeropoint( cls, image=None, provenance=None, provenance_tag=None, process=None,
                       zp=None, dzp=None, meta=None, subclass=None, id=None ):
@@ -387,9 +391,15 @@ class Zeropoint:
                 if ( provenance_tag is None ) != ( process is None ):
                     raise ValueError( "Must specify either both or neither or provenance_tag and process" )
                 provenance = Provenance.get_provs_for_tag( provenance_tag, process )
+                if len(provenance) == 0:
+                    raise ValueError( f"No provenance with tag {provenance_tag} and process {process}" )
+                elif len(provenance) > 1:
+                    raise RuntimeError( f"Database corruption error: multiple provenances with "
+                                        f"tag {provenance_tag} and process {process}" )
+                provenance = provenacne[0]
 
-            if ( not isinstance( provenance.params, dict ) ) or ( 'subclass' not in provenance.params ):
-                raise ValueError( "Invalid zeropoint provenance, it doesn't include subclass in params" )
+            if ( not isinstance( provenance.params, dict ) ) or ( 'class' not in provenance.params ):
+                raise ValueError( "Invalid zeropoint provenance, it doesn't include class in params" )
 
         else:
             # Provenance is None
@@ -398,18 +408,15 @@ class Zeropoint:
 
         # Figure out the subclass
         if subclass is None:
-            subclass = "Zeropoint" if provenance is None else provenance.params[ "subclass" ]
+            subclass = "Zeropoint" if provenance is None else provenance.params[ "class" ]
         else:
-            if ( provenance is not None ) and ( subclass != provenance.params[ "subclass" ] ):
+            if ( provenance is not None ) and ( subclass != provenance.params[ "class" ] ):
                 raise ValueError( f"subclass mismatch; you asked for {subclass}, but the provenance "
-                                  f"has subclass {provenance.params['subclass']}" )
+                                  f"has class {provenance.params['class']}" )
 
-        subclasses = { "Zeropoint": Zeropoint,
-                       "TotallyFakeZeropoint": TotallyFakeZeropoint,
-                       "RomanL2Zeropoint": RomanL2Zeropoint }
-        if subclass not in subclasses:
+        if subclass not in cls._subclasses:
             raise ValueError( f"Unknown zeropoint subclass {subclass}" )
-        subclass = subclasses[ subclass ]
+        subclass = cls._subclasses[ subclass ]
 
         # Make sure either both or neither of zp and zp are given, and that if so they're floats
         if ( zp is None ) != ( dzp is None ):
@@ -590,14 +597,15 @@ class Zeropoint:
                                                          'provid': str(zp_prov_id) if zp_prov_id is not None else None,
                                                          'provtag': zp_prov_tag,
                                                          'process': zp_process } )
-        raise RuntimeError( "The next line is wrong, it should call class method get_zeropoint." )
-        return Zeropoint( result['zp'], result['dzp'],
-                          image_id=result['image_id'],
-                          provenance_id=result['provenance_id'],
-                          meta=result['meta'],
-                          id=result['id'],
-                          _allowed_to_call=True )
+        if result['class'] not in cls._subclasses:
+            raise ValueError( f"Unknown zeropoint subclass {subclass} for zeropoint {result['id']}" )
 
+        return cls._subclasses[result['class']]( result['zp'], result['dzp'],
+                                                 image_id=result['image_id'],
+                                                 provenance_id=result['provenance_id'],
+                                                 meta=result['meta'],
+                                                 id=result['id'],
+                                                 _allowed_to_call=True )
 
     @classmethod
     def get_by_id( cls, zpid, dbclient=None ):
@@ -605,31 +613,36 @@ class Zeropoint:
         result = dbclient.send( f"/getzp/{zpid}" )
         if ( "error" in result ):
             raise RuntimeError( f"Error response from Zeropoint.get_by_id: {result['error']}" )
-
-        raise RuntimeError( "The next line is wrong, it should call class method get_zeropoint." )
-        return Zeropoint( result['zp'], result['dzp'],
-                          image_id=result['image_id'],
-                          provenance_id=result['provenance_id'],
-                          meta=result['meta'],
-                          id=result['id'],
-                          _allowed_to_call=True )
+        if result['class'] not in cls._subclasses:
+            raise ValueError( f"Unknown zeropoint subclass {subclass} for zeropoint {result['id']}" )
+    
+        return cls._subclasses[result['class']]( result['zp'], result['dzp'],
+                                                 image_id=result['image_id'],
+                                                 provenance_id=result['provenance_id'],
+                                                 meta=result['meta'],
+                                                 id=result['id'],
+                                                 _allowed_to_call=True )
 
 
 # ======================================================================
 
 class TotallyFakeZeropoint( Zeropoint ):
-    """Used for testing code when we don't have something correct implemetned."""
+    """Used for testing code when we don't have something correct implemetned.
 
-    def zp( self, x, y, dzp=False ):
-        return (24., 0.001) if dzp else 24.
+    It's actually identical to the parent class, but it has a different
+    class name so that we can flag in the database that we've saved
+    something totally bogus.
 
-    def save( self, overwrite=False, dbclient=None ):
-        raise RuntimeError( "Can't save a TotallyFakeZeropoint." )
+    """
+
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
 
 
 # ======================================================================
 
 class RomanL2Zeropoint( Zeropoint ):
+
     """Encapsulates a zeropoint for a Roman L2 image, where the pixels give us surface brightness.
 
     That is, DAV are something per steradian rather than something.  If
