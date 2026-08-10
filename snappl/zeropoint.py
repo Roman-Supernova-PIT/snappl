@@ -532,7 +532,7 @@ class Zeropoint:
 
         return self._dzp
 
-    
+
     def get_image( self, dbclient=None ):
         """Return the Image object associated with this zeropoint."""
 

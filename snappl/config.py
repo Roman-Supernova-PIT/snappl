@@ -1129,14 +1129,21 @@ class Config:
     def _substitutions_in_one_string( self, val, maxiterations=10 ):
         orig = val
         n = 0
+        done = False
         while not done:
             n += 1
             if ( n > maxiterations ):
-                raise runtimeError( "Too many iterations in _substitute_one_string of {orig}" )
-            lastval = val
-            val = self._one_substutition( val )
-            if val == lastval:
+                raise RuntimeError( f"Too many iterations in _substitute_one_string of {orig}" )
+            rep = self._one_substitution( val )
+            if isinstance( rep, NoValue ):
                 done = True
+            elif isinstance( rep, NotFoundValue ):
+                raise RuntimeError( f"Failed to find substitution in {orig}" )
+                val = rep
+            elif rep == val:
+                done = True
+            else:
+                val = rep
         return val
 
 
