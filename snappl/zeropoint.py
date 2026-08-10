@@ -492,7 +492,7 @@ class Zeropoint:
             raise TypeError( f"meta must be a dict, not a {type(val)}" )
         self._meta = val
 
-    def zp( self, x, y, dzp=False ):
+    def zp( self, x, y, zp_err=False ):
         """Return the zeropoint.
 
         This is the zp that you can stuff into::
@@ -509,23 +509,30 @@ class Zeropoint:
           x, y : float
              Pixel position on the image.
 
-          dzp : bool, default False
+          zp_err : bool, default False
               See Returns below.
 
         Returns
         -------
           float, or ( float, float )
 
-            if dzp is False, then returns a single float, the zeropoint.
-            If dzp is true, then returns a 2-element tuple, the
+            if zp_err is False, then returns a single float, the zeropoint.
+            If zp_err is True, then returns a 2-element tuple, the
             zeropoint and the uncertainty on the zeropoint.
 
         """
 
         # Default zeropoint class doesn't handle spatial variation
-        return ( self._zp, self._dzp ) if dzp else self._zp
+        return ( self._zp, self._dzp ) if zp_err else self._zp
 
 
+
+    def zp_err( self, x, y ):
+        """Return the uncertainty on the zeropoint; see zp."""
+
+        return self._dzp
+
+    
     def get_image( self, dbclient=None ):
         """Return the Image object associated with this zeropoint."""
 
@@ -654,7 +661,11 @@ class RomanL2Zeropoint( Zeropoint ):
         raise NotImplementedError( "RomanL2Zeropoint isn't implemented yet." )
 
 
-    def zp( self, x, y, dzp=False ):
+    def zp( self, x, y, zp_err=False ):
+        raise NotImplementedError( "RomanL2Zeropoint isn't implemented yet." )
+
+
+    def zp_err( self, x, y ):
         raise NotImplementedError( "RomanL2Zeropoint isn't implemented yet." )
 
 
