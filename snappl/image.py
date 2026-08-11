@@ -2380,7 +2380,7 @@ class RomanDatamodelImage( Image ):
             if wcsclass == "RDM_GWCS":
                 self._wcs = RDM_GWCS( gwcs=self.dm.meta.wcs )
             else:
-                raise NotImplementedError( "RomanDataModelImage can't (yet?) get a WCS of type {wcsclass}" )
+                raise NotImplementedError( "RomanDatamodelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs
 
     def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=True ):

@@ -435,7 +435,7 @@ class ImageCollectionManualRDM:
             raise RuntimeError( "Can't do get_image using image_id, observation_id, band, or sca "
                                 "for manual_rdm image collection" )
         if path is None:
-            raise RuntimeError( "path is required for mahual_rdm image collection get_image" )
+            raise RuntimeError( "path is required for manual_rdm image collection get_image" )
 
         base_path = pathlib.Path( base_path ) if base_path is not None else self.base_path
 
