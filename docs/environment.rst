@@ -284,7 +284,9 @@ TODO.  Haven't fully figured out yet how to get this working on NERSC.
 Running on SMDC
 ===============
 
-**WARNING**: Before you run anything, make sure you are on a compute node. If you run things on the login node, you may crash the login node, and then no one will be able to get on SMDC until it is rebooted.
+**WARNING**: Before you run anything, make sure you are on a compute node. If you run things on the login node, you may crash the login node, and then no one will be able to get on SMDC until it is rebooted. You can get on a compute node, for example, with::
+
+  salloc -p mem-med --time=04:00:00
 
 Using Apptainer/Singularity
 ---------------------------
@@ -311,11 +313,18 @@ In ``$RUNDIR``::
 
 Now you're in the container. Inside the container, you can find the contents of ``$RUNDIR`` at ``/home``.  It will also create a directory with your username underneath ``$RUNDIR``; just ignore this. Any ``pip install`` will exist as long as you are inside the container, but will be lost when you exit the container. 
 
+Next, you will need to install the relevant packages, as-needed::
+
+  pip install -e /home/packages/snappl
+  pip install -e /home/packages/phrosty
+  pip install -e /home/packages/campari
+  pip install -e /home/packages/sidecar
+
 
 Running locally on your machine
 ===============================
 
-Using Pip or Conda
+Using pip or Conda
 ------------------
 
 TODO
