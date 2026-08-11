@@ -250,7 +250,7 @@ class ImageCollection:
 
 
 class ImageCollectionOU2024:
-    """Collection of OpenUnivers 2024 FITS images."""
+    """Collection of OpenUniverse 2024 FITS images."""
 
     def __init__( self, base_path=None ):
         self._base_path = None if base_path is None else pathlib.Path( base_path )
