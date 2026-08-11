@@ -2165,10 +2165,15 @@ class RomanDatamodelPSF( PSF ):
         psfref = crds.getreferences( self._image.dm.get_crds_parameters(), observatory='roman', reftypes=['epsf'] )
         self._rdmepsf = rdm.open( psfref['epsf'] )
 
-        # For this PSF, it applies for the whole image.  However, the PSF class needs to have _x and _y
-        #   set, so just make it the center of the image.
-        self._x = int(self._image.width) // 2 if self._x is None else self._x
-        self._y = int(self._image.height) // 2 if self._y is None else self._y
+        # We do NOT default self._x, self._y like we do in some other classes, because one instance
+        #   of this PSF applies to the whole image.
+        # Reason: in get_stamp, it will default to centering the PSF at the x and y passed here,
+        #   BUT for this class, that's not what we want.  So it will detect the Nones.
+        if ( self._x is not None ) or ( self._y is not None ):
+            SNLogger.warning( f"You passed an x= and/or y= when making the PSF, but that is ignored by "
+                              f"{self.__class__.__name__}" )
+        self._x = None
+        self._y = None
 
         if self._rdmepsf.psf.shape[-2] != self._rdmepsf.psf.shape[-1]:
             raise ValueError( f"The roman datamodel psf is {self._rdmepsf.shape[-2]}×{self._rdmepsf.shape[-1]}, "
@@ -2239,8 +2244,8 @@ class RomanDatamodelPSF( PSF ):
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
         # Much code copied directly from photutilsImagePSF... TODO common parent class!
 
-        x = float(x) if x is not None else self._x
-        y = float(y) if y is not None else self._y
+        x = float(x) if x is not None else np.floor( self._image.width / 2. + 0.5 )
+        y = float(y) if y is not None else np.floor( self._image.height / 2. + 0.5 )
         xc = int( np.floor( x + 0.5 ) )
         yc = int( np.floor( y + 0.5 ) )
         xfrac = x - xc
@@ -2254,10 +2259,10 @@ class RomanDatamodelPSF( PSF ):
         #   psf within 0.5 pixels of the center of the stamp,
         #   so adjust x and y to make that happen
         if x0 is None:
-            x0 = int( np.floor( self._x + 0.5 ) )
+            x0 = xc
             x = x0 + xfrac
         if y0 is None:
-            y0 = int( np.floor( self._y + 0.5 ) )
+            y0 = yc
             y = y0 + yfrac
         if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
             raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
@@ -2278,10 +2283,10 @@ class RomanDatamodelPSF( PSF ):
         sz = self.stamp_size
         # // is scary.  -15 // 2 is 8, but -(15 // 2) is 7.  - here is not the same as * -1 !!!!!
         xvals = ( np.arange( -(sz // 2), sz // 2 + 1 )
-                  + self._x + ( self._peakx - ( self._griddedpsf.data.shape[2] / 2. - 0.5 ) ) / self._oversample
+                  + x0 + ( self._peakx - ( self._griddedpsf.data.shape[2] / 2. - 0.5 ) ) / self._oversample
                   - ( x - x0 ) )
         yvals = ( np.arange( -(sz // 2), sz // 2 + 1 )
-                  + self._y + ( self._peaky - ( self._griddedpsf.data.shape[1] / 2. - 0.5 ) ) / self._oversample
+                  + y0 + ( self._peaky - ( self._griddedpsf.data.shape[1] / 2. - 0.5 ) ) / self._oversample
                   - ( y - y0 ) )
         xvals, yvals = np.meshgrid( xvals, yvals )
 
