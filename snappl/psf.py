@@ -539,12 +539,23 @@ class PSF:
 
 
     def getPhotutilsPSF( self, x=None, y=None ):
-        """Return a photutils.psf.SOMETHING that can be fed into photutils phtometry.
+        """Return a photutils.psf.SOMETHING that can be the psf_model parameter of photutils.psf.PSFPhotometry
 
         Unless the subclass implementes something else, this will be a photutils.psf.ImagePSF.
 
+        NOTE AND WORRY : photutils uses the term PSF to mean both PSF
+        and PRF in different places.  Just like everyboyd else.  THIS is
+        returning a PRF (if the code is right), that is, a thing that
+        has been convolved with a tophat pixel (or, ideally, something
+        even more sophisticated, but no promises).  However, we call it
+        a PSF, because it's the thing you give to photutils PSF
+        photometry.  But photutils has started to try to distinguish, so
+        their documentaiton is going to be scary and inconsistent and
+        we'll have to think.
+
+        Subclasses may want to override this.
         """
-        return self.getImagePSF( x=x, y=y )
+        return photutils.psf.ImagePSF( self.get_stamp(), x=x, y=y, x_0=self._x, y_0=self._y )
 
 
     def getImagePSF( self, imagesampled=True, x=None, y=None ):
@@ -573,8 +584,7 @@ class PSF:
 
         """
 
-        # Subclasses that can return an oversampled PSF will want to override this method.
-        return photutils.psf.ImagePSF( self.get_stamp(), x=x, y=y, x_0=self._x, y_0=self._y )
+        raise RuntimeError( "getImagePSF is deprecated, instead use getPhotutilsPSF" )
 
 
 class photutilsImagePSF( PSF ):
@@ -857,10 +867,7 @@ class photutilsImagePSF( PSF ):
     def getImagePSF( self, imagesampled=True ):
         """Return a photutils.psf.ImagePSF model.  See PSF.getImagePSF."""
 
-        if imagesampled:
-            return photutils.psf.ImagePSF( self.get_stamp(), x_0=self._x, y_0=self._y )
-        else:
-            return self._pupsf
+        raise RuntimeError( "getImagePSF is deprecated, instead use getPhotutilsPSF" )
 
 
 class OversampledImagePSF( PSF ):
@@ -1152,8 +1159,8 @@ class OversampledImagePSF( PSF ):
         return self._interpolate_to_stamp( data, x, y, x0, y0, natxfrac, natyfrac, flux=flux )
 
 
-    def getImagePSF( self, imagesampled=True ):
-        """Return a photutils.psf.ImagePSF model.  See PSF.getImagePSF."""
+    def getPhotutilsPSF( self, imagesampled=True ):
+        """Return a photutils.psf.ImagePSF model.  See PSF.getPhotutilsPSF."""
 
         # If self._x and self._y aren't integers, we have to do things
         #   with the origin parameter of ImagePSF.  TODO, figure that out.
@@ -2023,6 +2030,8 @@ class GaussianPSF( PSF ):
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
 
         midpix = int( np.floor( self.stamp_size / 2 ) )
+        x = float(x) if x is not None else self._x
+        y = float(y) if y is not None else self._y
         xc = int( np.floor(x + 0.5 ) )
         yc = int( np.floor(y + 0.5 ) )
         x0 = x0 if x0 is not None else xc
@@ -2183,6 +2192,8 @@ class RomanDatamodelPSF( PSF ):
         # Convolve with a tophat to go from PSF to something that will be more like a PRF
         #  when we sample it.  (Really hoping the oversampling is enough so that sampling
         #  is close enough to doing it right.)
+        # WARNING : at some point the SOC may give us epsfs, which are prfs, as opposed to now
+        #   it's a psf.  THINK.  We may not be able to auto-detect this, so it may be a disaster.
         kernel = astropy.convolution.Box2DKernel( self._oversample )
         for i in range( apdata.data.shape[0] ):
             apdata.data[i, :, : ] = astropy.convolution.convolve( apdata.data[i, :, :], kernel )
@@ -2209,13 +2220,6 @@ class RomanDatamodelPSF( PSF ):
 
     def getPhotutilsPSF( self, x=None, y=None ):
         return self._griddedpsf
-
-
-    def getImagePSF( self, imagesampled=True, x=None, y=None ):
-        raise NotImplementedError( "This needs to be implemented.  If you're using photutils, try "
-                                   "using getPhotUtilsPSF, that might work for you, and will be a  "
-                                   "better choice anyway if it does." )
-
 
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
