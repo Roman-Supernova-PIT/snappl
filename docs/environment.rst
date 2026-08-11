@@ -284,13 +284,47 @@ TODO.  Haven't fully figured out yet how to get this working on NERSC.
 Running on SMDC
 ===============
 
-TODO
+**WARNING**: Before you run anything, make sure you are on a compute node. If you run things on the login node, you may crash the login node, and then no one will be able to get on SMDC until it is rebooted. You can get on a compute node, for example, with::
+
+  salloc -p mem-med --time=04:00:00
+
+Using Apptainer/Singularity
+---------------------------
+
+First, choose a directory you want to run in. We'll call this ``$RUNDIR``. This can be underneath your home directory (e.g., ``$HOME/snpit``), or on another filesystem as appropriate, e.g. ``/data/snpit/users`` (which has limited space) or ``/mnt/roman-science-internal/snpit/users`` (which has lots of space). Again, you'll run stuff from this folder. Do not git clone stuff here.
+
+Next, inside ``$RUNDIR``, ``mkdir packages``. Do not run stuff from here; do all your git cloning into here. Then::
+
+  cd $RUNDIR/packages
+  git clone https://github.com/Roman-Supernova-PIT/snappl.git
+  git clone https://github.com/Roman-Supernova-PIT/phrosty.git
+  git clone https://github.com/Roman-Supernova-PIT/sidecar.git
+  git clone https://github.com/Roman-Supernova-PIT/sfft.git
+  git clone https://github.com/Roman-Supernova-PIT/campari.git
+  cd ..
+
+Now, make sure you are on a compute node. If you aren't, ``salloc`` onto a compute node. For example::
+
+  salloc -p mem-med --time=04:00:00
+
+In ``$RUNDIR``::
+
+  bash /data/snpit/env/singrun_smdc_ricksim.sh 
+
+Now you're in the container. Inside the container, you can find the contents of ``$RUNDIR`` at ``/home``.  It will also create a directory with your username underneath ``$RUNDIR``; just ignore this. Any ``pip install`` will exist as long as you are inside the container, but will be lost when you exit the container. 
+
+Next, you will need to install the relevant packages, as-needed::
+
+  pip install -e /home/packages/snappl
+  pip install -e /home/packages/phrosty
+  pip install -e /home/packages/campari
+  pip install -e /home/packages/sidecar
 
 
 Running locally on your machine
 ===============================
 
-Using Pip or Conda
+Using pip or Conda
 ------------------
 
 TODO
