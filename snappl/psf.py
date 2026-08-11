@@ -1,6 +1,6 @@
 __all__ = [ 'PSF', 'photutilsImagePSF', 'OversampledImagePSF',
             'YamlSerialized_OversampledImagePSF', 'A25ePSF',
-            'ou24PSF_slow', 'ou24PSF', 'STPSF' ]
+            'ou24PSF_slow', 'ou24PSF', 'STPSF', 'RomanDatamodelPSF' ]
 
 # python standard library imports
 import base64
@@ -14,10 +14,14 @@ import scipy.signal
 import yaml
 
 # astro library imports
+import astropy.convolution
+import astropy.nddata
+import crds
+from roman_imsim import ChargeDiff
+from roman_imsim.utils import roman_utils
 import galsim
 import photutils.psf
-from roman_imsim.utils import roman_utils
-from roman_imsim import ChargeDiff
+import roman_datamodels as rdm
 import stpsf
 import synphot
 
@@ -51,6 +55,7 @@ class PSF:
             * ou24PSF_slow -- a PSF from galsim for OpenUniverse 2024
             * ou24PSF -- a PSF from galsim for OpenUniverse 2024
             * STPSF -- a PSF from STScI STPSF
+            * romandatamodel_psf -- a PSF read from CRDS with parameters in the header of the image
 
           x, y: float
             The position on the host image that this is the PSF for.
@@ -80,8 +85,10 @@ class PSF:
             Probably only relevant for the ou24PSF classes.
 
           image : snappl.image.Image
-            Optional, The image that the psf is for. This is not used all subclasses, but is
-            needed for some, currently the ou24 PSFs.
+            Usually (but not always) optional, the image that the psf is
+            for. This is not used all subclasses, but is needed for
+            some; currently required by ou24 PSFs and by
+            RomanDatamodelPSF.
 
             seed: int, default None
               A random seed to pass to galsim.BaseDeviate for photonOps.
@@ -122,6 +129,7 @@ class PSF:
             "ou24PSF_slow_photonshoot": ou24PSF_slow_photonshoot,
             "ou24PSF_photonshoot": ou24PSF_photonshoot,
             "STPSF": STPSF,
+            "romandatamodel_psf": RomanDatamodelPSF
         }
 
         psf_function = psfclass_to_function_mapping[psfclass]
@@ -530,7 +538,16 @@ class PSF:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_stamp" )
 
 
-    def getImagePSF( self, imagesampled=True ):
+    def getPhotutilsPSF( self, x=None, y=None ):
+        """Return a photutils.psf.SOMETHING that can be fed into photutils phtometry.
+
+        Unless the subclass implementes something else, this will be a photutils.psf.ImagePSF.
+
+        """
+        return self.getImagePSF( x=x, y=y )
+
+
+    def getImagePSF( self, imagesampled=True, x=None, y=None ):
         """Return a photutils.psf.ImagePSF model.
 
         This is useful if you want to do, e.g., PSF photometry with
@@ -555,8 +572,9 @@ class PSF:
           photutils.psf.ImagePSF
 
         """
+
         # Subclasses that can return an oversampled PSF will want to override this method.
-        return photutils.psf.ImagePSF( self.get_stamp(), x_0=self._x, y_0=self._y )
+        return photutils.psf.ImagePSF( self.get_stamp(), x=x, y=y, x_0=self._x, y_0=self._y )
 
 
 class photutilsImagePSF( PSF ):
@@ -2091,3 +2109,162 @@ class VaryingGaussianPSF( GaussianPSF ):
         gPSF = PSF.get_psf_object( "gaussian", sigmax=self.sigmax, sigmay=self.sigmay, theta=self.theta,
                                   stamp_size=self.stamp_size )
         return gPSF.get_stamp(x=x, y=y, x0=x0, y0=y0, flux=flux)
+
+
+class RomanDatamodelPSF( PSF ):
+    """A PSF pulled from the gridded oversampled PSF stored in images from roman_datamodel.
+
+    TODO WORRY : figure out how these things are centered!  The example
+    I'm looking at has a 361×361 image for the PSF, with an oversample
+    factor of 4.  Turns out that 361 is not an integer multiple of 4.
+    So how is this really gridded????  I don't know.  Current code
+    assumes that the oversampling is such that the center of the image
+    it gets is the center of the oversampled PSF, so the center pixel of
+    an aligned image-resolutin PSF will have its borders drawn through
+    the edge of the oversampled pixels, not on pixel edges.
+
+    TODO: Allow selection of the SED star model used.  Right now it's
+    just taking the second one (index 1, which is G2V... at least, it
+    was in the example I looked at).  This has implications for the
+    interface of the base PSF class, however, so more work is required.
+
+    """
+
+    def __init__( self, _parent_class=False, **kwargs ):
+        super().__init__( _parent_class=True, **kwargs )
+        self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
+
+        if ( ( self._image is None) or
+             ( not hasattr( self._image, 'dm' ) ) or
+             ( not isinstance( self._image.dm, rdm.DataModel ) )
+            ):
+            # Error message isn't quite precise... really the thing just must have a dm property
+            #   which gives a roman datamodel image that has the right psf info in it.
+            raise TypeError( f"Passed image is a {type(self._image)}, which isn't the right sort of thing. "
+                             f"It should be a RomanDatamodelImage (or subclass thereof)" )
+
+        # TODO: wrap this in a try and give coherent log info on an exception (which should be re-raised).
+        psfref = crds.getreferences( self._image.dm.get_crds_parameters(), observatory='roman', reftypes=['epsf'] )
+        self._rdmepsf = rdm.open( psfref['epsf'] )
+
+        # For this PSF, it applies for the whole image.  However, the PSF class needs to have _x and _y
+        #   set, so just make it the center of the image.
+        self._x = int(self._image.width) // 2 if self._x is None else self._x
+        self._y = int(self._image.height) // 2 if self._y is None else self._y
+
+        if self._rdmepsf.psf.shape[-2] != self._rdmepsf.psf.shape[-1]:
+            raise ValueError( f"The roman datamodel psf is {self._rdmepsf.shape[-2]}×{self._rdmepsf.shape[-1]}, "
+                              f"but I only know how to cope with square PSF images." )
+        self.oversampled_size = self._rdmepsf.psf.shape[-1]
+        self._oversample = self._rdmepsf.meta['oversample']
+        # See the TODO WORRY in the docstring!
+        self._stamp_size = int( np.floor( self.oversampled_size // self._oversample ) )
+        if self._stamp_size % 2 == 0:
+            self._stamp_size -= 1
+
+        self._defocus_dex = 0
+        self._sed_dex = 1
+
+        # Extract the actual data stack that we'll feed to photutils GriddedPSFModel
+        # Assuming that the 0th element of the array is the not-defocused version.
+        # Also just using the second indexed (i.e.[1]) spectral type (see TODO in docstring above).
+        # NOTE : I am assuming that photutils and roman datamodel pixel indexing
+        #   conventions are the same!  (I think for both, 0.0 is the center of the
+        #   lower-left pixel.)  (This matters for grid_xypos.)
+        apdata = astropy.nddata.NDData( self._rdmepsf.psf[ self._defocus_dex, self._sed_dex ],
+                                        meta={
+                                            'oversampling': self._oversample,
+                                            'grid_xypos': [ (i, j)
+                                                            for i, j in
+                                                            zip( self._rdmepsf.meta['pixel_x'],
+                                                                 self._rdmepsf.meta['pixel_y'] ) ]
+                                        } )
+
+        # Convolve with a tophat to go from PSF to something that will be more like a PRF
+        #  when we sample it.  (Really hoping the oversampling is enough so that sampling
+        #  is close enough to doing it right.)
+        kernel = astropy.convolution.Box2DKernel( self._oversample )
+        for i in range( apdata.data.shape[0] ):
+            apdata.data[i, :, : ] = astropy.convolution.convolve( apdata.data[i, :, :], kernel )
+
+        # Multiply the array by the oversampling factor squared, becasue this is what photutils
+        #   expects for an oversampled PSF.  (That seems like a weird convention to me, but whatever.)
+        apdata.data[:, :, :] *= self._oversample * self._oversample
+
+        # Make the photutils thingy that we'll use
+        self._griddedpsf = photutils.psf.GriddedPSFModel( apdata )
+
+        # TODO : see the TODO WORRY in the class docstring
+        # I'm *guessing* that this is where the peak is
+        # (See comments in photutilsImagePSF.__init__
+        #  for why this is / 2 - 0.5 )
+        self._peakx = apdata.data.shape[2] / 2 - 0.5
+        self._peaky = apdata.data.shape[1] / 2 - 0.5
+
+
+    @property
+    def stamp_size( self ):
+        return self._stamp_size
+
+
+    def getPhotutilsPSF( self, x=None, y=None ):
+        return self._griddedpsf
+
+
+    def getImagePSF( self, imagesampled=True, x=None, y=None ):
+        raise NotImplementedError( "This needs to be implemented.  If you're using photutils, try "
+                                   "using getPhotUtilsPSF, that might work for you, and will be a  "
+                                   "better choice anyway if it does." )
+
+
+
+    def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1. ):
+        # Much code copied directly from photutilsImagePSF... TODO common parent class!
+
+        x = float(x) if x is not None else self._x
+        y = float(y) if y is not None else self._y
+        xc = int( np.floor( x + 0.5 ) )
+        yc = int( np.floor( y + 0.5 ) )
+        xfrac = x - xc
+        yfrac = y - yc
+        # ...gotta offset this if on a half-pixel because otherwise we're doing the floor twice
+        xfrac -= 1. if xfrac == 0.5 else 0.
+        yfrac -= 1. if yfrac == 0.5 else 0.
+
+        # x0, y0 is position of the center pixel of the stamp.
+        # If they're not passed, then we know we want the peak of the
+        #   psf within 0.5 pixels of the center of the stamp,
+        #   so adjust x and y to make that happen
+        if x0 is None:
+            x0 = int( np.floor( self._x + 0.5 ) )
+            x = x0 + xfrac
+        if y0 is None:
+            y0 = int( np.floor( self._y + 0.5 ) )
+            y = y0 + yfrac
+        if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+
+        # We want the peak of the PSF to be at (x-x0,y-y0) on the
+        # returned stamp.  Our photutils.ImagePSF in self._pupsf thinks
+        # that the center of self._data is at (self._x, self._y).  On the oversampled image,
+        # the peak of the PSF is at (self._peakx, self._peaky).
+        #
+        # So.  Consider just the x axis.
+        #
+        # The pixel position of the center pixel of the returned array
+        # we have to pass to photutils.ImagePSF.call() needs to be the
+        # position of the peak minus (x-x0).  That will then put the
+        # peak at (x-x0).  The position of the peak is self._x +
+        # (self._peakx - (self._data.shape[1]/2 - 0.5))/oversample_factor.
+
+        sz = self.stamp_size
+        # // is scary.  -15 // 2 is 8, but -(15 // 2) is 7.  - here is not the same as * -1 !!!!!
+        xvals = ( np.arange( -(sz // 2), sz // 2 + 1 )
+                  + self._x + ( self._peakx - ( self._griddedpsf.data.shape[2] / 2. - 0.5 ) ) / self._oversample
+                  - ( x - x0 ) )
+        yvals = ( np.arange( -(sz // 2), sz // 2 + 1 )
+                  + self._y + ( self._peaky - ( self._griddedpsf.data.shape[1] / 2. - 0.5 ) ) / self._oversample
+                  - ( y - y0 ) )
+        xvals, yvals = np.meshgrid( xvals, yvals )
+
+        return self._griddedpsf.evaluate( xvals, yvals, flux, xc, yc )
