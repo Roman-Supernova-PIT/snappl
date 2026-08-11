@@ -22,6 +22,7 @@ from photutils.background import LocalBackground, MMMBackground, Background2D
 
 import galsim.roman
 import roman_datamodels as rdm
+import crds
 
 from snappl.logger import SNLogger
 from snappl.config import Config
@@ -80,7 +81,6 @@ class Image( PathedObject ):
     * position_angle : float; position angle in degrees north of east (CHECK THIS)
     * exptime : float; exposure time in seconds
     * sky_level : float; an estimate of the sky level (in ADU) if known, None otherwise
-    * zeropoint : float; convert to AB mag with -2.5*log(adu) + zeropoint, where adu is the units of data
 
     * width : the width (xorizontal size as viewed on ds9) of the image in pixels
     * height : the height (y/vertical size as viewed on ds9) of the image in pixels
@@ -200,7 +200,7 @@ class Image( PathedObject ):
           position_angle: float, default None
           exptime: float, default None
           sky_level: float, default None
-          zeropoint: float, default None
+          zeropoint: DEPRECATED
             All of these are the values that should be set for these
             properties (see Image class docstring).  If they are None,
             how they get populated depends on the image subclass.  In
@@ -256,7 +256,8 @@ class Image( PathedObject ):
         self._position_angle = position_angle
         self._exptime = exptime
         self._sky_level = sky_level
-        self._zeropoint = zeropoint
+        if zeropoint is not None:
+            SNLogger.warning( "The zeropoint argument to image init is deprecated, stop using it." )
 
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
@@ -603,14 +604,18 @@ class Image( PathedObject ):
            m = -2.5 * log(10) + zp
 
         """
-        if self._zeropoint is None:
-            self._get_zeropoint()
-        return self._zeropoint
+        raise RuntimeError( "Don't use the zeropoint property, call get_zeropoint(x,y)" )
+        # if self._zeropoint is None:
+        #     self._get_zeropoint()
+        # return self._zeropoint
 
     @zeropoint.setter
     def zeropoint( self, val ):
-        self._zeropoint = float( val ) if val is not None else None
+        raise RuntimeError( "Can't set a zeropoint" )
+        # self._zeropoint = float( val ) if val is not None else None
 
+    def get_zeropoint( self, x=None, y=None ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_zeropoint" )
 
     def _get_image_shape( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_image_shape" )
@@ -638,10 +643,6 @@ class Image( PathedObject ):
 
     def _get_sky_level( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_sky_level" )
-
-    def _get_zeropoint( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_zeropoint" )
-
 
     def _get_position_angle( self ):
         """Position angle in degrees north of east"""
@@ -1928,19 +1929,9 @@ class FITSImageStdHeaders( FITSImage ):
         hdr = self.get_fits_header()
         hdr[ self._header_kws['sky_level'] ] = self._sky_level
 
-    def _get_zeropoint( self ):
+    def get_zeropoint( self, x, y ):
         hdr = self.get_fits_header()
-        self._zeropoint = float( hdr[ self._header_kws['zeropoint'] ] )
-
-    @property
-    def zeropoint( self ):
-        if self._zeropoint is None:
-            self._get_zeropoint()
-        return self._zeropoint
-
-    @zeropoint.setter
-    def zeropoint( self, val ):
-        self._zeropoint = float( val ) if val is not None else None
+        return float( hdr[ self._header_kws['zeropoint'] ] )
 
 
 
@@ -2035,6 +2026,7 @@ class FITSImageOnDisk( CompressedFITSImage ):
 class OpenUniverse2024FITSImage( CompressedFITSImage ):
     def __init__( self, *args, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs ):
         super().__init__( *args, imagehdu=imagehdu, noisehdu=noisehdu, flagshdu=flagshdu, **kwargs )
+        self._zeropoint = None
 
     _image_class_base_path_config_item = 'system.ou24.images'
 
@@ -2106,9 +2098,11 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         header = self.get_fits_header()
         self._sky_level = header['SKY_MEAN']
 
-    def _get_zeropoint( self ):
-        header = self.get_fits_header()
-        self._zeropoint = galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+    def get_zeropoint( self, x, y ):
+        if self._zerpoint is None:
+            header = self.get_fits_header()
+            self._zeropoint = galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+        return self._zeropoint
 
     def _get_zeropoint_the_hard_way( self, psf, ap_r=9 ):
         """This is here hopefully as legacy code.
@@ -2119,6 +2113,8 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         resort to this.
 
         """
+        raise RuntimeError( "Not up to date." )
+
         # Get stars from the truth
         truth_colnames = ['object_id', 'ra', 'dec', 'x', 'y', 'realized_flux', 'flux', 'mag', 'obj_type']
         truth_pd = pandas.read_csv(self.truthpath, comment='#', skipinitialspace=True, sep=' ', names=truth_colnames)
@@ -2189,6 +2185,7 @@ class RomanDatamodelImage( Image ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
         self._dm = None
+        self._pixelareamap = None
 
 
     # TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !
@@ -2234,7 +2231,7 @@ class RomanDatamodelImage( Image ):
     # def _get_sky_level(self):
     #    ...dunno what to do here
 
-    def _get_zeropoint( self ):
+    def get_zeropoint( self, x=None, y=None ):
         # photometry.conversion_megajanskys gives MJy per steradian that
         #   gives an instrumental count rate of 1 dn/second.  I'm
         #   assuming that's 1 dn/second per pixel, as it's not clear
@@ -2276,8 +2273,37 @@ class RomanDatamodelImage( Image ):
         # m_ab = -2.5*log10( dn_s ) + zp    [This is the definition of zp]
         # zp = -2.5*log10( cm_ma ) - 6.1
 
-        self._zeropoint = -6.1 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
-                                                 self.dm.meta.photometry.pixel_area )
+        x = int( np.floor( self.width / 2. + 0.5 ) ) if x is None else int( np.floor( x + 0.5 ) )
+        y = int( np.floor( self.height / 2. + 0.5 ) ) if y is None else int( np.floor( y + 0.5 ) )
+
+        if self._pixelareamap is None:
+            pixelarea_name = crds.getreferences(
+                self.dm.get_crds_parameters(),
+                reftypes=["area"],
+                observatory="roman",
+            )["area"]
+
+            ifp = rdm.open( pixelarea_name )
+            self._pixelarea = np.array( ifp.data )
+            ifp.close()
+
+        # To go from surface brightness to something proportional to
+        #   electrions, you multiply the image by self._pixelarea (which
+        #   is unitless, relative to self.dm.photometry.pixel_area)
+        #
+        # So f = sb * self._pixelarea
+        #
+        # m = -2.5 log10( f ) + zp_f
+        #   = -2.5 log10( sb * _pixelrea ) + zp_f
+        #   = -2.5 log10(sb) - 2.5 log10(_pixelarea) + zp_f
+        #
+        # So zp_sb = zp_f - 2.5log10(_pixelarea)
+        #
+        # We need to return zp_sb because the image is in surface brightness units
+
+        return -6.1 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
+                                      self.dm.meta.photometry.pixel_area *
+                                      self._pixelarea[y, x] )
 
     @property
     def data( self ):
