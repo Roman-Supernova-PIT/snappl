@@ -2139,8 +2139,17 @@ class RomanDatamodelPSF( PSF ):
 
     """
 
-    def __init__( self, _parent_class=False, **kwargs ):
+    def __init__( self, _parent_class=False, size=None, **kwargs ):
+        """WRITE DOCSTRING
+
+        Parameters
+        -----------
+          size : the size of the stamp that will be returned by get_stamp.  Must be odd.
+
+        """
+
         super().__init__( _parent_class=True, **kwargs )
+        self._consumed_args.add( 'size' )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         if ( ( self._image is None) or
@@ -2167,9 +2176,14 @@ class RomanDatamodelPSF( PSF ):
         self.oversampled_size = self._rdmepsf.psf.shape[-1]
         self._oversample = self._rdmepsf.meta['oversample']
         # See the TODO WORRY in the docstring!
-        self._stamp_size = int( np.floor( self.oversampled_size // self._oversample ) )
-        if self._stamp_size % 2 == 0:
-            self._stamp_size -= 1
+        if size is not None:
+            if size %2 == 0:
+                raise ValueError( f"size {size} is not odd" )
+            self._stamp_size = size
+        else:
+            self._stamp_size = int( np.floor( self.oversampled_size // self._oversample ) )
+            if self._stamp_size % 2 == 0:
+                self._stamp_size -= 1
 
         self._defocus_dex = 0
         self._sed_dex = 1
