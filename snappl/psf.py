@@ -1358,19 +1358,19 @@ class ou24PSF_slow( PSF ):
 
     """
 
-    def __init__( self, sed=None, config_file=None, size=201,
+    def __init__( self, sed=None, config_file=None, stamp_size=201,
                    n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
                  ):
 
         super().__init__( _parent_class=True, **kwargs )
-        self._consumed_args.update( [ 'sed', 'config_file', 'size', '_include_photonOps', 'n_photons' ] )
+        self._consumed_args.update( [ 'sed', 'config_file', 'stamp_size', '_include_photonOps', 'n_photons' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         if ( self._observation_id is None ) or ( self._sca is None ):
             raise ValueError( "Need a observation_id and an sca to make an ou24PSF_slow" )
-        if ( size % 2 == 0 ) or ( int(size) != size ):
-            raise ValueError( "Size must be an odd integer." )
-        size = int( size )
+        if ( stamp_size % 2 == 0 ) or ( int(stamp_size) != stamp_size ):
+            raise ValueError( "stamp_size must be an odd integer." )
+        stamp_size = int( stamp_size )
 
         if sed is None:
             SNLogger.warning( "No sed passed to ou24PSF_slow, using a flat SED between 0.1μm and 2.6μm" )
@@ -1384,7 +1384,7 @@ class ou24PSF_slow( PSF ):
         if config_file is None:
             config_file = Config.get().value( 'system.ou24.config_file' )
         self.config_file = config_file
-        self.size = size
+        self.size = stamp_size
         self.sca_size = 4088
         self._x = self.sca_size // 2 if self._x is None else self._x
         self._y = self.sca_size // 2 if self._y is None else self._y
@@ -1815,12 +1815,12 @@ class STPSF( PSF ):
     identical arguments it will return the cached version).
     """
 
-    def __init__( self, sed=None, size=201,
+    def __init__( self, sed=None, stamp_size=201,
                   _parent_class=False,  **kwargs
                  ):
 
         super().__init__( _parent_class=True, **kwargs )
-        self._consumed_args.update( [ 'sed', 'size' ] )
+        self._consumed_args.update( [ 'sed', 'stamp_size' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
         if self._band is None:
             try:
@@ -1835,9 +1835,9 @@ class STPSF( PSF ):
             raise ValueError(
                 f"Need a band and an sca to make a STPSF.  Received band={self._band}, sca={self._sca}"
                 )
-        if ( size % 2 == 0 ) or ( int(size) != size ):
-            raise ValueError( "Size must be an odd integer." )
-        size = int( size )
+        if ( stamp_size % 2 == 0 ) or ( int(stamp_size) != stamp_size ):
+            raise ValueError( "stamp_size must be an odd integer." )
+        stamp_size = int( stamp_size )
 
         if sed is None:
             SNLogger.warning( "No sed passed to STPSF, default is 5700K sunlike spectrum." )
@@ -1846,7 +1846,7 @@ class STPSF( PSF ):
         else:
             self.sed = sed
 
-        self.size = size
+        self.size = stamp_size
         self.sca_size = 4088
         self._x = self.sca_size // 2 if self._x is None else self._x
         self._y = self.sca_size // 2 if self._y is None else self._y
@@ -2139,12 +2139,12 @@ class RomanDatamodelPSF( PSF ):
 
     """
 
-    def __init__( self, _parent_class=False, size=None, **kwargs ):
+    def __init__( self, _parent_class=False, stamp_size=None, **kwargs ):
         """WRITE DOCSTRING
 
         Parameters
         -----------
-          size : the size of the stamp that will be returned by get_stamp.  Must be odd.
+          stamp_size : the stamp_size of the stamp that will be returned by get_stamp.  Must be odd.
 
         """
 
@@ -2176,10 +2176,10 @@ class RomanDatamodelPSF( PSF ):
         self.oversampled_size = self._rdmepsf.psf.shape[-1]
         self._oversample = self._rdmepsf.meta['oversample']
         # See the TODO WORRY in the docstring!
-        if size is not None:
-            if size %2 == 0:
-                raise ValueError( f"size {size} is not odd" )
-            self._stamp_size = size
+        if stamp_size is not None:
+            if ( stamp_size != int( stamp_size ) ) or ( stamp_size % 2 == 0 ):
+                raise ValueError( f"size {stamp_size} is invalid, must be an odd integer" )
+            self._stamp_size = int( stamp_size )
         else:
             self._stamp_size = int( np.floor( self.oversampled_size // self._oversample ) )
             if self._stamp_size % 2 == 0:
