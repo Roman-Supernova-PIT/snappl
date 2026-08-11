@@ -321,6 +321,11 @@ Next, you will need to install the relevant packages, as-needed::
   pip install -e /home/packages/sidecar
 
 
+Using an interactive native environment
+---------------------------------------
+
+TODO
+
 Running locally on your machine
 ===============================
 
