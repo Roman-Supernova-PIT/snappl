@@ -1039,13 +1039,13 @@ class Image( PathedObject ):
         May have side-effects on the internal data structure (e.g. FITS
         subclasses modify the internally stored header).
 
-        Paramters
-        ---------
+        Parameters
+        ----------
           which : str, default "all"
             One of 'data', 'noise', 'flags', or 'all'
 
           imagepath : str, default None
-            Full Path to write the image to.  If not specified, will use use
+            Full Path to write the image to.  If not specified, will use
             self.full_filepath.  Does NOT update any of the path properties of
             the image.  You can leave this at None, and the path that the
             Image figured out when it was constructed will be used.  Usually,

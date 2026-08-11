@@ -55,7 +55,7 @@ class Config:
        ``Config.get()`` without any arguments.
 
        If the config file has a lot of levels to it, and you are only
-       intersted in a subset, you can do::
+       interested in a subset, you can do::
 
            confobj = Config.get( prefix='toplevel.midlevel' )
 

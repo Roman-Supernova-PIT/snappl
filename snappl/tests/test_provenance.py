@@ -49,7 +49,7 @@ def test_provenance( dbclient ):
             gratprov2.save_to_db( tag='kaglorky', dbclient=dbclient )
         assert time.perf_counter() - t0 < 0.2
 
-        # Make sure we can (succesfully) save a provenance and a tag all in one go
+        # Make sure we can (successfully) save a provenance and a tag all in one go
         gratprov3 = Provenance( process="alternate_gratprov", major=1, minor=0 )
         provstodel['provs'].append( gratprov3.id )
         gratprov3.save_to_db( tag='gazorniplotz', dbclient=dbclient )
