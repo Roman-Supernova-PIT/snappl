@@ -1654,11 +1654,14 @@ class FITSImage( Numpy2DImage ):
 
         # TODO : fix _ra* and _dec* fields, they're all WRONG
 
+        # WORRY : we need to have all attributes from all current and future subclasses... there
+        #   must be a better way.  (But I'm afraid of doing ALL attributes.)
         for prop in [ '_observation_id', '_sca', '_band', '_mjd', '_position_angle', '_exptime',
                       '_sky_level', '_zeropoint', '_ra', '_dec',
                       '_ra_corner_00', '_ra_corner_01', '_ra_corner_10', '_ra_corner_11',
                       '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
-            setattr( snappl_cutout, prop, getattr( self, prop ) )
+            if hasattr( self, prop ):
+                setattr( snappl_cutout, prop, getattr( self, prop ) )
 
         return snappl_cutout
 
