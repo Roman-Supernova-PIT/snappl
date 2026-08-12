@@ -1193,7 +1193,7 @@ class OversampledImagePSF( PSF ):
         #   that self._x and self._y have no fractional part.
         # However, we will always need to have integral oversampling,
         #   as ImagePSF assumes that.
-        if ( not imagesampled ) and ( np.fabs( x - self._x ) > 0.0001 ) or ( np.fabs( y - self._y ) > 0.0001 ):
+        if ( not imagesampled ) and ( ( np.fabs( x - self._x ) > 0.0001 ) or ( np.fabs( y - self._y ) > 0.0001 ) ):
             raise ValueError( "You passed x and y to OversampledImage.getPhotutlsPSF with imagesampled=False, "
                               "but they did not match the x and y that the object was constructed with. "
                               "I cannot cope." )

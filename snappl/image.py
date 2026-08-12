@@ -2394,7 +2394,7 @@ class RomanDatamodelImage( Image ):
 
 
     @property
-    def sb_data( self ):
+    def sb_noise( self ):
         """NOT A STANDARD Image PROPERTY!  Surface-brightness units noise array.
 
         This is the native noise array straight out of the roman_datamodel L2 asdf files.
