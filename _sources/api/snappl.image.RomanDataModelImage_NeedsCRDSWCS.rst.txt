@@ -1,0 +1,17 @@
+RomanDataModelImage_NeedsCRDSWCS
+================================
+
+.. currentmodule:: snappl.image
+
+.. autoclass:: RomanDataModelImage_NeedsCRDSWCS
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~RomanDataModelImage_NeedsCRDSWCS.get_wcs
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_wcs
