@@ -121,13 +121,13 @@ class Lightcurve( PathedObject ):
             NEA isn't supposed to be None, but may be in the short term.
 
             If diaobject_position_id is None, it means that the
-            lightcurve used the intial object position pulled from the
+            lightcurve used the initial object position pulled from the
             diaobject, or got its position somewhere else that is not
             adequately tracked.
 
             If the lightcurve is not intended to be saved to the
             database, provenance_id and diaobject_id may be none,
-            otherwise they are requried.
+            otherwise they are required.
 
           multiband : bool, default False
             Lightcurves as saved in the database are stored one band at
