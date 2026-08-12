@@ -2364,13 +2364,13 @@ class RomanDatamodelImage( Image ):
     @property
     def data( self ):
         if getattr( self, '_data', None ) is None:
-            self.load_data_and_noise()
+            self._load_data_and_noise()
         return self._data
 
     @property
     def noise( self ):
         if getattr( self, '_noise', None ) is None:
-            self.load_data_and_noise()
+            self._load_data_and_noise()
         # See comment in data
         # Using the _noise property here is so that we can set the noise elsewhere. -CFM
         if getattr(self, '_noise', None) is None:
