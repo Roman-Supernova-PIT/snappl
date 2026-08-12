@@ -973,7 +973,10 @@ class Image( PathedObject ):
         ----------
           init_params: something
              passed to the init_params of a call to a
-             photutils.psf.PSFPHotometry object.
+             photutils.psf.PSFPHotometry object.  IMPORTANT : photutils
+             will accept all kinds of crazy stuff to find the x and y
+             positions of the fit.  For this function, you MUST use
+             either (x_init, y_init) or (x, y).  (But not both!)
 
           psf: snappl.psf.PSF
              The PSF profile to fit to the image.
@@ -1020,7 +1023,7 @@ class Image( PathedObject ):
                               "PSF, it will do the wrong thing." )
             x0 = x0[0]
             y0 = y0[0]
-        psfmod = psf.getPhotUtilsPSF( x0, y0 )
+        psfmod = psf.getPhotutilsPSF( x0, y0 )
         if forced_phot:
             SNLogger.debug( 'psf_phot: x, y are fixed!' )
             psfmod.x_0.fixed = True
