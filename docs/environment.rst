@@ -320,9 +320,19 @@ Next, you will need to install the relevant packages, as-needed::
   pip install -e /home/packages/campari
   pip install -e /home/packages/sidecar
 
-
 Using an interactive native environment
 ---------------------------------------
+
+You can also run natively in a virtual environment. There is a premade one, but *you cannot install anything in it*. If you want to install stuff in a native environment, see :ref:`see below<native_development>`. Luckily, this is easy::
+
+  source /data/snpit/env/environment_checkout_for_native/smdc-install-native-shared.sh
+
+Done.
+
+.. _native_development:
+
+Using an interactive native environment for development
+-------------------------------------------------------
 
 If you prefer to work in your own Python environment on SMDC, you can create a dedicated virtual environment for the Roman SNPIT photometry packages.  The commands below are intended to be run once to set up the environment, and can be activated again later with:
 
