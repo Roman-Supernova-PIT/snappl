@@ -14,7 +14,7 @@ import tox # noqa: F401
 from tox.pytest import init_fixture # noqa: F401
 
 from snappl.imagecollection import ImageCollection
-from snappl.image import FITSImage, FITSImageStdHeaders, RomanDatamodelImage, RomanDataModelImage_NeedsCRDSWCS
+from snappl.image import FITSImage, FITSImageStdHeaders, RomanDatamodelImage, RomanDatamodelImage_Needs_CRDS_GWCS
 from snappl.image_simulator import ImageSimulator
 from snappl.diaobject import DiaObject
 from snappl.lightcurve import Lightcurve
@@ -107,7 +107,7 @@ def ricksim_image_paths():
 @pytest.fixture
 def ricksim_image_and_truthtab( ricksim_image_paths ):
     impath, trupath = ricksim_image_paths
-    image = RomanDataModelImage_NeedsCRDSWCS( impath )
+    image = RomanDatamodelImage_Needs_CRDS_GWCS( impath )
     truth = pandas.read_csv( trupath )
     return image, truth
 
