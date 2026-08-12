@@ -2316,4 +2316,3 @@ class RomanDatamodelPSF( PSF ):
         xvals, yvals = np.meshgrid( xvals, yvals )
 
         return self._griddedpsf.evaluate( xvals, yvals, flux, xc, yc )
-
