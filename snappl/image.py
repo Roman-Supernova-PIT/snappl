@@ -1,5 +1,5 @@
 __all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'CompressedFITSImage', 'FITSImageOnDisk',
-            'OpenUniverse2024FITSImage', 'RomanDatamodelImage', 'RomanDataModelImage_NeedsCRDSWCS' ]
+            'OpenUniverse2024FITSImage', 'RomanDatamodelImage', 'RomanDatamodelImage_Needs_CRDS_GWCS' ]
 
 import re
 import pathlib
@@ -2521,14 +2521,14 @@ class RomanDatamodelImage( Image ):
 
 # ======================================================================
 
-class RomanDataModelImage_NeedsCRDSWCS( RomanDatamodelImage ):
+class RomanDatamodelImage_Needs_CRDS_GWCS( RomanDatamodelImage ):
     def get_wcs( self, wcsclass=None ):
         wcsclass = "RDM_CRDS_GWCS" if wcsclass is None else wcsclass
         if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
             if wcsclass == "RDM_CRDS_GWCS":
                 self._wcs = RDM_CRDS_GWCS( gwcs=self.dm.meta.wcs, i_know_what_i_am_doing=True, parent_image=self.dm )
             else:
-                raise NotImplementedError( "RomanDataModelImage_NeedsCRDSWCS can't get a WCS of type {wcsclass}" )
+                raise NotImplementedError( "RomanDatamodelImage_Needs_CRDS_GWCS can't get a WCS of type {wcsclass}" )
         return self._wcs
 
 
@@ -2559,7 +2559,7 @@ Image._format_def = { -1 : { 'description': "Not a database image",
                              'base_path_config': 'system.paths.images'
                             },
                       101: { 'description': "RDM image from Rick Sims 2026-08 that need a CRDS WCScorrection",
-                             'image_class': RomanDataModelImage_NeedsCRDSWCS,
+                             'image_class': RomanDatamodelImage_Needs_CRDS_GWCS,
                              'base_path_config': 'system.paths.images'
                             },
                      }
