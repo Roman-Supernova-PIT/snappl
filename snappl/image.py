@@ -27,8 +27,8 @@ import crds
 
 from snappl.logger import SNLogger
 from snappl.config import Config
-from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, RDM_GWCS
-from snappl.utils import asUUID, SNPITJsonEncoder
+from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, RDM_GWCS, RDM_CRDS_GWCS
+from snappl.utils import asUUID, SNPITJsonEncoder, isSequence
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
 from snappl.pathedobject import PathedObject
@@ -1004,7 +1004,23 @@ class Image( PathedObject ):
         if 'flux_init' not in init_params.colnames:
             raise Exception('Astropy table passed to kwarg init_params must contain column \"flux_init\".')
 
-        psfmod = psf.getImagePSF()
+        x0 = init_params['x_init'] if 'x_init' in init_params else init_params['x']
+        y0 = init_params['y_init'] if 'y_init' in init_params else init_params['y']
+        xseq = isSequence( x0 )
+        yseq = isSequence( y0 )
+        if xseq != yseq:
+            raise ValueError( f"You passed init_parms with intial x {x0} and inital {y0}; they most either both "
+                              f"be floats, or both be lists/arrays, you can't mix." )
+        if ( xseq ) and ( len(x0) != len(y0) ):
+            raise ValueError( f"init_params has {len(xseq)} x values and {len(yseq)} y values, which don't match" )
+        if ( xseq ) and ( len(x0) != 1 ):
+            SNLogger.warning( "Image.psf_phot was given multiple x, y coordinates.  Depending on the PSF subclass "
+                              "you're using, this might be fine.  However, for some subclasses, you will only get "
+                              "one PSF that will be used at all positions, so if you have a spatially variable "
+                              "PSF, it will do the wrong thing." )
+            x0 = x0[0]
+            y0 = y0[0]
+        psfmod = psf.getPhotUtilsPSF( x0, y0 )
         if forced_phot:
             SNLogger.debug( 'psf_phot: x, y are fixed!' )
             psfmod.x_0.fixed = True

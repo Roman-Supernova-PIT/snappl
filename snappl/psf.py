@@ -161,6 +161,9 @@ class PSF:
             raise RuntimeError( f"Don't instantiate a {self.__class__.__name__} directly, call PSF.get_psf_object" )
         self._consumed_args.update( [ 'x', 'y', 'band', 'observation_id', 'sca', '_called_from_get_psf_object',
                                       "seed", "image" ] )
+        if ( x is not None and np.floor(x) != x ) or ( y is not None and np.floor(y) != y ):
+            SNLogger.warning( "You're constructing a PSF object with a non-integer (x, y).  That's usually a bad "
+                              "idea, unless you really know what you're doing" )
         self._x = float( x ) if x is not None else None
         self._y = float( y ) if y is not None else None
         self._band = band
@@ -178,6 +181,9 @@ class PSF:
 
     @x.setter
     def x( self, val ):
+        if ( val is not None and np.floor(val) != val ):
+            SNLogger.warning( "You're setting a PSF x to a non-integer value. That's usually a bad idea, "
+                              "unless you really know what you're doing." )
         self._x = val
 
     @property
@@ -186,6 +192,9 @@ class PSF:
 
     @y.setter
     def y( self, val ):
+        if ( val is not None and np.floor(val) != val ):
+            SNLogger.warning( "You're setting a PSF y to a non-integer value. That's usually a bad idea, "
+                              "unless you really know what you're doing." )
         self._y = val
 
     def _warn_unknown_kwargs( self, kwargs, _parent_class=False ):
@@ -541,7 +550,17 @@ class PSF:
     def getPhotutilsPSF( self, x=None, y=None ):
         """Return a photutils.psf.SOMETHING that can be the psf_model parameter of photutils.psf.PSFPhotometry
 
-        Unless the subclass implementes something else, this will be a photutils.psf.ImagePSF.
+        Unless the subclass implementes something else, this will be a
+        photutils.psf.ImagePSF, and will be just for one position.  If
+        you don't give x and y here, it will use the x and y that were
+        given to construct the PSF object.
+
+        Some subclasses will ignore x, y and return a Photutils PSF
+        object that can be used at any x, y.  Read the subclass
+        documentation to find out what is what.  If you're writing code
+        to work with all subclasses, and you are dealing with a
+        spatially variable PSF, then be careful with what you do with
+        the return here.
 
         NOTE AND WORRY : photutils uses the term PSF to mean both PSF
         and PRF in different places.  Just like everyboyd else.  THIS is
@@ -554,7 +573,14 @@ class PSF:
         we'll have to think.
 
         Subclasses may want to override this.
+
         """
+        x = self._x if x is None else x
+        y = self._y if y is None else y
+        # For photutils, it wants a *centered* psf, not a psf that's shifted, so
+        #   we need to make x and y into integers
+        x = np.floor( x + 0.5 )
+        y = np.floor( y + 0.5 )
         return photutils.psf.ImagePSF( self.get_stamp(), x=x, y=y, x_0=self._x, y_0=self._y )
 
 
