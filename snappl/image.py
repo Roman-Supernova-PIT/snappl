@@ -1,5 +1,5 @@
 __all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'CompressedFITSImage', 'FITSImageOnDisk',
-            'OpenUniverse2024FITSImage', 'RomanDatamodelImage' ]
+            'OpenUniverse2024FITSImage', 'RomanDatamodelImage', 'RomanDataModelImage_NeedsCRDSWCS' ]
 
 import re
 import pathlib
@@ -20,14 +20,14 @@ from photutils.aperture import CircularAperture, aperture_photometry, ApertureSt
 from photutils.psf import PSFPhotometry
 from photutils.background import LocalBackground, MMMBackground, Background2D
 
-
 import galsim.roman
 import roman_datamodels as rdm
+import crds
 
 from snappl.logger import SNLogger
 from snappl.config import Config
-from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, RDM_GWCS
-from snappl.utils import asUUID, SNPITJsonEncoder
+from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, RDM_GWCS, RDM_CRDS_GWCS
+from snappl.utils import asUUID, SNPITJsonEncoder, isSequence
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
 from snappl.pathedobject import PathedObject
@@ -81,7 +81,6 @@ class Image( PathedObject ):
     * position_angle : float; position angle in degrees north of east (CHECK THIS)
     * exptime : float; exposure time in seconds
     * sky_level : float; an estimate of the sky level (in ADU) if known, None otherwise
-    * zeropoint : float; convert to AB mag with -2.5*log(adu) + zeropoint, where adu is the units of data
 
     * width : the width (xorizontal size as viewed on ds9) of the image in pixels
     * height : the height (y/vertical size as viewed on ds9) of the image in pixels
@@ -201,7 +200,7 @@ class Image( PathedObject ):
           position_angle: float, default None
           exptime: float, default None
           sky_level: float, default None
-          zeropoint: float, default None
+          zeropoint: DEPRECATED
             All of these are the values that should be set for these
             properties (see Image class docstring).  If they are None,
             how they get populated depends on the image subclass.  In
@@ -257,7 +256,8 @@ class Image( PathedObject ):
         self._position_angle = position_angle
         self._exptime = exptime
         self._sky_level = sky_level
-        self._zeropoint = zeropoint
+        if zeropoint is not None:
+            SNLogger.warning( "The zeropoint argument to image init is deprecated, stop using it." )
 
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
@@ -604,14 +604,18 @@ class Image( PathedObject ):
            m = -2.5 * log(10) + zp
 
         """
-        if self._zeropoint is None:
-            self._get_zeropoint()
-        return self._zeropoint
+        raise RuntimeError( "Don't use the zeropoint property, call get_zeropoint(x,y)" )
+        # if self._zeropoint is None:
+        #     self._get_zeropoint()
+        # return self._zeropoint
 
     @zeropoint.setter
     def zeropoint( self, val ):
-        self._zeropoint = float( val ) if val is not None else None
+        raise RuntimeError( "Can't set a zeropoint" )
+        # self._zeropoint = float( val ) if val is not None else None
 
+    def get_zeropoint( self, x=None, y=None ):
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_zeropoint" )
 
     def _get_image_shape( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_image_shape" )
@@ -639,10 +643,6 @@ class Image( PathedObject ):
 
     def _get_sky_level( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_sky_level" )
-
-    def _get_zeropoint( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_zeropoint" )
-
 
     def _get_position_angle( self ):
         """Position angle in degrees north of east"""
@@ -972,7 +972,10 @@ class Image( PathedObject ):
         ----------
           init_params: something
              passed to the init_params of a call to a
-             photutils.psf.PSFPHotometry object.
+             photutils.psf.PSFPHotometry object.  IMPORTANT : photutils
+             will accept all kinds of crazy stuff to find the x and y
+             positions of the fit.  For this function, you MUST use
+             either (x_init, y_init) or (x, y).  (But not both!)
 
           psf: snappl.psf.PSF
              The PSF profile to fit to the image.
@@ -1003,7 +1006,23 @@ class Image( PathedObject ):
         if 'flux_init' not in init_params.colnames:
             raise Exception('Astropy table passed to kwarg init_params must contain column \"flux_init\".')
 
-        psfmod = psf.getImagePSF()
+        x0 = init_params['x_init'] if 'x_init' in init_params else init_params['x']
+        y0 = init_params['y_init'] if 'y_init' in init_params else init_params['y']
+        xseq = isSequence( x0 )
+        yseq = isSequence( y0 )
+        if xseq != yseq:
+            raise ValueError( f"You passed init_parms with intial x {x0} and inital {y0}; they most either both "
+                              f"be floats, or both be lists/arrays, you can't mix." )
+        if ( xseq ) and ( len(x0) != len(y0) ):
+            raise ValueError( f"init_params has {len(xseq)} x values and {len(yseq)} y values, which don't match" )
+        if ( xseq ) and ( len(x0) != 1 ):
+            SNLogger.warning( "Image.psf_phot was given multiple x, y coordinates.  Depending on the PSF subclass "
+                              "you're using, this might be fine.  However, for some subclasses, you will only get "
+                              "one PSF that will be used at all positions, so if you have a spatially variable "
+                              "PSF, it will do the wrong thing." )
+            x0 = x0[0]
+            y0 = y0[0]
+        psfmod = psf.getPhotutilsPSF( x0, y0 )
         if forced_phot:
             SNLogger.debug( 'psf_phot: x, y are fixed!' )
             psfmod.x_0.fixed = True
@@ -1929,19 +1948,9 @@ class FITSImageStdHeaders( FITSImage ):
         hdr = self.get_fits_header()
         hdr[ self._header_kws['sky_level'] ] = self._sky_level
 
-    def _get_zeropoint( self ):
+    def get_zeropoint( self, x, y ):
         hdr = self.get_fits_header()
-        self._zeropoint = float( hdr[ self._header_kws['zeropoint'] ] )
-
-    @property
-    def zeropoint( self ):
-        if self._zeropoint is None:
-            self._get_zeropoint()
-        return self._zeropoint
-
-    @zeropoint.setter
-    def zeropoint( self, val ):
-        self._zeropoint = float( val ) if val is not None else None
+        return float( hdr[ self._header_kws['zeropoint'] ] )
 
 
 
@@ -2036,6 +2045,7 @@ class FITSImageOnDisk( CompressedFITSImage ):
 class OpenUniverse2024FITSImage( CompressedFITSImage ):
     def __init__( self, *args, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs ):
         super().__init__( *args, imagehdu=imagehdu, noisehdu=noisehdu, flagshdu=flagshdu, **kwargs )
+        self._zeropoint = None
 
     _image_class_base_path_config_item = 'system.ou24.images'
 
@@ -2107,9 +2117,11 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         header = self.get_fits_header()
         self._sky_level = header['SKY_MEAN']
 
-    def _get_zeropoint( self ):
-        header = self.get_fits_header()
-        self._zeropoint = galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+    def get_zeropoint( self, x, y ):
+        if self._zerpoint is None:
+            header = self.get_fits_header()
+            self._zeropoint = galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+        return self._zeropoint
 
     def _get_zeropoint_the_hard_way( self, psf, ap_r=9 ):
         """This is here hopefully as legacy code.
@@ -2120,6 +2132,8 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         resort to this.
 
         """
+        raise RuntimeError( "Not up to date." )
+
         # Get stars from the truth
         truth_colnames = ['object_id', 'ra', 'dec', 'x', 'y', 'realized_flux', 'flux', 'mag', 'obj_type']
         truth_pd = pandas.read_csv(self.truthpath, comment='#', skipinitialspace=True, sep=' ', names=truth_colnames)
@@ -2190,6 +2204,7 @@ class RomanDatamodelImage( Image ):
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
         self._dm = None
+        self._pixelareamap = None
 
 
     # TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !
@@ -2235,7 +2250,7 @@ class RomanDatamodelImage( Image ):
     # def _get_sky_level(self):
     #    ...dunno what to do here
 
-    def _get_zeropoint( self ):
+    def get_zeropoint( self, x=None, y=None ):
         # photometry.conversion_megajanskys gives MJy per steradian that
         #   gives an instrumental count rate of 1 dn/second.  I'm
         #   assuming that's 1 dn/second per pixel, as it's not clear
@@ -2277,8 +2292,37 @@ class RomanDatamodelImage( Image ):
         # m_ab = -2.5*log10( dn_s ) + zp    [This is the definition of zp]
         # zp = -2.5*log10( cm_ma ) - 6.1
 
-        self._zeropoint = -6.1 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
-                                                 self.dm.meta.photometry.pixel_area )
+        x = int( np.floor( self.width / 2. + 0.5 ) ) if x is None else int( np.floor( x + 0.5 ) )
+        y = int( np.floor( self.height / 2. + 0.5 ) ) if y is None else int( np.floor( y + 0.5 ) )
+
+        if self._pixelareamap is None:
+            pixelarea_name = crds.getreferences(
+                self.dm.get_crds_parameters(),
+                reftypes=["area"],
+                observatory="roman",
+            )["area"]
+
+            ifp = rdm.open( pixelarea_name )
+            self._pixelarea = np.array( ifp.data )
+            ifp.close()
+
+        # To go from surface brightness to something proportional to
+        #   electrions, you multiply the image by self._pixelarea (which
+        #   is unitless, relative to self.dm.photometry.pixel_area)
+        #
+        # So f = sb * self._pixelarea
+        #
+        # m = -2.5 log10( f ) + zp_f
+        #   = -2.5 log10( sb * _pixelrea ) + zp_f
+        #   = -2.5 log10(sb) - 2.5 log10(_pixelarea) + zp_f
+        #
+        # So zp_sb = zp_f - 2.5log10(_pixelarea)
+        #
+        # We need to return zp_sb because the image is in surface brightness units
+
+        return -6.1 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
+                                      self.dm.meta.photometry.pixel_area *
+                                      self._pixelarea[y, x] )
 
     @property
     def data( self ):
@@ -2519,6 +2563,20 @@ class RomanDatamodelImage( Image ):
         self._noise = None
         self._flags = None
 
+
+# ======================================================================
+
+class RomanDataModelImage_NeedsCRDSWCS( RomanDatamodelImage ):
+    def get_wcs( self, wcsclass=None ):
+        wcsclass = "RDM_CRDS_GWCS" if wcsclass is None else wcsclass
+        if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
+            if wcsclass == "RDM_CRDS_GWCS":
+                self._wcs = RDM_CRDS_GWCS( gwcs=self.dm.meta.wcs, i_know_what_i_am_doing=True, parent_image=self.dm )
+            else:
+                raise NotImplementedError( "RomanDataModelImage_NeedsCRDSWCS can't get a WCS of type {wcsclass}" )
+        return self._wcs
+
+
 # ======================================================================
 # This dictionary defines the format field in the database.  The key is the format
 #   integer, the value gives the image class, the base path config value, and eventually
@@ -2543,6 +2601,10 @@ Image._format_def = { -1 : { 'description': "Not a database image",
                           },
                       100: { 'description': "Basic Roman Data Model Image at standard database location",
                              'image_class': RomanDatamodelImage,
+                             'base_path_config': 'system.paths.images'
+                            },
+                      101: { 'description': "RDM image from Rick Sims 2026-08 that need a CRDS WCScorrection",
+                             'image_class': RomanDataModelImage_NeedsCRDSWCS,
                              'base_path_config': 'system.paths.images'
                             },
                      }

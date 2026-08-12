@@ -2,10 +2,13 @@ import pytest
 import uuid
 import pathlib
 import subprocess
+import textwrap
 
 import simplejson
 import numpy as np
 import psycopg.types
+from psycopg import sql
+import pandas
 
 from astropy.io import fits
 
@@ -13,7 +16,7 @@ import tox # noqa: F401
 from tox.pytest import init_fixture # noqa: F401
 
 from snappl.imagecollection import ImageCollection
-from snappl.image import FITSImage, FITSImageStdHeaders, RomanDatamodelImage
+from snappl.image import FITSImage, FITSImageStdHeaders, RomanDatamodelImage, RomanDataModelImage_NeedsCRDSWCS
 from snappl.image_simulator import ImageSimulator
 from snappl.diaobject import DiaObject
 from snappl.lightcurve import Lightcurve
@@ -96,6 +99,19 @@ def romandatamodel_image( romandatamodel_image_path ):
     image = RomanDatamodelImage( romandatamodel_image_path )
     return image
 
+
+@pytest.fixture
+def ricksim_image_paths():
+    return ( '/home/photometry_test_data/ricksim_data/SNPIT_VISIT606900000_WFI10_F087_L2.asdf',
+             '/home/photometry_test_data/ricksim_data/TRUTH_VISIT606900000_WFI10_F087_L1.dat.gz' )
+
+
+@pytest.fixture
+def ricksim_image_and_truthtab( ricksim_image_paths ):
+    impath, trupath = ricksim_image_paths
+    image = RomanDataModelImage_NeedsCRDSWCS( impath )
+    truth = pandas.read_csv( trupath )
+    return image, truth
 
 
 # If you use this next fixture, you aren't supposed
@@ -218,6 +234,11 @@ def make_provenance_and_tag( process, major, minor, params={}, tag=None, dbcon=N
 @pytest.fixture( scope="session" )
 def test_object_provenance():
     return make_provenance_and_tag( "test_diaobject", 0, 1, tag="test_diaobject_tag" )
+
+
+@pytest.fixture( scope="session" )
+def test_zeropoint_provenance():
+    return make_provenance_and_tag( 'test_zeropoint', 0, 1, tag='test_zeropoint_tag' )
 
 
 @pytest.fixture( scope="module" )
@@ -466,6 +487,34 @@ def stupid_object( stupid_provenance ):
     finally:
         with DBCon() as con:
             con.execute_nofetch( "DELETE FROM diaobject WHERE id=%(id)s", { 'id': objid } )
+            con.commit()
+
+
+# So far, this next fixture is only used by zeropoints, which only need an imageid.  If other things
+#   want to use it later, we might need to fill in other fields with realistic values.
+@pytest.fixture( scope="module" )
+def stupid_images( stupid_provenance ):
+    imgids = [ uuid.uuid4() for i in range(3) ]
+    fnames = [ 'for', 'bar', 'baz' ]
+    try:
+        with DBCon() as con:
+            for imgid, fname in zip( imgids, fnames ):
+                q = sql.SQL( textwrap.dedent(
+                    """\
+                    INSERT INTO l2image(id, provenance_id, band, ra, dec,
+                                        ra_corner_00, ra_corner_01, ra_corner_10, ra_corner_11,
+                                        dec_corner_00, dec_corner_01, dec_corner_10, dec_corner_11,
+                                        filepath, mjd, exptime)
+                    VALUES( {id}, {provid}, 'r', 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., {fname}, 60000., 10. )
+                    """
+                ) ).format( id=imgid, fname=fname, provid=stupid_provenance )
+                con.execute_nofetch( q )
+            con.commit()
+        yield imgids
+    finally:
+        with DBCon() as con:
+            con.execute_nofetch( sql.SQL( "DELETE FROM l2image WHERE id=ANY(ARRAY[{ids}])" )
+                                 .format( ids=sql.SQL(",").join(i for i in imgids) ) )
             con.commit()
 
 
