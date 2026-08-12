@@ -1184,7 +1184,7 @@ class OversampledImagePSF( PSF ):
         return self._interpolate_to_stamp( data, x, y, x0, y0, natxfrac, natyfrac, flux=flux )
 
 
-    def getPhotutilsPSF( self, imagesampled=True ):
+    def getPhotutilsPSF( self, x=None, y=None, imagesampled=True ):
         """Return a photutils.psf.ImagePSF model.  See PSF.getPhotutilsPSF."""
 
         # If self._x and self._y aren't integers, we have to do things
@@ -1193,6 +1193,11 @@ class OversampledImagePSF( PSF ):
         #   that self._x and self._y have no fractional part.
         # However, we will always need to have integral oversampling,
         #   as ImagePSF assumes that.
+        if ( not imagesampled ) and ( np.fabs( x - self._x ) > 0.0001 ) or ( np.fabs( y - self._y ) > 0.0001 ):
+            raise ValueError( "You passed x and y to OversampledImage.getPhotutlsPSF with imagesampled=False, "
+                              "but they did not match the x and y that the object was constructed with. "
+                              "I cannot cope." )
+
         if ( not imagesampled ) and ( self._oversamp != 1. ):
             if ( ( self._oversamp == np.floor( self._oversamp ) ) and
                  ( self._x == np.floor( self._x ) ) and
