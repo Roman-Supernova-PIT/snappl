@@ -1058,13 +1058,13 @@ class Image( PathedObject ):
         May have side-effects on the internal data structure (e.g. FITS
         subclasses modify the internally stored header).
 
-        Paramters
-        ---------
+        Parameters
+        ----------
           which : str, default "all"
             One of 'data', 'noise', 'flags', or 'all'
 
           imagepath : str, default None
-            Full Path to write the image to.  If not specified, will use use
+            Full Path to write the image to.  If not specified, will use
             self.full_filepath.  Does NOT update any of the path properties of
             the image.  You can leave this at None, and the path that the
             Image figured out when it was constructed will be used.  Usually,
@@ -2424,7 +2424,7 @@ class RomanDatamodelImage( Image ):
             if wcsclass == "RDM_GWCS":
                 self._wcs = RDM_GWCS( gwcs=self.dm.meta.wcs )
             else:
-                raise NotImplementedError( "RomanDataModelImage can't (yet?) get a WCS of type {wcsclass}" )
+                raise NotImplementedError( "RomanDatamodelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs
 
     def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=True ):

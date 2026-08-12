@@ -1859,7 +1859,7 @@ class STPSF( PSF ):
                 )
         if ( self._band is None ) or ( self._sca is None ):
             raise ValueError(
-                f"Need a band and an sca to make a STPSF.  Recieved band={self._band}, sca={self._sca}"
+                f"Need a band and an sca to make a STPSF.  Received band={self._band}, sca={self._sca}"
                 )
         if ( stamp_size % 2 == 0 ) or ( int(stamp_size) != stamp_size ):
             raise ValueError( "stamp_size must be an odd integer." )
