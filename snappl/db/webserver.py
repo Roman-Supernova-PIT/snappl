@@ -618,6 +618,11 @@ class GetZeroPointForImage( BaseView ):
         with db.DBCon( dictcursor=True ) as dbcon:
             if data['provid'] is not None:
                 provid = asUUID( data['provid'] )
+                res = dbcon.execute( sql.SQL( "SELECT * FROM provenance WHERE id={provid}" )
+                                     .format( provid=data['provid'] ) )
+                if len(res) == 0:
+                    return f"Could not find provenance {data['provid']}", 422
+
             else:
                 res = dbcon.execute( sql.SQL( "SELECT DISTINCT ON(p.id) * FROM provenance p\n"
                                               "INNER JOIN provenance_tag t ON t.provenance_id=p.id\n"
@@ -630,10 +635,11 @@ class GetZeroPointForImage( BaseView ):
                     return ( f"Database corruption error, provenance tag {data['provtag']} and "
                              f"process {data['process']} mutiply defined" ), 422
                 provid = res[0]['id']
-                if 'class' not in res['params']:
-                    return ( f"Database corruption error, invalid zeropoint provenance: no 'class' in params "
-                             f"for zeropoint {res['id']}" ), 422
-                zpclass = res['params']['class']
+
+            if 'class' not in res[0]['params']:
+                return ( f"Database corruption error, invalid zeropoint provenance: no 'class' in params "
+                         f"for zeropoint {res[0]['id']}" ), 422
+            zpclass = res[0]['params']['class']
 
             res = dbcon.execute( sql.SQL( "SELECT * FROM zeropoint "
                                           "WHERE provenance_id={provid} "
