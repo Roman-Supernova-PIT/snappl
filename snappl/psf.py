@@ -2157,6 +2157,8 @@ class RomanDatamodelPSF( PSF ):
     an aligned image-resolutin PSF will have its borders drawn through
     the edge of the oversampled pixels, not on pixel edges.
 
+    (Anecdote: looking at the results of one get_stamp, it "seems OK".)
+
     TODO: Allow selection of the SED star model used.  Right now it's
     just taking the second one (index 1, which is G2V... at least, it
     was in the example I looked at).  This has implications for the

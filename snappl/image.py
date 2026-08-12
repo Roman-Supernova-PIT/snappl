@@ -1948,7 +1948,7 @@ class FITSImageStdHeaders( FITSImage ):
         hdr = self.get_fits_header()
         hdr[ self._header_kws['sky_level'] ] = self._sky_level
 
-    def get_zeropoint( self, x, y ):
+    def get_zeropoint( self, x=None, y=None ):
         hdr = self.get_fits_header()
         return float( hdr[ self._header_kws['zeropoint'] ] )
 
@@ -2117,7 +2117,7 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         header = self.get_fits_header()
         self._sky_level = header['SKY_MEAN']
 
-    def get_zeropoint( self, x, y ):
+    def get_zeropoint( self, x=None, y=None ):
         if self._zerpoint is None:
             header = self.get_fits_header()
             self._zeropoint = galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
@@ -2292,19 +2292,25 @@ class RomanDatamodelImage( Image ):
         # m_ab = -2.5*log10( dn_s ) + zp    [This is the definition of zp]
         # zp = -2.5*log10( cm_ma ) - 6.1
 
-        x = int( np.floor( self.width / 2. + 0.5 ) ) if x is None else int( np.floor( x + 0.5 ) )
-        y = int( np.floor( self.height / 2. + 0.5 ) ) if y is None else int( np.floor( y + 0.5 ) )
+        # ****************************************
+        # NEXT BIT COMMENTED OUT
+        # We decided that we were going to scale data (see the "data" and "noise" properties)
+        #   instead of having a spatially variable zeropoint.
+        # It's still here in case we reverse this decision
+        #
+        # x = int( np.floor( self.width / 2. + 0.5 ) ) if x is None else int( np.floor( x + 0.5 ) )
+        # y = int( np.floor( self.height / 2. + 0.5 ) ) if y is None else int( np.floor( y + 0.5 ) )
 
-        if self._pixelareamap is None:
-            pixelarea_name = crds.getreferences(
-                self.dm.get_crds_parameters(),
-                reftypes=["area"],
-                observatory="roman",
-            )["area"]
+        # if self._pixelareamap is None:
+        #     pixelarea_name = crds.getreferences(
+        #         self.dm.get_crds_parameters(),
+        #         reftypes=["area"],
+        #         observatory="roman",
+        #     )["area"]
 
-            ifp = rdm.open( pixelarea_name )
-            self._pixelarea = np.array( ifp.data )
-            ifp.close()
+        #     ifp = rdm.open( pixelarea_name )
+        #     self._pixelarea = np.array( ifp.data )
+        #     ifp.close()
 
         # To go from surface brightness to something proportional to
         #   electrions, you multiply the image by self._pixelarea (which
@@ -2319,31 +2325,82 @@ class RomanDatamodelImage( Image ):
         # So zp_sb = zp_f - 2.5log10(_pixelarea)
         #
         # We need to return zp_sb because the image is in surface brightness units
+        # ****************************************
 
         return -6.1 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
-                                      self.dm.meta.photometry.pixel_area *
-                                      self._pixelarea[y, x] )
+                                      self.dm.meta.photometry.pixel_area
+                                     )
+
+                                     # * self._pixelarea[y, x] )
+
+    def _load_data_and_noise( self, always_reload=False ):
+        if always_reload or  ( getattr( self, '_data', None ) is None ) or ( getattr( self, '_noise', None ) is None ):
+            pixelarea_name = crds.getreferences(
+                self.dm.get_crds_parameters(),
+                reftypes=["area"],
+                observatory="roman",
+            )["area"]
+            ifp = rdm.open( pixelarea_name )
+            pixelarea = np.array( ifp.data )
+            ifp.close()
+
+            dm = rdm.open( self.full_filepath, mode='r' )
+            if always_reload or ( getattr( self, '_data', None ) is None ):
+                self._data = np.array( dm.data ) * pixelarea
+            if always_reload or ( getattr( self, '_noise', None ) is None ):
+                self._noise = np.array( dm.data ) * pixelarea
+            dm.close()
+
+    def _load_sb_data_and_sb_noise( self, always_reload=False ):
+        if ( always_reload or
+             ( getattr( self, '_sb_data', None ) is None ) or
+             ( getattr( self, '_sb_noise', None ) is None )
+            ):
+            dm = rdm.open( self.full_filepath, mode='r' )
+            self._sb_data = np.array( dm.data )
+            self._sb_noise = np.array( dm.noise )
+            dm.close()
 
     @property
     def data( self ):
-        # WORRY.  This actually returns a asdf.tags.core.ndarray.NDArrayType.
-        # I'm hoping it will be duck-typing equivalent to a numpy array.
-        # TODO : investigate memory use when you do numpy array things
-        # with one of these.
-        # Using the _data property here is so that we can set the data elsewhere. -CFM
-        if getattr(self, '_data', None) is None:
-            self._data = self.dm.data
-
+        if getattr( self, '_data', None ) is None:
+            self.load_data_and_noise()
         return self._data
 
     @property
     def noise( self ):
+        if getattr( self, '_noise', None ) is None:
+            self.load_data_and_noise()
         # See comment in data
         # Using the _noise property here is so that we can set the noise elsewhere. -CFM
         if getattr(self, '_noise', None) is None:
             self._noise = self.dm.err
 
         return self._noise
+
+    @property
+    def sb_data( self ):
+        """NOT A STANDARD Image PROPERTY!  Surface-brightness units data array.
+
+        This is the native data array straight out of the roman_datamodel L2 asdf files.
+
+        """
+        if getattr( self, '_sb_data', None ) is None:
+            self._load_sb_data_and_sb_noise()
+        return self._sb_data
+
+
+    @property
+    def sb_data( self ):
+        """NOT A STANDARD Image PROPERTY!  Surface-brightness units noise array.
+
+        This is the native noise array straight out of the roman_datamodel L2 asdf files.
+
+        """
+        if getattr( self, '_sb_noise', None ) is None:
+            self._load_sb_data_and_sb_noise()
+        return self._sb_noise
+
 
     @property
     def flags( self ):

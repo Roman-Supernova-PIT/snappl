@@ -1,7 +1,7 @@
 # IMPORTS Standard
 import numpy as np
 import pytest
-from photutils.psf import ImagePSF
+import photutils.psf
 from scipy.stats import moment
 
 # IMPORTS Internal
@@ -48,10 +48,10 @@ def test_A25ePSF():
 def test_A25ePSF_get_imagepsf():
     psf = PSF.get_psf_object( 'A25ePSF', band = 'J129', sca = 1, x = 1277.5, y = 1277.5 )
 
-    impsf = psf.getImagePSF( imagesampled=False )
-    assert isinstance( impsf, ImagePSF )
+    impsf = psf.getPhotutilsPSF( imagesampled=False )
+    assert isinstance( impsf, photutils.psf.ImagePSF )
     assert ( impsf.oversampling == np.array( [3, 3] ) ).all()
 
-    impsf = psf.getImagePSF()
-    assert isinstance( impsf, ImagePSF )
+    impsf = psf.getPhotutilsPSF()
+    assert isinstance( impsf, photutils.psf.ImagePSF )
     assert ( impsf.oversampling == np.array( [1, 1] ) ).all()

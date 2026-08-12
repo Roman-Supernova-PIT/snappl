@@ -632,7 +632,7 @@ def test_ou2024_properties( ou2024image ):
     assert im.position_angle == pytest.approx( -24.75, abs=0.01 )
     assert im.exptime == pytest.approx( 302.275, abs=1e-3 )
     assert im.sky_level == pytest.approx( 112.0, abs=0.1 )
-    assert im.zeropoint == pytest.approx( 32.6617, abs=1e-4 )
+    assert im.get_zeropoint() == pytest.approx( 32.6617, abs=1e-4 )
 
     # Setting updates properties, but not the header
 
