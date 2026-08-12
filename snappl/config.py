@@ -206,7 +206,7 @@ class Config:
     yourself.  Keep it simple.  EXCEPTION: strings in the includes list
     (see below) are substituted as they are read in.  Do NOT use forward
     references here (probably), only use this to interpolate environment
-    varaibles.
+    variables.
 
 
     INCLUDES: SPECIAL KEYS
