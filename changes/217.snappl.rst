@@ -1,0 +1,18 @@
+A whole bunch of changes that happened rapidly before and during August
+2028 phot phest, including (but maybe not limited to):
+
+  * Script for loading in Rick's asdf sims
+  * Ability for webserver to use letsencrypt because the LBNL
+    certificaters weren't working
+  * Make environment variable substitution in config includes work
+  * Deprecate Image.getImagePSF, replace with Image.getPhotutilsPSF
+  * Deprecate Image.zeropoint, replace with Image.get_zeropoint(x,y)
+  * Add pixel area map to RomanDatamodelImage zeropoint
+  * RomanDatamodelPSF class that uses CRDS and header info to get a PSF
+  * Change definition of Image.data to what we kinda thought it was all
+    along but discovered it wasn't in RDM images... practically, in the
+    Image.data and Image.noise properties, pre-multipy by the pixel area
+    in order to turn the units of Image.data into something proportional
+    to electrons/sec, not electrons/sec/angular_area
+  * Small things
+  * Things I failed to put here
