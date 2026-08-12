@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Image &#8212; roman_snpit_snappl 0.1.dev1+ge0e94f624 documentation</title>
+    <title>Image &#8212; roman_snpit_snappl 0.1.dev1+g80a675430 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=0bb4269d"></script>
+    <script src="../_static/documentation_options.js?v=3c404e6f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -864,37 +864,30 @@ along with the photometry results.</p></li>
 <dd><p>Save the image to its path(s).</p>
 <p>May have side-effects on the internal data structure (e.g. FITS
 subclasses modify the internally stored header).</p>
-<section id="paramters">
-<h2>Paramters<a class="headerlink" href="#paramters" title="Link to this heading">¶</a></h2>
-<blockquote>
-<div><dl class="simple">
-<dt>which<span class="classifier">str, default “all”</span></dt><dd><p>One of ‘data’, ‘noise’, ‘flags’, or ‘all’</p>
-</dd>
-<dt>imagepath<span class="classifier">str, default None</span></dt><dd><p>Full Path to write the image to.  If not specified, will use use
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>which</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default &quot;all&quot;</em>) – One of ‘data’, ‘noise’, ‘flags’, or ‘all’</p></li>
+<li><p><strong>imagepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Full Path to write the image to.  If not specified, will use
 self.full_filepath.  Does NOT update any of the path properties of
 the image.  You can leave this at None, and the path that the
 Image figured out when it was constructed will be used.  Usually,
-that’s what you should do.</p>
-</dd>
-<dt>path<span class="classifier">str, default None</span></dt><dd><p>A synonym for imagepath.  Do not use.  Here for backwards
-compatibility.</p>
-</dd>
-<dt>noisepath<span class="classifier">str, default None</span></dt><dd><p>Path to write the noise image to, if the noise image is stored as
+that’s what you should do.</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – A synonym for imagepath.  Do not use.  Here for backwards
+compatibility.</p></li>
+<li><p><strong>noisepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Path to write the noise image to, if the noise image is stored as
 a separate image.  (It isn’t always; some subclasses have it as a
 separate part of the data structure that also has the image.)  If
 None, use an internally stored noisepath.  If that is not set, and
 noisepath is None, and this isn’t a subclass that combines all the
 data planes into one file, then any noise data array will not be
-written.  Usually, you don’t want to have to specify this.</p>
-</dd>
-<dt>flagspath<span class="classifier">str, default None</span></dt><dd><p>Path to write the flags image to, similar to noisepath.</p>
-</dd>
-<dt>overwrite<span class="classifier">bool, default False</span></dt><dd><p>Clobber existing images?</p>
+written.  Usually, you don’t want to have to specify this.</p></li>
+<li><p><strong>flagspath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Path to write the flags image to, similar to noisepath.</p></li>
+<li><p><strong>overwrite</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – Clobber existing images?</p></li>
+</ul>
 </dd>
 </dl>
-</div></blockquote>
 <p>Not implemented for all subclasses.</p>
-</section>
 </dd></dl>
 
 <dl class="py method">

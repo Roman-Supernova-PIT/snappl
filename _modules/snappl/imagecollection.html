@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.imagecollection &#8212; roman_snpit_snappl 0.1.dev1+ge0e94f624 documentation</title>
+    <title>snappl.imagecollection &#8212; roman_snpit_snappl 0.1.dev1+g80a675430 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=0bb4269d"></script>
+    <script src="../../_static/documentation_options.js?v=3c404e6f"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -358,7 +358,7 @@
 <div class="viewcode-block" id="ImageCollectionOU2024">
 <a class="viewcode-back" href="../../api/snappl.imagecollection.ImageCollectionOU2024.html#snappl.imagecollection.ImageCollectionOU2024">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ImageCollectionOU2024</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Collection of OpenUnivers 2024 FITS images.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Collection of OpenUniverse 2024 FITS images.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_base_path</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">base_path</span> <span class="p">)</span>
@@ -565,7 +565,7 @@
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;Can&#39;t do get_image using image_id, observation_id, band, or sca &quot;</span>
                                 <span class="s2">&quot;for manual_rdm image collection&quot;</span> <span class="p">)</span>
         <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;path is required for mahual_rdm image collection get_image&quot;</span> <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span> <span class="s2">&quot;path is required for manual_rdm image collection get_image&quot;</span> <span class="p">)</span>
 
         <span class="n">base_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span> <span class="n">base_path</span> <span class="p">)</span> <span class="k">if</span> <span class="n">base_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span>
 
