@@ -323,11 +323,18 @@ Next, you will need to install the relevant packages, as-needed::
 Using an interactive native environment
 ---------------------------------------
 
-You can also run natively in a virtual environment. There is a premade one, but *you cannot install anything in it*. If you want to install stuff in a native environment, see :ref:`see below<native_development>`. Luckily, this is easy::
+You can also run natively in a virtual environment. You have two options::
+
+  # A premade static environment that you can't change (i.e., can't install anything)
+  # Your own development environment where you can install stuff
+
+Activating the premade static environment is very easy::
 
   source /data/snpit/env/environment_checkout_for_native/smdc-install-native-shared.sh
 
 Done.
+
+If you want to install stuff in a native environment, see :ref:`see below<native_development>`. 
 
 .. _native_development:
 
