@@ -219,13 +219,13 @@ class ImageSimulatorImage:
                                           flags=np.zeros( ( height, width ), dtype=np.int16 ),
                                           wcs=AstropyWCS( astropy.wcs.WCS( wcsdict ) ),
                                           path=f'{basename}_{mjd:7.1f}',
-                                          std_imagenames=True )
-        self.image.mjd = mjd
-        self.image.zeropoint = zeropoint
-        self.image.band = band
-        self.image.sca = sca
-        self.image.observation_id = observation_id
-        self.image.exptime = exptime
+                                          std_imagenames=True,
+                                          mjd=mjd,
+                                          band=band,
+                                          observation_id=observation_id,
+                                          exptime=exptime,
+                                          zeropoint=zeropoint )
+
 
     def render_sky( self, skymean, skysigma, rng=None ):
         if rng is None:
@@ -287,8 +287,9 @@ class ImageSimulatorImage:
         SNLogger.debug( f"...adding transient to image at ({x:.2f}, {y:.2f})..." )
         ( stamp, var,
           imcoords, stampcoords ) = transient.render_transient( self.image.data.shape[1], self.image.data.shape[0],
-                                                                x, y, self.image.mjd, zeropoint=self.image.zeropoint,
-                                                                rng=rng, noisy=noisy, psf=psf )
+                                                                x, y, self.image.mjd,
+                                                                rng=rng, noisy=noisy, psf=psf,
+                                                                zeropoint=self.image.get_zeropoint() )
         if stamp is not None:
             ix0, ix1, iy0, iy1 = imcoords
             sx0, sx1, sy0, sy1 = stampcoords

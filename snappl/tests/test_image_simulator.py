@@ -46,6 +46,7 @@ def test_image_simulator_one_transient_image(numimageprocs):
         sim = ImageSimulator( **kwargs )
         sim()
 
+        import pdb; pdb.set_trace()
         image = FITSImageStdHeaders( f'{fnamebase}_{kwargs["mjds"][0]:7.1f}', std_imagenames=True )
         assert image.mjd == pytest.approx( kwargs['mjds'][0], abs=0.0001 )
         assert image.sca == 1

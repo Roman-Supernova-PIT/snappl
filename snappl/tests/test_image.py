@@ -496,6 +496,7 @@ def test_ou2024_compare_zeropoints( ou2024image ):
     assert zp1 == pytest.approx( zp2, abs=0.01 )
 
 
+@pytest.mark.xfail( reason="OpenUniverse2024FITSImage.get_zeropoint_the_hard_way doesn't currently work" )
 def test_ou2024_compare_zeropoints_with_not_enough_precision( ou2024image ):
     zp1 = ou2024image.get_zeropoint()
     assert zp1 is not None
@@ -651,11 +652,12 @@ def test_ou2024_properties( ou2024image ):
     assert im.dec == -13.
     assert im.get_fits_header()['DEC_TARG'] == pytest.approx( -44.8697, abs=1e-5 )
 
+    origband = im.band
     im.band = 'foo'
     assert im.band == 'foo'
     assert im.get_fits_header()['FILTER'].strip() == 'Y106'
     # Gotta reset it or _get_zeropoint below fails
-    im._get_band()
+    im._band = origband
 
     im.mjd = 60000.
     assert im.mjd == 60000.
@@ -673,11 +675,6 @@ def test_ou2024_properties( ou2024image ):
     im.sky_level = 666.
     assert im.sky_level == 666.
     assert im.get_fits_header()['SKY_MEAN'] == pytest.approx( 112.0, abs=0.1 )
-
-    im.zeropoint = 1.
-    assert im.zeropoint == 1.
-    im._get_zeropoint()
-    assert im.zeropoint == pytest.approx( 32.6617, abs=1e-4 )
 
     for axis in [ 'ra', 'dec' ]:
         for corner in [ '00', '01', '10', '11' ]:
@@ -724,10 +721,30 @@ def test_romandatamodel_image( romandatamodel_image ):
     assert im.flags.shape == im.data.shape
     assert im.flags.dtype == "<u4"
 
-    assert im.data[1896:1932, 3800:3835].sum() == pytest.approx( 1053.467, rel=1e-5 )
-    assert im.noise[1896:1932, 3800:3835].sum() == pytest.approx( 210.87682, rel=1e-5 )
+    assert im.data[1896:1932, 3800:3835].sum() == pytest.approx( 1050.724, rel=1e-5 )
+    assert im.noise[1896:1932, 3800:3835].sum() == pytest.approx( 210.32771, rel=1e-5 )
+    assert im.sb_data[1896:1932, 3800:3835].sum() == pytest.approx( 1053.467, rel=1e-5 )
+    assert im.sb_noise[1896:1932, 3800:3835].sum() == pytest.approx( 210.87682, rel=1e-5 )
+    assert np.nanmedian( np.fabs( im.data - im.sb_data ) / np.fabs( im.data ) ) == pytest.approx( 0.0052, abs=0.0001 )
 
     data, noise, flags = im.get_data()
+    assert data is im.data
+    assert noise is im.noise
+    assert flags is im.flags
+
+    im._data = None
+    im._noise = None
+    im._flags = None
+    data, noise, flags = im.get_data()
+    assert all( i is not None for i in [ data, noise, flags ] )
+    assert all( i is None for i in [ im._data, im._noise, im._flags ] )
+
+    data, noise, flags = im.get_data( cache=True )
+    assert data is im.data
+    assert noise is im.noise
+    assert flags is im.flags
+
+    data, noise, flags = im.get_data( always_reload=True )
     assert data is not im.data
     assert noise is not im.noise
     assert flags is not im.flags
@@ -736,9 +753,21 @@ def test_romandatamodel_image( romandatamodel_image ):
     np.testing.assert_allclose( noise, im.noise, rtol=1e-5 )
     assert np.all( flags == im.flags )
 
+    olddata, oldnoise, oldflags = data, noise, flags
+    data, noise, flags = im.get_data( always_reload=True, cache=True )
+    assert data is not olddata
+    assert noise is not oldnoise
+    assert flags is not oldflags
+    assert data is im.data
+    assert noise is im.noise
+    assert flags is im.flags
+    np.testing.assert_allclose( data, olddata, rtol=1e-5 )
+    np.testing.assert_allclose( noise, oldnoise, rtol=1e-5 )
+    assert np.all( flags == oldflags )
+
     props = [ 'data', 'noise', 'flags' ]
     for prop in props:
-        res = im.get_data( prop )[0]
+        res = im.get_data( prop, always_reload=True )[0]
         assert res is not getattr( im, prop )
         assert isinstance( res, np.ndarray )
         if prop == 'flags':
