@@ -143,7 +143,7 @@ def test_slow_get_stamp():
 def test_slow_get_imagepsf():
     psfobj = PSF.get_psf_object( "ou24PSF", observation_id='6', sca=17, size=41. )
 
-    imagepsf = psfobj.getImagePSF( imagesampled=False )
+    imagepsf = psfobj.getPhotutilsPSF( imagesampled=False )
     assert isinstance( imagepsf, ImagePSF )
     # TODO: update this test if ou2024psf ever supports
     #   getting the oversampled image
@@ -296,13 +296,13 @@ def test_get_stamp():
 def test_get_imagepsf():
     psfobj = PSF.get_psf_object( "ou24PSF", observation_id='6', sca=17, size=41. )
 
-    imagepsf = psfobj.getImagePSF( imagesampled=False )
+    imagepsf = psfobj.getPhotutilsPSF( imagesampled=False )
     assert isinstance( imagepsf, ImagePSF )
     # TODO: update this test if ou2024psf ever supports
     #   getting the oversampled image
     assert ( imagepsf.oversampling == np.array( [1, 1] ) ).all()
 
-    imagepsf = psfobj.getImagePSF()
+    imagepsf = psfobj.getPhotutilsPSF()
     assert isinstance( imagepsf, ImagePSF )
     assert ( imagepsf.oversampling == np.array( [1, 1] ) ).all()
 

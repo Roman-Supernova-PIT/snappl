@@ -340,13 +340,10 @@ class Image( PathedObject ):
             val = kwargs.get( prop, _UnsetProperty() )
             if ( val is not None ) and ( not isinstance( val, _UnsetProperty ) ):
                 val = self.internal_properties[prop]( val )
-            setattr( self, f"_{prop}", val )
+            setattr( self, prop, val )
 
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
-
-        # This is used internally, set by some classes
-        self._header_property_setter_post_hook = None
 
 
     def _declare_consumed_kwargs( self, consumed_kwargs ):
@@ -502,10 +499,7 @@ class Image( PathedObject ):
     #   using the getter/setter pre/post hooks.
 
     def __getattr__( self, prop ):
-        if prop in { 'observation_id', 'sca', 'ra', 'dec', 'band', 'mjd', 'position_angle', 'exptime', 'sky_level',
-                     'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
-                     'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11'
-                    }:
+        if prop in self.internal_properties.keys():
             if isinstance( getattr( self, f'_{prop}' ), _UnsetProperty ):
                 if prop in ( 'ra', 'dec' ):
                     self._get_ra_dec()
@@ -534,11 +528,9 @@ class Image( PathedObject ):
             raise AttributeError( f"{self.__class__.__name__} has no definition of {prop}" )
 
     def __setattr__( self, prop ,val ):
-        if prop in { 'observation_id', 'sca', 'ra', 'dec', 'band', 'mjd', 'position_angle', 'exptime', 'sky_level',
-                     'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
-                     'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11' }:
+        if prop in self.internal_properties.keys():
             object.__setattr__( self, f"_{prop}", val )
-            if self._header_property_setter_post_hook is not None:
+            if hasattr( self, '_header_property_setter_post_hook' ):
                 self._header_property_setter_post_hook( prop )
         else:
             object.__setattr__( self, prop, val )
@@ -2179,23 +2171,38 @@ class FITSImageStdHeaders( FITSImage ):
              things, you could break its functionality.
 
           **kwargs: Everything else is passed to parent class
-            constructors (FITSImage and its parent(s)).
+            constructors (FITSImage and its parent(s)).  One note: you
+            can include a "zeropoint" argument here, even though that's
+            not normally allowed for Image.  Specifically for this
+            class, you might want to specify a zeropoint when making a
+            new image object.
 
         """
 
+        raise RuntimeError( "ROB YOU HAVE WRITTEN YOURSELF A CHICKEN AND EGG PROBLEM.  You set attributes in "
+                            "the top-leve Image class, but for subclasses those depend on all the subclasses "
+                            "already being ablee to access thier properties, which won't happen until their ""
+                            "init is done." )
+        
+        import pdb; pdb.set_trace()
+        
+        # These need to be set before calling super().__init__() because
+        # they chage that one's behavior.
         self._header_property_setter_post_hook = self._property_post_hook_set_fits_header
+        self.internal_properties = Image.internal_properties.copy()
+        self.internal_properties['zeropoint'] = float
+        self._header_kws = header_kws
 
-        self._declare_consumed_kwargs( { 'header_kws', 'zeropoint' } )
+        self._declare_consumed_kwargs( { 'header_kws' } )
         super().__init__( *args, is_superclass=True, **kwargs )
         if not is_superclass:
             self._verify_all_consumed_kwargs( **kwargs )
-        self._header_kws = header_kws
-        self._zeropoint = _UnsetProperty()
+
 
 
     def _property_post_hook_set_fits_header( self, prop ):
         if prop in self._header_kws:
-            if self._header is None:
+            if ( not hasattr( self, '_header' ) ) or ( self._header is None ):
                 self.get_fits_header()
             self._header[ self._header_kws[prop] ] = getattr( self, f"_{prop}" )
 
@@ -2211,11 +2218,12 @@ class FITSImageStdHeaders( FITSImage ):
         _UnsetProperty.
 
         """
-        if self._header is None:
+
+        if ( not hasattr( self, '_header' ) ) or ( self._header is None ):
             try:
                 self._header = FITSImage.get_fits_header( self )
             except Exception as e:
-                self._header = fits.header.Header()
+                self._header = fits.PrimaryHDU( data=self.data ).header
                 SNLogger.debug(f"Failed to read header from {self.filepath}, creating blank header: {e}")
 
             # ...it's not obvious this is the right thing to do, but
@@ -2228,8 +2236,8 @@ class FITSImageStdHeaders( FITSImage ):
             #   constructor, the newly-created header will be correct.
             for prop, converter in self.internal_properties.items():
                 uprop = f"_{prop}"
-                if prop in self.header_kws.items():
-                    kw = self.header_kws[ prop ]
+                if prop in self._header_kws.keys():
+                    kw = self._header_kws[ prop ]
                     if not isinstance( getattr( self, uprop ), _UnsetProperty ):
                         self._header[ kw ] = getattr( self, uprop )
                     else:
@@ -2252,6 +2260,15 @@ class FITSImageStdHeaders( FITSImage ):
 
         return self._header
 
+
+    def get_zeropoint( self, x=None, y=None, sed=None ):
+        if isinstance( self._zeropoint, _UnsetProperty ):
+            if 'zeropoint' not in self._header_kws:
+                raise RuntimeError( "Can't get zeropoint for FITSImageStdHeaders, wasn't given a header "
+                                    "keyword for the zeropoint" )
+            hdr = self.get_fits_header()
+            self._zeropoint = float( hdr[ self._header_kws['zeropoint'] ] )
+        return self._zeropoint
 
     def _get_internal_attribute( self, prop ):
         if self._header is None:

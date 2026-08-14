@@ -8,7 +8,7 @@ import astropy.io.fits
 import fitsio.header
 
 import snappl.db.db
-from snappl.image import Image, FITSImage
+from snappl.image import Image, FITSImage, FITSImageStdHeaders
 from snappl.wcs import AstropyWCS, GalsimWCS
 from snappl.psf import PSF
 from snappl.provenance import Provenance
@@ -513,7 +513,67 @@ def test_ou2024_compare_zeropoints_with_not_enough_precision( ou2024image ):
 # ======================================================================
 # FITSImageStdHeaders tests
 #
-# TODO
+# TODO MORE
+
+@pytest.fixture( scope='module' )
+def kws_for_fitsimagestdhdrs():
+    props = { 'observation_id': 'foo',
+              'sca': 0,
+              'ra': 42.,
+              'dec': -13.,
+              'band': 'R',
+              'mjd': 64738.,
+              'position_angle': 32.,
+              'exptime': 10.,
+              'sky_level': 12,
+              'zeropoint': 25. }
+    # These are the keywords defined in as the default for the constructor header_kws property
+    std_kws = { 'observation_id': "POINTING",
+                'sca': "SCA",
+                'ra': "RA",
+                'dec': "DEC",
+                'band': "BAND",
+                'mjd': "MJD",
+                'position_angle': "POSANG",
+                'exptime': "EXPTIME",
+                'sky_level': "SKYLEVEL",
+                'zeropoint': "ZPT" }
+    kws = { 'observation_id': 'A', 'sca': 'B', 'ra': 'C', 'dec': 'D', 'band': 'E', 'mjd': 'F',
+            'position_angle': 'G', 'exptime': 'H', 'sky_level': 'I', 'zeropoint': 'J' }
+
+    return props, std_kws, kws
+
+
+def test_create_fitsimagestdheaders( kws_for_fitsimagestdhdrs ):
+    props, std_kws, kws = kws_for_fitsimagestdhdrs
+    data = np.ones( (256, 128) )
+    noise = np.zeros( (256, 128) )
+
+    im = FITSImageStdHeaders( full_filepath="/tmp/foo.fits", data=data, noise=noise, **props )
+    hdr = im.get_fits_header()
+    assert all( hdr[kw] == props[prop] for prop, kw in std_kws.items() )
+    assert np.all( im.data == 1.0 )
+    assert np.all( im.noise == 0.0 )
+
+    im = FITSImageStdHeaders( full_filepath="/tmp/foo.fits", data=data, noise=noise, header_kws=kws, **props )
+    hdr = im.get_fits_header()
+    assert all( hdr[kw] == props[prop] for prop, kw in kws.items() )
+
+
+def test_set_prop_fitsimagestdheaders( kws_for_fitsimagestdhdrs ):
+    props, std_kws, kws = kws_for_fitsimagestdhdrs
+    data = np.ones( (256, 128) )
+    noise = np.zeros( (256, 128) )
+    
+    im = FITSImageStdHeaders( full_filepath="/tmp/foo.fits", data=data, noise=noise )
+    hdr = im.get_fits_header()
+    assert all( kw not in hdr for kw in std_kws.values() )
+    for prop, val in props.items():
+        setattr( im, prop, val )
+                
+    import pdb; pdb.set_trace()
+    pass
+
 
 # ======================================================================
 # OpenUniverse2024FITSImage tests

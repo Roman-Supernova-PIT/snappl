@@ -213,7 +213,6 @@ class ImageSimulatorImage:
                     'CD2_2': pixscale / 3600. * np.cos( rotation )
                     }
 
-
         self.image = FITSImageStdHeaders( data=np.zeros( ( height, width ), dtype=np.float32 ),
                                           noise=np.zeros( ( height, width ), dtype=np.float32 ),
                                           flags=np.zeros( ( height, width ), dtype=np.int16 ),
