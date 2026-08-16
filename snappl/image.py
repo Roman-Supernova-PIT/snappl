@@ -497,6 +497,11 @@ class Image( PathedObject ):
     #   getters/setters for any of the properties that are in the sets
     #   in the if statements in these methods.  Hopefully you can get by
     #   using the getter/setter pre/post hooks.
+    # BUT STILL BE WARNED: if you use a post_hook, it's entirely possible
+    #   that it will make your class not work at all.  This is really
+    #   some messy stuff we're doing here.  For an example, see
+    #   FITSImageStdHeaders (which is also the only class as of this
+    #   writing that uses this).
 
     def __getattr__( self, prop ):
         if prop in self.internal_properties.keys():
@@ -958,50 +963,58 @@ class Image( PathedObject ):
 
     def _get_position_angle( self ):
         """Position angle in degrees north of east"""
-        wcs = self.get_wcs()
-        ny, nx = self.image_shape
-        midra, middec = wcs.pixel_to_world( nx/2., ny/2. )
-        cosdec = np.cos( middec * np.pi / 180. )
-        leftra, leftdec = wcs.pixel_to_world( nx/2.-1, ny/2. )
-        dleftra = ( leftra - midra ) * cosdec
-        dleftdec = leftdec - middec
-        upra, updec = wcs.pixel_to_world( nx/2., ny/2.+1 )
-        dupra = ( upra - midra ) * cosdec
-        dupdec = updec - middec
-
-        # Need to figure out if there's a mirroring.  If there is no
-        # mirroring, then the cross product of up and left will have a
-        # positive z component.... though we need to do a left-handed
-        # cross product because RA/Dec is a left-handed coordinate system!
-        # (Increasing RA is to the left, increasing Dec is up.)
-        cross_z = - ( dupra * dleftdec - dupdec * dleftra )
-        if cross_z > 0:
-            leftang = np.arctan2( dleftdec, dleftra ) * 180. / np.pi
-            upang = np.arctan2( -dupra, dupdec ) * 180 / np.pi
+        try:
+            wcs = self.get_wcs()
+        except Exception as ex:
+            # Failed to get a wcs from the header.  This may be normal.  However, this also
+            # means we cannot figure out a position angle, so mark it as explicitly unset.
+            if not isinstance( self._position_angle, _UnsetProperty ):
+                self._position_angle = _UnsetProperty()
+            SNLogger.debug( f"Got exception {ex} trying to get a position angle; that *might* be normal." )
         else:
-            leftang = np.arctan2( dleftdec, -dleftra ) * 180. / np.pi
-            upang = np.arctan2( dupra, dupdec ) * 180. / np.pi
+            ny, nx = self.image_shape
+            midra, middec = wcs.pixel_to_world( nx/2., ny/2. )
+            cosdec = np.cos( middec * np.pi / 180. )
+            leftra, leftdec = wcs.pixel_to_world( nx/2.-1, ny/2. )
+            dleftra = ( leftra - midra ) * cosdec
+            dleftdec = leftdec - middec
+            upra, updec = wcs.pixel_to_world( nx/2., ny/2.+1 )
+            dupra = ( upra - midra ) * cosdec
+            dupdec = updec - middec
 
-        # Have to deal with the edge case where they are around ±180.
-        if ( ( ( leftang > 0 ) != ( upang > 0 ) )
-             and
-             ( np.fabs( np.fabs(leftang) - 180. ) <= self._close_enough_position_angle )
-             and
-             ( np.fabs( np.fabs(upang) - 180. ) <= self._close_enough_position_angle )
-            ):
-            if leftang < 0:
-                leftang += 360.
-            if upang < 0:
-                upang += 360.
+            # Need to figure out if there's a mirroring.  If there is no
+            # mirroring, then the cross product of up and left will have a
+            # positive z component.... though we need to do a left-handed
+            # cross product because RA/Dec is a left-handed coordinate system!
+            # (Increasing RA is to the left, increasing Dec is up.)
+            cross_z = - ( dupra * dleftdec - dupdec * dleftra )
+            if cross_z > 0:
+                leftang = np.arctan2( dleftdec, dleftra ) * 180. / np.pi
+                upang = np.arctan2( -dupra, dupdec ) * 180 / np.pi
+            else:
+                leftang = np.arctan2( dleftdec, -dleftra ) * 180. / np.pi
+                upang = np.arctan2( dupra, dupdec ) * 180. / np.pi
 
-        if np.abs( leftang - upang ) > self._close_enough_position_angle:
-            raise ValueError( f"Calculated position angle of {leftang:.2f}° looking to the left "
-                              f"and {upang:.2f}° looking up; these are inconsistent!" )
-        self._position_angle = ( leftang + upang ) / 2.
+            # Have to deal with the edge case where they are around ±180.
+            if ( ( ( leftang > 0 ) != ( upang > 0 ) )
+                 and
+                 ( np.fabs( np.fabs(leftang) - 180. ) <= self._close_enough_position_angle )
+                 and
+                 ( np.fabs( np.fabs(upang) - 180. ) <= self._close_enough_position_angle )
+                ):
+                if leftang < 0:
+                    leftang += 360.
+                if upang < 0:
+                    upang += 360.
 
-        # Leftover from dealing with the RA~±180 edge case
-        if self._position_angle > 180.:
-            self._position_angle -= 360.
+            if np.abs( leftang - upang ) > self._close_enough_position_angle:
+                raise ValueError( f"Calculated position angle of {leftang:.2f}° looking to the left "
+                                  f"and {upang:.2f}° looking up; these are inconsistent!" )
+            self._position_angle = ( leftang + upang ) / 2.
+
+            # Leftover from dealing with the RA~±180 edge case
+            if self._position_angle > 180.:
+                self._position_angle -= 360.
 
         return self._position_angle
 
@@ -2110,7 +2123,7 @@ class FITSImageStdHeaders( FITSImage ):
     process at a time.
 
     """
-    def __init__( self, *args, is_superclass=False,
+    def __init__( self, *args, zeropoint=None, is_superclass=False,
                   header_kws = {
                       'observation_id': "POINTING",
                       'sca': "SCA",
@@ -2170,34 +2183,48 @@ class FITSImageStdHeaders( FITSImage ):
              on the keys of this dictionary.  If you pass the wrong
              things, you could break its functionality.
 
+          zeropoint: float, default None
+            Unlike most image classes (which explicitly make getting the
+            zeropoint a function, because exactly how it's done will be
+            different for different kinds of images, and because it will
+            depend on sed and maybe position), this class lets you pass
+            one at construction time.  The reason is because you might
+            want to be setting the zeropoint in the header.  (However,
+            you still can't set it after the object is constructed... if
+            we need that functionality, we should add it, BUT we may
+            have more complicated zeropoint handling anyway in the
+            future.)
+
           **kwargs: Everything else is passed to parent class
-            constructors (FITSImage and its parent(s)).  One note: you
-            can include a "zeropoint" argument here, even though that's
-            not normally allowed for Image.  Specifically for this
-            class, you might want to specify a zeropoint when making a
-            new image object.
+            constructors (FITSImage and its parent(s)).
 
         """
 
-        raise RuntimeError( "ROB YOU HAVE WRITTEN YOURSELF A CHICKEN AND EGG PROBLEM.  You set attributes in "
-                            "the top-leve Image class, but for subclasses those depend on all the subclasses "
-                            "already being ablee to access thier properties, which won't happen until their ""
-                            "init is done." )
-        
-        import pdb; pdb.set_trace()
-        
-        # These need to be set before calling super().__init__() because
-        # they chage that one's behavior.
-        self._header_property_setter_post_hook = self._property_post_hook_set_fits_header
-        self.internal_properties = Image.internal_properties.copy()
-        self.internal_properties['zeropoint'] = float
-        self._header_kws = header_kws
-
-        self._declare_consumed_kwargs( { 'header_kws' } )
+        self._declare_consumed_kwargs( { 'header_kws', 'zeropoint' } )
         super().__init__( *args, is_superclass=True, **kwargs )
         if not is_superclass:
             self._verify_all_consumed_kwargs( **kwargs )
 
+        self._zeropoint = zeropoint if zeropoint is not None else _UnsetProperty()
+        self._header_kws = header_kws
+
+        # We set the _header_property_setter_post_hook here, rather than
+        # before calling super().__init__().  We wish we could set it
+        # before calling super().__init__(), because super().__init__()
+        # will be parsing kwargs to set some of the properties we want
+        # to post-process.  However, our post-processor is going to
+        # access object properties (e.g. data, needed to create a new
+        # header) that the superclass can't access because they're
+        # @properties, and those things don't seem to be available in a
+        # super().__init__()... python is complicated.  So, set it here,
+        # so we won't have problems, and then, because it wasn't run
+        # during super().__init__(), manually run it here.
+        self._header_property_setter_post_hook = self._property_post_hook_set_fits_header
+        for prop in self.internal_properties.keys():
+            if not isinstance( getattr(self, prop), _UnsetProperty ):
+                self._property_post_hook_set_fits_header( prop )
+        if not isinstance( self._zeropoint, _UnsetProperty ):
+            self._property_post_hook_set_fits_header( 'zeropoint' )
 
 
     def _property_post_hook_set_fits_header( self, prop ):
@@ -2226,37 +2253,28 @@ class FITSImageStdHeaders( FITSImage ):
                 self._header = fits.PrimaryHDU( data=self.data ).header
                 SNLogger.debug(f"Failed to read header from {self.filepath}, creating blank header: {e}")
 
-            # ...it's not obvious this is the right thing to do, but
-            #   maybe it is.  We're going to add/replace header keywords
-            #   with things in self that aren't currently _UnsetProperty
-            #   and we're going to set all _UnsetProperty properties in
-            #   self with stuff from the header if possible.
-            # The primary reason for this is so that if somebody creates
-            #   a new object of this class and passes stuff to the
-            #   constructor, the newly-created header will be correct.
+            # We're going to intialize the header based on two principles:
+            #   * Things already in the object supercede things in the header
+            #   * Things neither in the object nor in the header should remain not in either; no None defaults!
+            # These conventions are necessary for creating an object of this class
+            #   with a new empty header if we want everything to work right.
             for prop, converter in self.internal_properties.items():
                 uprop = f"_{prop}"
                 if prop in self._header_kws.keys():
                     kw = self._header_kws[ prop ]
                     if not isinstance( getattr( self, uprop ), _UnsetProperty ):
+                        # The property is set in the object, so update the header to match.
                         self._header[ kw ] = getattr( self, uprop )
                     else:
+                        # The property is not in the object.  If it's in the header, then set
+                        #   the object property to match the header, otherwise leave it
+                        #   unset.
                         if kw in self._header:
                             if prop == 'zeropoint':
                                 # special case handling for zeropoint, which isn't in Image.itnernal_properties
                                 self._zeropoint = float( self._header[kw] )
                             else:
                                 setattr( self, uprop, converter(self._header[kw]) )
-                        else:
-                            # It's also not obvious that this is the right thing to do, but
-                            #   we're going to set stuff that wasn't found in the header to
-                            #   None rather than the initial _UnsetProperty()
-                            setattr( self, uprop, None )
-                else:
-                    # Another non-obviously-right-thing, set stuff that we didn't even look
-                    #   for in the header to None instead of the initial _UnsetProperty()
-                    if isinstance( getattr( self, uprop ), _UnsetProperty ):
-                        setattr( self, uprop, None )
 
         return self._header
 
@@ -2284,7 +2302,7 @@ class FITSImageStdHeaders( FITSImage ):
 
     def _get_position_angle( self ):
         hdr = self.get_fits_header()
-        if self._hdr_kws['position_angle'] in hdr:
+        if self._header_kws['position_angle'] in hdr:
             self._position_angle = float( hdr[ self._header_kws['positon_angle'] ] )
         else:
             super()._get_position_angle()

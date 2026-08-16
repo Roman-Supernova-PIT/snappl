@@ -549,12 +549,14 @@ def test_create_fitsimagestdheaders( kws_for_fitsimagestdhdrs ):
     data = np.ones( (256, 128) )
     noise = np.zeros( (256, 128) )
 
+    # Make sure default keywords work
     im = FITSImageStdHeaders( full_filepath="/tmp/foo.fits", data=data, noise=noise, **props )
     hdr = im.get_fits_header()
     assert all( hdr[kw] == props[prop] for prop, kw in std_kws.items() )
     assert np.all( im.data == 1.0 )
     assert np.all( im.noise == 0.0 )
 
+    # Make keywords other than the defaults work
     im = FITSImageStdHeaders( full_filepath="/tmp/foo.fits", data=data, noise=noise, header_kws=kws, **props )
     hdr = im.get_fits_header()
     assert all( hdr[kw] == props[prop] for prop, kw in kws.items() )
@@ -564,15 +566,17 @@ def test_set_prop_fitsimagestdheaders( kws_for_fitsimagestdhdrs ):
     props, std_kws, kws = kws_for_fitsimagestdhdrs
     data = np.ones( (256, 128) )
     noise = np.zeros( (256, 128) )
-    
+
     im = FITSImageStdHeaders( full_filepath="/tmp/foo.fits", data=data, noise=noise )
     hdr = im.get_fits_header()
+    # We didn't intitialize any of the values, so none of them should bein the header yet
     assert all( kw not in hdr for kw in std_kws.values() )
     for prop, val in props.items():
-        setattr( im, prop, val )
-                
-    import pdb; pdb.set_trace()
-    pass
+        if prop != 'zeropoint':
+            # Can't set a zeropoint, those can only be set at construction
+            setattr( im, prop, val )
+    hdr = im.get_fits_header()
+    assert all( hdr[ std_kws[prop] ] == val for prop, val in props.items() if prop != 'zeropoint' )
 
 
 # ======================================================================
