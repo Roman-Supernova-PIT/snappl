@@ -7,6 +7,8 @@ A whole bunch of changes that happened rapidly before and during August
   * Make environment variable substitution in config includes work
   * Deprecate Image.getImagePSF, replace with Image.getPhotutilsPSF
   * Deprecate Image.zeropoint, replace with Image.get_zeropoint(x,y)
+  * Regularize all PSF classes to take stamp_size=, never size=.  Before
+    it was a mix.  (This will probably break some users of snappl.psf.)
   * Add pixel area map to RomanDatamodelImage zeropoint
   * RomanDatamodelPSF class that uses CRDS and header info to get a PSF
   * Change definition of Image.data to what we kinda thought it was all
