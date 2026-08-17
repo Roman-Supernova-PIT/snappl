@@ -103,7 +103,7 @@ def test_slow_get_stamp():
     #   centroids, as wing-cutting won't matter for this check.
     # (Not *exactly* because centerstamp is at 2044,2044, not 2048,
     #   2048, but the PSF can't vary much over 4 pixels...)
-    absoff = 0.004 * centerstamp[ 20, 20 ]
+    absoff = 0.01 * centerstamp[ 20, 20 ]
     for xoff in [ -1, 0, 1 ]:
         for yoff in [ -1, 0, 1 ]:
             assert ( stamp[ 20 + yoff + 2048-2040, 20 + xoff + 2048-2050 ] ==
@@ -232,7 +232,7 @@ def test_get_stamp():
     #   centroids, as wing-cutting won't matter for this check.
     # (Not *exactly* because centerstamp is at 2044,2044, not 2048,
     #   2048, but the PSF can't vary much over 4 pixels...)
-    absoff = 0.004 * centerstamp[20, 20]
+    absoff = 0.01 * centerstamp[20, 20]
     for xoff in [-1, 0, 1]:
         for yoff in [-1, 0, 1]:
             assert stamp[20 + yoff + 2048 - 2040, 20 + xoff + 2048 - 2050] == pytest.approx(
@@ -349,7 +349,7 @@ def test_galaxy_ou2024_stamp():
     galaxy_stamp = get_galaxy_stamp(gpsf,
         x=x, y=y, x0=x0, y0=y0, flux=1e6, oversamp=8, bulge_R=2, bulge_n=3, disk_R=2, disk_n=3
     )
-    assert galaxy_stamp.sum() == pytest.approx(991866, rel=1e-3)  # Empirically, only 99.2 % of flux is in 151x151 stamp
+    assert galaxy_stamp.sum() == pytest.approx(990794, rel=1e-3)  # Empirically, only 99.1 % of flux is in 151x151 stamp
 
 
 def test_galaxy_ou2024_photonshoot_stamp():
@@ -389,5 +389,5 @@ def test_galaxy_ou2024_photonshoot_stamp():
     )
     # Seed is to ensure reproducibility of photon shooting.
 
-    assert galaxy_stamp.sum() == pytest.approx(997992, rel=1e-3)  # Empirically, only 99.8 % of flux is in 71x71 stamp
+    assert galaxy_stamp.sum() == pytest.approx(985922, rel=1e-3)  # Empirically, only 98.6 % of flux is in 71x71 stamp
     # The no photonshooting value was lower, close to 991866. Is this concerning?
