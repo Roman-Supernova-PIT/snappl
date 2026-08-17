@@ -222,6 +222,7 @@ class ImageSimulatorImage:
                                           mjd=mjd,
                                           band=band,
                                           observation_id=observation_id,
+                                          sca=sca,
                                           exptime=exptime,
                                           zeropoint=zeropoint )
 

@@ -547,8 +547,12 @@ class PSF:
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_stamp" )
 
 
-    def getPhotutilsPSF( self, x=None, y=None ):
+    def getPhotutilsPSF( self, x=None, y=None, imagesampled=True ):
         """Return a photutils.psf.SOMETHING that can be the psf_model parameter of photutils.psf.PSFPhotometry
+
+        You really only want to use the result of this for feeding to
+        photutils.  If what you want is an image of the PSF, use
+        get_stamp() insteadl.
 
         Unless the subclass implementes something else, this will be a
         photutils.psf.ImagePSF, and will be just for one position.  If
@@ -574,14 +578,48 @@ class PSF:
 
         Subclasses may want to override this.
 
+        Parameters
+        ----------
+          x, y: float, default None
+             Position on the original image to render the PSF for.  If
+             not given, uses the x and y that the PSF object was
+             initialized with.  Because photutils expects PSFs centered
+             on a pixel, x and y should have no fractional part.  (The
+             default implementation explicitly rounds (sort of...) to
+             the nearest whole number for both x and y; properly written
+             subclasses will do the same thing.
+
+          imagesampled: bool, default True
+             This one is a bit complicated.  It's ignored by some
+             subclasses.  The default implementation is to return an
+             ImagePSF sampled at the image scale, and to ignore
+             imagesample.  Some subclasses (e.g. OversampledImagePSF)
+             will return an oversampled photutils.psf.ImagePSF if you
+             set imagesampled to false.  Other subclasses return other
+             things for which image scale may or may not be relevant.
+             And, it's possible that other subclasse will return
+             something oversampled even if you say imagesampled=True.
+             In any event, because what you get back is intended to be
+             fed to photutils, you probably shouldn't think about it too
+             hard.  (TODO: we might want to set imagesampled to False so
+             that classes don't by default make something that will make
+             photutils behavior worse!  This may cause a bunch of code
+             to break, maybe quietly, because the assumed default
+             changed.)
+
         """
+        if not imagesampled:
+            SNLogger.warning( f"{self.__class__.__name__} ignoring imagesampled=False, it can only ever "
+                              f"return image-scale stamps." )
+
         x = self._x if x is None else x
         y = self._y if y is None else y
         # For photutils, it wants a *centered* psf, not a psf that's shifted, so
         #   we need to make x and y into integers
         x = np.floor( x + 0.5 )
         y = np.floor( y + 0.5 )
-        return photutils.psf.ImagePSF( self.get_stamp(), x=x, y=y, x_0=self._x, y_0=self._y )
+        return photutils.psf.ImagePSF( self.get_stamp( x=x, y=y, x0=self._x, y0=self._y ),
+                                       x_0=x, y_0=y )
 
 
     def getImagePSF( self, imagesampled=True, x=None, y=None ):
@@ -1396,6 +1434,14 @@ class ou24PSF_slow( PSF ):
                    n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
                  ):
 
+        # ****
+        # TEMPORARY
+        # We were regularizing arguments.  This is here to catch people who haven't updated.
+        # We can take this out when we think everyboyd is caught up.
+        if "size" in kwargs:
+            raise ValueError( "Don't use the argument size to PSF, use stamp_size." )
+        # ****
+
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'sed', 'config_file', 'stamp_size', '_include_photonOps', 'n_photons' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
@@ -1418,7 +1464,7 @@ class ou24PSF_slow( PSF ):
         if config_file is None:
             config_file = Config.get().value( 'system.ou24.config_file' )
         self.config_file = config_file
-        self.size = stamp_size
+        self._stamp_size = stamp_size
         self.sca_size = 4088
         self._x = self.sca_size // 2 if self._x is None else self._x
         self._y = self.sca_size // 2 if self._y is None else self._y
@@ -1429,7 +1475,7 @@ class ou24PSF_slow( PSF ):
 
     @property
     def stamp_size( self ):
-        return self.size
+        return self._stamp_size
 
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None ):
@@ -1853,6 +1899,14 @@ class STPSF( PSF ):
                   _parent_class=False,  **kwargs
                  ):
 
+        # ****
+        # TEMPORARY
+        # We were regularizing arguments.  This is here to catch people who haven't updated.
+        # We can take this out when we think everyboyd is caught up.
+        if "size" in kwargs:
+            raise ValueError( "Don't use the argument size to PSF, use stamp_size." )
+        # ****
+
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.update( [ 'sed', 'stamp_size' ] )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
@@ -1880,7 +1934,7 @@ class STPSF( PSF ):
         else:
             self.sed = sed
 
-        self.size = stamp_size
+        self._stamp_size = stamp_size
         self.sca_size = 4088
         self._x = self.sca_size // 2 if self._x is None else self._x
         self._y = self.sca_size // 2 if self._y is None else self._y
@@ -1888,7 +1942,7 @@ class STPSF( PSF ):
 
     @property
     def stamp_size( self ):
-        return self.size
+        return self._stamp_size
 
     def get_stamp( self, x=None, y=None, x0=None, y0=None, flux=1., seed=None, ext_name="DET_SAMP" ):
         """Return a 2d numpy image of the PSF at the detector resolution.
