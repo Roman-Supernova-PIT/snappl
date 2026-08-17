@@ -28,7 +28,7 @@ dependencies = [
   "fitsio>=1.2.5,<2.0.0",
   # NOTE : we pin galsim at 2.8.4 because version 2.8.5 causes regression failures in
   #  (at least) snappl and campari.  If we want to bump to higher galsim, then we're
-  #  going to have to deal wtih changing all those tests.
+  #  going to have to deal with changing all those tests.
   "galsim==2.8.4",
   "gwcs>=1.0.3,<2.0.0",
   "h5py>=3.14.0,<4.0.0",
