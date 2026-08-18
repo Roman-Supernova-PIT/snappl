@@ -365,10 +365,16 @@ If you have changed *both* the temp and dev storage directories, set both env va
   DEV_STORAGE=/path/to/your/dev/storage SNPIT_SCRATDH=/path/to/your/tempdir bash <dir>/<launcher>
 
 
-.. _running_locally:
-=======
+Running in a containerized environment
+--------------------------------------
+
+At this point, you follow the standard procedures in :ref:`running_env`.
+
+
 Using an interactive native environment
 ---------------------------------------
+
+**WARNING**: as of this writing, the scripts for the native environment are not fully up to date.  We're working on it.  In the mean time, things may not work quite right.
 
 You can also run natively in a virtual environment. You have two options::
 
@@ -479,7 +485,8 @@ Install useful development tools used in the project workflow:
    pip install ruff
    pip install towncrier
 
->>>>>>> main
+
+.. _running_locally:
 
 Running locally on your machine
 ===============================
