@@ -763,16 +763,6 @@ def test_ou2024_get_fits_header( ou2024image, ou2024image_module ):
 
 def test_romandatamodel_image( romandatamodel_image ):
     im = romandatamodel_image
-    assert isinstance( im.data, np.ndarray )
-    assert im.data.dtype == 'float32'
-    assert im.image_shape == ( 4088, 4088 )
-    assert im.data.shape == im.image_shape
-    assert isinstance( im.noise, np.ndarray )
-    assert im.noise.dtype == 'float32'
-    assert im.noise.shape == im.image_shape
-    assert isinstance( im.flags, np.ndarray )
-    assert im.flags.dtype == 'uint32'
-    assert im.flags.shape == im.image_shape
 
     assert im.observation_id == '?'
     assert im.sca == 1
@@ -780,6 +770,14 @@ def test_romandatamodel_image( romandatamodel_image ):
     assert im.mjd == pytest.approx( 60627.50030, abs=1e-5 )
     assert im.exptime == pytest.approx( 51.68, abs=0.01 )
     # Sky level is not in the test image, so im.sky_level will fail.  Later (ricksim) images seem to have it.
+
+    # Data is now np.ndarray, even though that's not what you get from
+    # roman_datamodel.  We do conversions when we read them, applying
+    # the pixel area map, and we also cache the data without holding the
+    # RDM image open.
+    assert isinstance( im.data, np.ndarray )
+    assert isinstance( im.noise, np.ndarray )
+    assert isinstance( im.flags, np.ndarray )
 
     assert im.data.shape == ( 4088, 4088 )
     # Looks like they're coming in little-endian.  (Really maybe native
