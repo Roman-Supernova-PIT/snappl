@@ -896,11 +896,24 @@ class photutilsImagePSF( PSF ):
         if x0 is None:
             x0 = int( np.floor( self._x + 0.5 ) )
             x = x0 + xfrac
+        else:
+            if np.fabs( x0 - np.round( x0 ) ) > 0.001:
+                raise ValueError( f"For photutilsImagePSF.get_stamp, x0 and y0 must have no fractional part, "
+                                  f"but got {x0} for x0" )
+            x0 = int( np.round( x0 ) )
         if y0 is None:
             y0 = int( np.floor( self._y + 0.5 ) )
             y = y0 + yfrac
+        else:
+            if np.fabs( y0 - np.round( y0 ) ) > 0.001:
+                raise ValueError( f"For photutilsImagePSF.get_stamp, x0 and y0 must have no fractional part, "
+                                  f"but got {y0} for y0" )
+            y0 = int( np.round( x0 ) )
+            
         if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
-            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}" )
+            # This should never happen given the code above
+            raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}; "
+                             f"this should never happen, you should have received an earlier exception" )
 
         # We want the peak of the PSF to be at (x-x0,y-y0) on the
         # returned stamp.  Our photutils.ImagePSF in self._pupsf thinks
@@ -932,6 +945,13 @@ class photutilsImagePSF( PSF ):
 
         raise RuntimeError( "getImagePSF is deprecated, instead use getPhotutilsPSF" )
 
+
+    def getPhotutilsPSF( self, x=None, y=None, imagesampled=True ):
+        if imagesampled:
+            return PSF.getPhotutilsPSF( self, x=x, y=y, imagesampled=True )
+        else:
+            return self._pupsf
+    
 
 class OversampledImagePSF( PSF ):
     """A PSF stored internally in an image which is (possibly) oversampled.
