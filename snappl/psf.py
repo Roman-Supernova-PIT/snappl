@@ -614,8 +614,11 @@ class PSF:
 
         x = self._x if x is None else x
         y = self._y if y is None else y
-        # For photutils, it wants a *centered* psf, not a psf that's shifted, so
-        #   we need to make x and y into integers
+        # For photutils, it wants a psf centered in the center of the
+        #   center pixel of the clip, so we need to make x and y into
+        #   integers.  (Note that all current snapppl.psf.PSF subclasses
+        #   all either require stamp_size to be odd, or will make it odd
+        #   if it's not.  As such, "center pixel" is well-defined.)
         x = np.floor( x + 0.5 )
         y = np.floor( y + 0.5 )
         return photutils.psf.ImagePSF( self.get_stamp( x=x, y=y, x0=self._x, y0=self._y ),
