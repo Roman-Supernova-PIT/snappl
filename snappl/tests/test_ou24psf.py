@@ -25,7 +25,7 @@ def test_slow_normalization():
     assert bigstamp.shape == ( 201, 201 )
     smallpsfobj = PSF.get_psf_object( "ou24PSF_slow_photonshoot", observation_id='6', sca=17, stamp_size=smallsize )
     # Using the same seed here probably isn't doing what we want it to do,
-    #   i.e. creating the same realization of the PSF that then gets
+    #   i.e., creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
     smallstamp = smallpsfobj.get_stamp( seed=42 )
     assert smallstamp.shape == ( 41, 41 )
@@ -52,7 +52,7 @@ def test_slow_normalization_nophotshoot():
     assert bigstamp.shape == (201, 201)
     smallpsfobj = PSF.get_psf_object("ou24PSF_slow", observation_id='6', sca=17, stamp_size=smallsize)
     # Using the same seed here probably isn't doing what we want it to do,
-    #   i.e. creating the same realization of the PSF that then gets
+    #   i.e., creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
     smallstamp = smallpsfobj.get_stamp(seed=42)
     assert smallstamp.shape == (41, 41)
@@ -181,7 +181,7 @@ def test_normalization():
     assert bigstamp.shape == (201, 201)
     smallpsfobj = PSF.get_psf_object("ou24PSF_photonshoot", observation_id='6', sca=17, stamp_size=smallsize)
     # Using the same seed here probably isn't doing what we want it to do,
-    #   i.e. creating the same realization of the PSF that then gets
+    #   i.e., creating the same realization of the PSF that then gets
     #   downsampled.  But, maybe it is.  Go read the code to find out.
     smallstamp = smallpsfobj.get_stamp(seed=42)
     assert smallstamp.shape == (41, 41)

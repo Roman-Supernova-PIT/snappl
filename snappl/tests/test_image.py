@@ -763,15 +763,23 @@ def test_ou2024_get_fits_header( ou2024image, ou2024image_module ):
 
 def test_romandatamodel_image( romandatamodel_image ):
     im = romandatamodel_image
-    # These tests will fail right now.  We're hoping that
-    #  duck typing will be good enough.  If not, uncomment
-    #  these tests, and edit RomanDatamodelImage to do something else
-    # assert isinstance( im.data, np.ndarray )
-    # assert isinstance( im.noise, np.ndarray )
-    # assert isinstance( im.flags, np.ndarray )
+    assert isinstance( im.data, np.ndarray )
+    assert im.data.dtype == 'float32'
+    assert im.image_shape == ( 4088, 4088 )
+    assert im.data.shape == im.image_shape
+    assert isinstance( im.noise, np.ndarray )
+    assert im.noise.dtype == 'float32'
+    assert im.noise.shape == im.image_shape
+    assert isinstance( im.flags, np.ndarray )
+    assert im.flags.dtype == 'uint32'
+    assert im.flags.shape == im.image_shape
 
+    assert im.observation_id == '?'
+    assert im.sca == 1
     assert im.band == 'F106'
     assert im.mjd == pytest.approx( 60627.50030, abs=1e-5 )
+    assert im.exptime == pytest.approx( 51.68, abs=0.01 )
+    # Sky level is not in the test image, so im.sky_level will fail.  Later (ricksim) images seem to have it.
 
     assert im.data.shape == ( 4088, 4088 )
     # Looks like they're coming in little-endian.  (Really maybe native

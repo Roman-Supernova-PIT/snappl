@@ -58,9 +58,9 @@ class Image( PathedObject ):
     * flags : 2d numpy array of ints; a pixel flags image (if defined)
 
     For all implementations, the properties data, noise, and flags are
-    lazy-loaded.  That is, they start at None, but when you access them,
+    lazy-loaded.  That is, they start as None, but when you access them,
     an internal buffer gets loaded with that data.  (Depending on the
-    subclass, accessing any one of these properties may others into
+    subclass, accessing any one of these properties may load others into
     memory.  For instance, using RomanDatamodelImage, the first time you
     access either .data or .noise, both get loaded into memory.)  This
     means it can be very easy for lots of memory to get used without
@@ -69,7 +69,7 @@ class Image( PathedObject ):
     more, or if you know you want to get rid of it for a while and
     re-read it from disk later.  The second is just not to access the
     data, noise, and flags properties, instead use Image.get_data(), and
-   manage the data object lifetime yourself.
+    manage the data object lifetime yourself.
 
     Image arrays are indexed by [y, x], with 0 being the center of the
     lower-left pixel.  That is, .data[0, 0] gives you the lower-left
@@ -80,7 +80,7 @@ class Image( PathedObject ):
     SEE IN DS9, so be careful.  They are also offset by 1 from a WCS in
     a FITS image header.  However, they ARE the coordinates you expect
     when using an astropy WCS class the right way, and, more
-    improtantly, are the coordiantes you expect when using a snappl WCS
+    importantly, are the coordiantes you expect when using a snappl WCS
     class.
 
     When considering positions on the image, as opposed to indexes in
@@ -91,7 +91,7 @@ class Image( PathedObject ):
     images, see the docstring on psf.py::PSF.get_stamp.
 
     UNITS OF THE DATA: we define the DAV "data array value" as the units
-    of these arrays.  The literal defintion of this is "the units of
+    of these arrays.  The literal definition of this is "the units of
     whatever it is you get when you access the .data property of a
     snappl.Image object".  However, there is a further definition for
     the Image class, and that is that DAV are NOT a surface brightness
@@ -115,7 +115,7 @@ class Image( PathedObject ):
 
     LESS IMMEDIATE IMAGE METADATA PROPERTIES
 
-    coord_center : tuple of (ra, deec) [I THINK] : center of the image as calcualted from the WCS
+    coord_center : tuple of (ra, dec) [I THINK] : center of the image as calcualted from the WCS
 
     HEADER DATA PROPERTIES
 
@@ -133,14 +133,13 @@ class Image( PathedObject ):
     * ra_corner_11: float; decimal degrees, ra of pixel (width-1, height-1)
     * dec_corner_00: float; decimal degrees, dec of pixel (0, 0)
     * dec_corner_10: float; decimal degrees, dec of pixel (width-1, 0)
-
     * dec_corner_01: float; decimal degrees, dec of pixel (0, height)
     * dec_corner_11: float; decimal degrees, dec of pixel (width-1, height-1)
     * band : str; filter
     * mjd : float; mjd of the start of the image
     * position_angle : float; position angle in degrees north of east (CHECK THIS)
     * exptime : float; exposure time in seconds.  (But be careful;
-                because of the ramp readout of roman images, not all
+                because of the ramp readout of Roman images, not all
                 pixels will have used the full exptime.  Don't try to
                 think about it too hard, and just use the .data and
                 .noise arrays.)
@@ -149,7 +148,7 @@ class Image( PathedObject ):
     PATH PROPERTIES
 
     If possible, avoid using all "path" properties, and instead use the
-    other properties to get access to image data (i.e. .data, .noise).
+    other properties to get access to image data (i.e., .data, .noise).
     Trust snappl to read the files.  If you don't, the behavior may not
     be what you expect.  Note that "noisepath" and "flagspath" are not defined for all Image
     subclasses, and will only be defined sometimes for some subclasses
@@ -183,7 +182,7 @@ class Image( PathedObject ):
 
     # These are the properties that have underscore names internally,
     # and that can be set in the constructor.  (Some of them are
-    # potentially hazardous, e.g. if width and height are not consistent
+    # potentially hazardous, e.g., if width and height are not consistent
     # with data, then things will break.)
     internal_properties = { 'width': int,
                             'height': int,
@@ -545,9 +544,7 @@ class Image( PathedObject ):
     def zeropoint( self ):
         """Deprecated; use get_zeropoint."""
         raise RuntimeError( "Don't use the zeropoint property, call get_zeropoint()" )
-        # if self._zeropoint is None:
-        #     self._get_zeropoint()
-        # return self._zeropoint
+
 
     @zeropoint.setter
     def zeropoint( self, val ):
@@ -559,7 +556,7 @@ class Image( PathedObject ):
 
         By definition, the zeropoint returned by this image is a
         "infinite aperture" zeropoint, or one that may be used with a
-        snappl.psf.PSF whose normalization is done right, i.e. if the
+        snappl.psf.PSF whose normalization is done right, i.e., if the
         clip size were infinte, the get_clip() method of the PSF object
         would return an infinitely-sized numpy 2d array whose sum was 1.
         (This is also the definition that STPSF uses when returning
@@ -663,7 +660,7 @@ class Image( PathedObject ):
         is the amount of light energy coming from the star at frequency
         ν within dν that entered a telescope aperture of area A in time
         dt.  Right now, we're going to assume that the star has a flat
-        spectrum, i.e. F_ν(ν) is constant for all ν.  (We will relax
+        spectrum, i.e., F_ν(ν) is constant for all ν.  (We will relax
         this later; see COLOR TERMS below.)
 
         Fourth, when we divide the image into pixels, we want the
@@ -702,7 +699,7 @@ class Image( PathedObject ):
         pixel-to-pixel gain variables have been corrected by
         flatfielding, so the same zeropoint applies to every pixel on
         the image.  It also assumes that if there is any vignetting
-        (e.g. if the "effective telescope aperture" is different for
+        (e.g., if the "effective telescope aperture" is different for
         different pixels), an illumination correction has taken all of
         that out.
 
@@ -726,7 +723,7 @@ class Image( PathedObject ):
         In the Roman Space Telescope, the pixel area subtended on the
         sky can vary by ~±2% over a single SCA.  The L2 maps provided by
         the Roman SOC have array values in units of surface brightness,
-        i.e. something like DN/sec/steradian.  However, we have defined
+        i.e., something like DN/sec/steradian.  However, we have defined
         DAV to be more like DN/sec (though, again, we are explicitly
         agnostic as to whether DAV is a rate or not).
 
@@ -811,7 +808,7 @@ class Image( PathedObject ):
         First, detectors and filters (and the whole telescope system,
         for that matter) have a different response at different
         frequencies.  Filters, in particular, only transmit light within
-        a fininte range of ν, though real detectors are also not
+        a finite range of ν, though real detectors are also not
         sensitive to all frequencies.  We will call the system response
         D(ν), which we will define "the number of DAVs that we get in
         our data array per frequency bin for light of frequency ν for a
@@ -918,11 +915,11 @@ class Image( PathedObject ):
         Notice that you don't need to know the absolute S(ν) to
         calculate cor_sed, only S(ν)/S(ν₀).  This is why we say the
         "shape" of the SED.  The thing passed to the sed parameter of
-        get_zerpoint() is really a SED shape (though a cautiously
+        get_zeropoint() is really a SED shape (though a cautiously
         implemented subclass will not assume that the user is passing in a
         properly normalized sed).
 
-        What get_zerpoint() returns is::
+        What get_zeropoint() returns is::
 
            zp + cor_sed
 
@@ -1398,7 +1395,7 @@ class Image( PathedObject ):
     def save( self, which='all', path=None, imagepath=None, noisepath=None, flagspath=None, overwrite=False ):
         """Save the image to its path(s).
 
-        May have side-effects on the internal data structure (e.g. FITS
+        May have side-effects on the internal data structure (e.g., FITS
         subclasses modify the internally stored header).
 
         Parameters
@@ -1657,7 +1654,7 @@ class Numpy2DImage( Image ):
         This implementation accesses the .data property, which will load the data
         from disk if it hasn't been already.  Actual images are likely to have
         that information availble in a manner that doesn't require loading all
-        the image data (e.g. in a header), so subclasses should do that.
+        the image data (e.g., in a header), so subclasses should do that.
 
         """
         if ( self._width is None ) or ( self._height is None ):
@@ -2170,7 +2167,7 @@ class FITSImageStdHeaders( FITSImage ):
              pass the property directly in the constructor (so, for
              instance, if you make an image with::
 
-                im = FITSImageStdHeaders( full_filepath=/path/to/file.fits, ra=42. )
+                im = FITSImageStdHeaders( full_filepath="/path/to/file.fits", ra=42. )
 
              then later when you access im.ra, you will get 42., NOT
              what was in the header.  However, if you access im.dec, you
@@ -2213,7 +2210,7 @@ class FITSImageStdHeaders( FITSImage ):
         # before calling super().__init__(), because super().__init__()
         # will be parsing kwargs to set some of the properties we want
         # to post-process.  However, our post-processor is going to
-        # access object properties (e.g. data, needed to create a new
+        # access object properties (e.g., data, needed to create a new
         # header) that the superclass can't access because they're
         # @properties, and those things don't seem to be available in a
         # super().__init__()... python is complicated.  So, set it here,
@@ -2270,13 +2267,13 @@ class FITSImageStdHeaders( FITSImage ):
                 SNLogger.debug(f"Failed to read header from {self.filepath}, creating blank header: {e}")
 
             # We're going to intialize the header based on two principles:
-            #   * Things already in the object supercede things in the header
+            #   * Things already in the object supersede things in the header
             #   * Things neither in the object nor in the header should remain not in either; no None defaults!
             # These conventions are necessary for creating an object of this class
             #   with a new empty header if we want everything to work right.
             propconvs = self.internal_properties.copy()
             # This particular class has a special case 'zeropoint' internal property
-            propconvs['zeropoint' ] = float
+            propconvs[ 'zeropoint' ] = float
             for prop, converter in propconvs.items():
                 uprop = f"_{prop}"
                 if prop in self._header_kws.keys():
@@ -2640,7 +2637,7 @@ class RomanDatamodelImage( Image ):
     def _get_internal_attribute( self, prop ):
         meta = self._dm_meta
 
-        if prop == 'observatoin_id':
+        if prop == 'observation_id':
             self._observation_id = meta.observation.observation_id
 
         elif prop == 'sca':
@@ -2664,7 +2661,7 @@ class RomanDatamodelImage( Image ):
             self._sky_level = meta.statistics.image_median
 
         else:
-            raise ValueError( "Don't know how to get property {prop} of a {self.__class__.__name__}" )
+            raise ValueError( f"Don't know how to get property {prop} of a {self.__class__.__name__}" )
 
 
     def get_zeropoint( self, x=None, y=None ):
@@ -2694,7 +2691,7 @@ class RomanDatamodelImage( Image ):
         #   total count rate summed over all the pixels that light from
         #   the object fell into of 1 dn/s
         #
-        # Below, define dn_s to be the total dn_s (i.e. pixel values in
+        # Below, define dn_s to be the total dn_s (i.e., pixel values in
         #   the image) summed over all pixels that light from the object
         #   fell into (determined either from aperture photometry with
         #   an infinite aperture after background subtraction, or psf
@@ -2953,7 +2950,7 @@ class RomanDatamodelImage( Image ):
 
         apwcs = None if wcs is None else wcs
         # This was wcs._wcs in the FITS version of this function. I
-        # am unclear why I had to change it to be just wcs, i.e. not wcs._wcs
+        # am unclear why I had to change it to be just wcs, i.e., not wcs._wcs
 
         # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
         astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)

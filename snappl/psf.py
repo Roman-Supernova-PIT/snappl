@@ -74,7 +74,7 @@ class PSF:
             documentation for more details.
 
           band: str
-            The Roman band this is a PSF for.  (I.e. the band of the
+            The Roman band this is a PSF for.  (I.e., the band of the
             host image.)  Ignored by some subclasses.
 
           observation_id: str, default None
@@ -230,12 +230,12 @@ class PSF:
         First thing to consider: in python, numpy arrays are 0-indexed.
         That is, if you have a 3-element numpy array named arr, the
         first element of the array is arr[0], the second arr[1], and the
-        last arr[2].  Some other languages (e.g. FORTRAN) assume
+        last arr[2].  Some other languages (e.g., FORTRAN) assume
         1-indexed arrays.  That is, the first element of FORTRAN array A
         is A[1], not A[0].  This matters for us because we are using
         some astronomical formats that have been around since everybody
         spoke Latin and everybody programmed in FORTRAN, so there are
-        some legacy conventions left over.  Some libraries (e.g. galsim)
+        some legacy conventions left over.  Some libraries (e.g., galsim)
         at least sometimes require you to specify array indexes (such as
         pixel positions) assuming 1-indexed arrays.  Be very careful and
         read lots of documentation!  If we've done it right, everything
@@ -312,7 +312,7 @@ class PSF:
           It's possible that some subclasses will have
           non-intrinsically-centered PSFs.  See the documentation on the
           __init__ and get_stamp methods of those subclasses
-          (e.g. OversampledImagePSF and photutilsImagePSF) to make sure
+          (e.g., OversampledImagePSF and photutilsImagePSF) to make sure
           you understand how each subclass handles those cases.  In all
           cases, get_stamp should return stamps that are consistent with
           the description in this docstring.  If a subclass does
@@ -422,7 +422,7 @@ class PSF:
                    -----------
 
             the PSF is centered on the center pixel of the stamp
-            (i.e. 2,2), and that pixel should get placed on pixel
+            (i.e., 2,2), and that pixel should get placed on pixel
             (x,y)=(111,113) of the image for which you're rendering a
             PSF.  (Suppose you wanted to add this as an injected source
             to the image; in that case, you'd add the returned PSF stamp
@@ -552,7 +552,7 @@ class PSF:
 
         You really only want to use the result of this for feeding to
         photutils.  If what you want is an image of the PSF, use
-        get_stamp() insteadl.
+        get_stamp() instead.
 
         Unless the subclass implementes something else, this will be a
         photutils.psf.ImagePSF, and will be just for one position.  If
@@ -593,7 +593,7 @@ class PSF:
              This one is a bit complicated.  It's ignored by some
              subclasses.  The default implementation is to return an
              ImagePSF sampled at the image scale, and to ignore
-             imagesample.  Some subclasses (e.g. OversampledImagePSF)
+             imagesample.  Some subclasses (e.g., OversampledImagePSF)
              will return an oversampled photutils.psf.ImagePSF if you
              set imagesampled to false.  Other subclasses return other
              things for which image scale may or may not be relevant.
@@ -704,7 +704,7 @@ class photutilsImagePSF( PSF ):
             The position *in oversampled pixel coordinates* on the data
             array where the peak is found.  If these values are not,
             then we assume the peak is at (data.shape[1]//2,
-            data.shape[0]//2) (i.e. the center of the center pixel).
+            data.shape[0]//2) (i.e., the center of the center pixel).
             (If you pass an even-length data array, and there is no
             "center pixel", then expect everything to go wrong and the
             world to end.)  See (x, y) below for some examples of
@@ -715,7 +715,7 @@ class photutilsImagePSF( PSF ):
             the passed data array.
 
           x, y : float, float
-            Position on the original source image (i.e. the astronomical
+            Position on the original source image (i.e., the astronomical
             image for which this object is the PSF) that corresponds to
             the center of the data array.
 
@@ -738,7 +738,7 @@ class photutilsImagePSF( PSF ):
             have an 11×11 PSF oversampled by a factor of 3 that is
             centered on the original image at 1023, 511.  In this case,
             the data array should be 33×33 in size (11 times 3).  If the
-            PSF is centered on the data array (i.e. on the center of
+            PSF is centered on the data array (i.e., on the center of
             pixel (16,16)), then you would pass x=1023, y=511.
 
             If your PSF is centered on the original image at 1023.5,
@@ -981,7 +981,7 @@ class OversampledImagePSF( PSF ):
 
     WARNING : I don't think using these PSFs with get_stamp() will do
     the right thing with photutils for intrinsically undersampled PSFs
-    (e.g. a Gaussian with σ=0.3pix).  See Issue #157.
+    (e.g., a Gaussian with σ=0.3pix).  See Issue #157.
 
     """
 
@@ -1055,7 +1055,7 @@ class OversampledImagePSF( PSF ):
           oversample_factor: float, default 1, must be odd
             There are this many pixels along one axis in data for one
             pixel in the original image.  Doesn't have to be an integer
-            (e.g. if you used PSFex to find the PSF, it usually won't
+            (e.g., if you used PSFex to find the PSF, it usually won't
             be— though if you used PSFex to find the PSF, really we
             should be writing a subclass to handle that!).
 
@@ -1217,14 +1217,14 @@ class OversampledImagePSF( PSF ):
         #                                      * psfbase ).sum()
 
         # We're assuming that the stored PSF data is properly
-        # normalized, i.e. its sum is equal to the fraction of the PSF
+        # normalized, i.e., its sum is equal to the fraction of the PSF
         # flux captured by the boundaries of self.oversampled_data.  (The
         # documentation of the create method tells you to do things this
         # way.)  For a large enough size of self.oversampled_data, this means we
         # expect its sum to be 1.
         #
         # We do need to multiply by the oversampling factor squared to get it right.
-        # (We store the oversampled PSF image normalized, i.e. if all the PSF
+        # (We store the oversampled PSF image normalized, i.e., if all the PSF
         # flux is included then the oversampled PSF image sums to 1.)
         clip *= flux * ( self.oversample_factor ** 2 )
 
@@ -2308,7 +2308,7 @@ class RomanDatamodelPSF( PSF ):
 
         # Extract the actual data stack that we'll feed to photutils GriddedPSFModel
         # Assuming that the 0th element of the array is the not-defocused version.
-        # Also just using the second indexed (i.e.[1]) spectral type (see TODO in docstring above).
+        # Also just using the second indexed (i.e., [1]) spectral type (see TODO in docstring above).
         # NOTE : I am assuming that photutils and roman datamodel pixel indexing
         #   conventions are the same!  (I think for both, 0.0 is the center of the
         #   lower-left pixel.)  (This matters for grid_xypos.)

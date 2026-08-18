@@ -16,7 +16,7 @@ To update the environment, see :ref:`releasenewenv`.
 Containers vs. Native
 ---------------------
 
-A "containerized" environment is one you run inside a container using docker, podman-hpc, or apptainer/singularity.  For SNPIT development, We support a containerized environment on both NERSC and SMDC.  For the containerized environment, when you run it, you get the current verison of the SNPIT environment (or one of a few varieties of it).  At that point you can modify the environment with ``pip install``, though any changes you make will only persist as long as you are running the container.  (That is, when you exit the container and start a new one, you get a fresh slate, which can be an advantage.)
+A "containerized" environment is one you run inside a container using docker, podman-hpc, or apptainer/singularity.  For SNPIT development, We support a containerized environment on both NERSC and SMDC.  For the containerized environment, when you run it, you get the current version of the SNPIT environment (or one of a few varieties of it).  At that point you can modify the environment with ``pip install``, though any changes you make will only persist as long as you are running the container.  (That is, when you exit the container and start a new one, you get a fresh slate, which can be an advantage.)
 
 On SMDC, we also support a two varieties of a "native" environment, which means one that runs in a python venv.  One venv is a shared environment that you use to just run stuff.  The second is one you install yourself in your own directory, so you can install packages to it and modify it.
 
@@ -27,7 +27,7 @@ Databases, Filesystems, and Config Files
 
 `snappl <github.com/Roman-Supernova-PIT/snappl/>`_ is the SNPIT library that handles connectivity to the database.
 
-While the SNPIT environment itself is just a set of installed libraries, eventually most pipeline code is going to need to connect to a database and access the shared files referred to by that database.  Although we *could* have developed a system that allows the files to be shared across multiple different systems (and Rob has done that for other projects), that adds complexity that we do not believe we will need in the SNPIT.  As such, when you connect to a database, snappl assumes that you're running on a system with all the files where it expects.  Currently, we have test environments that are meant to run on NERSC and SMDC.
+While the SNPIT environment itself is just a set of installed libraries, eventually most pipeline code is going to need to connect to a database and access the shared files referred to by that database.  Although we *could* have developed a system that allows the files to be shared across multiple different systems (and Rob has done that for other projects), that adds complexity that we do not believe we will need in the SNPIT.  As such, when you connect to a database, snappl assumes that you're running on a system with all the files where it expects.  Currently, we have multiple separate test environments that are meant to run on NERSC and SMDC.
 
 To connect to the database, you need a config file that points you to the right database and to the right places to find the files tracked by the database.
 
@@ -75,7 +75,7 @@ The following test/development databases are currently up and running.  (Columns
   </thead>
   <tbody>
     <tr class="row-even">
-      <td>Rick's Aug 2028 Sims on SMDC</td>
+      <td>Rick's Aug 2026 Sims on SMDC</td>
       <td><tt>roman_snpit_db_ricksim_smdc</tt></td>
       <td>SMDC</td>
       <td><tt>singrun_smdc_ricksim.sh</tt></td>
@@ -143,7 +143,7 @@ Then, for each :ref:`database list<database_list>`, create the secrets file once
   echo "<password>" > <passwordfile>
   chmod 600 <passwordfile>
 
-where ``<password>`` is the password for the databse (ask Rob for it), and ``<passwordfile>`` is the filename that's listed in the list of :ref:`database_list`.
+where ``<password>`` is the password for the database (ask Rob for it), and ``<passwordfile>`` is the filename that's listed in the list of :ref:`database_list`.
 
 .. _env_rundir:
 
@@ -183,20 +183,20 @@ With ``$RUNDIR`` as your current directory, run the launcher listed in the list 
 where ``<dir>`` is the place to find launchers on the system (``/global/cfs/cdirs/m4358/env`` on NERSC and ``/data/snpit/env`` on SMDC), and ``<launcher>`` is the right launcher script from the list of databases.
 
 
-If you're using a containerized enviornment, there will be several filesystems mounted inside the container:
+If you're using a containerized environment, there will be several filesystems mounted inside the container:
 
   * ``/home`` inside the container is ``$RUNDIR`` outside of the container.
   * ``/packages`` inside the container is ``$RUNDIR/packages`` outside of the container, but it's probably easier just to use ``/home/packages`` inside the container, which is the same thing.
   * ``/data`` inside the container points to the standard database file store directory.  You should generally, **not** store any files here.  Rather, when you call ``snappl`` functions and methods to read and write files to the directory, it will read and write files underneath this directory.
   * ``/snpit_temp`` is a temporary directory.  This directory is where your code writes files that it doesn't care if the files continue to exist after the code exits.
-  * ``/dev_storage`` is a semi-temporary directory.  This is where you should write output files that would not be "in" the database, but that you want to keep (probably only for a limited period of time) after the run.  Write diagonstic files, etc. here.
+  * ``/dev_storage`` is a semi-temporary directory.  This is where you should write output files that would not be "in" the database, but that you want to keep (probably only for a limited period of time) after the run.  Write diagnostic files, etc. here.
   * ``/photometry_test_data`` has a checkout of a recent version of the `SNPIT photometry test data <https://github.com/roman-Supernova-PIT/photometry_test_data>`_ github archive.
   * (there will be some others)
 
 
 Depending on what you're doing, after starting the environment you might want to install some of your checked-out packages.  This is definitely true if you're developing one of the packages!  Remember that for containerized environments, anything you install only lives as long as that container lives; when you exit and restart it, you have a fresh environment.
 
-For example, to install snappl in your currently running environment, do:
+For example, to install ``snappl`` in your currently running environment, do:
 
 .. code-block:: console
 
@@ -238,7 +238,7 @@ What that will do is make sure to load the standard environment configuration wi
 Running on NERSC
 ================
 
-In additon to the :ref:`standard steps for running an environment<running_env>`, there are a couple of additional steps you have to do to run on NERSC.
+In addition to the :ref:`standard steps for running an environment<running_env>`, there are a couple of additional steps you have to do to run on NERSC.
 
 Make a temporary directory
 --------------------------
@@ -254,7 +254,7 @@ This will be available inside the container at ``/snpit_temp``.
 Make a dev storage directory
 ----------------------------
 
-You only have to do this ocne:
+You only have to do this once:
 
 .. code-block:: console
 
@@ -326,24 +326,24 @@ Running on SMDC
 
   salloc -p mem-med --time=04:00:00
 
-In addition to the :ref:`standard things you do for running the environment<running_env>`, there are a few optional things you might want to do when runnig on SMDC.
+In addition to the :ref:`standard things you do for running the environment<running_env>`, there are a few optional things you might want to do when running on SMDC.
 
 Make your own temp directory
 ----------------------------
 
-By default, the environments on SMDC uses ``/dev/shm`` for the temp directory (``/snpit_temp`` inside the container for containerized environments).  This is a RAM disk.  It has limited size, *and* it eats up system memory when you use it.  But, it's really fast.  If you know that the total size of temp files you'll have written at once is small enough (i.e. it won't fill the disk, and won't use up too much memory for what your code needs), then this is a great place for it.  However, if you write enough big temp files, you need to put them somewhere else.
+By default, the environments on SMDC uses ``/dev/shm`` for the temp directory (``/snpit_temp`` inside the container for containerized environments).  This is a RAM disk.  It has limited size, *and* it eats up system memory when you use it. But, it's really fast.  If you know that the total size of temp files you'll have written at once is small enough (i.e., it won't fill the disk, and won't use up too much memory for what your code needs), then this is a great place for it.  However, if you write enough big temp files, you need to put them somewhere else.  For reference, a ``mem-med`` node has a 31GB ``/dev/shm`` and 61GB of RAM.  If you don't need to write more than 31GB of temporary files, *and* if your running process won't need the memory you've used for saving temporary files, then ``/dev/shm`` will work well as a scratch/temp directory.  On other nodes, run ``df -h /dev/shm`` to see how big ``/dev/shm`` is, and ``free -h`` to see how much system memory you have.
 
-The *right* place to put temp files is not immediately obvious.  *If* you're on a node with local storage, then you want to put it there.  (ROB WRITE MORE.)  If you have nothing else to do, then we recommend you make a directory:
-
-.. code-block:: console
-
-  /mnt/roman-science-internal/snpit/users/<yourloginname>/temp
-
-Then, when :ref:`running the environment<running_and_using_env>`, instead of just launching the environment with ``bash``, instead run:
+The *right* place to put temp files is not immediately obvious.  *If* you're on a node with local storage, then you want to put it there.  (TODO: give some details about nodes on SMDC that have local storage; not all of them do.)  If you have nothing else to do, then we recommend you make a directory:
 
 .. code-block:: console
 
-  SNPIT_SCRATCH=/mnt/roman-science-itnernal/sinput/users/<yourloginname>/temp bash <dir>/<launcher>
+  mkdir -p /mnt/roman-science-internal/snpit/users/${LOGNAME}/temp
+
+Then, when :ref:`running the environment<running_and_using_env>`, instead of just launching the environment with ``bash``, instead define the ``SNPIT_SCRATCH`` environment variable and launch the bash script with:
+
+.. code-block:: console
+
+  SNPIT_SCRATCH=/mnt/roman-science-itnernal/sinput/users/${LOGNAME}/temp bash <dir>/<launcher>
 
 Use a different dev storage directory
 -------------------------------------
@@ -352,7 +352,7 @@ By default, the environments on SMDC will put the "dev storage" directory (the t
 
 .. code-block:: console
 
-  /mnt/roman-science-internal/snpit/users/<yourloginname>/dev_storage
+  mkdir -p /mnt/roman-science-internal/snpit/users/${LOGNAME}/dev_storage
 
 This is probably fine.  If, for some reason you want it elsewhere, then make that directory, and then when you :ref:`run the environment<running_and_using_env>`, instead of just launching the environment with ``bash``, instead run:
 
@@ -360,9 +360,9 @@ This is probably fine.  If, for some reason you want it elsewhere, then make tha
 
   DEV_STORAGE=/path/to/your/dev/storage bash <dir>/<launcher>
 
-If you have changed *both* the temp and dev storage directories, set both env vars:
+(where ``<dir>`` and ``<launcher>`` are defined in :ref:`running_and_using_env`).  If you have changed *both* the temp and dev storage directories, set both env vars:
 
-  DEV_STORAGE=/path/to/your/dev/storage SNPIT_SCRATDH=/path/to/your/tempdir bash <dir>/<launcher>
+  DEV_STORAGE=/path/to/your/dev/storage SNPIT_SCRATCH=/path/to/your/tempdir bash <dir>/<launcher>
 
 
 Running in a containerized environment
@@ -497,10 +497,11 @@ When running on your own machine, you're going to want to pick a ``$RUNDIR``, an
 Using pip or Conda
 ------------------
 
-TODO
+This is not well-documented yet.  You may be able to get an environment going on your local machine with adequate use of ``pip install``; look, for instance, at the ``requirements-cpu.txt`` file in the `environment github archive <https://github.com/Roman-Supernova-PIT/environment>`_.  (Maybe also the ``requirements-cuda.txt`` file.)
 
-Using the Container
--------------------
+
+Using a docker Container
+------------------------
 
 **Warning**: Currently, we are only able to build our containers for ``x86_64`` (also called ``amd64``) systems.  We have not succeeded in building our containers for ``ARM`` (also called ``arm64``) systems— which includes all Macs.  You *might* be able to run a container from a different architecture on your machine, but performance is likely to be very poor.  This means that for development, you really want to be using an ``x86_64`` Linux machine if that's at all possible.  (We do hope to get the container working for ``ARM``, but it's a thorny problem and not a high priority.  If you want to figure out how to make it work, please do.)
 
@@ -534,7 +535,7 @@ Finally, run the environment and start a shell in it:
   docker compose run webserver shell
   docker compose exec -it shell
 
-(both of these should be within the ``test-docker-environment`` subdirectory).  The ``...run...`` command starts several different services (including a database, a web server, a mail server (needed for snappl tests, but you will probably ign ore it), and a shell server.  All of these are inside a private environment, and not accessible from outside.
+(both of these should be within the ``test-docker-environment`` subdirectory).  The ``...run...`` command starts several different services (including a database, a web server, a mail server (needed for snappl tests, but you will probably ignore it), and a shell server.  All of these are inside a private environment, and not accessible from outside.
 
 The second command gets you a command-line on the shell server in the docker compose environment.
 
