@@ -908,8 +908,8 @@ class photutilsImagePSF( PSF ):
             if np.fabs( y0 - np.round( y0 ) ) > 0.001:
                 raise ValueError( f"For photutilsImagePSF.get_stamp, x0 and y0 must have no fractional part, "
                                   f"but got {y0} for y0" )
-            y0 = int( np.round( x0 ) )
-            
+            y0 = int( np.round( y0 ) )
+
         if ( not isinstance( x0, numbers.Integral ) ) or ( not isinstance( y0, numbers.Integral ) ):
             # This should never happen given the code above
             raise TypeError( f"x0 and y0 must be integers; got x0 as a {type(x0)} and y0 as a {type(y0)}; "
@@ -951,7 +951,7 @@ class photutilsImagePSF( PSF ):
             return PSF.getPhotutilsPSF( self, x=x, y=y, imagesampled=True )
         else:
             return self._pupsf
-    
+
 
 class OversampledImagePSF( PSF ):
     """A PSF stored internally in an image which is (possibly) oversampled.

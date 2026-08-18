@@ -259,7 +259,7 @@ class ImageSimulatorImage:
                 x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                 try:
                     data = star.render_star( self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                             zeropoint=self.image.zeropoint, rng=rng, noisy=noisy, psf=psf )
+                                             zeropoint=self.image.get_zeropoint(), rng=rng, noisy=noisy, psf=psf )
                     add_star_to_image( i, data )
                 except Exception as ex:
                     omg( ex )
@@ -269,7 +269,7 @@ class ImageSimulatorImage:
                     x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                     doer = functools.partial( star.render_star,
                                               self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                              zeropoint=self.image.zeropoint, rng=rng, noisy=noisy, psf=psf )
+                                              zeropoint=self.image.get_zeropoint(), rng=rng, noisy=noisy, psf=psf )
                     callback = functools.partial( add_star_to_image, i )
                     pool.apply_async( doer, callback=callback, error_callback=omg )
                 pool.close()
@@ -307,7 +307,7 @@ class ImageSimulatorImage:
               imcoords, stampcoords ) = static_source.render_static_source( self.image.data.shape[1],
                                                                             self.image.data.shape[0],
                                                                             x, y, self.image.mjd,
-                                                                            zeropoint=self.image.zeropoint,
+                                                                            zeropoint=self.image.get_zeropoint(),
                                                                             rng=rng, noisy=noisy, psf=psf,
                                                                             galaxy_kwargs=galaxy_kwargs )
             if stamp is not None:
