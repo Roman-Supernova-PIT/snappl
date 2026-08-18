@@ -331,7 +331,7 @@ In addition to the :ref:`standard things you do for running the environment<runn
 Make your own temp directory
 ----------------------------
 
-By default, the containerized environment on SMDC uses ``/dev/shm`` for the temp directory (``/snpit_temp`` inside the cotnainer).  This is a RAM disk.  It has limited size, *and* it eats up system memory when you use it.  But, it's really fast.  If you know that the total size of temp files you'll have written at once is small enough (i.e. it won't fill the disk, and won't use up too much memory for what your code needs), then this is a great place for it.  However, if you write enough big temp files, you need to put them somewhere else.
+By default, the environments on SMDC uses ``/dev/shm`` for the temp directory (``/snpit_temp`` inside the container for containerized environments).  This is a RAM disk.  It has limited size, *and* it eats up system memory when you use it.  But, it's really fast.  If you know that the total size of temp files you'll have written at once is small enough (i.e. it won't fill the disk, and won't use up too much memory for what your code needs), then this is a great place for it.  However, if you write enough big temp files, you need to put them somewhere else.
 
 The *right* place to put temp files is not immediately obvious.  *If* you're on a node with local storage, then you want to put it there.  (ROB WRITE MORE.)  If you have nothing else to do, then we recommend you make a directory:
 
@@ -366,6 +366,120 @@ If you have changed *both* the temp and dev storage directories, set both env va
 
 
 .. _running_locally:
+=======
+Using an interactive native environment
+---------------------------------------
+
+You can also run natively in a virtual environment. You have two options::
+
+  # A premade static environment that you can't change (i.e., can't install anything)
+  # Your own development environment where you can install stuff
+
+Activating the premade static environment is very easy::
+
+  source /data/snpit/env/environment_checkout_for_native/smdc-install-native-shared.sh
+
+Done.
+
+If you want to install stuff in a native environment, see :ref:`see below<native_development>`. 
+
+.. _native_development:
+
+Using an interactive native environment for development
+-------------------------------------------------------
+
+If you prefer to work in your own Python environment on SMDC, you can create a dedicated virtual environment for the Roman SNPIT photometry packages.  The commands below are intended to be run once to set up the environment, and can be activated again later with:
+
+.. code-block:: console
+
+   source ${HOME}/snpit/snpit-photometry/bin/activate
+
+This setup is intended for the photometry packages ``sidecar``, ``phrosty``, and ``campari``.
+
+In brief, the procedure is:
+
+1. Load the Spack environment.
+2. Load Miniconda.
+3. Create a Python virtual environment.
+4. Install the Roman SNPIT packages into that environment.
+
+Run the following commands on SMDC:
+
+Load the Spack environment (documentation on spack at https://spack-tutorial.readthedocs.io/en/latest/tutorial_environments.html
+):
+
+
+.. code-block:: bash
+
+   source /shared/spack/share/spack/setup-env.sh
+
+Get the Python environment from Miniconda:
+
+.. code-block:: bash
+
+   spack load miniconda3
+
+Initialize Conda in your shell startup file:
+
+.. code-block:: bash
+
+   conda init
+
+Start a new shell so the Conda initialization takes effect, or source ``~/.bashrc`` in the current shell if you prefer:
+
+.. code-block:: bash
+
+   source ~/.bashrc
+
+We will not actually be using Conda after this.  We're just using it for the Python version (because the default Python on the login node image is a minimal version that doesn't have even a complete standard library).
+
+Create the virtual environment in a directory under your home area:
+
+.. code-block:: bash
+
+   mkdir -p ${HOME}/snpit
+   cd ${HOME}/snpit
+   python -m venv snpit-photometry
+
+Activate the environment whenever you want to work on the development setup:
+
+.. code-block:: bash
+
+   source snpit-photometry/bin/activate
+
+Update ``pip`` once to avoid repeated upgrade notices:
+
+.. code-block:: bash
+
+   pip install --upgrade pip
+
+Install the main Roman SNPIT package for the environment.  This may take a few minutes the first time, as dependencies are installed:
+
+.. code-block:: bash
+
+   pip install roman-snpit-snappl
+
+Install ``roman_imsim`` explicitly, since it is not available from PyPI:
+
+.. code-block:: bash
+
+   pip install git+https://github.com/matroxel/roman_imsim.git@21ea15a
+
+If you are on a GPU machine and want ``cupy``, install it explicitly.  This is not a required dependency of the photometry codes, which can run with either NumPy or CuPy.  Right now (2026-08-12), the SMDC GPU machines are using ``cupy-cuda12x``, but this may change in the future.  If you are on a different system, check the CuPy documentation for the correct version to install.
+
+.. code-block:: bash
+
+   # pip install cupy-cuda12x
+
+Install useful development tools used in the project workflow:
+
+.. code-block:: bash
+
+   pip install pytest
+   pip install ruff
+   pip install towncrier
+
+>>>>>>> main
 
 Running locally on your machine
 ===============================
