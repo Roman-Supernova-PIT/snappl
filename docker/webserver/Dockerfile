@@ -73,20 +73,22 @@ RUN source /venv/bin/activate && \
     pip --no-cache install \
         "astropy>=7.1.0,<8.0.0" \
         "fitsio>=1.2.5,<2.0.0" \
-        "galsim>=2.8.4,<3.0.0" \
+        "galsim==2.8.4" \
         "gwcs>=1.0.3,<2.0.0" \
         "h5py>=3.14.0,<4.0.0" \
         "numpy>=2.2.6,<3.0.0" \
         "pandas>=2.3.3,<3.0.0" \
-        "photutils>=2.3.0,<3.0.0" \
+        "photutils>=3.0.0,<4.0.0" \
         "pycryptodome>=3.23.0,<4.0.0" \
         "python-dateutil>=2.9.0.post0,<3.0.0" \
         "pytz>=2025.2" \
         "pyyaml>=6.0.3,<7.0.0" \
         "rkwebutil>=2.5.2,<3.0.0" \
-        "roman-datamodels>=0.30.0,<0.31.0" \
+        "roman-datamodels>=1.0.0,<2.0.0" \
         "scipy>=1.16.2,<2.0.0" \
-        "simplejson>=3.20.2,<4.0.0"
+        "simplejson>=3.20.2,<4.0.0" \
+        "stpsf>=2.2.0,<3.0.0" \
+        "synphot>=1.7.0,<2.0.0"
 # END TEMPORARY
 
 RUN mkdir -p /usr/src/snappl_install

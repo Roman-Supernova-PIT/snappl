@@ -579,7 +579,7 @@ class Image( PathedObject ):
             it matters, a properly-implemented Image subclass will
             assume the center of the image.
 
-        sed : DEFINITION STILL INCOMING; optional.
+       sed : DEFINITION STILL INCOMING; optional.
             DON'T USE THIS RIGHT NOW.  The interface may well change.
             It's here as a placeholder to remind us we need it, and also
             for the docstring below.
@@ -2217,21 +2217,37 @@ class FITSImageStdHeaders( FITSImage ):
         # header) that the superclass can't access because they're
         # @properties, and those things don't seem to be available in a
         # super().__init__()... python is complicated.  So, set it here,
-        # so we won't have problems, and then, because it wasn't run
-        # during super().__init__(), manually run it here.
+        # so we won't have problems.
         self._header_property_setter_post_hook = self._property_post_hook_set_fits_header
-        for prop in self.internal_properties.keys():
-            if not isinstance( getattr(self, prop), _UnsetProperty ):
-                self._property_post_hook_set_fits_header( prop )
-        if not isinstance( self._zeropoint, _UnsetProperty ):
-            self._property_post_hook_set_fits_header( 'zeropoint' )
+
+        # If there already is a header for one reason or another, then
+        # we need to make sure to sync the properties that won't have
+        # been synced yet because the hook wasn't set.
+        if hasattr( self, '_header' ) and ( self._header is not None ):
+            self._sync_object_to_fits_header()
 
 
     def _property_post_hook_set_fits_header( self, prop ):
         if prop in self._header_kws:
             if ( not hasattr( self, '_header' ) ) or ( self._header is None ):
                 self.get_fits_header()
+            if prop in ( 'width', 'height' ):
+                # Width and height might fail if the data file doesn't exist.
+                # In that case, just don't worry about it for now, leave those
+                # header keywords unset
+                try:
+                    self._header[ self._header_kws[prop] ] = getattr( self, f"_{prop}" )
+                except OSError:
+                    pass
             self._header[ self._header_kws[prop] ] = getattr( self, f"_{prop}" )
+
+
+    def _sync_object_to_fits_header( self ):
+        for prop in self.internal_properties.keys():
+            if not isinstance( getattr(self, prop), _UnsetProperty ):
+                self._property_post_hook_set_fits_header( prop )
+        if not isinstance( self._zeropoint, _UnsetProperty ):
+            self._property_post_hook_set_fits_header( 'zeropoint' )
 
 
     def get_fits_header( self ):
@@ -2258,7 +2274,10 @@ class FITSImageStdHeaders( FITSImage ):
             #   * Things neither in the object nor in the header should remain not in either; no None defaults!
             # These conventions are necessary for creating an object of this class
             #   with a new empty header if we want everything to work right.
-            for prop, converter in self.internal_properties.items():
+            propconvs = self.internal_properties.copy()
+            # This particular class has a special case 'zeropoint' internal property
+            propconvs['zeropoint' ] = float
+            for prop, converter in propconvs.items():
                 uprop = f"_{prop}"
                 if prop in self._header_kws.keys():
                     kw = self._header_kws[ prop ]
