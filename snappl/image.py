@@ -1709,6 +1709,10 @@ class FITSImage( Numpy2DImage ):
     those files actually live on disk.  Generally, they should only be used
     internally.
 
+    FITSImage does not do any kind of syncinng between the header and
+    object attributes like observation_id, sca, mjd, etc.  If you need
+    that, use FITSImageStdHeaders.
+
     """
 
     def __init__( self, *args, noisepath=None, flagspath=None,
@@ -1807,6 +1811,16 @@ class FITSImage( Numpy2DImage ):
         if self._std_imagenames:
             raise RuntimeError( "Can't set flagspath for a std_imagenames FITSImage." )
         self._flagspath = pathlib.Path( val )
+
+
+    def _get_internal_attribute( self, prop ):
+        # FITSImage does not do any kind of syncing between internal
+        #   attributes and the header.  If you need that, then use
+        #   FITSImageStdHeaders.
+        # It's not obvious what the right thing to do here is.
+        #   For now, just set the attributes to None if they're unset.
+        if isinstance( getattr( self, f"_{prop}" ), _UnsetProperty ):
+            setattr( self, f"_{prop}", None )
 
 
     @classmethod
