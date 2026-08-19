@@ -2629,7 +2629,7 @@ class RomanDatamodelImage( Image ):
     def _dm_meta( self ):
         if self._dm_meta_cache is None:
             dm = rdm.open( self.full_filepath, mode='r' )
-            self._dm_meta_cache = dm.meta.copy()
+            self._dm_meta_cache = copy.deepcopy( dm.meta )
             dm.close()
         return self._dm_meta_cache
 
