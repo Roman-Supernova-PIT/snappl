@@ -2095,7 +2095,7 @@ class FITSImage( Numpy2DImage ):
         self.get_fits_header()
         try:
             apwcs = self.get_wcs().get_astropy_wcs( readonly=True )
-            wcshdr = apwcs.to_header()
+            wcshdr = apwcs.to_header( relax=True )
             self._strip_wcs_header_keywords()
             self._header.extend( wcshdr )
         except Exception:
