@@ -4,6 +4,7 @@ __all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'Compre
 import re
 import pathlib
 import random
+import copy
 import simplejson
 from contextlib import contextmanager
 
@@ -2611,7 +2612,10 @@ class RomanDatamodelImage( Image ):
         try:
             dm = rdm.open( self.full_filepath, mode='r' )
             if self._dm_meta_cache is None:
-                self._dm_meta_cache = dm.meta.copy()
+                # Do a deepcopy in hopes that it will force all lazy-loaded properties to actually be loaded.
+                # That sounds inefficient... but also is keeping open the RomanDataModel with all the lazy-loaded
+                # stuff that we might not want.
+                self._dm_meta_cache = copy.deepcopy( dm.meta )
             if ( self._width is None ) or ( isinstance( self._width, _UnsetProperty ) ):
                 self._width = dm.shape[1]
             if ( self._height is None ) or ( isinstance( self._height, _UnsetProperty ) ):
