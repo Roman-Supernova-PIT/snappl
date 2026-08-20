@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.utils &#8212; roman_snpit_snappl 0.1.dev1+g4ca1ec67c documentation</title>
+    <title>snappl.utils &#8212; roman_snpit_snappl 0.1.dev1+g63173987e documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=18a6b5fd"></script>
+    <script src="../../_static/documentation_options.js?v=90a14e07"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -89,7 +89,7 @@
           <div class="body" role="main">
             
   <h1>Source code for snappl.utils</h1><div class="highlight"><pre>
-<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;isSequence&#39;</span><span class="p">,</span> <span class="s1">&#39;parse_bool&#39;</span><span class="p">,</span> <span class="s1">&#39;env_as_bool&#39;</span><span class="p">,</span> <span class="s1">&#39;asUUID&#39;</span><span class="p">,</span> <span class="s1">&#39;SNPITJsonEncoder&#39;</span> <span class="p">]</span>
+<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">'isSequence'</span><span class="p">,</span> <span class="s1">'parse_bool'</span><span class="p">,</span> <span class="s1">'env_as_bool'</span><span class="p">,</span> <span class="s1">'asUUID'</span><span class="p">,</span> <span class="s1">'SNPITJsonEncoder'</span> <span class="p">]</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
 
@@ -106,14 +106,14 @@
 <div class="viewcode-block" id="isSequence">
 <a class="viewcode-back" href="../../api/snappl.utils.isSequence.html#snappl.utils.isSequence">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">isSequence</span><span class="p">(</span> <span class="n">var</span> <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return True if var is a sequence, but not a string or bytes.</span>
+<span class="w">    </span><span class="sd">"""Return True if var is a sequence, but not a string or bytes.</span>
 
 <span class="sd">    Todo: figure out other things we want to exclude.</span>
 
-<span class="sd">    The goal is to return True if it&#39;s a list, tuple, array, or</span>
+<span class="sd">    The goal is to return True if it's a list, tuple, array, or</span>
 <span class="sd">    something that works like that.</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">(</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">var</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="p">)</span> <span class="ow">or</span>
              <span class="p">(</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">var</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span> <span class="p">)</span>
                <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">var</span><span class="p">,</span> <span class="nb">str</span> <span class="p">)</span> <span class="ow">or</span>
@@ -126,14 +126,14 @@
 <div class="viewcode-block" id="parse_bool">
 <a class="viewcode-back" href="../../api/snappl.utils.parse_bool.html#snappl.utils.parse_bool">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_bool</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a value represents a boolean value, and return that boolean value if it does.</span>
+<span class="w">    </span><span class="sd">"""Check if a value represents a boolean value, and return that boolean value if it does.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">      text : bool, int, or str</span>
 <span class="sd">        If bool, return as is.  If int, return bool(text).  If str,</span>
-<span class="sd">        return True if text.lower() is any of &quot;true&quot;, &quot;yes&quot;, or &quot;1&quot;;</span>
-<span class="sd">        return False if text.lower() is any of &quot;false&quot;, &quot;no&quot;, or &quot;0&quot;.</span>
+<span class="sd">        return True if text.lower() is any of "true", "yes", or "1";</span>
+<span class="sd">        return False if text.lower() is any of "false", "no", or "0".</span>
 <span class="sd">        Otherwise, raise an exception.</span>
 
 <span class="sd">    Returns</span>
@@ -141,26 +141,26 @@
 <span class="sd">      bool</span>
 
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">text</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span> <span class="p">):</span>
         <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span> <span class="n">text</span> <span class="p">)</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">text</span><span class="p">,</span> <span class="nb">str</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;true&#39;</span><span class="p">,</span> <span class="s1">&#39;yes&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">]</span> <span class="p">):</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">text</span><span class="p">,</span> <span class="nb">str</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'true'</span><span class="p">,</span> <span class="s1">'yes'</span><span class="p">,</span> <span class="s1">'1'</span><span class="p">]</span> <span class="p">):</span>
         <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">text</span><span class="p">,</span> <span class="nb">str</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;false&#39;</span><span class="p">,</span> <span class="s1">&#39;no&#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">]</span> <span class="p">):</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">text</span><span class="p">,</span> <span class="nb">str</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'false'</span><span class="p">,</span> <span class="s1">'no'</span><span class="p">,</span> <span class="s1">'0'</span><span class="p">]</span> <span class="p">):</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cannot parse boolean value from &quot;</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s1">&quot; (type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Cannot parse boolean value from "</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s1">" (type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="env_as_bool">
 <a class="viewcode-back" href="../../api/snappl.utils.env_as_bool.html#snappl.utils.env_as_bool">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">env_as_bool</span><span class="p">(</span> <span class="n">varname</span> <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse an environment variable as a boolean.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Parse an environment variable as a boolean."""</span>
     <span class="k">return</span> <span class="n">parse_bool</span><span class="p">(</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">varname</span><span class="p">)</span> <span class="p">)</span></div>
 
 
@@ -168,13 +168,13 @@
 <div class="viewcode-block" id="asUUID">
 <a class="viewcode-back" href="../../api/snappl.utils.asUUID.html#snappl.utils.asUUID">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">asUUID</span><span class="p">(</span> <span class="nb">id</span><span class="p">,</span> <span class="n">oknone</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pass either a UUID or a string representation of one, get a UUID back.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Pass either a UUID or a string representation of one, get a UUID back."""</span>
     <span class="k">if</span> <span class="n">oknone</span> <span class="ow">and</span> <span class="p">(</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="nb">id</span><span class="p">,</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span> <span class="p">):</span>
         <span class="k">return</span> <span class="nb">id</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="nb">id</span><span class="p">,</span> <span class="nb">str</span> <span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">&quot;asUUID requires a UUID or a str, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span> <span class="sa">f</span><span class="s2">"asUUID requires a UUID or a str, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="p">)</span>
     <span class="k">return</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span> <span class="nb">id</span> <span class="p">)</span></div>
 
 
@@ -182,7 +182,7 @@
 <div class="viewcode-block" id="SNPITJsonEncoder">
 <a class="viewcode-back" href="../../api/snappl.utils.SNPITJsonEncoder.html#snappl.utils.SNPITJsonEncoder">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SNPITJsonEncoder</span><span class="p">(</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">JSONEncoder</span> <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Some specific encodings we need for the JSON use.</span>
+<span class="w">    </span><span class="sd">"""Some specific encodings we need for the JSON use.</span>
 
 <span class="sd">    UUIDs and Path objects to strings.</span>
 
@@ -192,7 +192,7 @@
 
 <span class="sd">    datetime to iso-encoded strings</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
 <div class="viewcode-block" id="SNPITJsonEncoder.default">
 <a class="viewcode-back" href="../../api/snappl.utils.SNPITJsonEncoder.html#snappl.utils.SNPITJsonEncoder.default">[docs]</a>

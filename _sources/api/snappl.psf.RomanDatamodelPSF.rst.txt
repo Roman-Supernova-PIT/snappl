@@ -1,39 +1,29 @@
-PSF
-===
+RomanDatamodelPSF
+=================
 
 .. currentmodule:: snappl.psf
 
-.. autoclass:: PSF
+.. autoclass:: RomanDatamodelPSF
    :show-inheritance:
 
    .. rubric:: Attributes Summary
 
    .. autosummary::
 
-      ~PSF.clip_size
-      ~PSF.stamp_size
-      ~PSF.x
-      ~PSF.y
+      ~RomanDatamodelPSF.stamp_size
 
    .. rubric:: Methods Summary
 
    .. autosummary::
 
-      ~PSF.getImagePSF
-      ~PSF.getPhotutilsPSF
-      ~PSF.get_psf_object
-      ~PSF.get_stamp
+      ~RomanDatamodelPSF.getPhotutilsPSF
+      ~RomanDatamodelPSF.get_stamp
 
    .. rubric:: Attributes Documentation
 
-   .. autoattribute:: clip_size
    .. autoattribute:: stamp_size
-   .. autoattribute:: x
-   .. autoattribute:: y
 
    .. rubric:: Methods Documentation
 
-   .. automethod:: getImagePSF
    .. automethod:: getPhotutilsPSF
-   .. automethod:: get_psf_object
    .. automethod:: get_stamp

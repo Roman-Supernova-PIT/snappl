@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>photutilsImagePSF &#8212; roman_snpit_snappl 0.1.dev1+g4ca1ec67c documentation</title>
+    <title>photutilsImagePSF &#8212; roman_snpit_snappl 0.1.dev1+g63173987e documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=18a6b5fd"></script>
+    <script src="../_static/documentation_options.js?v=90a14e07"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -150,7 +150,7 @@ pixel on the original image that the PSF is for.</p>
 <dt>peakx, peaky: float, float</dt><dd><p>The position <em>in oversampled pixel coordinates</em> on the data
 array where the peak is found.  If these values are not,
 then we assume the peak is at (data.shape[1]//2,
-data.shape[0]//2) (i.e. the center of the center pixel).
+data.shape[0]//2) (i.e., the center of the center pixel).
 (If you pass an even-length data array, and there is no
 “center pixel”, then expect everything to go wrong and the
 world to end.)  See (x, y) below for some examples of
@@ -159,7 +159,7 @@ passing peakx and peaky.</p>
 defaults of None and make sure that the PSF is centered on
 the passed data array.</p>
 </dd>
-<dt>x, y<span class="classifier">float, float</span></dt><dd><p>Position on the original source image (i.e. the astronomical
+<dt>x, y<span class="classifier">float, float</span></dt><dd><p>Position on the original source image (i.e., the astronomical
 image for which this object is the PSF) that corresponds to
 the center of the data array.</p>
 <p>WARNING: this is not the same as the x and y parameters
@@ -179,7 +179,7 @@ oversampled PSF to be centered on the passed data array.</p>
 have an 11×11 PSF oversampled by a factor of 3 that is
 centered on the original image at 1023, 511.  In this case,
 the data array should be 33×33 in size (11 times 3).  If the
-PSF is centered on the data array (i.e. on the center of
+PSF is centered on the data array (i.e., on the center of
 pixel (16,16)), then you would pass x=1023, y=511.</p>
 <p>If your PSF is centered on the original image at 1023.5,
 511.5, but you pass x=1023, y=511, that means that the PSF
@@ -234,7 +234,10 @@ normalize to False.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.getImagePSF" title="snappl.psf.photutilsImagePSF.getImagePSF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getImagePSF</span></code></a>([imagesampled])</p></td>
 <td><p>Return a photutils.psf.ImagePSF model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.get_stamp" title="snappl.psf.photutilsImagePSF.get_stamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stamp</span></code></a>([x, y, x0, y0, flux])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.getPhotutilsPSF" title="snappl.psf.photutilsImagePSF.getPhotutilsPSF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getPhotutilsPSF</span></code></a>([x, y, imagesampled])</p></td>
+<td><p>Return a photutils.psf.SOMETHING that can be the psf_model parameter of photutils.psf.PSFPhotometry</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#snappl.psf.photutilsImagePSF.get_stamp" title="snappl.psf.photutilsImagePSF.get_stamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stamp</span></code></a>([x, y, x0, y0, flux])</p></td>
 <td><p>See PSF.get_stamp for documentation.</p></td>
 </tr>
 </tbody>
@@ -261,6 +264,71 @@ normalize to False.</p>
 <dt class="sig sig-object py" id="snappl.psf.photutilsImagePSF.getImagePSF">
 <span class="sig-name descname"><span class="pre">getImagePSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imagesampled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#photutilsImagePSF.getImagePSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.photutilsImagePSF.getImagePSF" title="Link to this definition">¶</a></dt>
 <dd><p>Return a photutils.psf.ImagePSF model.  See PSF.getImagePSF.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="snappl.psf.photutilsImagePSF.getPhotutilsPSF">
+<span class="sig-name descname"><span class="pre">getPhotutilsPSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imagesampled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#photutilsImagePSF.getPhotutilsPSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.photutilsImagePSF.getPhotutilsPSF" title="Link to this definition">¶</a></dt>
+<dd><p>Return a photutils.psf.SOMETHING that can be the psf_model parameter of photutils.psf.PSFPhotometry</p>
+<p>You really only want to use the result of this for feeding to
+photutils.  If what you want is an image of the PSF, use
+get_stamp() instead.</p>
+<p>Unless the subclass implementes something else, this will be a
+photutils.psf.ImagePSF, and will be just for one position.  If
+you don’t give x and y here, it will use the x and y that were
+given to construct the PSF object.</p>
+<p>Some subclasses will ignore x, y and return a Photutils PSF
+object that can be used at any x, y.  Read the subclass
+documentation to find out what is what.  If you’re writing code
+to work with all subclasses, and you are dealing with a
+spatially variable PSF, then be careful with what you do with
+the return here.</p>
+<p>NOTE AND WORRY : photutils uses the term PSF to mean both PSF
+and PRF in different places.  Just like everyboyd else.  THIS is
+returning a PRF (if the code is right), that is, a thing that
+has been convolved with a tophat pixel (or, ideally, something
+even more sophisticated, but no promises).  However, we call it
+a PSF, because it’s the thing you give to photutils PSF
+photometry.  But photutils has started to try to distinguish, so
+their documentaiton is going to be scary and inconsistent and
+we’ll have to think.</p>
+<p>Subclasses may want to override this.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Position on the original image to render the PSF for.  If
+not given, uses the x and y that the PSF object was
+initialized with.  Because photutils expects PSFs centered
+on a pixel, x and y should have no fractional part.  (The
+default implementation explicitly rounds (sort of…) to
+the nearest whole number for both x and y; properly written
+subclasses will do the same thing.</p></li>
+<li><p><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Position on the original image to render the PSF for.  If
+not given, uses the x and y that the PSF object was
+initialized with.  Because photutils expects PSFs centered
+on a pixel, x and y should have no fractional part.  (The
+default implementation explicitly rounds (sort of…) to
+the nearest whole number for both x and y; properly written
+subclasses will do the same thing.</p></li>
+<li><p><strong>imagesampled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default True</em>) – This one is a bit complicated.  It’s ignored by some
+subclasses.  The default implementation is to return an
+ImagePSF sampled at the image scale, and to ignore
+imagesample.  Some subclasses (e.g., OversampledImagePSF)
+will return an oversampled photutils.psf.ImagePSF if you
+set imagesampled to false.  Other subclasses return other
+things for which image scale may or may not be relevant.
+And, it’s possible that other subclasse will return
+something oversampled even if you say imagesampled=True.
+In any event, because what you get back is intended to be
+fed to photutils, you probably shouldn’t think about it too
+hard.  (TODO: we might want to set imagesampled to False so
+that classes don’t by default make something that will make
+photutils behavior worse!  This may cause a bunch of code
+to break, maybe quietly, because the assumed default
+changed.)</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">

@@ -14,6 +14,8 @@ RomanDatamodelImage
       ~RomanDatamodelImage.dm
       ~RomanDatamodelImage.flags
       ~RomanDatamodelImage.noise
+      ~RomanDatamodelImage.sb_data
+      ~RomanDatamodelImage.sb_noise
 
    .. rubric:: Methods Summary
 
@@ -24,6 +26,7 @@ RomanDatamodelImage
       ~RomanDatamodelImage.get_data
       ~RomanDatamodelImage.get_ra_dec_cutout
       ~RomanDatamodelImage.get_wcs
+      ~RomanDatamodelImage.get_zeropoint
 
    .. rubric:: Attributes Documentation
 
@@ -31,6 +34,8 @@ RomanDatamodelImage
    .. autoattribute:: dm
    .. autoattribute:: flags
    .. autoattribute:: noise
+   .. autoattribute:: sb_data
+   .. autoattribute:: sb_noise
 
    .. rubric:: Methods Documentation
 
@@ -39,3 +44,4 @@ RomanDatamodelImage
    .. automethod:: get_data
    .. automethod:: get_ra_dec_cutout
    .. automethod:: get_wcs
+   .. automethod:: get_zeropoint

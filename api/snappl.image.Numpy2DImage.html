@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Numpy2DImage &#8212; roman_snpit_snappl 0.1.dev1+g4ca1ec67c documentation</title>
+    <title>Numpy2DImage &#8212; roman_snpit_snappl 0.1.dev1+g63173987e documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=18a6b5fd"></script>
+    <script src="../_static/documentation_options.js?v=90a14e07"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -105,7 +105,7 @@
 <h1>Numpy2DImage<a class="headerlink" href="#numpy2dimage" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.image.Numpy2DImage">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.image.</span></span><span class="sig-name descname"><span class="pre">Numpy2DImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#Numpy2DImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.Numpy2DImage" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.image.</span></span><span class="sig-name descname"><span class="pre">Numpy2DImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_superclass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/image.html#Numpy2DImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.image.Numpy2DImage" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="snappl.image.Image.html#snappl.image.Image" title="snappl.image.Image"><code class="xref py py-class docutils literal notranslate"><span class="pre">Image</span></code></a></p>
 <p>Abstract class for classes that store their array internall as a numpy 2d array.</p>
 <p>Instantiate an image.  You probably don’t want to do that.</p>
@@ -118,6 +118,14 @@ Image.find_images class methods.</p>
 <p>If you’re working with non-database images and are trying to get
 a pre-existing image, then probably what you really want to do
 is call the get_image() method of an ImageCollection object.</p>
+<p>Only instantiate an image directly if you’re creating something
+yourself that you know you want to write in a specific format,
+or if you’re trying to read a file that’s not covered by an
+ImageCollection.  When you do this, talk to the photometry
+working group and find out if this image <em>should</em> be covered by
+an ImageCollection.  (Note that there is an
+ImageCollectionManualFITS collection for reading loose FITS
+files.)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -151,20 +159,11 @@ database (but is required in that case).</p></li>
 <li><p><strong>width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
 <li><p><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
 <li><p><strong>format</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default -1</em>) – Index into the table Image._format_def at the bottom of this file.</p></li>
-<li><p><strong>observation_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
-<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>)</p></li>
-<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>
-<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>
-<li><p><strong>(</strong><strong>ra</strong><strong>|</strong><strong>dec</strong><strong>)</strong><strong>_corner_</strong><strong>(</strong><strong>00</strong><strong>|</strong><strong>01</strong><strong>|</strong><strong>10</strong><strong>|</strong><strong>11</strong><strong>)</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>
-<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>)</p></li>
-<li><p><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>
-<li><p><strong>position_angle</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>
-<li><p><strong>exptime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>
-<li><p><strong>sky_level</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>)</p></li>
-<li><p><strong>zeropoint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – All of these are the values that should be set for these
-properties (see Image class docstring).  If they are None,
-how they get populated depends on the image subclass.  In
-many cases, they will be lazy-loaded from the header.</p></li>
+<li><p><strong>is_superclass</strong> – Used internally, should ONLY ever be set in the
+super().__init__(…)  lines in subclass constructors.  All
+subclasses should set this to True when calling
+super().__init__(…).  If you aren’t writing an Image
+subclass, ignore this.</p></li>
 </ul>
 </dd>
 </dl>
@@ -172,13 +171,13 @@ many cases, they will be lazy-loaded from the header.</p></li>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Numpy2DImage.data" title="snappl.image.Numpy2DImage.data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code></a></p></td>
-<td><p>The image data, a 2d numpy array.</p></td>
+<td><p>image data in DAV.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#snappl.image.Numpy2DImage.flags" title="snappl.image.Numpy2DImage.flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flags</span></code></a></p></td>
 <td><p>An integer 2d numpy array of pixel masks / flags TBD</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#snappl.image.Numpy2DImage.noise" title="snappl.image.Numpy2DImage.noise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">noise</span></code></a></p></td>
-<td><p>The 1σ pixel noise, a 2d numpy array.</p></td>
+<td><p>1σ pixel noise.</p></td>
 </tr>
 </tbody>
 </table>

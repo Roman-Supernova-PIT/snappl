@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.dbclient &#8212; roman_snpit_snappl 0.1.dev1+g4ca1ec67c documentation</title>
+    <title>snappl.dbclient &#8212; roman_snpit_snappl 0.1.dev1+g63173987e documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=18a6b5fd"></script>
+    <script src="../../_static/documentation_options.js?v=90a14e07"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -89,7 +89,7 @@
           <div class="body" role="main">
             
   <h1>Source code for snappl.dbclient</h1><div class="highlight"><pre>
-<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;SNPITDBClient&#39;</span> <span class="p">]</span>
+<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">'SNPITDBClient'</span> <span class="p">]</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">rkwebutil.rkauth_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">rkAuthClient</span>
 
@@ -100,27 +100,27 @@
 <div class="viewcode-block" id="SNPITDBClient">
 <a class="viewcode-back" href="../../api/snappl.dbclient.SNPITDBClient.html#snappl.dbclient.SNPITDBClient">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SNPITDBClient</span><span class="p">(</span> <span class="n">rkAuthClient</span> <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A client for communcating with the Roman SNPIT internal database.</span>
+<span class="w">    </span><span class="sd">"""A client for communcating with the Roman SNPIT internal database.</span>
 
 <span class="sd">    To use: instantiate.  (See __init__ docstring.)</span>
 
 <span class="sd">    For the most part, most people will just pass this on as an argument</span>
 <span class="sd">    to snappl library calls.</span>
 
-<span class="sd">    To use it directly, call one of the two methods &quot;post&quot; or &quot;send&quot;.</span>
+<span class="sd">    To use it directly, call one of the two methods "post" or "send".</span>
 <span class="sd">    Both take two arguments; the first is the *relative* URL to the base</span>
 <span class="sd">    URL you passed to the constructor.  (So, if the base url is</span>
-<span class="sd">    &quot;https://snpit-server.domain.org&quot;, and you want to conatncat</span>
-<span class="sd">    &quot;https://snpit-server.domain.org/foo&quot;, you would just pass &quot;foo&quot; as</span>
+<span class="sd">    "https://snpit-server.domain.org", and you want to conatncat</span>
+<span class="sd">    "https://snpit-server.domain.org/foo", you would just pass "foo" as</span>
 <span class="sd">    the URL to post or send.)  The second argument is a dictionary that</span>
 <span class="sd">    will be pased to the server as POST data.  (See the documentation on</span>
 <span class="sd">    the web API to figure out what you can send here.)</span>
 
-<span class="sd">    &quot;post&quot; will return a requests.Response object.  &quot;send&quot; is what you</span>
+<span class="sd">    "post" will return a requests.Response object.  "send" is what you</span>
 <span class="sd">    call when you expect a JSON response; it will return you the parsed</span>
 <span class="sd">    python object from the server (which will be a dictionary or a list).</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">default_dbclient</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -128,7 +128,7 @@
 <a class="viewcode-back" href="../../api/snappl.dbclient.SNPITDBClient.html#snappl.dbclient.SNPITDBClient.get">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">set_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a SNPITDBClient</span>
+<span class="w">        </span><span class="sd">"""Create a SNPITDBClient</span>
 
 <span class="sd">        All arguments are optional.  Will pull the url, and username</span>
 <span class="sd">        from config options system.db.url and system.db.username</span>
@@ -147,7 +147,7 @@
 
 <span class="sd">          use_default : bool, default True</span>
 <span class="sd">            If a SNPITDBClient has already been created, just return</span>
-<span class="sd">            that.  If this is False, or one doesn&#39;t already exist, make</span>
+<span class="sd">            that.  If this is False, or one doesn't already exist, make</span>
 <span class="sd">            a new one.  WARNING : thought required about how this might</span>
 <span class="sd">            interact with multiprocessing and/or multithreading.  It may</span>
 <span class="sd">            be safe, but you might want to make sure to always make a</span>
@@ -170,11 +170,11 @@
 
 <span class="sd">          retries : int, default 5</span>
 <span class="sd">            When calling send or post, if the request to the server</span>
-<span class="sd">            doesn&#39;t return a HTTP 200, try again at most this many</span>
+<span class="sd">            doesn't return a HTTP 200, try again at most this many</span>
 <span class="sd">            times.</span>
 
 <span class="sd">          maxtimeout : float, default 30.</span>
-<span class="sd">            If retries are taking a very long time, don&#39;t keep retrying</span>
+<span class="sd">            If retries are taking a very long time, don't keep retrying</span>
 <span class="sd">            if this much time has passed.</span>
 
 <span class="sd">          retrysleep : float, default 0.2</span>
@@ -189,11 +189,11 @@
 <span class="sd">            lots of processes are running, they will (hopefully) dsync.</span>
 
 <span class="sd">          verify: bool, default True</span>
-<span class="sd">            Verify SSL certs?  Sometimes for tests when you&#39;re using a</span>
+<span class="sd">            Verify SSL certs?  Sometimes for tests when you're using a</span>
 <span class="sd">            test web server with a self-signed cert you may need to set</span>
 <span class="sd">            this to fale.</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="p">(</span> <span class="bp">cls</span><span class="o">.</span><span class="n">default_dbclient</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span> <span class="ow">not</span> <span class="n">use_default</span> <span class="p">):</span>
             <span class="n">dbclient</span> <span class="o">=</span> <span class="n">SNPITDBClient</span><span class="p">(</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -207,7 +207,7 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">passwordfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span> <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a SNPITDBClient.</span>
+<span class="w">        </span><span class="sd">"""Create a SNPITDBClient.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -228,11 +228,11 @@
 
 <span class="sd">          retries : int, default 5</span>
 <span class="sd">            When calling send or post, if the request to the server</span>
-<span class="sd">            doesn&#39;t return a HTTP 200, try again at most this many</span>
+<span class="sd">            doesn't return a HTTP 200, try again at most this many</span>
 <span class="sd">            times.</span>
 
 <span class="sd">          maxtimeout : float, default 30.</span>
-<span class="sd">            If retries are taking a very long time, don&#39;t keep retrying</span>
+<span class="sd">            If retries are taking a very long time, don't keep retrying</span>
 <span class="sd">            if this much time has passed.</span>
 
 <span class="sd">          retrysleep : float, default 0.2</span>
@@ -247,21 +247,21 @@
 <span class="sd">            lots of processes are running, they will (hopefully) dsync.</span>
 
 <span class="sd">          verify: bool, default True</span>
-<span class="sd">            Verify SSL certs?  Sometimes for tests when you&#39;re using a</span>
+<span class="sd">            Verify SSL certs?  Sometimes for tests when you're using a</span>
 <span class="sd">            test web server with a self-signed cert you may need to set</span>
 <span class="sd">            this to fale.</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">url</span> <span class="k">if</span> <span class="n">url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.db.url&#39;</span> <span class="p">)</span>
-        <span class="n">username</span> <span class="o">=</span> <span class="n">username</span> <span class="k">if</span> <span class="n">username</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.db.username&#39;</span> <span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">url</span> <span class="k">if</span> <span class="n">url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">'system.db.url'</span> <span class="p">)</span>
+        <span class="n">username</span> <span class="o">=</span> <span class="n">username</span> <span class="k">if</span> <span class="n">username</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">'system.db.username'</span> <span class="p">)</span>
         <span class="k">if</span> <span class="p">(</span> <span class="n">password</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span> <span class="n">passwordfile</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">password</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.db.password&#39;</span> <span class="p">)</span>
+                <span class="n">password</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">'system.db.password'</span> <span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="n">password</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="n">password</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">&#39;system.db.passwordfile&#39;</span> <span class="p">)</span> <span class="p">)</span> <span class="k">as</span> <span class="n">ifp</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span> <span class="n">cfg</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="s1">'system.db.passwordfile'</span> <span class="p">)</span> <span class="p">)</span> <span class="k">as</span> <span class="n">ifp</span><span class="p">:</span>
                     <span class="n">password</span> <span class="o">=</span> <span class="n">ifp</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">password</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>

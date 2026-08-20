@@ -12,6 +12,16 @@ OpenUniverse2024FITSImage
 
       ~OpenUniverse2024FITSImage.truthpath
 
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~OpenUniverse2024FITSImage.get_zeropoint
+
    .. rubric:: Attributes Documentation
 
    .. autoattribute:: truthpath
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_zeropoint

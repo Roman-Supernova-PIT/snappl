@@ -1,3 +1,5 @@
+.. _snappl_usage:
+
 =====
 Usage
 =====

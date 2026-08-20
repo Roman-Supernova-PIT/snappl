@@ -19,6 +19,7 @@ photutilsImagePSF
    .. autosummary::
 
       ~photutilsImagePSF.getImagePSF
+      ~photutilsImagePSF.getPhotutilsPSF
       ~photutilsImagePSF.get_stamp
 
    .. rubric:: Attributes Documentation
@@ -30,4 +31,5 @@ photutilsImagePSF
    .. rubric:: Methods Documentation
 
    .. automethod:: getImagePSF
+   .. automethod:: getPhotutilsPSF
    .. automethod:: get_stamp

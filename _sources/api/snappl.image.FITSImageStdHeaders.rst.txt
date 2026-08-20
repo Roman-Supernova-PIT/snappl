@@ -6,40 +6,14 @@ FITSImageStdHeaders
 .. autoclass:: FITSImageStdHeaders
    :show-inheritance:
 
-   .. rubric:: Attributes Summary
-
-   .. autosummary::
-
-      ~FITSImageStdHeaders.band
-      ~FITSImageStdHeaders.dec
-      ~FITSImageStdHeaders.exptime
-      ~FITSImageStdHeaders.mjd
-      ~FITSImageStdHeaders.observation_id
-      ~FITSImageStdHeaders.position_angle
-      ~FITSImageStdHeaders.ra
-      ~FITSImageStdHeaders.sca
-      ~FITSImageStdHeaders.sky_level
-      ~FITSImageStdHeaders.zeropoint
-
    .. rubric:: Methods Summary
 
    .. autosummary::
 
       ~FITSImageStdHeaders.get_fits_header
-
-   .. rubric:: Attributes Documentation
-
-   .. autoattribute:: band
-   .. autoattribute:: dec
-   .. autoattribute:: exptime
-   .. autoattribute:: mjd
-   .. autoattribute:: observation_id
-   .. autoattribute:: position_angle
-   .. autoattribute:: ra
-   .. autoattribute:: sca
-   .. autoattribute:: sky_level
-   .. autoattribute:: zeropoint
+      ~FITSImageStdHeaders.get_zeropoint
 
    .. rubric:: Methods Documentation
 
    .. automethod:: get_fits_header
+   .. automethod:: get_zeropoint

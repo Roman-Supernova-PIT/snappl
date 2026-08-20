@@ -5,17 +5,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>STPSF &#8212; roman_snpit_snappl 0.1.dev1+g4ca1ec67c documentation</title>
+    <title>STPSF &#8212; roman_snpit_snappl 0.1.dev1+g63173987e documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=18a6b5fd"></script>
+    <script src="../_static/documentation_options.js?v=90a14e07"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="SED_collection" href="snappl.sed.SED_collection.html" />
+    <link rel="next" title="RomanDatamodelPSF" href="snappl.psf.RomanDatamodelPSF.html" />
     <link rel="prev" title="ou24PSF" href="snappl.psf.ou24PSF.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -63,7 +63,7 @@
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="../api.html">snappl API</a><ul>
       <li>Previous: <a href="snappl.psf.ou24PSF.html" title="previous chapter">ou24PSF</a></li>
-      <li>Next: <a href="snappl.sed.SED_collection.html" title="next chapter">SED_collection</a></li>
+      <li>Next: <a href="snappl.psf.RomanDatamodelPSF.html" title="next chapter">RomanDatamodelPSF</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -91,7 +91,7 @@
           <a href="snappl.psf.ou24PSF.html" title="Previous document">ou24PSF</a>
         </li>
         <li>
-          <a href="snappl.sed.SED_collection.html" title="Next document">SED_collection</a>
+          <a href="snappl.psf.RomanDatamodelPSF.html" title="Next document">RomanDatamodelPSF</a>
           &rarr;
         </li>
     </ul>
@@ -105,7 +105,7 @@
 <h1>STPSF<a class="headerlink" href="#stpsf" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.psf.STPSF">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">STPSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">201</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_parent_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#STPSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.STPSF" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.psf.</span></span><span class="sig-name descname"><span class="pre">STPSF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stamp_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">201</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_parent_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/snappl/psf.html#STPSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.psf.STPSF" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="snappl.psf.PSF.html#snappl.psf.PSF" title="snappl.psf.PSF"><code class="xref py py-class docutils literal notranslate"><span class="pre">PSF</span></code></a></p>
 <p>Wrap the STPSF PSFs.</p>
 <p>Each time you call get_stamp it will render a new one, with all the
@@ -188,7 +188,7 @@ You can choose other planes if you want.</p>
           <a href="snappl.psf.ou24PSF.html" title="Previous document">ou24PSF</a>
         </li>
         <li>
-          <a href="snappl.sed.SED_collection.html" title="Next document">SED_collection</a>
+          <a href="snappl.psf.RomanDatamodelPSF.html" title="Next document">RomanDatamodelPSF</a>
           &rarr;
         </li>
     </ul>

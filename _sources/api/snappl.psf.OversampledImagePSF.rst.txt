@@ -18,7 +18,7 @@ OversampledImagePSF
 
    .. autosummary::
 
-      ~OversampledImagePSF.getImagePSF
+      ~OversampledImagePSF.getPhotutilsPSF
       ~OversampledImagePSF.get_stamp
 
    .. rubric:: Attributes Documentation
@@ -29,5 +29,5 @@ OversampledImagePSF
 
    .. rubric:: Methods Documentation
 
-   .. automethod:: getImagePSF
+   .. automethod:: getPhotutilsPSF
    .. automethod:: get_stamp
