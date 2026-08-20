@@ -302,7 +302,7 @@ If you get error messages about no access, try:
 
 .. code-block:: console
 
-   apptainer registry login --username <your_nersc_userna me> docker://registry.nersc.gov
+   apptainer registry login --username <your_nersc_username> docker://registry.nersc.gov
 
 and then repeat the ``apptainer pull`` commands above.
 
