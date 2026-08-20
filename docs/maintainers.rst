@@ -283,7 +283,29 @@ You *will* get some "Operation not permitted" errors.  If those are all on files
 Pull the environment on SMDC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO
+First, get a node:
+
+.. code-block:: console
+
+  salloc -p mem-med
+
+Once on the node, pull the image to a sif file with:
+
+.. code-block:: console
+
+   APPTAINER_TMPDIR=/dev/shm apptainer pull /data/snpit/roman-snpit-env-cpu-x.y.z.sif docker://registry.nersc.gov/m4385/roman-snpit-env:cpu-x.y.z
+   APPTAINER_TMPDIR=/dev/shm apptainer pull /data/snpit/roman-snpit-env-cpu-dev-x.y.z.sif docker://registry.nersc.gov/m4385/roman-snpit-env:cpu-dev-x.y.z
+
+replacing ``x.y.z`` with the verion number.  As of this writing, the cuda images don't work on SMDC; when they do, pull those too.
+
+If you get error messages about no access, try:
+
+.. code-block:: console
+
+   apptainer registry login --username <your_nersc_username> docker://registry.nersc.gov
+
+and then repeat the ``apptainer pull`` commands above.
+
 
 
 Installing a new database on NERSC Spin
