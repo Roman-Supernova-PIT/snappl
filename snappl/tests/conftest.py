@@ -339,7 +339,7 @@ def ou2024_test_lightcurve( loaded_ou2024_test_diaobjects, loaded_ou2024_test_l2
         data = { 'mjd': [ i.mjd for i in images ],
                  'flux': [ 0., 0., 5., 30., 50., 40., 20., 10. ],
                  'flux_err': [ 0.1 ] * 8,
-                 'zpt': [ i.zeropoint for i in images ],
+                 'zpt': [ i.get_zeropoint() for i in images ],
                  'NEA': [ 5. ] * 8,
                  'sky_rms': [ 10. ] * 8,
                  'observation_id': [ i.observation_id for i in images ],

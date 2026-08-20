@@ -386,12 +386,12 @@ class BaseTestImagePSF:
         SNLogger.debug( f"test_get_stamp_offset_oversampled: average get_stamp runtime: {t/n} over {n} runs" )
 
 
-    def run_test_get_imagepsf( self, testpsf, oversamp=1. ):
-        impsf = testpsf.getImagePSF()
+    def run_test_get_photutilspsf( self, testpsf, oversamp=1. ):
+        impsf = testpsf.getPhotutilsPSF()
         assert isinstance( impsf, ImagePSF )
         assert ( impsf.oversampling == np.array( [ 1, 1 ] ) ).all()
 
-        impsf = testpsf.getImagePSF( imagesampled=False )
+        impsf = testpsf.getPhotutilsPSF( imagesampled=False )
         assert isinstance( impsf, ImagePSF )
         assert ( impsf.oversampling == np.array( [ int(oversamp), int(oversamp) ] ) ).all()
 

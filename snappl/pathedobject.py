@@ -133,7 +133,8 @@ class PathedObject:
                                           f"and full path {full_filepath}, this is inconsistent." )
 
         elif self._no_base_path:
-            self._filepath = self._filepath.resolve()
+            if self._filepath is not None:
+                self._filepath = self._filepath.resolve()
 
 
     def _set_base_path( self, base_path=None, no_base_path=False ):
@@ -188,9 +189,9 @@ class PathedObject:
     @property
     def full_filepath( self ):
         if self._no_base_path:
-            return self._filepath.resolve()
+            return self.filepath.resolve()
         else:
-            return self._base_path / self._filepath
+            return self._base_path / self.filepath
 
     def generate_filepath( self ):
         """Classes that have default filepaths should override this function to set self._filepath."""
