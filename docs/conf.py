@@ -34,7 +34,7 @@ from sphinx.ext.autodoc import AttributeDocumenter
 # So, instead, we do it manually.  You will need to add mock to
 #   the docs list in [project.optional-dependencies] in pyproject.toml.
 import mock
-things_to_mock = [ 'galsim', 'galsim.roman', 'roman_imsim', 'roman_imsim.utils' ]
+things_to_mock = [ 'galsim', 'galsim.roman', 'roman_imsim', 'roman_imsim.utils', 'crds' ]
 for mod in things_to_mock:
     sys.modules[ mod ] = mock.MagicMock()
 
