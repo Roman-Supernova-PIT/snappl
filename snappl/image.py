@@ -168,6 +168,29 @@ class Image( PathedObject ):
              DO NOT USE.  HERE FOR BACKWARDS COMPATIBILITY ONLY
     * name : str; synonym for filename.  DO NOT USE.  HERE FOR BACKWARDS COMPATIBILITY ONLY.
 
+    POSITION ANGLE
+
+    Position angle is defined in degrees north of east.  Implications of this include:
+
+      * A PA of 0° means the *negative* X-axis is East and the Y-axis is North
+          - i.e., increasing RA is left (lower X), increasing Dec is up (higher Y)
+      * A PA of 45° means that the X-axis is Northwest and the Y-axis is Norhteast
+          - i.e. increasing RA is down and to the left, increasing Dec is up and to the left
+      * A PA of 90° means the Y-axis is East and the X-axis is North
+          - i.e. incrasing RA is up (higher Y), increasing Dec is right (higher X)
+
+    (TODO: check this to make sure I have't made a sign error in
+    whether it's the image axes or the sky axes that is rotated!  I
+    think that happened when they made OU24, using two different
+    conventions in two different places.)
+
+    The position angle property is calculated from the Image's WCS,
+    unless a subclass overrides this behavior.  (As of this writing, the
+    only one that does is FITSImageStdHeaders, which will use a position
+    angle header keyword if one was given on object construction,
+    otherwise fall back to the implementation in Image).  Of course, it
+    can't calculate a position angle if it doesn't have a wcs.
+
     """
 
     # SEE THE VERY BOTTOM OF THIS FILE
@@ -960,7 +983,12 @@ class Image( PathedObject ):
 
 
     def _get_position_angle( self ):
-        """Position angle in degrees north of east"""
+        """Position angle in degrees north of east
+
+        See the class docstring for discussion of what position angle means.
+
+        """
+
         try:
             wcs = self.get_wcs()
         except Exception as ex:
@@ -2613,8 +2641,10 @@ class RomanDatamodelImage( Image ):
             dm = rdm.open( self.full_filepath, mode='r' )
             if self._dm_meta_cache is None:
                 # Do a deepcopy in hopes that it will force all lazy-loaded properties to actually be loaded.
-                # That sounds inefficient... but also is keeping open the RomanDataModel with all the lazy-loaded
-                # stuff that we might not want.
+                # That sounds inefficient... but so is keeping open the RomanDataModel with all the lazy-loaded
+                # stuff (e.g., image planes) that we might not want, or might want to free.  The meta should be
+                # insigifncant in size compeared to images, so the inefficiency here *should* be small, unless for
+                # some reason something in meta requires a lot of computation to realize.
                 self._dm_meta_cache = copy.deepcopy( dm.meta )
             if ( self._width is None ) or ( isinstance( self._width, _UnsetProperty ) ):
                 self._width = dm.shape[1]
@@ -2629,6 +2659,7 @@ class RomanDatamodelImage( Image ):
     def _dm_meta( self ):
         if self._dm_meta_cache is None:
             dm = rdm.open( self.full_filepath, mode='r' )
+            # See deepcopy comment in _with_dm above
             self._dm_meta_cache = copy.deepcopy( dm.meta )
             dm.close()
         return self._dm_meta_cache
