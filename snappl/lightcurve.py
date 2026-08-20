@@ -58,13 +58,19 @@ class Lightcurve( PathedObject ):
     CREATING NEW LIGHTCURVES THAT WILL BE WRITTEN TO THE DATABASE
     =============================================================
 
-    Instantiate the Lightcurve object (for these docs, we'll assume the
-    variable holding it is lc), giving it both data= and meta=.  Do NOT
-    specify any of filepath, base_path, base_dir, or no_base_path.  When
-    you write the Lightcurve call *both*
+    Instantiate the Lightcurve object::
 
-      * lc.write()
-      * lc.save_to_db()
+      lc = Lightcurve( data=<data>, meta=<meta> )
+
+    You *must* give it both data= and meta=.  What you pass to meta
+    *must* include a `provenance_id`, which is propery constructed using
+    the Provenance class.  Do NOT specify any of filepath, base_path,
+    base_dir, or no_base_path.
+
+    When you write the Lightcurve call *both*::
+
+      lc.write()
+      lc.save_to_db()
 
     and do not specify any arguments to either one.
 
@@ -76,9 +82,9 @@ class Lightcurve( PathedObject ):
     don't give it base_dir, then filepath is absolute, otherwise
     filepath is relative to base_path.
 
-    When you write the file, call:
+    When you write the file, call::
 
-      * lc.write( filename=<filepath>, base_dir=<base_dir> )
+      lc.write( filename=<filepath>, base_dir=<base_dir> )
 
     You can omit both arguments if you specified them when you made the
     Lightcurve object.  If <filepath> is absolute, then you don't need
