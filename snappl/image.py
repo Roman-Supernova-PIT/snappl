@@ -4,7 +4,9 @@ __all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'Compre
 import re
 import pathlib
 import random
+import copy
 import simplejson
+from contextlib import contextmanager
 
 import numpy as np
 import pandas
@@ -22,14 +24,20 @@ from photutils.background import LocalBackground, MMMBackground, Background2D
 
 import galsim.roman
 import roman_datamodels as rdm
+import crds
 
 from snappl.logger import SNLogger
 from snappl.config import Config
 from snappl.wcs import BaseWCS, AstropyWCS, GalsimWCS, RDM_GWCS, RDM_CRDS_GWCS
-from snappl.utils import asUUID, SNPITJsonEncoder
+from snappl.utils import asUUID, SNPITJsonEncoder, isSequence
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
 from snappl.pathedobject import PathedObject
+
+
+class _UnsetProperty:
+    """Used internally, ignore."""
+    pass
 
 
 # ======================================================================
@@ -44,29 +52,82 @@ class Image( PathedObject ):
     Properties inclue the following.  Some of these properties may not
     be defined for some subclasses of Image.
 
-    If possible, avoid using all "path" properties, and instead use the
-    other properties to get access to image data.  Note that "noisepath"
-    and "flagspath" are not defined for all Image subclasses, and will
-    only be defined sometimes for some subclasses (depending on how data
-    is stored).
+    DATA PROPERTIES
 
-    * filepath : pathlib.Path ; path *relative to the base path* of the image file. This may just
-                                have the image data itself, or it may be a *base* filepath, or it
-                                may have everything, depending on the subclass.
-                                If you can avoid using this property, do so.  Use .data, etc, instead.
-    * filename : string ; just the name part of filepath (so if filepath is Path("/foo/bar"), name is "bar")
-    * full_filepath : pathlib.Path ; absolute path to file on system.  (Same as base_path / filepath.)
-    * base_path : base path for images; usually will be Config value system.paths.images
-    * base_dir : synonym for base_path
+    * data : 2d numpy array; the data of this image
+    * noise : 2d numpy array; a 1σ noise image (if defined)
+    * flags : 2d numpy array of ints; a pixel flags image (if defined)
 
-    * path : pathlib.Path; absolute path to the image on disk, sort of, in a complicatd way.
-             HERE FOR BACKWARDS COMPATIBILITY ONLY
-    * name : str; synonym for filename.  HERE FOR BACKWARDS COMPATIBILITY ONLY.
+    For all implementations, the properties data, noise, and flags are
+    lazy-loaded.  That is, they start as None, but when you access them,
+    an internal buffer gets loaded with that data.  (Depending on the
+    subclass, accessing any one of these properties may load others into
+    memory.  For instance, using RomanDatamodelImage, the first time you
+    access either .data or .noise, both get loaded into memory.)  This
+    means it can be very easy for lots of memory to get used without
+    your realizing it.  There are a couple of solutions.  The first, is
+    to call Image.free() when you're sure you don't need the data any
+    more, or if you know you want to get rid of it for a while and
+    re-read it from disk later.  The second is just not to access the
+    data, noise, and flags properties, instead use Image.get_data(), and
+    manage the data object lifetime yourself.
+
+    Image arrays are indexed by [y, x], with 0 being the center of the
+    lower-left pixel.  That is, .data[0, 0] gives you the lower-left
+    pixel.  .data[0, 1] gives you the pixel one to the right of the
+    lower-left pixel.  .data[1, 0] gives you the pixel one above the
+    lower-left pixel.  .data[height-1, width-1] gives you the
+    upper-right pixel.  THESE POSITIONS ARE OFFSET BY 1 FROM WHAT YOU
+    SEE IN DS9, so be careful.  They are also offset by 1 from a WCS in
+    a FITS image header.  However, they ARE the coordinates you expect
+    when using an astropy WCS class the right way, and, more
+    importantly, are the coordiantes you expect when using a snappl WCS
+    class.
+
+    When considering positions on the image, as opposed to indexes in
+    the array, the .0 position is the *center* of the pixel.  This is an
+    unfortunate convention (talk to Rob if you want to know why it's
+    unfortunate), but it's what astronomers have been using for decades,
+    so we're stuck with it.  For a long discussion about indexing
+    images, see the docstring on psf.py::PSF.get_stamp.
+
+    UNITS OF THE DATA: we define the DAV "data array value" as the units
+    of these arrays.  The literal definition of this is "the units of
+    whatever it is you get when you access the .data property of a
+    snappl.Image object".  However, there is a further definition for
+    the Image class, and that is that DAV are NOT a surface brightness
+    unit, but something (in the ideal case) proportional to the number
+    of photons that came from the angular area on the sky subtended by
+    the pixel during the exposure.  This is explored further in the
+    zeropoint docstring below.  This means that a properly-implemented
+    Image subclass may need to do a conversion to the actual data stored
+    on disk in the file it refers to before giving you the .data and
+    .noise properties (which the RomanDatamodelImage subclass does).  We
+    use DAV because did not want to use DN or ADU or anything that had
+    ever been used before; empirically, that caused discussion about DN
+    vs. DN/sec, which got in the way of just trying to talk about the
+    data array.
+
+    IMMEDIATE IMAGE METADATA PROPERTIES
+
+    * width : the width (horizontal size as viewed on ds9) of the image in pixels
+    * height : the height (vertial size as viewed on ds9) of the image in pixels
+    * image_shape : tuple of ints, giving (height, width)
+
+    LESS IMMEDIATE IMAGE METADATA PROPERTIES
+
+    coord_center : tuple of (ra, dec) [I THINK] : center of the image as calcualted from the WCS
+
+    HEADER DATA PROPERTIES
+
+    These are things that you would traditionally find in the "header" of an image.
 
     * observation_id : str; a unique identifier of the exposure associated with the image
     * sca : int (str?); the SCA of this image
     * ra: float; the nominal RA at the center of the image in decimal degrees, usu. from the header
+    *            (so may be slightly different from what you get using coord_center)
     * dec: float; the nominal RA at the center of the image in decimal degrees, usu. from the header
+                  (so may be slightly different from what you get using coord_center)
     * ra_corner_00: float; decimal degrees, ra of pixel (0, 0)
     * ra_corner_10: float; decimal degrees, ra of pixel (width-1, 0)
     * ra_corner_01: float; decimal degrees, ra of pixel (0, height)
@@ -78,34 +139,64 @@ class Image( PathedObject ):
     * band : str; filter
     * mjd : float; mjd of the start of the image
     * position_angle : float; position angle in degrees north of east (CHECK THIS)
-    * exptime : float; exposure time in seconds
-    * sky_level : float; an estimate of the sky level (in ADU) if known, None otherwise
-    * zeropoint : float; convert to AB mag with -2.5*log(adu) + zeropoint, where adu is the units of data
+    * exptime : float; exposure time in seconds.  (But be careful;
+                because of the ramp readout of Roman images, not all
+                pixels will have used the full exptime.  Don't try to
+                think about it too hard, and just use the .data and
+                .noise arrays.)
+    * sky_level : float; an estimate of the sky level (in DAV) if known, None otherwise
 
-    * width : the width (xorizontal size as viewed on ds9) of the image in pixels
-    * height : the height (y/vertical size as viewed on ds9) of the image in pixels
-    * image_shape : tuple (height, width) of ints; the image size
-    * coord_center : tuple of (ra, dec) [I THINK] : center of the image calculated from the WCS
+    PATH PROPERTIES
 
-    * data : 2d numpy array; the data of this image
-    * noise : 2d numpy array; a 1σ noise image (if defined)
-    * flags : 2d numpy array of ints; a pixel flags image (if defined)
+    If possible, avoid using all "path" properties, and instead use the
+    other properties to get access to image data (i.e., .data, .noise).
+    Trust snappl to read the files.  If you don't, the behavior may not
+    be what you expect.  Note that "noisepath" and "flagspath" are not defined for all Image
+    subclasses, and will only be defined sometimes for some subclasses
+    (depending on how data is stored).
 
-    IMPORTANT NOTE: because of how numpy arrays are indexed, if you want to get
-    value of the pixel at (ix, iy), you would do image.data[iy, ix].
+    * filepath : pathlib.Path ; path *relative to the base path* of the image file. This may just
+                                have the image data itself, or it may be a *base* filepath, or it
+                                may have everything, depending on the subclass.
+                                If you can avoid using this property, do so.  Use .data, etc, instead.
+    * filename : string ; just the name part of filepath (so if filepath is Path("/foo/bar"), name is "bar")
+    * full_filepath : pathlib.Path ; absolute path to file on system.  (Same as base_path / filepath.)
+    * base_path : base path for images; usually will be Config value system.paths.images
+    * base_dir : synonym for base_path
 
-    For all implementations, the properties data, noise, and flags are
-    lazy-loaded.  That is, they start empty, but when you access them,
-    an internal buffer gets loaded with that data.  This means it can be
-    very easy for lots of memory to get used without your realizing it.
-    There are a couple of solutions.  The first, is to call Image.free()
-    when you're sure you don't need the data any more, or if you know
-    you want to get rid of it for a while and re-read it from disk
-    later.  The second is just not to access the data, noise, and flags
-    properties, instead use Image.get_data(), and manage the data object
-    lifetime yourself.
+    * path : pathlib.Path; absolute path to the image on disk, sort of, in a complicatd way.
+             DO NOT USE.  HERE FOR BACKWARDS COMPATIBILITY ONLY
+    * name : str; synonym for filename.  DO NOT USE.  HERE FOR BACKWARDS COMPATIBILITY ONLY.
+
+    POSITION ANGLE
+
+    Position angle is defined in degrees north of east.  Implications of this include:
+
+      * A PA of 0° means the *negative* X-axis is East and the Y-axis is North
+          - i.e., increasing RA is left (lower X), increasing Dec is up (higher Y)
+      * A PA of 45° means that the X-axis is Northwest and the Y-axis is Norhteast
+          - i.e. increasing RA is down and to the left, increasing Dec is up and to the left
+      * A PA of 90° means the Y-axis is East and the X-axis is North
+          - i.e. incrasing RA is up (higher Y), increasing Dec is right (higher X)
+
+    (TODO: check this to make sure I have't made a sign error in
+    whether it's the image axes or the sky axes that is rotated!  I
+    think that happened when they made OU24, using two different
+    conventions in two different places.)
+
+    The position angle property is calculated from the Image's WCS,
+    unless a subclass overrides this behavior.  (As of this writing, the
+    only one that does is FITSImageStdHeaders, which will use a position
+    angle header keyword if one was given on object construction,
+    otherwise fall back to the implementation in Image).  Of course, it
+    can't calculate a position angle if it doesn't have a wcs.
 
     """
+
+    # SEE THE VERY BOTTOM OF THIS FILE
+    # There a class variable _format_def is defined that explains the "format" field
+    #  in the l2images table in the database.  (It's defined at the bottom of the
+    #  file so all the classes will be defined by the time we get there.)
 
     # How close in degrees should the right- and up- calculated position angles match?
     _close_enough_position_angle = 3
@@ -113,19 +204,34 @@ class Image( PathedObject ):
     # This is just a conveneince varaible used by the vearious get_data methods
     data_array_list = [ 'all', 'data', 'noise', 'flags' ]
 
-    # SEE THE VERY BOTTOM OF THIS FILE
-    # There a class variable _format_def is defined that explains the "format" field
-    #  in the l2images table in the database.  (It's defined at the bottom of the
-    #  file so all the classes will be defined by the time we get there.)
+    # These are the properties that have underscore names internally,
+    # and that can be set in the constructor.  (Some of them are
+    # potentially hazardous, e.g., if width and height are not consistent
+    # with data, then things will break.)
+    internal_properties = { 'width': int,
+                            'height': int,
+                            'observation_id': str,
+                            'sca': int,
+                            'ra': float,
+                            'dec': float,
+                            'band': str,
+                            'mjd': float,
+                            'position_angle': float,
+                            'exptime': float,
+                            'sky_level': float,
+                            'ra_corner_00': float,
+                            'ra_corner_01': float,
+                            'ra_corner_10': float,
+                            'ra_corner_11': float,
+                            'dec_corner_00': float,
+                            'dec_corner_01': float,
+                            'dec_corner_10': float,
+                            'dec_corner_11': float
+                           }
 
 
     def __init__( self, full_filepath=None, filepath=None, base_path=None, base_dir=None,
-                  path=None, no_base_path=False,
-                  id=None, provenance_id=None, width=None, height=None,
-                  observation_id=None, sca=None, ra=None, dec=None,
-                  ra_corner_00=None, ra_corner_01=None, ra_corner_10=None, ra_corner_11=None,
-                  dec_corner_00=None, dec_corner_01=None, dec_corner_10=None, dec_corner_11=None,
-                  band=None, mjd=None, position_angle=None, exptime=None, sky_level=None, zeropoint=None,
+                  path=None, no_base_path=False, id=None, provenance_id=None,
                   format=-1, is_superclass=False, **kwargs ):
         """Instantiate an image.  You probably don't want to do that.
 
@@ -140,6 +246,15 @@ class Image( PathedObject ):
         If you're working with non-database images and are trying to get
         a pre-existing image, then probably what you really want to do
         is call the get_image() method of an ImageCollection object.
+
+        Only instantiate an image directly if you're creating something
+        yourself that you know you want to write in a specific format,
+        or if you're trying to read a file that's not covered by an
+        ImageCollection.  When you do this, talk to the photometry
+        working group and find out if this image *should* be covered by
+        an ImageCollection.  (Note that there is an
+        ImageCollectionManualFITS collection for reading loose FITS
+        files.)
 
         Parameters
         ----------
@@ -190,17 +305,24 @@ class Image( PathedObject ):
           format : int, default -1
             Index into the table Image._format_def at the bottom of this file.
 
+          is_superclass: bool, default False
+             Used internally, should ONLY ever be set in the
+             super().__init__(...)  lines in subclass constructors.  All
+             subclasses should set this to True when calling
+             super().__init__(...).  If you aren't writing an Image
+             subclass, ignore this.
+
+
           observation_id : str
           sca: int, default None
           ra: float, default None
           dec: float, default None
-          (ra|dec)_corner_(00|01|10|11): float, default None
           band: str, default None
           mjd: float, default None
           position_angle: float, default None
           exptime: float, default None
           sky_level: float, default None
-          zeropoint: float, default None
+          (ra|dec)_corner_(00|01|10|11): float, default None
             All of these are the values that should be set for these
             properties (see Image class docstring).  If they are None,
             how they get populated depends on the image subclass.  In
@@ -227,36 +349,21 @@ class Image( PathedObject ):
         super().__init__( filepath=filepath, base_path=base_path, base_dir=base_dir,
                           full_filepath=full_filepath, no_base_path=no_base_path )
 
-        self._declare_consumed_kwargs( { 'path', 'filepath', 'base_path', 'base_dir',
-                                         'full_filepath', 'no_base_path', 'id', 'provenance_id',
-                                         'width', 'height', 'observation_id', 'sca', 'ra', 'dec',
-                                         'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
-                                         'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
-                                         'band', 'mjd', 'position_nagle', 'exptime', 'sky_level', 'zeropoint' } )
-        self._verify_all_consumed_kwargs( **kwargs )
+        consumed_kwargs = { 'full_filepath', 'filepath', 'base_path', 'base_dir', 'path', 'no_base_path',
+                            'id', 'provenance_id', 'format', 'is_superclass' }
+        consumed_kwargs = consumed_kwargs.union( set(self.internal_properties.keys()) )
+        self._declare_consumed_kwargs( consumed_kwargs )
+        if not is_superclass:
+            self._verify_all_consumed_kwargs( **kwargs )
 
         self._id = asUUID( id ) if id is not None else None
         self._provenance_id = asUUID( provenance_id ) if provenance_id is not None else None
-        self._width = width
-        self._height = height
-        self._observation_id = observation_id
-        self._sca = sca
-        self._ra = ra
-        self._dec = dec
-        self._ra_corner_00 = ra_corner_00
-        self._ra_corner_01 = ra_corner_01
-        self._ra_corner_10 = ra_corner_10
-        self._ra_corner_11 = ra_corner_11
-        self._dec_corner_00 = dec_corner_00
-        self._dec_corner_01 = dec_corner_01
-        self._dec_corner_10 = dec_corner_10
-        self._dec_corner_11 = dec_corner_11
-        self._band = band
-        self._mjd = mjd
-        self._position_angle = position_angle
-        self._exptime = exptime
-        self._sky_level = sky_level
-        self._zeropoint = zeropoint
+
+        for prop in self.internal_properties:
+            val = kwargs.get( prop, _UnsetProperty() )
+            if ( val is not None ) and ( not isinstance( val, _UnsetProperty ) ):
+                val = self.internal_properties[prop]( val )
+            setattr( self, prop, val )
 
         self._wcs = None      # a BaseWCS object (in wcs.py)
         self._is_cutout = False
@@ -279,7 +386,7 @@ class Image( PathedObject ):
             # Do we want this to be an exeption or just a warning?
             raise RuntimeError( f"{self.__class__.__name__} constructor didn't recognize "
                                 f"keyword arguments: {unconsumed} " )
-            # SCLogger.warning( f"{self.__class__.__name__} constructor didn't recognize "
+            # SNLogger.warning( f"{self.__class__.__name__} constructor didn't recognize "
             #                   f"keyword arguments: {unconsumed} " )
 
 
@@ -356,7 +463,7 @@ class Image( PathedObject ):
 
     @property
     def data( self ):
-        """The image data, a 2d numpy array."""
+        """2d numpy array: image data in DAV.  Maybe not the same as what's in the file!  See Image class docstring."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement data" )
 
     @data.setter
@@ -365,7 +472,7 @@ class Image( PathedObject ):
 
     @property
     def noise( self ):
-        """The 1σ pixel noise, a 2d numpy array."""
+        """2d numpy array: 1σ pixel noise.  Maybe not the same as what's in the file!  See Image class docstring."""
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement noise" )
 
     @noise.setter
@@ -395,302 +502,561 @@ class Image( PathedObject ):
     @property
     def width( self ):
         """Int: the width (x-size, second index in numpy arrays) of the image"""
-        if self._width is None:
+        if ( self._width is None ) or ( isinstance( self._width, _UnsetProperty ) ):
             self._get_image_shape()
         return self._width
 
     @property
     def height( self ):
         """Int: height (y-size, first index in numpy arrays) of the image"""
-        if self._height is None:
+        if ( self._height is None ) or ( isinstance( self._height, _UnsetProperty ) ):
             self._get_image_shape()
         return self._height
 
-    @property
-    def observation_id( self ):
-        """Str; unique identifier of one exposure combining all SCAs."""
-        if self._observation_id is None:
-            self._get_observation_id()
-        return self._observation_id
 
-    @observation_id.setter
-    def observation_id( self, val ):
-        self._observation_id = val
+    # WARNING TO SUBCLASS AUTHORS
+    # The fact that Image uses __getattr__ and __setattr__ can create
+    #   subtle things that will go wrong if you try to override
+    #   getters/setters for any of the properties that are in the sets
+    #   in the if statements in these methods.  Hopefully you can get by
+    #   using the getter/setter pre/post hooks.
+    # BUT STILL BE WARNED: if you use a post_hook, it's entirely possible
+    #   that it will make your class not work at all.  This is really
+    #   some messy stuff we're doing here.  For an example, see
+    #   FITSImageStdHeaders (which is also the only class as of this
+    #   writing that uses this).
 
-    @property
-    def sca( self ):
-        """Int; the chip of the image"""
-        if self._sca is None:
-            self._get_sca()
-        return self._sca
+    def __getattr__( self, prop ):
+        if prop in self.internal_properties.keys():
+            if isinstance( getattr( self, f'_{prop}' ), _UnsetProperty ):
+                if prop in ( 'ra', 'dec' ):
+                    self._get_ra_dec()
+                elif prop == 'position_angle':
+                    self._get_position_angle()
+                elif ( prop[:9] == 'ra_corner' ) or ( prop[:10] == 'dec_corner' ):
+                    self._get_corners()
+                else:
+                    self._get_internal_attribute( prop )
 
-    @sca.setter
-    def sca( self, val ):
-        self._sca = int( val ) if val is not None else None
+            return getattr( self, f"_{prop}" )
+        else:
+            # If the property was available in the class either as an
+            #   attribute or as a defined getter, then this __getattr__
+            #   should never have been called.  That means that if it
+            #   was called with prop as something other than one of the
+            #   things in the set in the if statement above, the caller
+            #   was trying to access a property of the object that isn't
+            #   supposed to exist.  That would probably raise an
+            #   exception even without this else here.  But, I have an
+            #   explict error here just in case I'm not fully grokking
+            #   the subtleties of using __getattr__, which frankly gives
+            #   me the willies, so that the exception will be here and I
+            #   can find out if it wasn't something I expected to
+            #   happen.
+            raise AttributeError( f"{self.__class__.__name__} has no definition of {prop}" )
 
-    @property
-    def ra( self ):
-        """Float; decimal degrees; nominal RA of the image (probably from the header)"""
-        if self._ra is None:
-            self._get_ra_dec()
-        return self._ra
+    def __setattr__( self, prop ,val ):
+        if prop in self.internal_properties.keys():
+            object.__setattr__( self, f"_{prop}", val )
+            if hasattr( self, '_header_property_setter_post_hook' ):
+                self._header_property_setter_post_hook( prop )
+        else:
+            object.__setattr__( self, prop, val )
 
-    @ra.setter
-    def ra( self, val ):
-        self._ra = float( val ) if val is not None else None
-
-    @property
-    def dec( self ):
-        """Float; decimal degrees; nominal dec of the image (probably from the header)"""
-        if self._dec is None:
-            self._get_ra_dec()
-        return self._dec
-
-    @dec.setter
-    def dec( self, val ):
-        self._dec = float( val ) if val is not None else None
-
-    @property
-    def ra_corner_00( self ):
-        """Float; decimal degrees; tha RA of pixel (x=0, y=0)"""
-        if self._ra_corner_00 is None:
-            self._get_corners()
-        return self._ra_corner_00
-
-    @ra_corner_00.setter
-    def ra_corner_00( self, val ):
-        self._ra_corner_00 = float( val ) if val is not None else None
-
-    @property
-    def ra_corner_01( self ):
-        """Float; decimal degrees; the RA of pixel (x=0, y=height-1)"""
-        if self._ra_corner_01 is None:
-            self._get_corners()
-        return self._ra_corner_01
-
-    @ra_corner_01.setter
-    def ra_corner_01( self, val ):
-        self._ra_corner_01 = float( val ) if val is not None else None
-
-    @property
-    def ra_corner_10( self ):
-        """Float; decimal degrees; the RA of pixel (x=width-1, height=0)"""
-        if self._ra_corner_10 is None:
-            self._get_corners()
-        return self._ra_corner_10
-
-    @ra_corner_10.setter
-    def ra_corner_10( self, val ):
-        self._ra_corner_10 = float( val ) if val is not None else None
-
-    @property
-    def ra_corner_11( self ):
-        """Float; decimal degrees; the RA of pixel (x=width-1, y=height=1)"""
-        if self._ra_corner_11 is None:
-            self._get_corners()
-        return self._ra_corner_11
-
-    @ra_corner_11.setter
-    def ra_corner_11( self, val ):
-        self._ra_corner_11 = float( val ) if val is not None else None
-
-    @property
-    def dec_corner_00( self ):
-        """Float; decimal degrees; the dec of pixel (x=0, y=0)"""
-        if self._dec_corner_00 is None:
-            self._get_corners()
-        return self._dec_corner_00
-
-    @dec_corner_00.setter
-    def dec_corner_00( self, val ):
-        self._dec_corner_00 = float( val ) if val is not None else None
-
-    @property
-    def dec_corner_01( self ):
-        """Float; decimal degrees; the dec of pixel (x=0, y=height-1)"""
-        if self._dec_corner_01 is None:
-            self._get_corners()
-        return self._dec_corner_01
-
-    @dec_corner_01.setter
-    def dec_corner_01( self, val ):
-        self._dec_corner_01 = float( val ) if val is not None else None
-
-    @property
-    def dec_corner_10( self ):
-        """Float; decimal degrees; the dec of pixel (x=width-1, y=0)"""
-        if self._dec_corner_10 is None:
-            self._get_corners()
-        return self._dec_corner_10
-
-    @dec_corner_10.setter
-    def dec_corner_10( self, val ):
-        self._dec_corner_10 = float( val ) if val is not None else None
-
-    @property
-    def dec_corner_11( self ):
-        """Float; decimal degrees; the dec of pixel (x=width-1, y=height-1)"""
-        if self._dec_corner_11 is None:
-            self._get_corners()
-        return self._dec_corner_11
-
-    @dec_corner_11.setter
-    def dec_corner_11( self, val ):
-        self._dec_corner_11 = float( val ) if val is not None else None
-
-    @property
-    def band( self ):
-        """Band (str)"""
-        if self._band is None:
-            self._get_band()
-        return self._band
-
-    @band.setter
-    def band( self, val ):
-        self._band = str( val ) if val is not None else None
-
-    @property
-    def mjd( self ):
-        """MJD of the start of the image (defined how? TAI?)"""
-        if self._mjd is None:
-            self._get_mjd()
-        return self._mjd
-
-    @mjd.setter
-    def mjd( self, val ):
-        self._mjd = float( val ) if val is not None else None
-
-    @property
-    def position_angle( self ):
-        """Position angle in degrees north of east (CHECK THIS)"""
-        if self._position_angle is None:
-            self._get_position_angle()
-        return self._position_angle
-
-    @position_angle.setter
-    def position_angle( self, val ):
-        self._position_angle = float( val ) if val is not None else None
-
-    @property
-    def exptime( self ):
-        """Exposure time in seconds."""
-        if self._exptime is None:
-            self._get_exptime()
-        return self._exptime
-
-    @exptime.setter
-    def exptime( self, val ):
-        self._exptime = float( val ) if val is not None else None
-
-    @property
-    def sky_level( self ):
-        """Estimate of the sky level in ADU."""
-        if self._sky_level is None:
-            self._get_sky_level()
-        return self._sky_level
-
-    @sky_level.setter
-    def sky_level( self, val ):
-        self._sky_level = float( val ) if val is not None else None
 
     @property
     def zeropoint( self ):
-        """Image zeropoint for AB magnitudes.
+        """Deprecated; use get_zeropoint."""
+        raise RuntimeError( "Don't use the zeropoint property, call get_zeropoint()" )
 
-        The zeropoint zp is defined so that an object with total counts
-        c (in whatever units data is in) has AB magnitude m:
-
-           m = -2.5 * log(10) + zp
-
-        """
-        if self._zeropoint is None:
-            self._get_zeropoint()
-        return self._zeropoint
 
     @zeropoint.setter
     def zeropoint( self, val ):
-        self._zeropoint = float( val ) if val is not None else None
+        raise RuntimeError( "Can't set a zeropoint" )
+        # self._zeropoint = float( val ) if val is not None else None
 
+    def get_zeropoint( self, x=None, y=None, sed=None ):
+        """Return the Image zeropoint for AB magnitudes.
+
+        By definition, the zeropoint returned by this image is a
+        "infinite aperture" zeropoint, or one that may be used with a
+        snappl.psf.PSF whose normalization is done right, i.e., if the
+        clip size were infinte, the get_clip() method of the PSF object
+        would return an infinitely-sized numpy 2d array whose sum was 1.
+        (This is also the definition that STPSF uses when returning
+        PSF/PRFs.)  See below for much more discussion.
+
+        Parameters
+        ----------
+          x, y: integers (or, I guess, floats); optional.
+            Pixel position on the image.  Ideally, given our definition
+            of zeropoint, these aren't used, because the units of the
+            .data array for a properly flatfielded and
+            illumination-corrected image makes the the image zeropoint
+            constant across the image.  The parameters are here to hedge
+            our bets in case a future subclass needs it.  To be safe,
+            always pass in the x, y of the position on the image where
+            you need the zeropoint.  If you don't pass anything, and if
+            it matters, a properly-implemented Image subclass will
+            assume the center of the image.
+
+       sed : DEFINITION STILL INCOMING; optional.
+            DON'T USE THIS RIGHT NOW.  The interface may well change.
+            It's here as a placeholder to remind us we need it, and also
+            for the docstring below.
+
+            The SED of the object for which you want a zeropoint.
+            Exactly how we specify SEDs is not yet known, but hopefully
+            it will be a subclass of something we define in
+            snappl/sed.py.  If not given, different subclasses will make
+            different (maybe implicit!) assumptions.  It's possible that
+            the subclass will not be able to take an arbitrary SED.  We
+            hope to use snappl.sed for this, but we're still thinking it
+            through.  For now, this parameter is ignored, and you'll get
+            *something* that's for *some* SED that may be not only
+            subclass dependent, but dependent on execution details
+            (like, for instance, some kind of weighted average of the
+            real SEDs of the stars used to determine the image
+            zeropoint)
+
+        Returns
+        -------
+          zp: float
+             Can be used in::
+
+                m_AB = -2.5 log10(DAV) + zp
+
+             for an object with psf-fit or aperture-corrected DAV, if
+             that object has an SED consistent with the sed parameter
+             you passed or that is assumed by the subclass.
+
+        So that we are very clear what we mean by zeropoint as returned
+        by the the get_zeropoint() method of a snappl.image.Image or a
+        snappl.image.Image subclass, this is the definition.
+
+        First, imagine that you have an Image (i.e., an object of the
+        class defined in snappl/image.py).  That image's data property
+        is a two-dimensional array of floats.  Define "DAV" (for "data
+        array value") as the units of that two dimensional array.  To
+        highlight this:
+
+           THE DAV IS THE UNIT OF THE NUMBERS WE GET IN THE DATA ARRAY
+
+        (This is also what we define in the docstring of the Image class
+        itself.)
+
+        Whatever that actually is.  Importantly, this definition is
+        agnostic as to whether the data array represents something like
+        "counts" or "counts per second".  However, it still does have
+        opinions about the meaning of the numbers; read on.
+
+        Second, imagine that we have an astronomical source (a star, to
+        make it concrete), and we have an image of that star taken by
+        the telescope.  (Let's assume that our thought-experiment stars
+        are not at all variable, so it doesn't matter if we're talking
+        about the number of photons that entered the aperture during the
+        time of the exposure, or per second.)  For our zeropoint
+        definition, we are going to assume that the number of DAVs in
+        the Image.data array is proportional to the number of photons
+        that entered the telescope's aperture.  [ASIDE 1: this
+        implicitly assumes that something like bias subtraction has
+        already been done, so there isn't a systematic offset from pure
+        electronic effects.]  [ASIDE 2: this defintion means that DAV is
+        NOT a surface-brightness unit!  A properly implemented Image
+        subclass is promising to do a conversion when you access the
+        .data and .noise arrays to make sure you aren't getting
+        something in surface brightness units; see RomanDatamodel Image
+        for example.]  In reality, diffraction, quantum efficiency, and
+        electronic effects will mean that some of the light energy that
+        entered the telescope aperture will miss the detector or
+        otherwise not be reflected in the read-out data array, but for
+        now, let's assume that that is negligible.  Also, for
+        definitional purposes, assume that there are absolutely no
+        astronomical sources contributing to the light of hitting the
+        detector than the star we're currently pointing at.
+
+        Third, the star's SED matters.  F_ν(ν), or "flux
+        density", comes in dimensionality of enery/time/area/frequency.
+        It is defined so that::
+
+           dE = A F_ν(dν) dt dν
+
+        is the amount of light energy coming from the star at frequency
+        ν within dν that entered a telescope aperture of area A in time
+        dt.  Right now, we're going to assume that the star has a flat
+        spectrum, i.e., F_ν(ν) is constant for all ν.  (We will relax
+        this later; see COLOR TERMS below.)
+
+        Fourth, when we divide the image into pixels, we want the
+        response of every pixel in the data array to be exacly the same;
+        by "response", we mean the conversion from number of photons
+        entering the telescope in the sky area subtended by the pixel to
+        DAV of the pixel.  (See CORRECTING FOR PIXEL RESPONSE below.)
+        (Also see PIXEL AREA ISSUE below.)
+
+        Fifth, let's assume that all backgrounds (i.e., light from anything
+        other than the one star we're looking at) has been subtracted from
+        the image.
+
+        Under all these assumptions, we can define the flat-spectrum
+        zeropoint zp (which may not be exactly what get_zeropoint
+        returns!) to be::
+
+           m = -2.5 * log10( DAVs ) + zp
+
+        where DAVs is the sum of the whole data array, and m is an AB
+        magnitude.  An AB magnitude is defined by::
+
+           m_AB = -2.5 log10( f_ν / (erg s⁻¹ Hz⁻¹ cm⁻¹) ) - 48.60
+
+        (at least if Wikipedia can be trusted).  This means that a source
+        with a flux density 3631×10⁻²³ erg s⁻¹ Hz⁻¹ cm⁻¹=3631 Jy has m_AB=0.
+        (Closer to 3.63078054770099×10³ Jy assuming 48.60 is a definition
+        (not a measurement with uncertainty), but 4 sig figs is plenty for a
+        docstring.)
+
+        CORRECTING FOR PIXEL RESPONSE
+
+        For our definition to work, it means that we're assuming some
+        preprocessing has been done to the image by the time we receive
+        it.  Neglecting all issues of pixel area, that means
+        pixel-to-pixel gain variables have been corrected by
+        flatfielding, so the same zeropoint applies to every pixel on
+        the image.  It also assumes that if there is any vignetting
+        (e.g., if the "effective telescope aperture" is different for
+        different pixels), an illumination correction has taken all of
+        that out.
+
+        PIXEL AREA ISSUE
+
+        When we say "pixel area" in this context, we are NOT talking
+        about the physical area of the pixel on the array, but rather
+        than angular area subtended on the sky by a pixel.  (Yes, if
+        we're going to be precise, the existence of diffraction (at the
+        very least) means that there isn't a hard-edged area on the sky
+        that corresponds exactly to what a given pixel absorbs, but
+        that's one of the big reasons we talk about PSFs for space-based
+        imaging (on the ground, the atmosphere is usually way more
+        significant).  It is still meaningful, by putting in the right
+        kind of delta function or whatever in place of the actual
+        diffraction (and/or atmospheric blurring) function, to map the
+        physical area of a pixel on the array through optics to an
+        angular area on the sky.)  This pixel area can come in units
+        like steradian or arcsec².
+
+        In the Roman Space Telescope, the pixel area subtended on the
+        sky can vary by ~±2% over a single SCA.  The L2 maps provided by
+        the Roman SOC have array values in units of surface brightness,
+        i.e., something like DN/sec/steradian.  However, we have defined
+        DAV to be more like DN/sec (though, again, we are explicitly
+        agnostic as to whether DAV is a rate or not).
+
+        What this means is that at least for L2 Roman images, the
+        Image.data array will do a pixel-area correction before
+        returning the DAV values; see the docstring on the Image class
+        and on the Image.data property.
+
+        As a result of all , pixel area is *not* an issue for the
+        definition of the zeropoint.
+
+        However, that also means that this zeropoint is what you'd use
+        for point-source photometry.  It is *not* the zeropoint you'd
+        use to identify isophots in a galaxy.  (Also, Image.data isn't
+        formally the right thing to use to identify isophots in a
+        galaxy, unless the pixel area really is constant across the
+        array!)
+
+        Note that when Image.data corrects the data to give DAV as
+        something proportional to photon counts, not surface brightness,
+        it fixes just purgely optical/geometric effects.  For electronic
+        effects, espeically ones that depend on how full the well is,
+        futher corrections that cannot be encapsulated (at least
+        currently) by the Image.get_zeropoint() method will be needed.
+        (Thushara, save us!)
+
+        ACTUAL PHOTOMETRY
+
+        Importantly, the zeropoint we've defined here DOES NOT take into
+        account any aperture size, nor does it take into account any
+        particular realization of a PSF.  It is a property *of the image*,
+        not of the method used to extract photometry.  That means to use
+        this zeropoint:
+
+           * Aperture photometry values must be properly "aperture
+             corrected" before the DAVs are fed into the zeropoint
+             formula.  Ideally, when things aren't too complicated, this
+             correction is just a single factor that multiplies the
+             number of DAVs in the aperture to give an effective
+             "infinite aperture" number of DAVs.  This factor will, of
+             course, be different for apertures of different sizes (and
+             shapes), and will also in principle be different at
+             different positions on a detector array.  (For small
+             apertures, it's also very difficult to do right.)  For real
+             images, it's very difficult to determine this by looking at
+             stars on images; you find yourself stuck between needing a
+             very big aperture to capture, within your precision, "all"
+             the flux, and not wanting your aperture to be too big so
+             that you can find enough isolated stars.  If you have a
+             very good estimate of the PSF/PRF, you can determine an
+             aperture correction by integrating that.
+
+           * PSF (or PRF) photometry must use PSFs (or PRFs) that are
+             properly normalized to fit the defintion here.  "Properly
+             normalized" here means that if you had an infinitely-sized
+             image-scale array of the PSF (really PRF), its sum would be
+             1; in practice, because you can't get infinitely-sized data
+             arrays, the sum of the array you get will be less than 1,
+             though for a big enough stamp size it might be very close.
+             The PSFs (really PRFs) returned by
+             snappl.psf.PSF.get_stamp() (and other methods) are
+             *supposed to be* normalized this way.  (Also, as I
+             understand it, the PSFS you get from STPSF are also
+             normalized this way.)
+
+             IT IS POSSIBLE that some further calibration post-processing of
+             photometry after the zeropoint is applied may be entirely
+             convolved with the definition of the PSF.  At the moment,
+             snappl's class structure does not support this, but we will
+             adapt if necessary.  However, we should ONLY adapt if it really
+             is necessary! If it's just a matter of normalizing your PSFs
+             differently, then just normalize them differently to fit our
+             definitions!
+
+        FILTERS AND COLOR TERMS
+
+        In reality, we never measure something proportional to F_ν(ν)
+        directly.  (Spectroscopy gets a lot closer to this than
+        photometry does.)  Rather, we're always measuring some integral
+        of F_ν(ν).  There are two things we have to consider.
+
+        First, detectors and filters (and the whole telescope system,
+        for that matter) have a different response at different
+        frequencies.  Filters, in particular, only transmit light within
+        a finite range of ν, though real detectors are also not
+        sensitive to all frequencies.  We will call the system response
+        D(ν), which we will define "the number of DAVs that we get in
+        our data array per frequency bin for light of frequency ν for a
+        source with f(ν)=3631 Jy", i.e., if we're looking at that
+        hypotetical f(ν)=3631 Jy star::
+
+           DAVs = ∫ D(ν) dν
+
+        This means that D(ν) has units of s (or, more clearly, Hz⁻¹)
+        (or, maybe, if you don't think of DAVs as dimensionless, units
+        of DAV/Hz).
+
+        Second, astronomical sources do not have a flat F_ν(ν), as we
+        assumed in our discussion above and in the definiton of the
+        thing we called zp.  The actual light source is going to have
+        some SED S(ν) (in units of Energy/Time/Flux Binwidth/Area).
+
+        The total number of DAVs detected, therefore, is::
+
+            DAVs = ∫ S(ν) D(ν) / (3631Jy) dν
+
+        (Presumably D(ν) goes to zero outside some finite range of ν so we
+        don't have to think about infinite numbers.)
+
+        Given this, the flat-spectrum zeropoint (which is what we
+        defiend as zp above) is defined as::
+
+            zp = 2.5 log10( ∫ D(ν) dν )
+
+        (To see this: consider S(ν) = 3631 Jy for all ν, which is the definition of a m_AB=0 source.  In this case::
+
+           0  = -2.5 log10(DAVs) + zp
+              = -2.5 log10( ∫ (3631Jy) D(ν) / (3631Jy) dν ) + zp
+              = -2.5 log10( ∫ D(ν) dν ) + zp
+           zp = 2.5 log10( ∫ D(ν) dν )
+
+        )
+
+        A flat-spectrum source with flux density S₀ at all ν has AB
+        magnitude::
+
+           m_AB = -2.5 log10( S₀ / 3631Jy ) = -2.5 log10( S₀/Jy ) + 8.900
+
+        (Which is where "8.900 is the AB zeropoint" comes from.  You will
+        sometimes see people using a zeropoint of 31.4; this is just the
+        zeropoint where the flux density is in nJy rather than Jy, as
+        2.5log10(10⁹)=22.5.)
+
+        The number of DAVs from such a source would be::
+
+           DAVs = ∫ S₀ D(ν) / (3631Jy) dν = S₀ / 3631Jy * ∫ D(ν) dν
+
+        or::
+
+           DAVs / ( ∫ D(ν) dν ) = S₀ / 3631Jy
+
+        Taking logs of both sides::
+
+           -2.5 log10( DAVs ) + 2.5 log10( ∫ D(ν) dν ) = -2.5 log10( S₀/Jy ) + 2.5 log10( 3631 )
+           -2.5 log10( DAVs ) + zp = -2.5 log10( S₀ ) + 8.900 = m_AB
+
+        Where it gets painful is when S(ν) is not constant with ν.  In
+        this case, the magnitude you will calculate from the
+        flat-spectrum zeropoint would be::
+
+          m_calc = -2.5 log10( DAVs ) + zp
+                 = -2.5 log10( ∫ S(ν) D(ν) / (3631Jy) dν ) + 2.5 log10( ∫ D(ν) dν )
+
+        However, for a source that doesn't have a flat S(ν), the true AB
+        magnitude is ill-defined, because it's different for every ν!
+        So, for a given filter, we have to define a fiducial frequency
+        ν₀ (which corresponds to a fiducial wavelength λ₀ by the usual
+        ν₀=hc/λ₀).  We could then define the "true" apparent magnitude
+        of the object with SED S(ν) as::
+
+          m = -2.5 log10( S(ν₀) / 3631 Jy )
+
+        I think all the Roman filters have a defined fiducial
+        wavelength, so we should just use that (really, hc/that) for ν₀,
+        but we may need to document this somewhere.
+
+        We then have a SED correction::
+
+          cor_sed ≡ m - m_calc
+                  = -2.5 log10( S(ν₀) / 3631 Jy ) + 2.5 log10( ∫ S(ν) D(ν) / (3631Jy) dν ) - 2.5 log10( ∫ D(ν) dν )
+                  = 2.5 log10( ∫ S(ν) D(ν) / S(ν₀) dν ) - 2.5 log10( ∫ D(ν) dν )
+
+          cor_sed = 2.5 log10( ∫ S(ν) D(ν) / S(ν₀) dν ) - zp
+
+        The magnitude of an object is then::
+
+           m = -2.5 log10( DAVs ) + zp + cor_sed
+
+        (Do not become confused by the fact that zp is in cor_sed; we're not
+        subtracting out the zeropoint from the final magnitude formula,
+        because it's added back, sorta, inside the integral in cor_sed, we
+        just can't separate it out to another obvious +zp because it's
+        inside the integral, and while I've known named-chair professors of
+        physics (but not astronomy) to claim that we were all doing cosmology
+        wrong and making it too complicated because he freely factored
+        variable things out of integrals, you aren't really supposed to do
+        that.)
+
+        Notice that you don't need to know the absolute S(ν) to
+        calculate cor_sed, only S(ν)/S(ν₀).  This is why we say the
+        "shape" of the SED.  The thing passed to the sed parameter of
+        get_zeropoint() is really a SED shape (though a cautiously
+        implemented subclass will not assume that the user is passing in a
+        properly normalized sed).
+
+        What get_zeropoint() returns is::
+
+           zp + cor_sed
+
+        for the sed specified by the sed parameter (with an implicitly
+        assumed ν₀), or for some default sed if you don't specify one.
+        IMPORTANT, don't assume this is a flat spectrum, because in
+        practice that may be difficult or impossible to determine.  Each
+        subclass may assume a different cor_sed (at least for now).
+
+        """
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement get_zeropoint" )
 
     def _get_image_shape( self ):
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_image_shape" )
 
-    def _get_observation_id( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_observation_id" )
-
-    def _get_sca( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_sca" )
-
     def _get_ra_dec( self ):
+        """Used internally by subclasses.
+
+        Subclass authors: this method must set both self._ra and
+        self._dec.  when setting self._ra and self._dec, only set each
+        if it is not currently None.  (This method won't be called under
+        normal usage if both are already non-None.)
+
+        """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_ra_dec" )
 
     def _get_corners( self ):
+        """Used internally by subclasses.
+
+        Subclass authors: this method must set all of
+        (ra|dec)_corner_(00|01|10|11).  However, if any one is already
+        non-None, then don't set it.  (This method won't be called
+        uneder normal usage if all are already non-None.)
+
+        """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_corners" )
-
-    def _get_band( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_band" )
-
-    def _get_mjd( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_mjd" )
-
-    def _get_exptime( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_exptime" )
-
-    def _get_sky_level( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_sky_level" )
-
-    def _get_zeropoint( self ):
-        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_zeropoint" )
 
 
     def _get_position_angle( self ):
-        """Position angle in degrees north of east"""
-        wcs = self.get_wcs()
-        ny, nx = self.image_shape
-        midra, middec = wcs.pixel_to_world( nx/2., ny/2. )
-        cosdec = np.cos( middec * np.pi / 180. )
-        leftra, leftdec = wcs.pixel_to_world( nx/2.-1, ny/2. )
-        dleftra = ( leftra - midra ) * cosdec
-        dleftdec = leftdec - middec
-        upra, updec = wcs.pixel_to_world( nx/2., ny/2.+1 )
-        dupra = ( upra - midra ) * cosdec
-        dupdec = updec - middec
+        """Position angle in degrees north of east
 
-        # Need to figure out if there's a mirroring.  If there is no
-        # mirroring, then the cross product of up and left will have a
-        # positive z component.... though we need to do a left-handed
-        # cross product because RA/Dec is a left-handed coordinate system!
-        # (Increasing RA is to the left, increasing Dec is up.)
-        cross_z = - ( dupra * dleftdec - dupdec * dleftra )
-        if cross_z > 0:
-            leftang = np.arctan2( dleftdec, dleftra ) * 180. / np.pi
-            upang = np.arctan2( -dupra, dupdec ) * 180 / np.pi
+        See the class docstring for discussion of what position angle means.
+
+        """
+
+        try:
+            wcs = self.get_wcs()
+        except Exception as ex:
+            # Failed to get a wcs from the header.  This may be normal.  However, this also
+            # means we cannot figure out a position angle, so mark it as explicitly unset.
+            if not isinstance( self._position_angle, _UnsetProperty ):
+                self._position_angle = _UnsetProperty()
+            SNLogger.debug( f"Got exception {ex} trying to get a position angle; that *might* be normal." )
         else:
-            leftang = np.arctan2( dleftdec, -dleftra ) * 180. / np.pi
-            upang = np.arctan2( dupra, dupdec ) * 180. / np.pi
+            ny, nx = self.image_shape
+            midra, middec = wcs.pixel_to_world( nx/2., ny/2. )
+            cosdec = np.cos( middec * np.pi / 180. )
+            leftra, leftdec = wcs.pixel_to_world( nx/2.-1, ny/2. )
+            dleftra = ( leftra - midra ) * cosdec
+            dleftdec = leftdec - middec
+            upra, updec = wcs.pixel_to_world( nx/2., ny/2.+1 )
+            dupra = ( upra - midra ) * cosdec
+            dupdec = updec - middec
 
-        # Have to deal with the edge case where they are around ±180.
-        if ( ( ( leftang > 0 ) != ( upang > 0 ) )
-             and
-             ( np.fabs( np.fabs(leftang) - 180. ) <= self._close_enough_position_angle )
-             and
-             ( np.fabs( np.fabs(upang) - 180. ) <= self._close_enough_position_angle )
-            ):
-            if leftang < 0:
-                leftang += 360.
-            if upang < 0:
-                upang += 360.
+            # Need to figure out if there's a mirroring.  If there is no
+            # mirroring, then the cross product of up and left will have a
+            # positive z component.... though we need to do a left-handed
+            # cross product because RA/Dec is a left-handed coordinate system!
+            # (Increasing RA is to the left, increasing Dec is up.)
+            cross_z = - ( dupra * dleftdec - dupdec * dleftra )
+            if cross_z > 0:
+                leftang = np.arctan2( dleftdec, dleftra ) * 180. / np.pi
+                upang = np.arctan2( -dupra, dupdec ) * 180 / np.pi
+            else:
+                leftang = np.arctan2( dleftdec, -dleftra ) * 180. / np.pi
+                upang = np.arctan2( dupra, dupdec ) * 180. / np.pi
 
-        if np.abs( leftang - upang ) > self._close_enough_position_angle:
-            raise ValueError( f"Calculated position angle of {leftang:.2f}° looking to the left "
-                              f"and {upang:.2f}° looking up; these are inconsistent!" )
-        self._position_angle = ( leftang + upang ) / 2.
+            # Have to deal with the edge case where they are around ±180.
+            if ( ( ( leftang > 0 ) != ( upang > 0 ) )
+                 and
+                 ( np.fabs( np.fabs(leftang) - 180. ) <= self._close_enough_position_angle )
+                 and
+                 ( np.fabs( np.fabs(upang) - 180. ) <= self._close_enough_position_angle )
+                ):
+                if leftang < 0:
+                    leftang += 360.
+                if upang < 0:
+                    upang += 360.
 
-        # Leftover from dealing with the RA~±180 edge case
-        if self._position_angle > 180.:
-            self._position_angle -= 360.
+            if np.abs( leftang - upang ) > self._close_enough_position_angle:
+                raise ValueError( f"Calculated position angle of {leftang:.2f}° looking to the left "
+                                  f"and {upang:.2f}° looking up; these are inconsistent!" )
+            self._position_angle = ( leftang + upang ) / 2.
+
+            # Leftover from dealing with the RA~±180 edge case
+            if self._position_angle > 180.:
+                self._position_angle -= 360.
 
         return self._position_angle
+
+
+    def _get_internal_attribute( self, prop ):
+        """Used internally by subclasses.
+
+        Subclass authors: must set self._{prop}
+
+        Must be implemented for some, but not, all of the things in
+        Image.internal_properties.  Things that should not be
+        implemented (and which will be ignored if they are) are width,
+        height, ra, dec, *_corner_*, position_angle.
+
+        """
+        raise NotImplementedError( f"{self.__class__.__name__} needs to implement _get_internal_attribute" )
 
 
     def fraction_masked( self ):
@@ -700,6 +1066,11 @@ class Image( PathedObject ):
 
     def get_data( self, which='all', always_reload=False, cache=False ):
         """Read the data from disk and return one or more 2d numpy arrays of data.
+
+        These will return the same things you'd get if you access the
+        .data, .noise, and .flags properties of the object.  See the
+        Image docstring for the defintion of the units of the .data and
+        .noise arrays.
 
         Parameters
         ----------
@@ -723,7 +1094,8 @@ class Image( PathedObject ):
             supports it, then the object will cache the loaded data so
             that future calls with always_reload will not need to reread
             the data, nor will accessing the data, noise, and flags
-            properties.
+            properties.  (You often, but not always, want to set this to
+            True!).
 
         The data read not stored in the class, so when the caller goes
         out of scope, the data will be freed (unless the caller saved it
@@ -793,9 +1165,7 @@ class Image( PathedObject ):
 
 
     def get_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
-
         """Make a cutout of the image at the given RA and DEC.
-        This implementation assumes that the image WCS is an AstropyWCS.
 
         Parameters
         ----------
@@ -971,7 +1341,10 @@ class Image( PathedObject ):
         ----------
           init_params: something
              passed to the init_params of a call to a
-             photutils.psf.PSFPHotometry object.
+             photutils.psf.PSFPHotometry object.  IMPORTANT : photutils
+             will accept all kinds of crazy stuff to find the x and y
+             positions of the fit.  For this function, you MUST use
+             either (x_init, y_init) or (x, y).  (But not both!)
 
           psf: snappl.psf.PSF
              The PSF profile to fit to the image.
@@ -1002,7 +1375,23 @@ class Image( PathedObject ):
         if 'flux_init' not in init_params.colnames:
             raise Exception('Astropy table passed to kwarg init_params must contain column \"flux_init\".')
 
-        psfmod = psf.getImagePSF()
+        x0 = init_params['x_init'] if 'x_init' in init_params else init_params['x']
+        y0 = init_params['y_init'] if 'y_init' in init_params else init_params['y']
+        xseq = isSequence( x0 )
+        yseq = isSequence( y0 )
+        if xseq != yseq:
+            raise ValueError( f"You passed init_parms with intial x {x0} and inital {y0}; they most either both "
+                              f"be floats, or both be lists/arrays, you can't mix." )
+        if ( xseq ) and ( len(x0) != len(y0) ):
+            raise ValueError( f"init_params has {len(xseq)} x values and {len(yseq)} y values, which don't match" )
+        if ( xseq ) and ( len(x0) != 1 ):
+            SNLogger.warning( "Image.psf_phot was given multiple x, y coordinates.  Depending on the PSF subclass "
+                              "you're using, this might be fine.  However, for some subclasses, you will only get "
+                              "one PSF that will be used at all positions, so if you have a spatially variable "
+                              "PSF, it will do the wrong thing." )
+            x0 = x0[0]
+            y0 = y0[0]
+        psfmod = psf.getPhotutilsPSF( x0, y0 )
         if forced_phot:
             SNLogger.debug( 'psf_phot: x, y are fixed!' )
             psfmod.x_0.fixed = True
@@ -1035,7 +1424,7 @@ class Image( PathedObject ):
     def save( self, which='all', path=None, imagepath=None, noisepath=None, flagspath=None, overwrite=False ):
         """Save the image to its path(s).
 
-        May have side-effects on the internal data structure (e.g. FITS
+        May have side-effects on the internal data structure (e.g., FITS
         subclasses modify the internally stored header).
 
         Parameters
@@ -1227,9 +1616,11 @@ class Image( PathedObject ):
 class Numpy2DImage( Image ):
     """Abstract class for classes that store their array internall as a numpy 2d array."""
 
-    def __init__( self, *args, data=None, noise=None, flags=None, **kwargs ):
+    def __init__( self, *args, data=None, noise=None, flags=None, is_superclass=False, **kwargs ):
         self._declare_consumed_kwargs( { 'data', 'noise', 'flags' } )
-        super().__init__( *args, **kwargs )
+        super().__init__( *args, is_superclass=True, **kwargs )
+        if not is_superclass:
+            self._verify_all_consumed_kwargs( **kwargs )
 
         self._data = data
         self._noise = noise
@@ -1292,7 +1683,7 @@ class Numpy2DImage( Image ):
         This implementation accesses the .data property, which will load the data
         from disk if it hasn't been already.  Actual images are likely to have
         that information availble in a manner that doesn't require loading all
-        the image data (e.g. in a header), so subclasses should do that.
+        the image data (e.g., in a header), so subclasses should do that.
 
         """
         if ( self._width is None ) or ( self._height is None ):
@@ -1347,14 +1738,20 @@ class FITSImage( Numpy2DImage ):
     those files actually live on disk.  Generally, they should only be used
     internally.
 
+    FITSImage does not do any kind of syncing between the header and
+    object attributes like observation_id, sca, mjd, etc.  If you need
+    that, use FITSImageStdHeaders.
+
     """
 
     def __init__( self, *args, noisepath=None, flagspath=None,
                   imagehdu=0, noisehdu=0, flagshdu=0, header=None, wcs=None,
-                  std_imagenames=False, **kwargs ):
+                  std_imagenames=False, is_superclass=False, **kwargs ):
         self._declare_consumed_kwargs( { 'noisepath', 'flagspath', 'imagehdu', 'noisehdu', 'flagshdu',
                                          'header', 'wcs', 'std_imagenames' } )
-        super().__init__( *args, **kwargs )
+        super().__init__( *args, is_superclass=True, **kwargs )
+        if not is_superclass:
+            self._verify_all_consumed_kwargs( **kwargs )
 
         if ( header is not None ) and ( not isinstance( header, astropy.io.fits.header.Header ) ):
             raise TypeError( f"header must be an astropy.io.fits.header.Header, not a {type(header)}" )
@@ -1443,6 +1840,16 @@ class FITSImage( Numpy2DImage ):
         if self._std_imagenames:
             raise RuntimeError( "Can't set flagspath for a std_imagenames FITSImage." )
         self._flagspath = pathlib.Path( val )
+
+
+    def _get_internal_attribute( self, prop ):
+        # FITSImage does not do any kind of syncing between internal
+        #   attributes and the header.  If you need that, then use
+        #   FITSImageStdHeaders.
+        # It's not obvious what the right thing to do here is.
+        #   For now, just set the attributes to None if they're unset.
+        if isinstance( getattr( self, f"_{prop}" ), _UnsetProperty ):
+            setattr( self, f"_{prop}", None )
 
 
     @classmethod
@@ -1634,17 +2041,19 @@ class FITSImage( Numpy2DImage ):
 
         # TODO : fix _ra* and _dec* fields, they're all WRONG
 
+        # WORRY : we need to have all attributes from all current and future subclasses... there
+        #   must be a better way.  (But I'm afraid of doing ALL attributes.)
         for prop in [ '_observation_id', '_sca', '_band', '_mjd', '_position_angle', '_exptime',
                       '_sky_level', '_zeropoint', '_ra', '_dec',
                       '_ra_corner_00', '_ra_corner_01', '_ra_corner_10', '_ra_corner_11',
                       '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
-            setattr( snappl_cutout, prop, getattr( self, prop ) )
+            if hasattr( self, prop ):
+                setattr( snappl_cutout, prop, getattr( self, prop ) )
 
         return snappl_cutout
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
         """See Image.get_ra_dec_cutout
-
 
         The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
         """
@@ -1714,7 +2123,7 @@ class FITSImage( Numpy2DImage ):
         self.get_fits_header()
         try:
             apwcs = self.get_wcs().get_astropy_wcs( readonly=True )
-            wcshdr = apwcs.to_header()
+            wcshdr = apwcs.to_header( relax=True )
             self._strip_wcs_header_keywords()
             self._header.extend( wcshdr )
         except Exception:
@@ -1741,10 +2150,20 @@ class FITSImage( Numpy2DImage ):
 class FITSImageStdHeaders( FITSImage ):
     """A FITS Image that has standardized header keywords corresponding to the properties defined in Image.
 
-    Setting a property also updates the internally stored header.
+    Setting a property also updates the internally stored header.  When
+    you construct an object, there is an optional argument header_kws
+    (that has some sane defaults).  The keys of this dictionary are
+    (approximately) names of internal properties of the Image object.
+    Allowed values include many of the arguments to Image.__init__.  If
+    you look at that docstring, the allwowed
+
+    WARNING: THIS CLASS (and subclasses) IS NOT THREAD SAFE.  If you are
+    using multithreading or multiprocessing, make sure that the same
+    object of this class is not accessed by more than one thread or
+    process at a time.
 
     """
-    def __init__( self, *args,
+    def __init__( self, *args, zeropoint=None, is_superclass=False,
                   header_kws = {
                       'observation_id': "POINTING",
                       'sca': "SCA",
@@ -1757,191 +2176,197 @@ class FITSImageStdHeaders( FITSImage ):
                       'sky_level': "SKYLEVEL",
                       'zeropoint': "ZPT" },
                   **kwargs ):
-        self._declare_consumed_kwargs( { 'header_kws' } )
-        super().__init__( *args, **kwargs )
+        """Construct a FITSImageStdHeaders model.
+
+        As with all these constructors, only use this if you really know
+        what you're doing.  If you're reading an image from the
+        database, you will never use a Image constructor.  Even if
+        you're not reading an image from the database, most of the time
+        you're going to use an ImageCollection, and not use an Image
+        directly.
+
+        Parameters
+        ----------
+          header_kws: dict
+             A dictionary of internal_property: header_keyword.
+
+             internal_property is a standard internal property of Image.
+             Those properties are mostly defined in the Image docstring.
+             They are also many of the arguments to Image::__init__,
+             starting with ``observation_id`` and going through
+             ``sky_level``.  If a internal_property is not present in
+             the header_kws dict, it implies that it can't be found in
+             the header, which may or may not break things.  (Special
+             case: there may also be a "zeropoint" entry in this
+             dictionary, which isn't a standard Image internal property,
+             but is handled specially in this class.)
+
+             header_keyword is, of course, the FITS header keyword to
+             find the property in the FITS header.  This means that it's
+             no longer than 8 characters, must be ASCII (no é or ξ or
+             💩) and is almost certainly ALL CAPS.
+
+             HANDLING OF THIS IS SUBTLE; READ AND BE CAREFUL.  *If* you
+             pass the property directly in the constructor (so, for
+             instance, if you make an image with::
+
+                im = FITSImageStdHeaders( full_filepath="/path/to/file.fits", ra=42. )
+
+             then later when you access im.ra, you will get 42., NOT
+             what was in the header.  However, if you access im.dec, you
+             will get whatever was found in the header, or an exception
+             if nothing was found in the header.  The standard headers,
+             thus, really are a fallback, but when you're using this
+             class, the fallback is probably what you're really after.
+
+             Be careful: this class blindly sets object properties based
+             on the keys of this dictionary.  If you pass the wrong
+             things, you could break its functionality.
+
+          zeropoint: float, default None
+            Unlike most image classes (which explicitly make getting the
+            zeropoint a function, because exactly how it's done will be
+            different for different kinds of images, and because it will
+            depend on sed and maybe position), this class lets you pass
+            one at construction time.  The reason is because you might
+            want to be setting the zeropoint in the header.  (However,
+            you still can't set it after the object is constructed... if
+            we need that functionality, we should add it, BUT we may
+            have more complicated zeropoint handling anyway in the
+            future.)
+
+          **kwargs: Everything else is passed to parent class
+            constructors (FITSImage and its parent(s)).
+
+        """
+
+        self._declare_consumed_kwargs( { 'header_kws', 'zeropoint' } )
+        super().__init__( *args, is_superclass=True, **kwargs )
+        if not is_superclass:
+            self._verify_all_consumed_kwargs( **kwargs )
+
+        self._zeropoint = zeropoint if zeropoint is not None else _UnsetProperty()
         self._header_kws = header_kws
 
+        # We set the _header_property_setter_post_hook here, rather than
+        # before calling super().__init__().  We wish we could set it
+        # before calling super().__init__(), because super().__init__()
+        # will be parsing kwargs to set some of the properties we want
+        # to post-process.  However, our post-processor is going to
+        # access object properties (e.g., data, needed to create a new
+        # header) that the superclass can't access because they're
+        # @properties, and those things don't seem to be available in a
+        # super().__init__()... python is complicated.  So, set it here,
+        # so we won't have problems.
+        self._header_property_setter_post_hook = self._property_post_hook_set_fits_header
+
+        # If there already is a header for one reason or another, then
+        # we need to make sure to sync the properties that won't have
+        # been synced yet because the hook wasn't set.
+        if hasattr( self, '_header' ) and ( self._header is not None ):
+            self._sync_object_to_fits_header()
+
+
+    def _property_post_hook_set_fits_header( self, prop ):
+        if prop in self._header_kws:
+            if ( not hasattr( self, '_header' ) ) or ( self._header is None ):
+                self.get_fits_header()
+            if prop in ( 'width', 'height' ):
+                # Width and height might fail if the data file doesn't exist.
+                # In that case, just don't worry about it for now, leave those
+                # header keywords unset
+                try:
+                    self._header[ self._header_kws[prop] ] = getattr( self, f"_{prop}" )
+                except OSError:
+                    pass
+            self._header[ self._header_kws[prop] ] = getattr( self, f"_{prop}" )
+
+
+    def _sync_object_to_fits_header( self ):
+        for prop in self.internal_properties.keys():
+            if not isinstance( getattr(self, prop), _UnsetProperty ):
+                self._property_post_hook_set_fits_header( prop )
+        if not isinstance( self._zeropoint, _UnsetProperty ):
+            self._property_post_hook_set_fits_header( 'zeropoint' )
 
 
     def get_fits_header( self ):
-        """This particular subclass will return an empty header if it can't read it for the image."""
-        if self._header is None:
+        """This particular subclass will make a new header if it can't read it for the image.
+
+        It will populate the header based on the header_kws value passed
+        to the constructor, if the corresponding property in the object
+        is not _UnsetProperty.  It will then update the header so that
+        the header has all the things in object_properties that show up
+        in the header_kws dictionary where the object property os not
+        _UnsetProperty.
+
+        """
+
+        if ( not hasattr( self, '_header' ) ) or ( self._header is None ):
             try:
                 self._header = FITSImage.get_fits_header( self )
             except Exception as e:
-                self._header = fits.header.Header()
+                self._header = fits.PrimaryHDU( data=self.data ).header
                 SNLogger.debug(f"Failed to read header from {self.filepath}, creating blank header: {e}")
+
+            # We're going to intialize the header based on two principles:
+            #   * Things already in the object supersede things in the header
+            #   * Things neither in the object nor in the header should remain not in either; no None defaults!
+            # These conventions are necessary for creating an object of this class
+            #   with a new empty header if we want everything to work right.
+            propconvs = self.internal_properties.copy()
+            # This particular class has a special case 'zeropoint' internal property
+            propconvs[ 'zeropoint' ] = float
+            for prop, converter in propconvs.items():
+                uprop = f"_{prop}"
+                if prop in self._header_kws.keys():
+                    kw = self._header_kws[ prop ]
+                    if not isinstance( getattr( self, uprop ), _UnsetProperty ):
+                        # The property is set in the object, so update the header to match.
+                        self._header[ kw ] = getattr( self, uprop )
+                    else:
+                        # The property is not in the object.  If it's in the header, then set
+                        #   the object property to match the header, otherwise leave it
+                        #   unset.
+                        if kw in self._header:
+                            if prop == 'zeropoint':
+                                # special case handling for zeropoint, which isn't in Image.itnernal_properties
+                                self._zeropoint = float( self._header[kw] )
+                            else:
+                                setattr( self, uprop, converter(self._header[kw]) )
+
         return self._header
 
 
-    # We're going to override many the property access methods so that
-    #   we can update the header in the setters.
-    # Sadly, it seems that in python if you want to override either
-    #   the property or the setter, you have to override both, you
-    #   can't take the parent class implementation for just one.
+    def get_zeropoint( self, x=None, y=None, sed=None ):
+        if isinstance( self._zeropoint, _UnsetProperty ):
+            if 'zeropoint' not in self._header_kws:
+                raise RuntimeError( "Can't get zeropoint for FITSImageStdHeaders, wasn't given a header "
+                                    "keyword for the zeropoint" )
+            hdr = self.get_fits_header()
+            self._zeropoint = float( hdr[ self._header_kws['zeropoint'] ] )
+        return self._zeropoint
 
-    def _get_observation_id( self ):
-        hdr = self.get_fits_header()
-        self._observation_id = hdr[ self._header_kws['observation_id'] ]
-
-    @property
-    def observation_id( self ):
-        if self._observation_id is None:
-            self._get_observation_id()
-        return self._observation_id
-
-    @observation_id.setter
-    def observation_id( self, val ):
-        self._observation_id = val
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['observation_id'] ] = self._observation_id
-
-    def _get_sca( self ):
-        hdr = self.get_fits_header()
-        self._sca = int( hdr[ self._header_kws['sca'] ] )
-
-    @property
-    def sca( self ):
-        if self._sca is None:
-            self._get_sca()
-        return self._sca
-
-    @sca.setter
-    def sca( self, val ):
-        self._sca = int( val ) if val is not None else None
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['sca'] ] = self._sca
+    def _get_internal_attribute( self, prop ):
+        if self._header is None:
+            self.get_fits_header()
 
     def _get_ra_dec( self ):
-        hdr = self.get_fits_header()
-        self._ra = float( hdr[ self._header_kws['ra'] ] )
-        self._dec = float( hdr[ self._header_kws['dec'] ] )
+        if self._header is None:
+            self.get_fits_header()
 
-    @property
-    def ra( self ):
-        if self._ra is None:
-            self._get_ra_dec()
-        return self._ra
-
-    @ra.setter
-    def ra( self, val ):
-        self._ra = float( val ) if val is not None else None
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['ra'] ] = self._ra
-
-    @property
-    def dec( self ):
-        if self._dec is None:
-            self._get_ra_dec()
-        return self._dec
-
-    @dec.setter
-    def dec( self, val ):
-        self._dec = float( val ) if val is not None else None
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['dec'] ] = self._dec
-
-
-    def _get_band( self ):
-        hdr = self.get_fits_header()
-        self._band = str( hdr[ self._header_kws['band'] ] )
-
-    @property
-    def band( self ):
-        if self._band is None:
-            self._get_band()
-        return self._band
-
-    @band.setter
-    def band( self, val ):
-        self._band = str( val ) if val is not None else None
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['band'] ] = self._band
-
-
-    def _get_mjd( self ):
-        hdr = self.get_fits_header()
-        self._mjd = float( hdr[ self._header_kws['mjd'] ] )
-
-    @property
-    def mjd( self ):
-        if self._mjd is None:
-            self._get_mjd()
-        return self._mjd
-
-    @mjd.setter
-    def mjd( self, val ):
-        self._mjd = float( val ) if val is not None else None
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['mjd'] ] = self._mjd
+    def _get_corners( self ):
+        if self._header is None:
+            self.get_fits_header()
 
     def _get_position_angle( self ):
         hdr = self.get_fits_header()
-        if self._hdr_kws['position_angle'] in hdr:
+        if self._header_kws['position_angle'] in hdr:
             self._position_angle = float( hdr[ self._header_kws['positon_angle'] ] )
         else:
             super()._get_position_angle()
 
         return self._position_angle
-
-    @property
-    def position_angle( self ):
-        if self._position_angle is None:
-            self._get_position_angle()
-        return self._position_angle
-
-    @position_angle.setter
-    def position_angle( self, val ):
-        self._position_angle = float( val ) if val is not None else None
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['position_angle'] ] = self._position_angle
-
-    def _get_exptime( self ):
-        hdr = self.get_fits_header()
-        self._exptime = float( hdr[ self._header_kws['exptime'] ] )
-
-    @property
-    def exptime( self ):
-        if self._exptime is None:
-            self._get_exptime()
-        return self._exptime
-
-    @exptime.setter
-    def exptime( self, val ):
-        self._exptime = float( val ) if val is not None else None
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['exptime'] ] = self._exptime
-
-    def _get_sky_level( self ):
-        hdr = set.get_fits_header()
-        self._sky_level = float( hdr[ self._header_kws['sky_level'] ] )
-
-    @property
-    def sky_level( self ):
-        if self._sky_level is None:
-            self._get_sky_level()
-        return self._sky_level
-
-    @sky_level.setter
-    def sky_level( self, val ):
-        self._sky_level = float( val ) if val is not None else None
-        hdr = self.get_fits_header()
-        hdr[ self._header_kws['sky_level'] ] = self._sky_level
-
-    def _get_zeropoint( self ):
-        hdr = self.get_fits_header()
-        self._zeropoint = float( hdr[ self._header_kws['zeropoint'] ] )
-
-    @property
-    def zeropoint( self ):
-        if self._zeropoint is None:
-            self._get_zeropoint()
-        return self._zeropoint
-
-    @zeropoint.setter
-    def zeropoint( self, val ):
-        self._zeropoint = float( val ) if val is not None else None
-
 
 
 # =====================================================================
@@ -1963,6 +2388,9 @@ class CompressedFITSImage( FITSImage ):
     """
 
     def __init__( self, *args, **kwargs ):
+        # Didn't do the whole is_superclass rigamarole here because this class
+        #   takes no special arguments of its own, so its superclass can pretend
+        #   it's not a superclass for purposes of argument validation.
         super().__init__( *args, **kwargs )
 
 
@@ -2022,6 +2450,9 @@ class CompressedFITSImage( FITSImage ):
 
 class FITSImageOnDisk( CompressedFITSImage ):
     def __init__( self, *args, **kwargs ):
+        # Didn't do the whole is_superclass rigamarole here because this class
+        #   takes no special arguments of its own, so its superclass can pretend
+        #   it's not a superclass for purposes of argument validation.
         super().__init__( *args, **kwargs )
 
 
@@ -2035,6 +2466,11 @@ class FITSImageOnDisk( CompressedFITSImage ):
 class OpenUniverse2024FITSImage( CompressedFITSImage ):
     def __init__( self, *args, imagehdu=1, noisehdu=2, flagshdu=3, **kwargs ):
         super().__init__( *args, imagehdu=imagehdu, noisehdu=noisehdu, flagshdu=flagshdu, **kwargs )
+        # Not doing the is_superclass thing here because parent class FITSImage consumes all the explicit
+        #   keywords that we do, so it can go ahead and pretend to not be a superclass for purposes
+        #   of kwargs validation
+
+        self._zeropoint = None
 
     _image_class_base_path_config_item = 'system.ou24.images'
 
@@ -2047,23 +2483,45 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         return ( tds_base / f'truth/{self.band}/{self.observation_id}/'
                  f'Roman_TDS_index_{self.band}_{self.observation_id}_{self.sca}.txt' )
 
+    def _get_internal_attribute( self, prop ):
+        if prop == 'observation_id':
+            mat = self._filenamere.search( self.filepath.name )
+            if mat is None:
+                raise ValueError( f"Failed to parse {self.filepath.name} for pointing" )
+            self._observation_id = mat.group( 'pointing' )
+
+        elif prop == 'exptime':
+            header = self.get_fits_header()
+            if 'EXPTIME' in header:
+                self._exptime = float( header['EXPTIME'] )
+            else:
+                exptimes = {'F184': 901.175,
+                            'J129': 302.275,
+                            'H158': 302.275,
+                            'K213': 901.175,
+                            'R062': 161.025,
+                            'Y106': 302.275,
+                            'Z087': 101.7 }
+                if self.band not in exptimes:
+                    raise ValueError( f"Can't find exptime for band {self.band}" )
+                self._exptime = exptimes[ self.band ]
+
+        else:
+            kwmap = { 'sca': ( 'SCA_NUM', int ),
+                      'band': ( 'FILTER', lambda x: str(x).strip() ),
+                      'mjd': ( 'MJD-OBS', float ),
+                      'sky_level': ( 'SKY_MEAN', float )
+                     }
+            if prop not in kwmap.keys():
+                raise RuntimeError( f"Called OpenUniverse2024FITSImage._get_internal_attribute({prop}); "
+                                    f"this should never bappen." )
+            header = self.get_fits_header()
+            setattr( self, f"_{prop}", kwmap[prop][1]( header[ kwmap[prop][0] ] ) )
 
     def _get_image_shape( self ):
         header = self.get_fits_header()
         self._width = int( header['NAXIS1'] )
         self._height = int( header['NAXIS2'] )
-
-    def _get_observation_id( self ):
-        # Irritatingly, the pointing is not in the header.  So, we have to
-        #   parse the filename to get the pointing.
-        mat = self._filenamere.search( self.filepath.name )
-        if mat is None:
-            raise ValueError( f"Failed to parse {self.filepath.name} for pointing" )
-        self._observation_id = mat.group( 'pointing' )
-
-    def _get_sca( self ):
-        header = self.get_fits_header()
-        self._sca = int( header['SCA_NUM'] )
 
     def _get_ra_dec( self ):
         header = self.get_fits_header()
@@ -2078,37 +2536,11 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         self._ra_corner_10, self._dec_corner_10 = wcs.pixel_to_world( nx-1, 0 )
         self._ra_corner_11, self._dec_corner_11 = wcs.pixel_to_world( nx-1, ny-1 )
 
-    def _get_band( self ):
-        header = self.get_fits_header()
-        self._band = header['FILTER'].strip()
-
-    def _get_mjd( self ):
-        header = self.get_fits_header()
-        self._mjd =  float( header['MJD-OBS'] )
-
-    def _get_exptime( self ):
-        header = self.get_fits_header()
-        if 'EXPTIME' in header:
-            self._exptime = float( header['EXPTIME'] )
-        else:
-            exptimes = {'F184': 901.175,
-                        'J129': 302.275,
-                        'H158': 302.275,
-                        'K213': 901.175,
-                        'R062': 161.025,
-                        'Y106': 302.275,
-                        'Z087': 101.7 }
-            if self.band not in exptimes:
-                raise ValueError( f"Can't find exptime for band {self.band}" )
-            self._exptime = exptimes[ self.band ]
-
-    def _get_sky_level( self ):
-        header = self.get_fits_header()
-        self._sky_level = header['SKY_MEAN']
-
-    def _get_zeropoint( self ):
-        header = self.get_fits_header()
-        self._zeropoint = galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+    def get_zeropoint( self, x=None, y=None ):
+        if self._zeropoint is None:
+            header = self.get_fits_header()
+            self._zeropoint = galsim.roman.getBandpasses()[self.band].zeropoint + header['ZPTMAG']
+        return self._zeropoint
 
     def _get_zeropoint_the_hard_way( self, psf, ap_r=9 ):
         """This is here hopefully as legacy code.
@@ -2119,6 +2551,8 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
         resort to this.
 
         """
+        raise RuntimeError( "Not up to date." )
+
         # Get stars from the truth
         truth_colnames = ['object_id', 'ra', 'dec', 'x', 'y', 'realized_flux', 'flux', 'mag', 'obj_type']
         truth_pd = pandas.read_csv(self.truthpath, comment='#', skipinitialspace=True, sep=' ', names=truth_colnames)
@@ -2188,25 +2622,52 @@ class RomanDatamodelImage( Image ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
+        # Not doing is_superclass since we don't consume any custom keyword arguments
         self._dm = None
-
+        self._dm_meta_cache = None
+        self._data = None
+        self._noise = None
+        self._flags = None
 
     # TODO : many of the _get_* functions still need to be implemented for RomanDatamodelImage !
 
+    # Yes, I know that you can do with rdm.open(), but I want to cache other stuff here too,
+    #   in order to possibly save some gratuitous extra opens when pulling random information.
+    #   Cache the shape and the metadata the first time we open the roman_datamodels file.
+    @contextmanager
+    def _with_dm( self ):
+        dm = None
+        try:
+            dm = rdm.open( self.full_filepath, mode='r' )
+            if self._dm_meta_cache is None:
+                # Do a deepcopy in hopes that it will force all lazy-loaded properties to actually be loaded.
+                # That sounds inefficient... but so is keeping open the RomanDataModel with all the lazy-loaded
+                # stuff (e.g., image planes) that we might not want, or might want to free.  The meta should be
+                # insigifncant in size compeared to images, so the inefficiency here *should* be small, unless for
+                # some reason something in meta requires a lot of computation to realize.
+                self._dm_meta_cache = copy.deepcopy( dm.meta )
+            if ( self._width is None ) or ( isinstance( self._width, _UnsetProperty ) ):
+                self._width = dm.shape[1]
+            if ( self._height is None ) or ( isinstance( self._height, _UnsetProperty ) ):
+                self._height = dm.shape[0]
+            yield dm
+        finally:
+            if dm is not None:
+                dm.close()
+
+    @property
+    def _dm_meta( self ):
+        if self._dm_meta_cache is None:
+            dm = rdm.open( self.full_filepath, mode='r' )
+            # See deepcopy comment in _with_dm above
+            self._dm_meta_cache = copy.deepcopy( dm.meta )
+            dm.close()
+        return self._dm_meta_cache
+
     def _get_image_shape( self ):
-        # TODO : this must be in the header / meta information somewhere
-        self._height, self._width = self.data.shape
-
-    def _get_observation_id( self ):
-        self._observation_id = self.dm.meta.observation.observation_id
-
-    def _get_sca( self ):
-        match = self._detectormatch.search( self.dm.meta.instrument.detector )
-        if match is None:
-            raise ValueError( f'Failed to parse self._dm.meta.instrument.detector='
-                              f'"{self._dm.meta.instrument.detector} for "WFInn"' )
-        self._sca = int( match.group(1) )
-
+        with self._with_dm() as _dm:
+            # ... what we had to do already happened in self._with_dm()
+            pass
 
     def _get_ra_dec( self ):
         # TODO : see if there's something in the header that would work
@@ -2222,19 +2683,37 @@ class RomanDatamodelImage( Image ):
         self._ra_corner_10, self._dec_corner_10 = wcs.pixel_to_world( nx-1, 0 )
         self._ra_corner_11, self._dec_corner_11 = wcs.pixel_to_world( nx-1, ny-1 )
 
-    def _get_band( self ):
-        self._band = self.dm.meta.instrument.optical_element
+    def _get_internal_attribute( self, prop ):
+        meta = self._dm_meta
 
-    def _get_mjd( self ):
-        self._mjd = ( self.dm.meta.exposure.start_time.mjd + self.dm.meta.exposure.end_time.mjd ) / 2.
+        if prop == 'observation_id':
+            self._observation_id = meta.observation.observation_id
 
-    def _get_exptime( self ):
-        self._exptime = self.dm.meta.exposure.exposure_time
+        elif prop == 'sca':
+            match = self._detectormatch.search( meta.instrument.detector )
+            if match is None:
+                raise ValueError( f'Failed to parse meta.instrument.detector='
+                                  f'"{meta.instrument.detector} for "WFInn"' )
+            self._sca = int( match.group(1) )
 
-    # def _get_sky_level(self):
-    #    ...dunno what to do here
+        elif prop == 'band':
+            self._band = meta.instrument.optical_element
 
-    def _get_zeropoint( self ):
+        elif prop == 'mjd':
+            self._mjd = ( meta.exposure.start_time.mjd + meta.exposure.end_time.mjd ) / 2.
+
+        elif prop == 'exptime':
+            self._exptime = meta.exposure.exposure_time
+
+        elif prop == 'sky_level':
+            SNLogger.warning( "We need to find a better way to get the sky level of a RomanDatamodelImage" )
+            self._sky_level = meta.statistics.image_median
+
+        else:
+            raise ValueError( f"Don't know how to get property {prop} of a {self.__class__.__name__}" )
+
+
+    def get_zeropoint( self, x=None, y=None ):
         # photometry.conversion_megajanskys gives MJy per steradian that
         #   gives an instrumental count rate of 1 dn/second.  I'm
         #   assuming that's 1 dn/second per pixel, as it's not clear
@@ -2261,7 +2740,7 @@ class RomanDatamodelImage( Image ):
         #   total count rate summed over all the pixels that light from
         #   the object fell into of 1 dn/s
         #
-        # Below, define dn_s to be the total dn_s (i.e. pixel values in
+        # Below, define dn_s to be the total dn_s (i.e., pixel values in
         #   the image) summed over all pixels that light from the object
         #   fell into (determined either from aperture photometry with
         #   an infinite aperture after background subtraction, or psf
@@ -2276,83 +2755,175 @@ class RomanDatamodelImage( Image ):
         # m_ab = -2.5*log10( dn_s ) + zp    [This is the definition of zp]
         # zp = -2.5*log10( cm_ma ) - 6.1
 
-        self._zeropoint = -6.1 - 2.5 * np.log10( self.dm.meta.photometry.conversion_megajanskys *
-                                                 self.dm.meta.photometry.pixel_area )
+        # ****************************************
+        # NEXT BIT COMMENTED OUT
+        # We decided that we were going to scale data (see the "data" and "noise" properties)
+        #   instead of having a spatially variable zeropoint.
+        # It's still here in case we reverse this decision
+        #
+        # x = int( np.floor( self.width / 2. + 0.5 ) ) if x is None else int( np.floor( x + 0.5 ) )
+        # y = int( np.floor( self.height / 2. + 0.5 ) ) if y is None else int( np.floor( y + 0.5 ) )
+
+        # if self._pixelareamap is None:
+        #     pixelarea_name = crds.getreferences(
+        #         self.dm.get_crds_parameters(),
+        #         reftypes=["area"],
+        #         observatory="roman",
+        #     )["area"]
+
+        #     ifp = rdm.open( pixelarea_name )
+        #     self._pixelarea = np.array( ifp.data )
+        #     ifp.close()
+
+        # To go from surface brightness to something proportional to
+        #   electrions, you multiply the image by self._pixelarea (which
+        #   is unitless, relative to self.dm.photometry.pixel_area)
+        #
+        # So f = sb * self._pixelarea
+        #
+        # m = -2.5 log10( f ) + zp_f
+        #   = -2.5 log10( sb * _pixelrea ) + zp_f
+        #   = -2.5 log10(sb) - 2.5 log10(_pixelarea) + zp_f
+        #
+        # So zp_sb = zp_f - 2.5log10(_pixelarea)
+        #
+        # We need to return zp_sb because the image is in surface brightness units
+        # ****************************************
+
+        meta = self._dm_meta
+        return -6.1 - 2.5 * np.log10( meta.photometry.conversion_megajanskys *
+                                      meta.photometry.pixel_area
+                                     )
+
+                                     # * self._pixelarea[y, x] )
 
     @property
     def data( self ):
-        # WORRY.  This actually returns a asdf.tags.core.ndarray.NDArrayType.
-        # I'm hoping it will be duck-typing equivalent to a numpy array.
-        # TODO : investigate memory use when you do numpy array things
-        # with one of these.
-        # Using the _data property here is so that we can set the data elsewhere. -CFM
-        if getattr(self, '_data', None) is None:
-            self._data = self.dm.data
-
+        if getattr( self, '_data', None ) is None:
+            # When we load any of data, noise, or flags, we load all three.  Not
+            # obvious that's the right thing to do.  Tradeoff of overhead
+            # opening and reading files and pixel area files vs. memory usage.
+            self.get_data( which='all', always_reload=True, cache=True )
         return self._data
 
     @property
     def noise( self ):
-        # See comment in data
-        # Using the _noise property here is so that we can set the noise elsewhere. -CFM
-        if getattr(self, '_noise', None) is None:
-            self._noise = self.dm.err
-
+        if getattr( self, '_noise', None ) is None:
+            # When we load any of data, noise, or flags, we load all three.  Not
+            # obvious that's the right thing to do.  Tradeoff of overhead
+            # opening and reading files and pixel area files vs. memory usage.
+            self.get_data( which='all', always_reload=True, cache=True )
         return self._noise
 
     @property
     def flags( self ):
-        # See comment in data
         # TODO : https://roman-pipeline.readthedocs.io/en/latest/roman/dq_init/reference_files.html#reference-files
         # We probably need to do some translation.  We have to think about what we are defining
         #   as a "bad" pixel.
         # Using the _flags property here is so that we can set the flags elsewhere. -CFM
         if getattr(self, '_flags', None) is None:
-            self._flags = self.dm.dq
-
+            # When we load any of data, noise, or flags, we load all three.  Not
+            # obvious that's the right thing to do.  Tradeoff of overhead
+            # opening and reading files and pixel area files vs. memory usage.
+            self.get_data( which='all', always_reload=True, always_cache=True )
         return self._flags
+
+    def _load_sb_data_and_sb_noise( self, always_reload=False ):
+        if ( always_reload or
+             ( getattr( self, '_sb_data', None ) is None ) or
+             ( getattr( self, '_sb_noise', None ) is None )
+            ):
+            with self._with_dm() as dm:
+                self._sb_data = np.array( dm.data )
+                self._sb_noise = np.array( dm.err )
+
+
+    @property
+    def sb_data( self ):
+        """NOT A STANDARD Image PROPERTY!  Surface-brightness units data array.
+
+        This is the native data array straight out of the roman_datamodel L2 asdf files.
+
+        """
+        if getattr( self, '_sb_data', None ) is None:
+            self._load_sb_data_and_sb_noise()
+        return self._sb_data
+
+
+    @property
+    def sb_noise( self ):
+        """NOT A STANDARD Image PROPERTY!  Surface-brightness units noise array.
+
+        This is the native noise array straight out of the roman_datamodel L2 asdf files.
+
+        """
+        if getattr( self, '_sb_noise', None ) is None:
+            self._load_sb_data_and_sb_noise()
+        return self._sb_noise
+
 
     def get_data( self, which='all', always_reload=False, cache=False ):
         """Read the data from disk and return one or more 2d numpy arrays of data.
 
         See Image.get_data for definition of parameters.
 
-        Subclass-specific wrinkle:
-
-        get_data will return actual 2d numpy arrays, which means that
-        the memory will always be copied from what is stored from the
-        open roman_datamodels file.  We may revisit this later as we
-        think about memory implications.  (Issue #46.)
-
-        Once you get the data, it will always be cached, even if you
-        pass cache=False.  (This is because we keep the roman_datamodels
-        file open, and currently there's no way to free the data without
-        closing and reopening the file.)  So, cache=False does not save
-        any memory, alas.  (Again, Issue #46.)
-
-        As such, always_reload and cache are ignored for this class.
-        This is not great, because always_reload ought to get a fresh
-        copy of the data even if it's been modified.  To really behave
-        that way, though, we'd have to reimplement the class to not hold
-        open the roman_datamodels image.
-
         """
         if self._is_cutout:
             raise RuntimeError( f"{self.__class__.__name__} images don't know how to deal with being cutouts." )
 
+        if which not in ( 'all', 'data', 'noise', 'flags' ):
+            raise ValueError( f"Unknown value of which: {which}" )
+
+        if ( always_reload or
+             ( ( which == 'all' ) and any( i is None for i in [ self._data, self._noise, self._flags ] ) ) or
+             ( ( which == 'data' ) and ( self._data is None ) ) or
+             ( ( which == 'noise' ) and ( self._noise is None ) ) or
+             ( ( which == 'flags' ) and ( self._flags is None ) )
+            ):
+            with self._with_dm() as dm:
+                data = np.array( dm.data ) if which in ( 'data', 'all' ) else None
+                noise = np.array( dm.err ) if which in ( 'noise', 'all' ) else None
+                flags = np.array( dm.dq ) if which in ( 'flags', 'all' ) else None
+
+                if ( data is not None ) or ( noise is not None ):
+                    pixelarea_name = crds.getreferences(
+                        dm.get_crds_parameters(),
+                        reftypes=["area"],
+                        observatory="roman",
+                    )["area"]
+                    with rdm.open( pixelarea_name ) as ifp:
+                        pixelarea = np.array( ifp.data )
+                    if data is not None:
+                        data *= pixelarea
+                    if noise is not None:
+                        noise *= pixelarea
+
+        else:
+            data = self._data
+            noise = self._noise
+            flags = self._flags
+
         if which == 'all':
-            return [ np.array(self.data), np.array(self.noise), np.array(self.flags) ]
+            if cache:
+                self._data = data
+                self._noise = noise
+                self._flags = flags
+            return [ data, noise, flags ]
+        elif which == 'data':
+            if cache:
+                self._data = data
+            return [ data ]
+        elif which == 'noise':
+            if cache:
+                self._noise = noise
+            return [ noise ]
+        elif which == 'flags':
+            if cache:
+                self._flags = flags
+            return [ flags ]
+        else:
+            raise RuntimeError( "This should never happen" )
 
-        if which == 'data':
-            return [ np.array(self.data) ]
-
-        if which == 'noise':
-            return [ np.array(self.noise) ]
-
-        if which == 'flags':
-            return [ np.array(self.flags) ]
-
-        raise ValueError( f"Unknown value of which: {which}" )
 
 
     @property
@@ -2369,6 +2940,7 @@ class RomanDatamodelImage( Image ):
         #   this class will modify the image on disk.  We really don't want to modify
         #   our input data, and want to be explicit about saving like we are used
         #   to with FITS files.
+        SNLogger.warning( "Only use the dm property of RomanDatamodelImage if you know what you're doing." )
         if self._dm is None:
             self._dm = rdm.open( self.full_filepath, mode='r' )
         return self._dm
@@ -2377,7 +2949,7 @@ class RomanDatamodelImage( Image ):
         wcsclass = "RDM_GWCS" if wcsclass is None else wcsclass
         if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
             if wcsclass == "RDM_GWCS":
-                self._wcs = RDM_GWCS( gwcs=self.dm.meta.wcs )
+                self._wcs = RDM_GWCS( gwcs=self._dm_meta.wcs )
             else:
                 raise NotImplementedError( "RomanDatamodelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs
@@ -2427,7 +2999,7 @@ class RomanDatamodelImage( Image ):
 
         apwcs = None if wcs is None else wcs
         # This was wcs._wcs in the FITS version of this function. I
-        # am unclear why I had to change it to be just wcs, i.e. not wcs._wcs
+        # am unclear why I had to change it to be just wcs, i.e., not wcs._wcs
 
         # Remember that numpy arrays are indexed [y, x] (at least if they're read with astropy.io.fits)
         astropy_cutout = Cutout2D(data, (x, y), size=(ysize, xsize), wcs=apwcs, mode=mode, fill_value=fill_value)
@@ -2441,10 +3013,13 @@ class RomanDatamodelImage( Image ):
             snappl_cutout._data = astropy_cutout.data.copy()
             snappl_cutout._noise = astropy_noise.data.copy()
         else:
+            # WORRY.  We're creating a subclass that's going to point to the non-cutout file.
+            # Look to see if rdm has a clean way of making cutouts itself, and just use that
+            # if it exists!
             snappl_cutout = self.__class__(full_filepath=self.full_filepath, no_base_path=True,
                                            width=xsize, height=ysize)
-            snappl_cutout.dm.data = astropy_cutout.data.copy()
-            snappl_cutout.dm.err = astropy_noise.data.copy()
+            snappl_cutout.data = astropy_cutout.data.copy()
+            snappl_cutout.noise = astropy_noise.data.copy()
         snappl_cutout._wcs = None if wcs is None else AstropyWCS( astropy_cutout.wcs )
 
         snappl_cutout._flags = astropy_flags.data.copy()
@@ -2455,11 +3030,14 @@ class RomanDatamodelImage( Image ):
 
         # TODO : fix _ra* and _dec* fields, they're all WRONG
 
+        # WORRY : we need to have all attributes from all current and future subclasses... there
+        #   must be a better way.  (But I'm afraid of doing ALL attributes.)
         for prop in [ '_observation_id', '_sca', '_band', '_mjd', '_position_angle', '_exptime',
                       '_sky_level', '_zeropoint', '_ra', '_dec',
                       '_ra_corner_00', '_ra_corner_01', '_ra_corner_10', '_ra_corner_11',
                       '_dec_corner_00', '_dec_corner_01', '_dec_corner_10', '_dec_corner_11' ]:
-            setattr( snappl_cutout, prop, getattr( self, prop ) )
+            if hasattr( self, prop ):
+                setattr( snappl_cutout, prop, getattr( self, prop ) )
 
         snappl_cutout.exptime = self.exptime
         return snappl_cutout
@@ -2511,9 +3089,6 @@ class RomanDatamodelImage( Image ):
             raise TypeError("Flags must be a 2d numpy array of integers.")
 
     def free( self ):
-        SNLogger.warning( 'WARNING: self.free() has been called for the RomanDatamodelImage class. \
-                           This does not actually free memory. This function is included for \
-                           compatibility reasons.' )
         self._data = None
         self._noise = None
         self._flags = None
@@ -2526,7 +3101,8 @@ class RomanDatamodelImage_Needs_CRDS_GWCS( RomanDatamodelImage ):
         wcsclass = "RDM_CRDS_GWCS" if wcsclass is None else wcsclass
         if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
             if wcsclass == "RDM_CRDS_GWCS":
-                self._wcs = RDM_CRDS_GWCS( gwcs=self.dm.meta.wcs, i_know_what_i_am_doing=True, parent_image=self.dm )
+                with self._with_dm() as dm:
+                    self._wcs = RDM_CRDS_GWCS( gwcs=self._dm_meta.wcs, i_know_what_i_am_doing=True, parent_image=dm )
             else:
                 raise NotImplementedError( "RomanDatamodelImage_Needs_CRDS_GWCS can't get a WCS of type {wcsclass}" )
         return self._wcs

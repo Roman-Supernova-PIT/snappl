@@ -31,9 +31,76 @@ class Lightcurve( PathedObject ):
       * base_dir : synonym for base_path
       * lightcurve : The actual lightcurve data, an Astropy QTable
                      (see https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve )
-      * data : synonm for lightcurve
+      * data : synonym for lightcurve
       * meta : dict, the metadata; synonym for self.lightcurve.meta, or None if the lightcurve data isn't loaded
                (access the lightcurve property to force it to load)
+
+
+    USING Lightcurve
+    ================
+
+    READING LIGHTCURVES FROM THE DATABASE
+    =====================================
+
+    In this case, you never call the Lightcurve() constructor directly,
+    and you never give it a file path.  Instead, use one of the class
+    methods Lightcurve.get_by_id() or Lightcurve.find_lightcurves(),
+    which will give you one or more Lightcurve objects.
+
+    READING LIGHTCURVES THAT ARE NOT IN THE DATABASE
+    ================================================
+
+    When you construct your Lightcurve, you *must* give it one of two things:
+
+      * A full absolute path to the lightcurve file, and set no_base_path=True, or
+      * Give both base_dir and filepath; filepath is then relative to base_dir.
+
+    CREATING NEW LIGHTCURVES THAT WILL BE WRITTEN TO THE DATABASE
+    =============================================================
+
+    Instantiate the Lightcurve object::
+
+      lc = Lightcurve( data=<data>, meta=<meta> )
+
+    You *must* give it both data= and meta=.  *Do not* specify any of
+    filepath, base_path, base_dir, or no_base_path.
+
+    What you pass to meta *must* be a dict that includes at least:
+
+      * ``provenance_id`` : the id from a Provneance constructed with
+        the Provenance class.  Do it right.
+      * ``diaobject_id`` : the id of the object in the database this is
+        a lightcurve for
+
+    If you are using an improved position (rather than the "first guess"
+    that comes with the DiaObject object), you will also include a
+    ``diaobject_position_id``.  Other expected meta fields are
+    documented with the lightcurve schema on the Roman SNPIT wiki:
+
+       https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve
+
+    To actually write the Lightcurve, call both::
+
+      lc.write()
+      lc.save_to_db()
+
+    and do not specify any arguments to either one.
+
+    CREATING NEW LIGHTCURVES THAT WILL NOT BE WRITTEN TO THE DATABASE
+    =================================================================
+
+    Instantiate the Lightcurve object, giving it both data= and meta=.
+    Optionally, you can also give it base_dir and/or filepath; if you
+    don't give it base_dir, then filepath is absolute, otherwise
+    filepath is relative to base_path.
+
+    When you write the file, call::
+
+      lc.write( filename=<filepath>, base_dir=<base_dir> )
+
+    You can omit both arguments if you specified them when you made the
+    Lightcurve object.  If <filepath> is absolute, then you don't need
+    to include base_dir.
 
     """
 
@@ -235,6 +302,22 @@ class Lightcurve( PathedObject ):
             "pix_x": numbers.Real,
             "pix_y": numbers.Real
         }
+        # The units are also defined on https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve
+        # TODO : think about if the user has passed in a table that already
+        #   has units; we should verify!!!
+        units = { "mjd": astropy.units.d,
+                  "flux": astropy.units.count / astropy.units.second,
+                  "flux_err": astropy.units.count / astropy.units.second,
+                  "zpt": astropy.units.mag,
+                  "NEA": astropy.units.pix ** 2,
+                  "sky_rms": astropy.units.count / astropy.units.second,
+                  "observation_id": "",
+                  "sca": "",
+                  "pix_x": astropy.units.pix,
+                  "pix_y": astropy.units.pix
+                 }
+
+
         if self._multiband:
             if 'band' not in ( data if isinstance(data, dict) else data.columns ):
                 raise ValueError( "missing data column band" )
@@ -290,6 +373,9 @@ class Lightcurve( PathedObject ):
         for col, col_type in data_type_dict.items():
             if col not in data_cols:
                 missing_data.append( col )
+            elif isinstance( data[col], astropy.units.Quantity ):
+                if data[col].unit != units[col]:
+                    bad_data_types.append( [ col, col_type, units[col], data[col].unit ] )
             elif not all( isinstance(item, col_type) for item in data[col] ):
                 bad_data_types.append( [ col, col_type ] )
 
@@ -300,30 +386,18 @@ class Lightcurve( PathedObject ):
                 sio = io.StringIO()
                 sio.write( "The following data columns had values of the wrong type:\n" )
                 for bad in bad_data_types:
-                    sio.write( f"{bad[0]} needs to be {bad[1]}\n" )
+                    if len(bad) == 4:
+                        sio.write( f"{bad[0]} needs to have unit {bad[2]}, but has unit {bad[3]}" )
+                    else:
+                        sio.write( f"{bad[0]} needs to be {bad[1]}\n" )
                 SNLogger.error( sio.getvalue() )
             raise ValueError( "Incorrect or missing data columns." )
 
-
         # Create our internal representation in self.lightcurve from the passed data
 
-        # The units are also defined on https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve
-        # TODO : think about if the user has passed in a table that already
-        #   has units; we should verify!!!
-
-        units = { "mjd": astropy.units.d,
-                  "flux": astropy.units.count / astropy.units.second,
-                  "flux_err": astropy.units.count / astropy.units.second,
-                  "zpt": astropy.units.mag,
-                  "NEA": astropy.units.pix ** 2,
-                  "sky_rms": astropy.units.count / astropy.units.second,
-                  "observation_id": "",
-                  "sca": "",
-                  "pix_x": astropy.units.pix,
-                  "pix_y": astropy.units.pix
-                 }
-
-        if isinstance( data, pd.DataFrame ):
+        if isinstance( data, QTable ):
+            lc = QTable( data=data, meta=meta )
+        elif isinstance( data, pd.DataFrame ):
             lc = QTable( Table.from_pandas( data ), meta=meta, units=units )
         else:
             lc = QTable( data=data, meta=meta, units=units )
@@ -333,6 +407,10 @@ class Lightcurve( PathedObject ):
 
 
     def generate_filepath( self, filetype="parquet" ):
+        if self._no_base_path:
+            raise RuntimeError( "Called generate_filepath when when no_base_path is True.  Generally, you should only "
+                                "call generate_filepath when reading/writing database lightcurves, and in that case "
+                                "there should be a base path." )
         subdir = str(self.id)[0:3]
         basename = f"{self.meta['provenance_id']}/{subdir[0]}/{subdir[1]}/{subdir[2]}/{self.id}"
         if self._multiband:
@@ -343,17 +421,48 @@ class Lightcurve( PathedObject ):
             self.filepath = Path( f"{basename}.{self.meta['band']}.ltcv{self.filename_extensions[filetype]}" )
 
 
+    def _figure_out_fullpath( self, base_dir=None, base_path=None, filepath=None, filetype="parquet" ):
+        # Explicit implementation here rather than using the
+        # PathedObject.full_filepath property becasue we might need to
+        # pass an argument to generate_filepath, which wouldn't happen
+        # accessing the full_filepath property.
+        if filepath is None:
+            if self._filepath is None:
+                self.generate_filepath( filetype=filetype )
+            filepath = self.filepath
+        else:
+            filepath = Path( filepath )
 
-    def read( self, base_dir=None, filepath=None ):
-        """Reads the lightcurve from its filepath."""
+        base_path = Path( base_path ) if base_path is not None else Path( base_dir ) if base_dir is not None else None
 
-        basedir = Path( self.base_dir if base_dir is None else base_dir )
-        filepath = Path( self.filepath if filepath is None else filepath )
+        if base_path is not None:
+            fullpath = Path( base_path ) / filepath
+        else:
+            if self._no_base_path:
+                fullpath = filepath.resolve()
+            elif self.base_path is None:
+                raise ValueError( "self._no_base_path is False but self.base_path is not set.  "
+                                  "This probably shouldn't happen." )
+            else:
+                fullpath = self.base_path / filepath
 
-        self._lightcurve = QTable.read( basedir / filepath )
+        return fullpath
 
 
-    def write(self, base_dir=None, filepath=None, filetype="parquet", overwrite=False):
+    def read( self, base_dir=None, base_path=None, filepath=None ):
+        """Reads the lightcurve from its filepath.
+
+        You usually don't need to call this method.  Just access the
+        lightcurve property of the Lightcurve object and let it take
+        care of reading.
+
+        """
+
+        fullpath = self._figure_out_fullpath( base_dir=base_dir, base_path=base_path, filepath=filepath )
+        self._lightcurve = QTable.read( fullpath )
+
+
+    def write(self, base_dir=None, base_path=None, filepath=None, filetype="parquet", overwrite=False):
         """Save the lightcurve to a parquet file.
 
         To save it to the database, you must also call save_to_db after
@@ -367,6 +476,8 @@ class Lightcurve( PathedObject ):
           base_dir : str or pathlib.Path, default None
             The base directory where lightcurves are saved.  If None,
             this will use the one set when the Lightcurve was instantiated.
+
+          base_path : synonym for base_dir
 
           filepath : str or pathlib.Path, default None
             The path relative to base_dir to write the file.  If None,
@@ -397,26 +508,14 @@ class Lightcurve( PathedObject ):
         if filetype not in filetypemap:
             raise ValueError( f"Unknown filetype {filetype}" )
 
-        if ( filepath is None ) and ( self._filepath is None ):
-            self.generate_filepath( filetype=filetype )
-        filepath = self.filepath if filepath is None else filepath
-        base_dir = Path( self.base_dir if base_dir is None else base_dir )
-
-        fullpath = base_dir / filepath
-        if fullpath.exists():
-            if overwrite:
-                if not fullpath.is_file():
-                    raise FileExistsError( f"{fullpath} exists, but is not a normal file!  Not overwriting!" )
-                fullpath.unlink( missing_ok=True )
-            else:
-                raise FileExistsError( f"{fullpath} exists and overwrite is False" )
-
+        fullpath = self._figure_out_fullpath( base_dir=base_dir, base_path=base_path, filepath=filepath,
+                                              filetype=filetype )
         fullpath.parent.mkdir( parents=True, exist_ok=True )
 
         SNLogger.info( f"Saving lightcurve to {fullpath}" )
         self.lightcurve.write( fullpath, format=filetypemap[filetype] )
 
-        self.filepath = filepath
+        self.filepath = Path( filepath ) if filepath is not None else self.filepath
 
 
     def save_to_db( self, dbclient=None ):

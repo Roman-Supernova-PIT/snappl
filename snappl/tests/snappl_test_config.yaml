@@ -8,3 +8,6 @@ system:
     lightcurves: /home/snappl/snappl/tests/lightcurves
     segmaps: /home/snappl/snappl/tests/segmaps
     images: /home/snappl/snappl/tests/images
+
+    temp_dir: /tmp
+    dev_storage: /home/snappl/tests/dev_storage

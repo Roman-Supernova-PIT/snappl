@@ -20,15 +20,15 @@ def test_normalization():
     #   downsampled.  But, maybe it is.  Someone should go read the code to find out.
     seed = 42
 
-    bigpsfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=bigsize)
+    bigpsfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, stamp_size=bigsize)
     bigstamp = bigpsfobj.get_stamp(seed=seed)
     assert bigstamp.shape == (bigsize, bigsize)
 
-    mediumpsfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=mediumsize)
+    mediumpsfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, stamp_size=mediumsize)
     mediumstamp = mediumpsfobj.get_stamp(seed=seed)
     assert mediumstamp.shape == (mediumsize, mediumsize)
 
-    smallpsfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=smallsize)
+    smallpsfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, stamp_size=smallsize)
     smallstamp = smallpsfobj.get_stamp(seed=seed)
     assert smallstamp.shape == (smallsize, smallsize)
 
@@ -44,7 +44,7 @@ def test_normalization():
 
 
 def test_get_centered_psf():
-    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, stamp_size=41)
 
     # Try a basic centered PSF
     stamp = psfobj.get_stamp(seed=42)
@@ -67,7 +67,7 @@ def test_get_offcenter_psf():
     x, y = 2048.0, 2048.0
     x0, y0 = 2050, 2040
     stamp_size = 41
-    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, stamp_size=41.0)
     centerstamp = psfobj.get_stamp(x, y, seed=42)
 
     stamp = psfobj.get_stamp(x, y, x0=x0, y0=y0, seed=42)
@@ -94,7 +94,7 @@ def test_get_edge_centered_psf():
     # Try a PSF centered between two pixels.  Because of how we
     #   define 0.5 behavior in PSF.get_stamp, this should be
     #   centered to the *left* of the center of the image.
-    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, stamp_size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.0, seed=42)
     assert stamp.shape == (41, 41)
     assert stamp.sum() == pytest.approx(0.960, abs=0.001)
@@ -108,7 +108,7 @@ def test_get_corner_centered_psf():
     # Try a PSF centered between four pixels.  Because of how we
     #   define 0.5 behavior in PSF.get_stamp, this should be
     #   centered to the *left* and *down* of the center of the image.
-    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, stamp_size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.5, seed=42)
     assert stamp.shape == (41, 41)
     assert stamp.sum() == pytest.approx(0.960, abs=0.001)
@@ -123,7 +123,7 @@ def test_get_offset_corner_centered_psf():
     # The PSF center should be at -1.5, +2.5 pixels
     # relative to the stamp center... but then
     # offset because of the asymmetry of the roman PSF.
-    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, stamp_size=41.0)
     stamp = psfobj.get_stamp(2048.5, 2048.5, x0=2050, y0=2046, seed=42)
     assert stamp.shape == (41, 41)
 
@@ -134,7 +134,7 @@ def test_get_offset_corner_centered_psf():
 
 def test_get_offset_psf():
     """Test generating a non half-pixel offset."""
-    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, size=41.0)
+    psfobj = PSF.get_psf_object("STPSF", band="H158", sca=17, stamp_size=41.0)
     stamp = psfobj.get_stamp(2048.2, 2048.8, seed=42)
     assert stamp.shape == (41, 41)
 
