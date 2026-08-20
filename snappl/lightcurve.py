@@ -60,7 +60,7 @@ class Lightcurve( PathedObject ):
 
     Instantiate the Lightcurve object (for these docs, we'll assume the
     variable holding it is lc), giving it both data= and meta=.  Do NOT
-    specify any of filepath, base_path, base_dir, or no_base-Path.  When
+    specify any of filepath, base_path, base_dir, or no_base_path.  When
     you write the Lightcurve call *both*
 
       * lc.write()
