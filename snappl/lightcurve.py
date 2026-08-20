@@ -65,7 +65,7 @@ class Lightcurve( PathedObject ):
     You *must* give it both data= and meta=.  *Do not* specify any of
     filepath, base_path, base_dir, or no_base_path.
 
-    What you pass to meta *must* include at least:
+    What you pass to meta *must* be a dict that includes at least:
 
       * ``provenance_id`` : the id from a Provneance constructed with
         the Provenance class.  Do it right.
