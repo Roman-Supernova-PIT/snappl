@@ -400,6 +400,10 @@ class Lightcurve( PathedObject ):
 
 
     def generate_filepath( self, filetype="parquet" ):
+        if self._no_base_path:
+            raise RuntimeError( "Called generate_filepath when when no_base_path is True.  Generally, you should only "
+                                "call generate_filepath when reading/writing database lightcurves, and in that case "
+                                "there should be a base path." )
         subdir = str(self.id)[0:3]
         basename = f"{self.meta['provenance_id']}/{subdir[0]}/{subdir[1]}/{subdir[2]}/{self.id}"
         if self._multiband:
@@ -410,17 +414,48 @@ class Lightcurve( PathedObject ):
             self.filepath = Path( f"{basename}.{self.meta['band']}.ltcv{self.filename_extensions[filetype]}" )
 
 
+    def _figure_out_fullpath( self, base_dir=None, base_path=None, filepath=None, filetype="parquet" ):
+        # Explicit implementation here rather than using the
+        # PathedObject.full_filepath property becasue we might need to
+        # pass an argument to generate_filepath, which wouldn't happen
+        # accessing the full_filepath property.
+        if filepath is None:
+            if self._filepath is None:
+                self.generate_filepath( filetype=filetype )
+            filepath = self.filepath
+        else:
+            filepath = Path( filepath )
 
-    def read( self, base_dir=None, filepath=None ):
-        """Reads the lightcurve from its filepath."""
+        base_path = Path( base_path ) if base_path is not None else Path( base_dir ) if base_dir is not None else None
 
-        basedir = Path( self.base_dir if base_dir is None else base_dir )
-        filepath = Path( self.filepath if filepath is None else filepath )
+        if base_path is not None:
+            fullpath = Path( base_path ) / filepath
+        else:
+            if self._no_base_path:
+                fullpath = filepath.resolve()
+            elif self.base_path is None:
+                raise ValueError( "self._no_base_path is False but self.base_path is not set.  "
+                                  "This probably shouldn't happen." )
+            else:
+                fullpath = self.base_path / filepath
 
-        self._lightcurve = QTable.read( basedir / filepath )
+        return fullpath
 
 
-    def write(self, base_dir=None, filepath=None, filetype="parquet", overwrite=False):
+    def read( self, base_dir=None, base_path=None, filepath=None ):
+        """Reads the lightcurve from its filepath.
+
+        You usually don't need to call this method.  Just access the
+        lightcurve property of the Lightcurve object and let it take
+        care of reading.
+
+        """
+
+        fullpath = self._figure_out_fullpath( base_dir=base_dir, base_path=base_path, filepath=filepath )
+        self._lightcurve = QTable.read( fullpath )
+
+
+    def write(self, base_dir=None, base_path=None, filepath=None, filetype="parquet", overwrite=False):
         """Save the lightcurve to a parquet file.
 
         To save it to the database, you must also call save_to_db after
@@ -434,6 +469,8 @@ class Lightcurve( PathedObject ):
           base_dir : str or pathlib.Path, default None
             The base directory where lightcurves are saved.  If None,
             this will use the one set when the Lightcurve was instantiated.
+
+          base_path : synonym for base_dir
 
           filepath : str or pathlib.Path, default None
             The path relative to base_dir to write the file.  If None,
@@ -464,26 +501,14 @@ class Lightcurve( PathedObject ):
         if filetype not in filetypemap:
             raise ValueError( f"Unknown filetype {filetype}" )
 
-        if ( filepath is None ) and ( self._filepath is None ):
-            self.generate_filepath( filetype=filetype )
-        filepath = self.filepath if filepath is None else filepath
-        base_dir = Path( self.base_dir if base_dir is None else base_dir )
-
-        fullpath = base_dir / filepath
-        if fullpath.exists():
-            if overwrite:
-                if not fullpath.is_file():
-                    raise FileExistsError( f"{fullpath} exists, but is not a normal file!  Not overwriting!" )
-                fullpath.unlink( missing_ok=True )
-            else:
-                raise FileExistsError( f"{fullpath} exists and overwrite is False" )
-
+        fullpath = self._figure_out_fillpath( base_dir=base_dir, base_path=base_path, filepath=filepath,
+                                              filetype=filetype )
         fullpath.parent.mkdir( parents=True, exist_ok=True )
 
         SNLogger.info( f"Saving lightcurve to {fullpath}" )
         self.lightcurve.write( fullpath, format=filetypemap[filetype] )
 
-        self.filepath = filepath
+        self.filepath = Path( filepath ) if filepath is not None else self.filepath
 
 
     def save_to_db( self, dbclient=None ):
