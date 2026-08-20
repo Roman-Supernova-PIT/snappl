@@ -62,12 +62,24 @@ class Lightcurve( PathedObject ):
 
       lc = Lightcurve( data=<data>, meta=<meta> )
 
-    You *must* give it both data= and meta=.  What you pass to meta
-    *must* include a `provenance_id`, which is propery constructed using
-    the Provenance class.  Do NOT specify any of filepath, base_path,
-    base_dir, or no_base_path.
+    You *must* give it both data= and meta=.  *Do not* specify any of
+    filepath, base_path, base_dir, or no_base_path.
 
-    When you write the Lightcurve call *both*::
+    What you pass to meta *must* include at least:
+
+      * ``provenance_id`` : the id from a Provneance constructed with
+        the Provenance class.  Do it right.
+      * ``diaobject_id`` : the id of the object in the database this is
+        a lightcurve for
+
+    If you are using an improved position (rather than the "first guess"
+    that comes with the DiaObject object), you will also include a
+    ``diaobject_position_id``.  Other expected meta fields are
+    documented with the lightcurve schema on the Roman SNPIT wiki:
+
+       https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve
+
+    To actually write the Lightcurve, call both::
 
       lc.write()
       lc.save_to_db()
