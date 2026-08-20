@@ -302,6 +302,22 @@ class Lightcurve( PathedObject ):
             "pix_x": numbers.Real,
             "pix_y": numbers.Real
         }
+        # The units are also defined on https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve
+        # TODO : think about if the user has passed in a table that already
+        #   has units; we should verify!!!
+        units = { "mjd": astropy.units.d,
+                  "flux": astropy.units.count / astropy.units.second,
+                  "flux_err": astropy.units.count / astropy.units.second,
+                  "zpt": astropy.units.mag,
+                  "NEA": astropy.units.pix ** 2,
+                  "sky_rms": astropy.units.count / astropy.units.second,
+                  "observation_id": "",
+                  "sca": "",
+                  "pix_x": astropy.units.pix,
+                  "pix_y": astropy.units.pix
+                 }
+
+
         if self._multiband:
             if 'band' not in ( data if isinstance(data, dict) else data.columns ):
                 raise ValueError( "missing data column band" )
@@ -357,6 +373,9 @@ class Lightcurve( PathedObject ):
         for col, col_type in data_type_dict.items():
             if col not in data_cols:
                 missing_data.append( col )
+            elif isinstance( data[col], astropy.units.Quantity ):
+                if data[col].unit != units[col]:
+                    bad_data_types.append( [ col, col_type, units[col], data[col].unit ] )
             elif not all( isinstance(item, col_type) for item in data[col] ):
                 bad_data_types.append( [ col, col_type ] )
 
@@ -367,30 +386,18 @@ class Lightcurve( PathedObject ):
                 sio = io.StringIO()
                 sio.write( "The following data columns had values of the wrong type:\n" )
                 for bad in bad_data_types:
-                    sio.write( f"{bad[0]} needs to be {bad[1]}\n" )
+                    if len(bad) == 4:
+                        sio.write( f"{bad[0]} needs to have unit {bad[2]}, but has unit {bad[3]}" )
+                    else:
+                        sio.write( f"{bad[0]} needs to be {bad[1]}\n" )
                 SNLogger.error( sio.getvalue() )
             raise ValueError( "Incorrect or missing data columns." )
 
-
         # Create our internal representation in self.lightcurve from the passed data
 
-        # The units are also defined on https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve
-        # TODO : think about if the user has passed in a table that already
-        #   has units; we should verify!!!
-
-        units = { "mjd": astropy.units.d,
-                  "flux": astropy.units.count / astropy.units.second,
-                  "flux_err": astropy.units.count / astropy.units.second,
-                  "zpt": astropy.units.mag,
-                  "NEA": astropy.units.pix ** 2,
-                  "sky_rms": astropy.units.count / astropy.units.second,
-                  "observation_id": "",
-                  "sca": "",
-                  "pix_x": astropy.units.pix,
-                  "pix_y": astropy.units.pix
-                 }
-
-        if isinstance( data, pd.DataFrame ):
+        if isinstance( data, QTable ):
+            lc = QTable( data=data, meta=meta )
+        elif isinstance( data, pd.DataFrame ):
             lc = QTable( Table.from_pandas( data ), meta=meta, units=units )
         else:
             lc = QTable( data=data, meta=meta, units=units )

@@ -199,7 +199,7 @@ def test_read_write_lightcurve( ou2024_test_lightcurve ):
             assert isinstance( ltcv2.lightcurve, QTable )
             assert all( np.all( ltcv.data[c] == ltcv2.data[c] ) for c in ltcv.lightcurve.columns )
             ltcv2.write( filepath=tmpdir / "test_ltcv.parquet" )
-            ltcv3 = Lightcurve( filepath=ltcv2.fullpath )
+            ltcv3 = Lightcurve( filepath=ltcv2.full_filepath )
             assert ltcv3._lightcurve is None
             assert isinstance( ltcv3.lightcurve, QTable )
             assert isinstance( ltcv3._lightcurve, QTable )
