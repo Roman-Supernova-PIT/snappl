@@ -374,20 +374,18 @@ At this point, you follow the standard procedures in :ref:`running_env`.
 Using an interactive native environment
 ---------------------------------------
 
-**WARNING**: as of this writing, the scripts for the native environment are not fully up to date.  We're working on it.  In the mean time, things may not work quite right.
-
-You can also run natively in a virtual environment. You have two options::
+You can also run natively in a virtual environment. You have two options:
 
   # A premade static environment that you can't change (i.e., can't install anything)
   # Your own development environment where you can install stuff
 
-Activating the premade static environment is very easy::
+Activating the premade static environment is very easy. Run this every time you want to use the environment::
 
-  source /data/snpit/env/environment_checkout_for_native/smdc-install-native-shared.sh
+  source /data/snpit/env/environment_checkout_for_native/smdc-native-shared.sh
 
 Done.
 
-If you want to install stuff in a native environment, see :ref:`see below<native_development>`. 
+If you want the ability to install stuff in a native environment, see :ref:`see below<native_development>`. 
 
 .. _native_development:
 
