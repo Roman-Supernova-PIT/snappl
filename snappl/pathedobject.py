@@ -133,7 +133,8 @@ class PathedObject:
                                           f"and full path {full_filepath}, this is inconsistent." )
 
         elif self._no_base_path:
-            self._filepath = self._filepath.resolve()
+            if self._filepath is not None:
+                self._filepath = self._filepath.resolve()
 
 
     def _set_base_path( self, base_path=None, no_base_path=False ):

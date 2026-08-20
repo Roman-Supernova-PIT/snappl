@@ -501,7 +501,7 @@ class Lightcurve( PathedObject ):
         if filetype not in filetypemap:
             raise ValueError( f"Unknown filetype {filetype}" )
 
-        fullpath = self._figure_out_fillpath( base_dir=base_dir, base_path=base_path, filepath=filepath,
+        fullpath = self._figure_out_fullpath( base_dir=base_dir, base_path=base_path, filepath=filepath,
                                               filetype=filetype )
         fullpath.parent.mkdir( parents=True, exist_ok=True )
 

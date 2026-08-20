@@ -11,6 +11,7 @@ import numpy as np
 from astropy.table import Table, QTable
 
 # SNPIT
+from snappl.config import Config
 from snappl.lightcurve import Lightcurve
 from snappl.diaobject import DiaObject
 from snappl.provenance import Provenance
@@ -179,6 +180,7 @@ def test_read_write_lightcurve( ou2024_test_lightcurve ):
     ltcv = ou2024_test_lightcurve
 
     try:
+        # Test writing a database lightcurve and reading it back
         ltcv.write()
         assert ( ltcv.base_dir / ltcv.filepath ).is_file()
 
@@ -187,6 +189,23 @@ def test_read_write_lightcurve( ou2024_test_lightcurve ):
         assert isinstance( ltcv2.lightcurve, QTable )
         assert isinstance( ltcv2._lightcurve, QTable )
         assert all( np.all( ltcv.data[c] == ltcv2.data[c] ) for c in ltcv.lightcurve.columns )
+
+        # Test writing a non-database lightcurve and reading it back
+        tmpdir = pathlib.Path( Config.get().value( 'system.paths.temp_dir' ) )
+        writepath = tmpdir / "test_ltcv.parquet"
+        try:
+            ltcv2 = Lightcurve( data=ltcv.data, meta=ltcv.meta, no_base_path=True )
+            assert isinstance( ltcv2._lightcurve, QTable )
+            assert isinstance( ltcv2.lightcurve, QTable )
+            assert all( np.all( ltcv.data[c] == ltcv2.data[c] ) for c in ltcv.lightcurve.columns )
+            ltcv2.write( filepath=tmpdir / "test_ltcv.parquet" )
+            ltcv3 = Lightcurve( filepath=ltcv2.fullpath )
+            assert ltcv3._lightcurve is None
+            assert isinstance( ltcv3.lightcurve, QTable )
+            assert isinstance( ltcv3._lightcurve, QTable )
+            assert all( np.all( ltcv.data[c] == ltcv3.data[c] ) for c in ltcv.lightcurve.columns )
+        finally:
+            writepath.unlink( missing_ok=True )
 
     finally:
         ( ltcv.base_dir / ltcv.filepath ).unlink( missing_ok=True )
