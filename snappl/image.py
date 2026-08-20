@@ -1738,7 +1738,7 @@ class FITSImage( Numpy2DImage ):
     those files actually live on disk.  Generally, they should only be used
     internally.
 
-    FITSImage does not do any kind of syncinng between the header and
+    FITSImage does not do any kind of syncing between the header and
     object attributes like observation_id, sca, mjd, etc.  If you need
     that, use FITSImageStdHeaders.
 
