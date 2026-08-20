@@ -31,9 +31,58 @@ class Lightcurve( PathedObject ):
       * base_dir : synonym for base_path
       * lightcurve : The actual lightcurve data, an Astropy QTable
                      (see https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/lightcurve )
-      * data : synonm for lightcurve
+      * data : synonym for lightcurve
       * meta : dict, the metadata; synonym for self.lightcurve.meta, or None if the lightcurve data isn't loaded
                (access the lightcurve property to force it to load)
+
+
+    USING Lightcurve
+    ================
+
+    READING LIGHTCURVES FROM THE DATABASE
+    =====================================
+
+    In this case, you never call the Lightcurve() constructor directly,
+    and you never give it a file path.  Instead, use one of the class
+    methods Lightcurve.get_by_id() or Lightcurve.find_lightcurves(),
+    which will give you one or more Lightcurve objects.
+
+    READING LIGHTCURVES THAT ARE NOT IN THE DATABASE
+    ================================================
+
+    When you construct your Lightcurve, you *must* give it one of two things:
+
+      * A full absolute path to the lightcurve file, and set no_base_path=True, or
+      * Give both base_dir and filepath; filepath is then relative to base_dir.
+
+    CREATING NEW LIGHTCURVES THAT WILL BE WRITTEN TO THE DATABASE
+    =============================================================
+
+    Instantiate the Lightcurve object (for these docs, we'll assume the
+    variable holding it is lc), giving it both data= and meta=.  Do NOT
+    specify any of filepath, base_path, base_dir, or no_base-Path.  When
+    you write the Lightcurve call *both*
+
+      * lc.write()
+      * lc.save_to_db()
+
+    and do not specify any arguments to either one.
+
+    CREATING NEW LIGHTCURVES THAT WILL NOT BE WRITTEN TO THE DATABASE
+    =================================================================
+
+    Instantiate the Lightcurve object, giving it both data= and meta=.
+    Optionally, you can also give it base_dir and/or filepath; if you
+    don't give it base_dir, then filepath is absolute, otherwise
+    filepath is relative to base_path.
+
+    When you write the file, call:
+
+      * lc.write( filename=<filepath>, base_dir=<base_dir> )
+
+    You can omit both arguments if you specified them when you made the
+    Lightcurve object.  If <filepath> is absolute, then you don't need
+    to include base_dir.
 
     """
 
