@@ -354,7 +354,7 @@ Then, when :ref:`running the environment<running_and_using_env>`, instead of jus
   SNPIT_SCRATCH=/mnt/roman-science-itnernal/sinput/users/${LOGNAME}/temp bash <dir>/<launcher>
 
 .. _smdc_dev_storage:
-  
+
 Use a different dev storage directory
 -------------------------------------
 
@@ -386,8 +386,8 @@ Using an interactive native environment
 
 You can also run natively in a virtual environment. You have two options:
 
-  # A premade static environment that you can't change (i.e., can't install anything)
-  # Your own development environment where you can install stuff
+  1. A premade static environment that you can't change (i.e., can't install anything)
+  2. Your own development environment where you can install stuff
 
 Activating the premade static environment is very easy; just run the script for the "Venv Launcher" for the environment you want in the list of :ref:`database_list`.  For example, to run the environment that connects to Rick's August 2026 simulations on SMDC, you would run:
 
@@ -396,15 +396,41 @@ Activating the premade static environment is very easy; just run the script for 
   source /data/snpit/env/venv_smdc_ricksim.sh
 
 Be aware, however, that (if we've set things up right) you can *not* ``pip install`` stuff in this environment.  This is for you to use if you just want to run stuff that we've already set up and installed.  If you're doing development of packages, this environment is probably not sufficient for you.
-  
-If you want the ability to install stuff in a native environment, see :ref:`see below<native_development>`. 
+
+If you want the ability to install stuff in a native environment, see :ref:`see below<native_development>`.
 
 .. _native_development:
 
 Using an interactive native environment for development
 -------------------------------------------------------
 
-If you prefer to work in your own Python environment on SMDC, you can create a dedicated virtual environment that has the standard packages used by (at least) SNPIT Photometry.  Think about whether it makes more sense to use this, or to use the containerized environment (which sould "just work").  Both can be used for development, and in both cases, you can ``pip install`` stuff (including things like ``pip install -e .`` in checkouts you're developing).  The primary differences is that in your own dedicated virtual environment, any ``pip install`` commands you run will *persist*.  That is, they're there, from now un, and you have to either recreate the environment, or do other ``pip`` things, to undo that.  This can be convenient, if you have to install a lot of stuff; it can save time!  On the other hand, sometimes you want to start from a fresh environment to make sure that previous things you've installed isn't building up cruft that might make things behave weirdly.
+If you prefer to work in your own Python environment on SMDC, you can create a dedicated virtual environment that has the standard packages used by (at least) SNPIT Photometry.  Think about whether it makes more sense to use this, or to use the containerized environment (which sould "just work").  Both can be used for development, and in both cases, you can ``pip install`` stuff (including things like ``pip install -e .`` in checkouts you're developing).  The primary difference is that in your own dedicated virtual environment, any ``pip install`` commands you run will *persist*.  That is, they're there, from now un, and you have to either recreate the environment, or do other ``pip`` things, to undo that.  This can be convenient, if you have to install a lot of stuff; it can save time!  On the other hand, sometimes you want to start from a fresh environment to make sure that previous things you've installed isn't building up cruft that might make things behave weirdly.
+
+Using the native development environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+First you have to set up the enviornment (see below).  You do that once.  When you set up the environment, you created a file ``launch_<envname>.sh`` in your ``${RUNDIR}``.  You can go into your environment just by running:
+
+.. code-block:: console
+
+   source <rundir>/launch_<envname>.sh
+
+For example, if you used all the defaults when setting up your environment, this would be:
+
+.. code-block:: console
+
+   source ${HOME}/snpit/launch_snpit-env.sh
+
+You are now in your environment!  You can (mostly) leave the environment by running ``deactivate`` (though there will be some environment variables left over).  Just ``source`` the launcher script to go back into it.
+
+You can verify that you're in the environment by running:
+
+.. code-block:: console
+
+   python
+   >> import snappl
+   >> print( snappl.__version__ )
+
 
 Setting up the native development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -412,6 +438,14 @@ Setting up the native development environment
 You only have to do this once.  (Or, once for each of your environments, if you decide you need more than one.)  It will create a python virtual environment with all the standard SNPIT preqreuisites installed, and also with the "latest" version of ``snappl`` installed.
 
 You have to do a few things to get ready:
+
+ * Decide if you want a linked environment that builds off of a standard base environment, or a fully indendent environment.  **You will almost always want to use  environment, and that's what we recommend.**  A fully independent environment will isnstall all the python packages in your directory, will take longer to install, and will use a bunch of gratuitous disk space.  A linked environment will only install what you update or add in your directory.  For things you haven't udpated or added, when we update the base environment, yours will get updated as well; however, if you've done any ``pip install`` in your environment, that will take precedence over what's in the base environment.
+
+ * Figure out the base environment you want to build off of.  If you're making an independent environment, you can skip this step.  If you don't plan to connect to a database, you can skip this step.  Look at :ref:`database_list`, and note the "Venv Launcher" there.  Set the env var ``$BASE_LAUNCHER`` to that.  For example, if you wanted to use the environment with Rick's August 2026 sims, you would do:
+
+   .. code-block:: console
+
+      export BASE_LAUNCHER=venv_smdc_ricksim.sh
 
  * Figure out your ``$RUNDIR``.  See :ref:`env_rundir` above.  The default is ``${HOME}/snpit``.  If you are happy with that default, skip to the next step.  Otherwise, for purposes of installing your environment, set the ``$RUNDIR`` env var:
 
@@ -441,40 +475,40 @@ You have to do a few things to get ready:
 
    As with dev storage, at runtime you can change your working temp directory by setting the ``$SNPIT_SCRATCH`` enviornment variable.
 
-Having figured all that out, and set any environment variables you want to set based on your choices, run:
+Having figured all that out, and set any environment variables you want to set based on your choices, to create a linked environment run:
 
 .. code-block:: console
 
    bash /data/snpit/env/environment_checkout_for_native/smdc-install-development-env.sh
 
-This will take a while to run (~10 minutes?).  Once it's done, you have your environment
+This should only take a couple of minutes to run .
 
-Using the native development environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When you set up the environment, you created a file ``launch_<envname>.sh`` in your ``${RUNDIR}``.  You can go into your environment just by running:
+If you want to create an independent environment, instead run:
 
 .. code-block:: console
 
-   source <rundir>/launch_<envname>.sh
+   bash /data/snpit/env/environment_checkout_for_native/smdc-install-development-env.sh --independent
 
-For example, if you used all the defaults when setting up your environment, this would be:
+This will take a while to run (~10-20 minutes?).  Once it's done, you have your environment.
 
-.. code-block:: consoel
+(If you know what you're doing, and you change your mind later about things like dev storage, you can just edit the launcher script.)
 
-   source ${HOME}/snpit/launch_snpit-env.sh
 
-You are now in your environment!  You can (mostly) leave the environment by running ``deactivate`` (though there will be some environment variables left over).  Just ``source`` the launcher script to go back into it.
+Updating the native development environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can verify that you're in the environment by running:
+If at some point later you want to make sure that all the packages in your development environment are at the same versions as the ones in the current roman snpit environment, you can run:
 
 .. code-block:: console
 
-   python
-   >> import snappl
-   >> print( snappl.__version__ )
-   
+   pip install -r /data/snpit/env/environment_checkout_for_native/requirements-cpu.txt
 
+It's possible you'll end up with dependency conflicts doing this.  If worst comes to worst, you may have to delete your environment directory and start over.
+
+Of course, at any time, you can always ``pip install`` new versions of individual packages (though dependency hell can still be a thing there).
+
+
+.. _running_locally:
 
 Running locally on your machine
 ===============================
