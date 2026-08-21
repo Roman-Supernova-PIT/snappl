@@ -4,10 +4,10 @@ replaceable_preloads:
 
 system:
   paths:
-    spectra1d: /home/snappl/snappl/tests/spectra1d
-    lightcurves: /home/snappl/snappl/tests/lightcurves
-    segmaps: /home/snappl/snappl/tests/segmaps
-    images: /home/snappl/snappl/tests/images
+    spectra1d: /packages/snappl/snappl/tests/spectra1d
+    lightcurves: /packages/snappl/snappl/tests/lightcurves
+    segmaps: /packages/snappl/snappl/tests/segmaps
+    images: /packages/snappl/snappl/tests/images
 
     temp_dir: /tmp
-    dev_storage: /home/snappl/tests/dev_storage
+    dev_storage: /packages/snappl/tests/dev_storage
