@@ -73,7 +73,6 @@ In all of these environments, the env vars ``SNPIT_CONFIG`` and ``SNPIT_DEFAULT_
       <th class="head">System</th>
       <th class="head">Container Launcher</th>
       <th class="head">Venv Launcher</th>
-      <th class="head">Config File</th>
     </tr>
   </thead>
   <tbody>
@@ -83,7 +82,6 @@ In all of these environments, the env vars ``SNPIT_CONFIG`` and ``SNPIT_DEFAULT_
       <td>SMDC</td>
       <td><tt>singrun_smdc_ricksim.sh</tt></td>
       <td><tt>venv_smdc_ricksim.sh</tt></td>
-      <td><tt>smdc_ricksim_native.yaml</tt></td>
     </tr>
     <tr class="row-odd">
       <td>Generic NERSC Tests</td>
@@ -91,14 +89,12 @@ In all of these environments, the env vars ``SNPIT_CONFIG`` and ``SNPIT_DEFAULT_
       <td>NERSC</td>
       <td><tt>interactive-podman-rknop-dev.sh</tt></td>
       <td>—</td>
-      <td>—</td>
     </tr>
     <tr class="row-even">
       <td>NERSC OU2024</td>
       <td><tt>roman_snpit_db_ou2024</tt></td>
       <td>NERSC</td>
       <td><tt>interactive-podman-ou2024.sh</tt></td>
-      <td>—</td>
       <td>—</td>
     </tr>
   </tbody>
