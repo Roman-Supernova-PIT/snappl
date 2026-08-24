@@ -9,14 +9,16 @@ Roman SNPIT Environment
 Overview
 ========
 
-This section describes the standard enviornment that the photometry group has been using.  Unless your requirements are a lot different you should try running in this same environment, as at the moment it's the one that gives you access to the database.  If there are standard packages you need that we don't have in this enviornment, let us know.
+This section describes the standard environment that the photometry group has been using.  Unless your requirements are a lot different you should try running in this same environment, as at the moment it's the one that gives you access to the database.  If there are standard packages you need that we don't have in this environment, let us know by filing an issue in the `environment repo<https://github.com/Roman-Supernova-PIT/environment>`_.
 
 To update the environment, see :ref:`releasenewenv`.
 
 Containers vs. Native
 ---------------------
 
-A "containerized" environment is one you run inside a container using docker, podman-hpc, or apptainer/singularity.  For SNPIT development, We support a containerized environment on both NERSC and SMDC.  For the containerized environment, when you run it, you get the current version of the SNPIT environment (or one of a few varieties of it).  At that point you can modify the environment with ``pip install``, though any changes you make will only persist as long as you are running the container.  (That is, when you exit the container and start a new one, you get a fresh slate, which can be an advantage.)
+A "containerized" environment is one you run inside a container using docker, podman-hpc, or apptainer/singularity.  For SNPIT development, we support a containerized environment on both NERSC and SMDC.  For the containerized environment, when you run it, you get the current version of the SNPIT environment (or one of a few varieties of it).  At that point you can modify the environment with ``pip install``, though any changes you make will only persist as long as you are running the container.  (That is, when you exit the container and start a new one, you get a fresh slate, which can be an advantage.)
+
+The tests for snpit packages are written assuming you are running in a containerized environment. They will not fully complete outside a containerized environment. This our general support policy, but the specific technical issue is that the tests rely on specific mountpoints that can only exist instead of a containerized environment.
 
 On SMDC, we also support a two varieties of a "native" environment, which means one that runs in a python venv.  One venv is a shared environment that you use to just run stuff.  The second is one you install yourself in your own directory, so you can install packages to it and modify it.
 
@@ -54,11 +56,11 @@ The following test/development databases are currently up and running.  **Note t
 * **Database**: a brief description of what database this is
 * **Secrets File**: The name of the :ref:`password file<env_password_file>` you must have in your secrets directory
 * **System**: Which system you must be on to run with this database
-* **Container Launcher**: The name of the script to launch the containerized version environment.  On NERSC, these are in ``/global/cfs/cdirs/m4385/env``; on SMDC, these are in ``/data/snpit/env``.
+* **Container Launcher**: The name of the script to launch the containerized version environment.  On NERSC, the scripts are in ``/global/cfs/cdirs/m4385/env``; on SMDC, the scripts are in ``/data/snpit/env``.
 * **Venv Launcher**: The name of the script to launch the read-only "native" venv version of the environment.  Not all databases support this.
-* **Venv Default Config**: The default config file for running a "native" environment and connecting to this database.  On SMDC< these are all in ``/data/snpit/env/configs``.
+* **Venv Default Config**: The default config file for running a "native" environment and connecting to this database.  On SMDC, these are all in ``/data/snpit/env/configs``.
 
-In all of these environments, the env vars ``SNPIT_CONFIG`` and ``SNPIT_DEFAULT_CONFIG`` are both set to the config file that will connect to the right database.  Just do ``less $SNPIT_DEFAULT_CONFIG`` if you're morbidly curious.  The reason there are *two* env vars is discussed im :ref:`need_own_config`.
+In all of these environments, the env vars ``SNPIT_CONFIG`` and ``SNPIT_DEFAULT_CONFIG`` are both set to the config file that will connect to the right database.  Just do ``less $SNPIT_DEFAULT_CONFIG`` if you're morbidly curious.  The reason there are *two* env vars is discussed in :ref:`need_own_config`.
 
 ..
   RST is very annoying.  Among other things, its tables superficially look clean and simple, and in practice are very annoying.  In fact, it's annoying that the world decided it needed markdown in the first place and people didn't just learn HTML.  Of course, HTML (and especially CSS) is also annoying, but less so than most markdown, at least from the point of view of making things do what you want.
@@ -400,12 +402,12 @@ If you want the ability to install stuff in a native environment, see :ref:`see 
 Using an interactive native environment for development
 -------------------------------------------------------
 
-If you prefer to work in your own Python environment on SMDC, you can create a dedicated virtual environment that has the standard packages used by (at least) SNPIT Photometry.  Think about whether it makes more sense to use this, or to use the containerized environment (which sould "just work").  Both can be used for development, and in both cases, you can ``pip install`` stuff (including things like ``pip install -e .`` in checkouts you're developing).  The primary difference is that in your own dedicated virtual environment, any ``pip install`` commands you run will *persist*.  That is, they're there, from now un, and you have to either recreate the environment, or do other ``pip`` things, to undo that.  This can be convenient, if you have to install a lot of stuff; it can save time!  On the other hand, sometimes you want to start from a fresh environment to make sure that previous things you've installed isn't building up cruft that might make things behave weirdly.
+If you prefer to work in your own Python environment on SMDC, you can create a dedicated virtual environment that has the standard packages used by (at least) SNPIT Photometry.  Think about whether it makes more sense to use this, or to use the containerized environment (which should "just work").  Both can be used for development, and in both cases, you can ``pip install`` stuff (including things like ``pip install -e .`` in checkouts you're developing).  The primary difference is that in your own dedicated virtual environment, any ``pip install`` commands you run will *persist*.  That is, they're there, from now on, and you have to either recreate the environment, or do other ``pip`` things, to undo that.  This can be convenient, if you have to install a lot of stuff; it can save time!  On the other hand, sometimes you want to start from a fresh environment to make sure that previous things you've installed isn't building up cruft that might make things behave weirdly.
 
 Using the native development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-First you have to set up the enviornment (see below).  You do that once.  When you set up the environment, you created a file ``launch_<envname>.sh`` in your ``${RUNDIR}``.  You can go into your environment just by running:
+First you have to set up the environment (see below).  You do that once.  When you set up the environment, you created a file ``launch_<envname>.sh`` in your ``${RUNDIR}``.  You can go into your environment just by running:
 
 .. code-block:: console
 
@@ -431,11 +433,11 @@ You can verify that you're in the environment by running:
 Setting up the native development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You only have to do this once.  (Or, once for each of your environments, if you decide you need more than one.)  It will create a python virtual environment with all the standard SNPIT preqreuisites installed, and also with the "latest" version of ``snappl`` installed.
+You only have to do this once.  (Or, once for each of your environments, if you decide you need more than one.)  It will create a python virtual environment with all the standard SNPIT prerequisites installed, and also with the "latest" version of ``snappl`` installed.
 
 You have to do a few things to get ready:
 
- * Decide if you want a linked environment that builds off of a standard base environment, or a fully indendent environment.  **You will almost always want to use  environment, and that's what we recommend.**  A fully independent environment will isnstall all the python packages in your directory, will take longer to install, and will use a bunch of gratuitous disk space.  A linked environment will only install what you update or add in your directory.  For things you haven't udpated or added, when we update the base environment, yours will get updated as well; however, if you've done any ``pip install`` in your environment, that will take precedence over what's in the base environment.
+ * Decide if you want a linked environment that builds off of a standard base environment, or a fully independent environment.  **You will almost always want to use  environment, and that's what we recommend.**  A fully independent environment will install all the python packages in your directory, will take longer to install, and will use a bunch of gratuitous disk space.  A linked environment will only install what you update or add in your directory.  For things you haven't updated or added, when we update the base environment, yours will get updated as well; however, if you've done any ``pip install`` in your environment, that will take precedence over what's in the base environment.
 
  * Figure out the base environment you want to build off of.  If you're making an independent environment, you can skip this step.  If you don't plan to connect to a database, you can skip this step.  Look at :ref:`database_list`, and note the "Venv Launcher" there.  Set the env var ``$BASE_LAUNCHER`` to that.  For example, if you wanted to use the environment with Rick's August 2026 sims, you would do:
 
@@ -461,15 +463,15 @@ You have to do a few things to get ready:
 
       export DEV_STORAGE=<your_chosen_dev_storage_location>
 
-   Note that you will be able to update the location of dev storage at runtime.  Any time you're within your environmenet, just set the ``$DEV_STORAGE`` environment variable to where you want it to be, and then (assuming you haven't subverted the config) things you run will use that directory.
+   Note that you will be able to update the location of dev storage at runtime.  Any time you're within your environment, just set the ``$DEV_STORAGE`` environment variable to where you want it to be, and then (assuming you haven't subverted the config) things you run will use that directory.
 
- * Choose your :ref:`temp/scratch directory<smdc_temp_dir>`.  The deffault is ``/dev/shm``.  That's probably good enough as a default, but see the link about temp dirs for things you have to think about.  If the default is fine, skip this step.  Otherwise, set the ``$SNPIT_SCRATCH`` environment variable:
+ * Choose your :ref:`temp/scratch directory<smdc_temp_dir>`.  The default is ``/dev/shm``.  That's probably good enough as a default, but see the link about temp dirs for things you have to think about.  If the default is fine, skip this step.  Otherwise, set the ``$SNPIT_SCRATCH`` environment variable:
 
    .. code-block:: console
 
       export SNPIT_SCRATCH=<your_chosen_temp_dir>
 
-   As with dev storage, at runtime you can change your working temp directory by setting the ``$SNPIT_SCRATCH`` enviornment variable.
+   As with dev storage, at runtime you can change your working temp directory by setting the ``$SNPIT_SCRATCH`` environment variable.
 
 Having figured all that out, and set any environment variables you want to set based on your choices, to create a linked environment run:
 
@@ -493,13 +495,13 @@ This will take a while to run (~10-20 minutes?).  Once it's done, you have your 
 Updating the native development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If at some point later you want to make sure that all the packages in your development environment are at the same versions as the ones in the current roman snpit environment, you can run:
+If at some point later you want to make sure that all the packages in your development environment are at the same versions as the ones in the current Roman snpit environment, you can run:
 
 .. code-block:: console
 
    pip install -r /data/snpit/env/environment_checkout_for_native/requirements-cpu.txt
 
-It's possible you'll end up with dependency conflicts doing this.  If worst comes to worst, you may have to delete your environment directory and start over.
+It's possible you'll end up with dependency conflicts doing this.  If worse comes to worst, you may have to delete your environment directory and start over.
 
 Of course, at any time, you can always ``pip install`` new versions of individual packages (though dependency hell can still be a thing there).
 
