@@ -66,12 +66,16 @@ jobs:
       - name: run test
         run: |
           cd ..
+          mkdir packages
+          mv snappl packages/
           ls
           echo "--------"
-          ls snappl
+          ls packages
+          echo "--------"
+          ls packages/snappl
           echo "--------"
           cd environment/test-docker-environment
           docker compose up -d webserver shell
-          docker compose exec shell bash -c 'cd /home/snappl && pip install -e .[test]'
-          docker compose exec shell bash -c 'cd /home/snappl/snappl/tests && pytest -v'
+          docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .[test]'
+          docker compose exec shell bash -c 'cd /packages/snappl/snappl/tests && pytest -v'
           docker compose down -v
