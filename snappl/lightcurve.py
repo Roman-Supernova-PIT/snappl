@@ -513,7 +513,7 @@ class Lightcurve( PathedObject ):
         fullpath.parent.mkdir( parents=True, exist_ok=True )
 
         SNLogger.info( f"Saving lightcurve to {fullpath}" )
-        self.lightcurve.write( fullpath, format=filetypemap[filetype] )
+        self.lightcurve.write( fullpath, format=filetypemap[filetype], overwrite=overwrite )
 
         self.filepath = Path( filepath ) if filepath is not None else self.filepath
 
