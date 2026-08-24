@@ -82,3 +82,6 @@ jobs:
           # $WHATEVER/packages/snappl, not just $WHATEVER/snappl.)
           cd ../../
           mv snappl ../
+          cd ..
+          pwd
+          ls -l
