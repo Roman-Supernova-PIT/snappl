@@ -28,6 +28,8 @@ jobs:
       - name: checkout photometry test data
         run: |
           cd ..
+          mkdir packages
+          cd packages
           git clone http://github.com/Roman-Supernova-PIT/photometry_test_data
 
       - name: log into github container registry
@@ -54,9 +56,7 @@ jobs:
 
       - name: pull environment archive
         run: |
-          cd ..
-          mkdir packages
-          cd packages
+          cd ../packages
           git clone https://github.com/Roman-Supernova-PIT/environment.git
 
       - name: pull docker images
@@ -66,15 +66,7 @@ jobs:
 
       - name: run test
         run: |
-          cd ..
-          mv snappl packages/
-          ls
-          echo "--------"
-          ls packages
-          echo "--------"
-          ls packages/snappl
-          echo "--------"
-          cd packages/environment/test-docker-environment
+          cd ../packages/environment/test-docker-environment
           docker compose up -d webserver shell
           docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .[test]'
           docker compose exec shell bash -c 'cd /packages/snappl/snappl/tests && pytest -v'
