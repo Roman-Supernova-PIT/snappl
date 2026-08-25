@@ -1455,9 +1455,6 @@ class ou24PSF_slow( PSF ):
                    n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
                  ):
 
-        from roman_imsim import ChargeDiff
-        from roman_imsim.utils import roman_utils
-
         # ****
         # TEMPORARY
         # We were regularizing arguments.  This is here to catch people who haven't updated.
@@ -1523,6 +1520,9 @@ class ou24PSF_slow( PSF ):
             using rmutils.getLocalWCS.
 
         """
+        from roman_imsim.utils import roman_utils
+        from roman_imsim import ChargeDiff
+
         SNLogger.debug("Getting ou24PSF_slow stamp at x=%s, y=%s, x0=%s, y0=%s", x, y, x0, y0)
 
         # If a position is not given, assume the middle of the SCA
@@ -1615,10 +1615,6 @@ class ou24PSF( ou24PSF_slow ):
     """
 
     def __init__(self, _parent_class=False, **kwargs):
-
-        from roman_imsim import ChargeDiff
-        from roman_imsim.utils import roman_utils
-
         super().__init__(_parent_class=True, **kwargs)
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
         self._psf = None
@@ -1641,6 +1637,8 @@ class ou24PSF( ou24PSF_slow ):
 
 
         """
+        from roman_imsim.utils import roman_utils
+
         SNLogger.debug(f"Initializing ou24PSF PSF object with {self._observation_id} and "
                        f"sca {self._sca} at x0={x0}, y0={y0}")
         self._rmutils = roman_utils(self.config_file, int(self._observation_id), self._sca)
@@ -1688,6 +1686,8 @@ class ou24PSF( ou24PSF_slow ):
             determine the WCS of the PSF stamp. If None, the WCS will be determined
             using rmutils.getLocalWCS.
         """
+
+        from roman_imsim import ChargeDiff
 
         # If a position is not given, assume the middle of the SCA
         #   (within 1/2 pixel; by default, we want to make x and y
