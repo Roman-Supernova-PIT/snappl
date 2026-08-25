@@ -17,8 +17,6 @@ import yaml
 import astropy.convolution
 import astropy.nddata
 import crds
-from roman_imsim import ChargeDiff
-from roman_imsim.utils import roman_utils
 import galsim
 import photutils.psf
 import roman_datamodels as rdm
@@ -1457,6 +1455,9 @@ class ou24PSF_slow( PSF ):
                    n_photons=1000000, _parent_class=False,  _include_photonOps=False, **kwargs
                  ):
 
+        from roman_imsim import ChargeDiff
+        from roman_imsim.utils import roman_utils
+
         # ****
         # TEMPORARY
         # We were regularizing arguments.  This is here to catch people who haven't updated.
@@ -1614,6 +1615,10 @@ class ou24PSF( ou24PSF_slow ):
     """
 
     def __init__(self, _parent_class=False, **kwargs):
+
+        from roman_imsim import ChargeDiff
+        from roman_imsim.utils import roman_utils
+
         super().__init__(_parent_class=True, **kwargs)
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
         self._psf = None
