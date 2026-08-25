@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Roman SNPIT Environment &#8212; roman_snpit_snappl 0.1.dev1+g397b18e69 documentation</title>
+    <title>Roman SNPIT Environment &#8212; roman_snpit_snappl 0.1.dev1+gac9543276 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
-    <script src="_static/documentation_options.js?v=2032d9b2"></script>
+    <script src="_static/documentation_options.js?v=68462502"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -150,11 +150,12 @@
 </nav>
 <section id="overview">
 <h2><a class="toc-backref" href="#id5" role="doc-backlink">Overview</a><a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p>Eventually, if possible, we would like all SNPIT Code to run in the same environment.  This will simplify life for the people who are eventually going to be deploying and managing the entire pipeline.  However, if your code absolutely requires its own environment, as long as we can containerize it, we <em>might</em> be able to live with that.</p>
+<p>This section describes the standard environment that the photometry group has been using.  Unless your requirements are a lot different you should try running in this same environment, as at the moment it’s the one that gives you access to the database.  If there are standard packages you need that we don’t have in this environment, let us know by filing an issue in the <a href="#id28"><span class="problematic" id="id29">`environment repo&lt;https://github.com/Roman-Supernova-PIT/environment&gt;`_</span></a>.</p>
 <p>To update the environment, see <a class="reference internal" href="maintainers.html#releasenewenv"><span class="std std-ref">Releasing a new Environment</span></a>.</p>
 <section id="containers-vs-native">
 <h3><a class="toc-backref" href="#id6" role="doc-backlink">Containers vs. Native</a><a class="headerlink" href="#containers-vs-native" title="Link to this heading">¶</a></h3>
-<p>A “containerized” environment is one you run inside a container using docker, podman-hpc, or apptainer/singularity.  For SNPIT development, We support a containerized environment on both NERSC and SMDC.  For the containerized environment, when you run it, you get the current version of the SNPIT environment (or one of a few varieties of it).  At that point you can modify the environment with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>, though any changes you make will only persist as long as you are running the container.  (That is, when you exit the container and start a new one, you get a fresh slate, which can be an advantage.)</p>
+<p>A “containerized” environment is one you run inside a container using docker, podman-hpc, or apptainer/singularity.  For SNPIT development, we support a containerized environment on both NERSC and SMDC.  For the containerized environment, when you run it, you get the current version of the SNPIT environment (or one of a few varieties of it).  At that point you can modify the environment with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>, though any changes you make will only persist as long as you are running the container.  (That is, when you exit the container and start a new one, you get a fresh slate, which can be an advantage.)</p>
+<p>The tests for snpit packages are written assuming you are running in a containerized environment. They will not fully complete outside a containerized environment. This our general support policy, but the specific technical issue is that the tests rely on specific mountpoints that can only exist instead of a containerized environment.</p>
 <p>On SMDC, we also support a two varieties of a “native” environment, which means one that runs in a python venv.  One venv is a shared environment that you use to just run stuff.  The second is one you install yourself in your own directory, so you can install packages to it and modify it.</p>
 <p>We also have a dockerized development environment you can run on your own system; see <a class="reference internal" href="#running-locally"><span class="std std-ref">Running locally on your machine</span></a>.</p>
 </section>
@@ -162,7 +163,7 @@
 <h3><a class="toc-backref" href="#id7" role="doc-backlink">Databases, Filesystems, and Config Files</a><a class="headerlink" href="#databases-filesystems-and-config-files" title="Link to this heading">¶</a></h3>
 <p><a class="reference external" href="github.com/Roman-Supernova-PIT/snappl/">snappl</a> is the SNPIT library that handles connectivity to the database.</p>
 <p>While the SNPIT environment itself is just a set of installed libraries, eventually most pipeline code is going to need to connect to a database and access the shared files referred to by that database.  Although we <em>could</em> have developed a system that allows the files to be shared across multiple different systems (and Rob has done that for other projects), that adds complexity that we do not believe we will need in the SNPIT.  As such, when you connect to a database, snappl assumes that you’re running on a system with all the files where it expects.  Currently, we have multiple separate test environments that are meant to run on NERSC and SMDC.</p>
-<p>To connect to the database, you need a config file that points you to the right database and to the right places to find the files tracked by the database.</p>
+<p>To connect to the database, you need a config file that points you to the right database and to the right places to find the files tracked by the database.  This will usually be set up for you when you start the SNPIT environment, but <a class="reference internal" href="#snappl-config-file"><span class="std std-ref">read below</span></a> if you need something more complicated.</p>
 </section>
 <section id="making-it-so-your-code-can-run-in-the-snpit-environment">
 <h3><a class="toc-backref" href="#id8" role="doc-backlink">Making it so your code can run in the SNPIT Environment</a><a class="headerlink" href="#making-it-so-your-code-can-run-in-the-snpit-environment" title="Link to this heading">¶</a></h3>
@@ -177,22 +178,24 @@
 </section>
 <section id="databases-currently-supported">
 <span id="database-list"></span><h2><a class="toc-backref" href="#id9" role="doc-backlink">Databases currently supported</a><a class="headerlink" href="#databases-currently-supported" title="Link to this heading">¶</a></h2>
-<p>The following test/development databases are currently up and running.  (Columns are referenced by other instructions below.):</p>
+<p>The following test/development databases are currently up and running.  <strong>Note that each database is only supported on a single system (SMDC or NERSC).</strong>  (Columns are referenced by other instructions below.):</p>
 <ul class="simple">
 <li><p><strong>Database</strong>: a brief description of what database this is</p></li>
 <li><p><strong>Secrets File</strong>: The name of the <a class="reference internal" href="#env-password-file"><span class="std std-ref">password file</span></a> you must have in your secrets directory</p></li>
 <li><p><strong>System</strong>: Which system you must be on to run with this database</p></li>
-<li><p><strong>Launcher</strong>: The name of the script to launch the containerized version environment.  On NERSC, these are in <code class="docutils literal notranslate"><span class="pre">/global/cfs/cdirs/m4385/env</span></code>; on SMDC, these are in <code class="docutils literal notranslate"><span class="pre">/data/snpit/env</span></code>.</p></li>
-<li><p><strong>Config File</strong>: The name of the config file.  On NERSC, these are in <code class="docutils literal notranslate"><span class="pre">/global/cfs/cdirs/m4385/env/configs</span></code>; on SMDC, these are in <code class="docutils literal notranslate"><span class="pre">/data/snpit/env/configs</span></code>.  You usually don’t have to worry about it, the launcher will set this up for you.  However, you <em>might</em> need to think about this <a class="reference internal" href="#need-own-config"><span class="std std-ref">If you need your own config file</span></a>.  (Follow exactly what’s in that section, though, and you shouldn’t need to think about it.)</p></li>
+<li><p><strong>Container Launcher</strong>: The name of the script to launch the containerized version environment.  On NERSC, the scripts are in <code class="docutils literal notranslate"><span class="pre">/global/cfs/cdirs/m4385/env</span></code>; on SMDC, the scripts are in <code class="docutils literal notranslate"><span class="pre">/data/snpit/env</span></code>.</p></li>
+<li><p><strong>Venv Launcher</strong>: The name of the script to launch the read-only “native” venv version of the environment.  Not all databases support this.</p></li>
+<li><p><strong>Venv Default Config</strong>: The default config file for running a “native” environment and connecting to this database.  On SMDC, these are all in <code class="docutils literal notranslate"><span class="pre">/data/snpit/env/configs</span></code>.</p></li>
 </ul>
+<p>In all of these environments, the env vars <code class="docutils literal notranslate"><span class="pre">SNPIT_CONFIG</span></code> and <code class="docutils literal notranslate"><span class="pre">SNPIT_DEFAULT_CONFIG</span></code> are both set to the config file that will connect to the right database.  Just do <code class="docutils literal notranslate"><span class="pre">less</span> <span class="pre">$SNPIT_DEFAULT_CONFIG</span></code> if you’re morbidly curious.  The reason there are <em>two</em> env vars is discussed in <a class="reference internal" href="#need-own-config"><span class="std std-ref">If you need your own config file</span></a>.</p>
 <table class="docutils align-default">
 <thead>
   <tr class="row-odd">
     <th class="head">Database</th>
     <th class="head">Secrets File</th>
     <th class="head">System</th>
-    <th class="head">Launcher</th>
-    <th class="head">Config File</th>
+    <th class="head">Container Launcher</th>
+    <th class="head">Venv Launcher</th>
   </tr>
 </thead>
 <tbody>
@@ -201,21 +204,21 @@
     <td><tt>roman_snpit_db_ricksim_smdc</tt></td>
     <td>SMDC</td>
     <td><tt>singrun_smdc_ricksim.sh</tt></td>
-    <td><tt>smdc_ricksim_apptainer.yaml</tt></td>
+    <td><tt>venv_smdc_ricksim.sh</tt></td>
   </tr>
   <tr class="row-odd">
     <td>Generic NERSC Tests</td>
     <td><tt>roman_snpit_db_rknop_dev</tt></td>
     <td>NERSC</td>
     <td><tt>interactive-podman-rknop-dev.sh</tt></td>
-    <td><tt>rknop_dev_container_config.yaml</tt></td>
+    <td>—</td>
   </tr>
   <tr class="row-even">
     <td>NERSC OU2024</td>
     <td><tt>roman_snpit_db_ou2024</tt></td>
     <td>NERSC</td>
     <td><tt>interactive-podman-ou2024.sh</tt></td>
-    <td><tt>ou2024_container_config.yaml</td></td>
+    <td>—</td>
   </tr>
 </tbody>
 </table></section>
@@ -370,7 +373,7 @@ bash<span class="w"> </span>/global/cfs/cdirs/m4385/env/&lt;launcher&gt;<span cl
 </div>
 <p>In addition to the <a class="reference internal" href="#running-env"><span class="std std-ref">standard things you do for running the environment</span></a>, there are a few optional things you might want to do when running on SMDC.</p>
 <section id="make-your-own-temp-directory">
-<h3><a class="toc-backref" href="#id19" role="doc-backlink">Make your own temp directory</a><a class="headerlink" href="#make-your-own-temp-directory" title="Link to this heading">¶</a></h3>
+<span id="smdc-temp-dir"></span><h3><a class="toc-backref" href="#id19" role="doc-backlink">Make your own temp directory</a><a class="headerlink" href="#make-your-own-temp-directory" title="Link to this heading">¶</a></h3>
 <p>By default, the environments on SMDC uses <code class="docutils literal notranslate"><span class="pre">/dev/shm</span></code> for the temp directory (<code class="docutils literal notranslate"><span class="pre">/snpit_temp</span></code> inside the container for containerized environments).  This is a RAM disk.  It has limited size, <em>and</em> it eats up system memory when you use it. But, it’s really fast.  If you know that the total size of temp files you’ll have written at once is small enough (i.e., it won’t fill the disk, and won’t use up too much memory for what your code needs), then this is a great place for it.  However, if you write enough big temp files, you need to put them somewhere else.  For reference, a <code class="docutils literal notranslate"><span class="pre">mem-med</span></code> node has a 31GB <code class="docutils literal notranslate"><span class="pre">/dev/shm</span></code> and 61GB of RAM.  If you don’t need to write more than 31GB of temporary files, <em>and</em> if your running process won’t need the memory you’ve used for saving temporary files, then <code class="docutils literal notranslate"><span class="pre">/dev/shm</span></code> will work well as a scratch/temp directory.  On other nodes, run <code class="docutils literal notranslate"><span class="pre">df</span> <span class="pre">-h</span> <span class="pre">/dev/shm</span></code> to see how big <code class="docutils literal notranslate"><span class="pre">/dev/shm</span></code> is, and <code class="docutils literal notranslate"><span class="pre">free</span> <span class="pre">-h</span></code> to see how much system memory you have.</p>
 <p>The <em>right</em> place to put temp files is not immediately obvious.  <em>If</em> you’re on a node with local storage, then you want to put it there.  (TODO: give some details about nodes on SMDC that have local storage; not all of them do.)  If you have nothing else to do, then we recommend you make a directory:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mkdir -p /mnt/roman-science-internal/snpit/users/${LOGNAME}/temp</span>
@@ -382,7 +385,7 @@ bash<span class="w"> </span>/global/cfs/cdirs/m4385/env/&lt;launcher&gt;<span cl
 </div>
 </section>
 <section id="use-a-different-dev-storage-directory">
-<h3><a class="toc-backref" href="#id20" role="doc-backlink">Use a different dev storage directory</a><a class="headerlink" href="#use-a-different-dev-storage-directory" title="Link to this heading">¶</a></h3>
+<span id="smdc-dev-storage"></span><h3><a class="toc-backref" href="#id20" role="doc-backlink">Use a different dev storage directory</a><a class="headerlink" href="#use-a-different-dev-storage-directory" title="Link to this heading">¶</a></h3>
 <p>By default, the environments on SMDC will put the “dev storage” directory (the thing that is at <code class="docutils literal notranslate"><span class="pre">/dev_storage</span></code> inside the container, and that the <code class="docutils literal notranslate"><span class="pre">system.paths.dev_storage</span></code> config value points at, is at:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mkdir -p /mnt/roman-science-internal/snpit/users/${LOGNAME}/dev_storage</span>
 </pre></div>
@@ -404,81 +407,96 @@ bash<span class="w"> </span>/global/cfs/cdirs/m4385/env/&lt;launcher&gt;<span cl
 <h3><a class="toc-backref" href="#id22" role="doc-backlink">Using an interactive native environment</a><a class="headerlink" href="#using-an-interactive-native-environment" title="Link to this heading">¶</a></h3>
 <p>You can also run natively in a virtual environment. You have two options:</p>
 <blockquote>
-<div><p># A premade static environment that you can’t change (i.e., can’t install anything)
-# Your own development environment where you can install stuff</p>
+<div><ol class="arabic simple">
+<li><p>A premade static environment that you can’t change (i.e., can’t install anything)</p></li>
+<li><p>Your own development environment where you can install stuff</p></li>
+</ol>
 </div></blockquote>
-<p>Activating the premade static environment is very easy. Run this every time you want to use the environment:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">snpit</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="n">environment_checkout_for_native</span><span class="o">/</span><span class="n">smdc</span><span class="o">-</span><span class="n">native</span><span class="o">-</span><span class="n">shared</span><span class="o">.</span><span class="n">sh</span>
+<p>Activating the premade static environment is very easy; just run the script for the “Venv Launcher” for the environment you want in the list of <a class="reference internal" href="#database-list"><span class="std std-ref">Databases currently supported</span></a>.  For example, to run the environment that connects to Rick’s August 2026 simulations on SMDC, you would run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source /data/snpit/env/venv_smdc_ricksim.sh</span>
 </pre></div>
 </div>
-<p>Done.</p>
+<p>Be aware, however, that (if we’ve set things up right) you can <em>not</em> <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code> stuff in this environment.  This is for you to use if you just want to run stuff that we’ve already set up and installed.  If you’re doing development of packages, this environment is probably not sufficient for you.</p>
 <p>If you want the ability to install stuff in a native environment, see <a class="reference internal" href="#native-development"><span class="std std-ref">see below</span></a>.</p>
 </section>
 <section id="using-an-interactive-native-environment-for-development">
 <span id="native-development"></span><h3><a class="toc-backref" href="#id23" role="doc-backlink">Using an interactive native environment for development</a><a class="headerlink" href="#using-an-interactive-native-environment-for-development" title="Link to this heading">¶</a></h3>
-<p>If you prefer to work in your own Python environment on SMDC, you can create a dedicated virtual environment for the Roman SNPIT photometry packages.  The commands below are intended to be run once to set up the environment, and can be activated again later with:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source ${HOME}/snpit/snpit-photometry/bin/activate</span>
+<p>If you prefer to work in your own Python environment on SMDC, you can create a dedicated virtual environment that has the standard packages used by (at least) SNPIT Photometry.  Think about whether it makes more sense to use this, or to use the containerized environment (which should “just work”).  Both can be used for development, and in both cases, you can <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code> stuff (including things like <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> in checkouts you’re developing).  The primary difference is that in your own dedicated virtual environment, any <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code> commands you run will <em>persist</em>.  That is, they’re there, from now on, and you have to either recreate the environment, or do other <code class="docutils literal notranslate"><span class="pre">pip</span></code> things, to undo that.  This can be convenient, if you have to install a lot of stuff; it can save time!  On the other hand, sometimes you want to start from a fresh environment to make sure that previous things you’ve installed isn’t building up cruft that might make things behave weirdly.</p>
+<section id="using-the-native-development-environment">
+<h4>Using the native development environment<a class="headerlink" href="#using-the-native-development-environment" title="Link to this heading">¶</a></h4>
+<p>First you have to set up the environment (see below).  You do that once.  When you set up the environment, you created a file <code class="docutils literal notranslate"><span class="pre">launch_&lt;envname&gt;.sh</span></code> in your <code class="docutils literal notranslate"><span class="pre">${RUNDIR}</span></code>.  You can go into your environment just by running:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source &lt;rundir&gt;/launch_&lt;envname&gt;.sh</span>
 </pre></div>
 </div>
-<p>This setup is intended for the photometry packages <code class="docutils literal notranslate"><span class="pre">sidecar</span></code>, <code class="docutils literal notranslate"><span class="pre">phrosty</span></code>, and <code class="docutils literal notranslate"><span class="pre">campari</span></code>.</p>
-<p>In brief, the procedure is:</p>
-<ol class="arabic simple">
-<li><p>Load the Spack environment.</p></li>
-<li><p>Load Miniconda.</p></li>
-<li><p>Create a Python virtual environment.</p></li>
-<li><p>Install the Roman SNPIT packages into that environment.</p></li>
-</ol>
-<p>Run the following commands on SMDC:</p>
-<p>Load the Spack environment (documentation on spack at <a class="reference external" href="https://spack-tutorial.readthedocs.io/en/latest/tutorial_environments.html">https://spack-tutorial.readthedocs.io/en/latest/tutorial_environments.html</a>
-):</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>/shared/spack/share/spack/setup-env.sh
+<p>For example, if you used all the defaults when setting up your environment, this would be:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source ${HOME}/snpit/launch_snpit-env.sh</span>
 </pre></div>
 </div>
-<p>Get the Python environment from Miniconda:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>spack<span class="w"> </span>load<span class="w"> </span>miniconda3
+<p>You are now in your environment!  You can (mostly) leave the environment by running <code class="docutils literal notranslate"><span class="pre">deactivate</span></code> (though there will be some environment variables left over).  Just <code class="docutils literal notranslate"><span class="pre">source</span></code> the launcher script to go back into it.</p>
+<p>You can verify that you’re in the environment by running:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python</span>
+<span class="go">&gt;&gt; import snappl</span>
+<span class="go">&gt;&gt; print( snappl.__version__ )</span>
 </pre></div>
 </div>
-<p>Initialize Conda in your shell startup file:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>init
+</section>
+<section id="setting-up-the-native-development-environment">
+<h4>Setting up the native development environment<a class="headerlink" href="#setting-up-the-native-development-environment" title="Link to this heading">¶</a></h4>
+<p>You only have to do this once.  (Or, once for each of your environments, if you decide you need more than one.)  It will create a python virtual environment with all the standard SNPIT prerequisites installed, and also with the “latest” version of <code class="docutils literal notranslate"><span class="pre">snappl</span></code> installed.</p>
+<p>You have to do a few things to get ready:</p>
+<blockquote>
+<div><ul>
+<li><p>Decide if you want a linked environment that builds off of a standard base environment, or a fully independent environment.  <strong>You will almost always want to use  environment, and that’s what we recommend.</strong>  A fully independent environment will install all the python packages in your directory, will take longer to install, and will use a bunch of gratuitous disk space.  A linked environment will only install what you update or add in your directory.  For things you haven’t updated or added, when we update the base environment, yours will get updated as well; however, if you’ve done any <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code> in your environment, that will take precedence over what’s in the base environment.</p></li>
+<li><p>Figure out the base environment you want to build off of.  If you’re making an independent environment, you can skip this step.  If you don’t plan to connect to a database, you can skip this step.  Look at <a class="reference internal" href="#database-list"><span class="std std-ref">Databases currently supported</span></a>, and note the “Venv Launcher” there.  Set the env var <code class="docutils literal notranslate"><span class="pre">$BASE_LAUNCHER</span></code> to that.  For example, if you wanted to use the environment with Rick’s August 2026 sims, you would do:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export BASE_LAUNCHER=venv_smdc_ricksim.sh</span>
 </pre></div>
 </div>
-<p>Start a new shell so the Conda initialization takes effect, or source <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code> in the current shell if you prefer:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>~/.bashrc
+</li>
+<li><p>Figure out your <code class="docutils literal notranslate"><span class="pre">$RUNDIR</span></code>.  See <a class="reference internal" href="#env-rundir"><span class="std std-ref">Create your $RUNDIR</span></a> above.  The default is <code class="docutils literal notranslate"><span class="pre">${HOME}/snpit</span></code>.  If you are happy with that default, skip to the next step.  Otherwise, for purposes of installing your environment, set the <code class="docutils literal notranslate"><span class="pre">$RUNDIR</span></code> env var:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export RUNDIR=&lt;wherever_your_rundir_is&gt;</span>
 </pre></div>
 </div>
-<p>We will not actually be using Conda after this.  We’re just using it for the Python version (because the default Python on the login node image is a minimal version that doesn’t have even a complete standard library).</p>
-<p>Create the virtual environment in a directory under your home area:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/snpit
-<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/snpit
-python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>snpit-photometry
+</li>
+<li><p>Choose a name for your environment.  The default is <code class="docutils literal notranslate"><span class="pre">snpit-env</span></code>.  If you are happy with that, skip to the next step.  Otherwise, set the <code class="docutils literal notranslate"><span class="pre">$ENVNAME</span></code> environment variable</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export ENVNAME=&lt;your_chosen_environment_name&gt;</span>
 </pre></div>
 </div>
-<p>Activate the environment whenever you want to work on the development setup:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>snpit-photometry/bin/activate
+</li>
+<li><p>Choose your <a class="reference internal" href="#smdc-dev-storage"><span class="std std-ref">dev storage</span></a> directory.  The default is <code class="docutils literal notranslate"><span class="pre">/mnt/roman-science-internal/snpit/users/${LOGNAME}/dev_storage</span></code>.  If you are happy with that, skip to the next step.  Otherwise, set the <code class="docutils literal notranslate"><span class="pre">$DEV_STORAGE</span></code> env var:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export DEV_STORAGE=&lt;your_chosen_dev_storage_location&gt;</span>
 </pre></div>
 </div>
-<p>Update <code class="docutils literal notranslate"><span class="pre">pip</span></code> once to avoid repeated upgrade notices:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
+<p>Note that you will be able to update the location of dev storage at runtime.  Any time you’re within your environment, just set the <code class="docutils literal notranslate"><span class="pre">$DEV_STORAGE</span></code> environment variable to where you want it to be, and then (assuming you haven’t subverted the config) things you run will use that directory.</p>
+</li>
+<li><p>Choose your <a class="reference internal" href="#smdc-temp-dir"><span class="std std-ref">temp/scratch directory</span></a>.  The default is <code class="docutils literal notranslate"><span class="pre">/dev/shm</span></code>.  That’s probably good enough as a default, but see the link about temp dirs for things you have to think about.  If the default is fine, skip this step.  Otherwise, set the <code class="docutils literal notranslate"><span class="pre">$SNPIT_SCRATCH</span></code> environment variable:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export SNPIT_SCRATCH=&lt;your_chosen_temp_dir&gt;</span>
 </pre></div>
 </div>
-<p>Install the main Roman SNPIT package for the environment.  This may take a few minutes the first time, as dependencies are installed:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>roman-snpit-snappl
+<p>As with dev storage, at runtime you can change your working temp directory by setting the <code class="docutils literal notranslate"><span class="pre">$SNPIT_SCRATCH</span></code> environment variable.</p>
+</li>
+</ul>
+</div></blockquote>
+<p>Having figured all that out, and set any environment variables you want to set based on your choices, to create a linked environment run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">bash /data/snpit/env/environment_checkout_for_native/smdc-install-development-env.sh</span>
 </pre></div>
 </div>
-<p>Install <code class="docutils literal notranslate"><span class="pre">roman_imsim</span></code> explicitly, since it is not available from PyPI:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/matroxel/roman_imsim.git@21ea15a
+<p>This should only take a couple of minutes to run .</p>
+<p>If you want to create an independent environment, instead run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">bash /data/snpit/env/environment_checkout_for_native/smdc-install-development-env.sh --independent</span>
 </pre></div>
 </div>
-<p>If you are on a GPU machine and want <code class="docutils literal notranslate"><span class="pre">cupy</span></code>, install it explicitly.  This is not a required dependency of the photometry codes, which can run with either NumPy or CuPy.  Right now (2026-08-12), the SMDC GPU machines are using <code class="docutils literal notranslate"><span class="pre">cupy-cuda12x</span></code>, but this may change in the future.  If you are on a different system, check the CuPy documentation for the correct version to install.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># pip install cupy-cuda12x</span>
+<p>This will take a while to run (~10-20 minutes?).  Once it’s done, you have your environment.</p>
+<p>(If you know what you’re doing, and you change your mind later about things like dev storage, you can just edit the launcher script.)</p>
+</section>
+<section id="updating-the-native-development-environment">
+<h4>Updating the native development environment<a class="headerlink" href="#updating-the-native-development-environment" title="Link to this heading">¶</a></h4>
+<p>If at some point later you want to make sure that all the packages in your development environment are at the same versions as the ones in the current Roman snpit environment, you can run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">pip install -r /data/snpit/env/environment_checkout_for_native/requirements-cpu.txt</span>
 </pre></div>
 </div>
-<p>Install useful development tools used in the project workflow:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>pytest
-pip<span class="w"> </span>install<span class="w"> </span>ruff
-pip<span class="w"> </span>install<span class="w"> </span>towncrier
-</pre></div>
-</div>
+<p>It’s possible you’ll end up with dependency conflicts doing this.  If worse comes to worst, you may have to delete your environment directory and start over.</p>
+<p>Of course, at any time, you can always <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code> new versions of individual packages (though dependency hell can still be a thing there).</p>
+</section>
 </section>
 </section>
 <section id="running-locally-on-your-machine">
