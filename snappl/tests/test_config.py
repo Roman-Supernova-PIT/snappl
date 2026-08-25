@@ -590,12 +590,12 @@ def test_env_var_in_preload():
         os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_1.yaml'
         cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
         assert cfg.value( 'test_preload_envvar' ) == 'cat'
-        del Config._configs[ '/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' ]
+        del Config._configs[ '/packages/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' ]
 
         os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_1.yaml'
-        cfg = Config.get( "/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml" )
+        cfg = Config.get( "/packages/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml" )
         assert cfg.value( 'test_preload_envvar' ) == 'cat'
-        del Config._configs[ '/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' ]
+        del Config._configs[ '/packages/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' ]
 
         os.environ[ "TEST_PRELOAD_ENVVAR" ] = 'test_preload_envvar_2.yaml'
         cfg = Config.get( "config_test_data/test_preload_envvar.yaml" )
@@ -604,5 +604,5 @@ def test_env_var_in_preload():
     finally:
         if "TEST_PRELOAD_ENVVAR" in os.environ:
             del os.environ[ "TEST_PRELOAD_ENVVAR" ]
-        if '/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' in Config._configs:
-            del Config._configs[ '/home/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' ]
+        if '/packages/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' in Config._configs:
+            del Config._configs[ '/packages/snappl/snappl/tests/config_test_data/test_preload_envvar.yaml' ]
