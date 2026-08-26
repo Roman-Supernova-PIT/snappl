@@ -575,7 +575,25 @@ To use it, you need to check out both the `snappl <https://github.com/roman-Supe
    git clone https://github.com/Roman-Supernova-PIT/environment.git
    cd ..
 
-(If you know what you're doing, you may want to check out the ``git@github.com:`` versions of the archives instead of the ``https:`` versions of the archives.)  You may need to check out other things; for instance, if you want to run ``snappl`` tests, you will also need to clone ``photometry_test_data`` in your ``packages`` directory.  And, of course, you'll want to have a git checkout of the code you're developing!
+(If you know what you're doing, you may want to check out the ``git@github.com:`` versions of the archives instead of the ``https:`` versions of the archives.)
+
+You will *either* need to check out the photometry test data archive, or make an empty directory (the test environment expects the directory to be there).  Run one of the following (assuming you're starting in ``$RUNDIR``):
+
+.. code-block:: console
+
+   cd packages
+   git lfs clone https://github.com/Roman-Supernova-PIT/photometry_test_data.git
+   cd ..
+
+**or**
+
+.. code-block:: console
+
+   mkdir packages/phtometry_test_data
+
+If you get errors about lfs not being known with the ``git lfs`` command above, make sure you have `git lfs <https://git-lfs.com/>`_ installed.  (On a Debian-based linux system, for instance, that's just ``apt-get install git-lfs``.)
+
+You may need to clone other git archvies.  For instance, you'll want to have a git checkout of the code you're developing!  Do these git clones in the ``packages`` subdirectory of ``$RUNDIR``.
 
 Next, you need to build the docker images on your local machine:
 
