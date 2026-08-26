@@ -9,7 +9,7 @@ Roman SNPIT Environment
 Overview
 ========
 
-This section describes the standard environment that the photometry group has been using.  Unless your requirements are a lot different you should try running in this same environment, as at the moment it's the one that gives you access to the database.  If there are standard packages you need that we don't have in this environment, let us know by filing an issue in the `environment repo<https://github.com/Roman-Supernova-PIT/environment>`_.
+This section describes the standard environment that the photometry group has been using.  Unless your requirements are a lot different you should try running in this same environment, as at the moment it's the one that gives you access to the database.  If there are standard packages you need that we don't have in this environment, let us know by filing an bssue in the `environment repo <https://github.com/Roman-Supernova-PIT/environment>`_.
 
 To update the environment, see :ref:`releasenewenv`.
 
@@ -232,7 +232,7 @@ If you use snappl to access the database, each environment is set up to point to
 If you need your own config file
 """"""""""""""""""""""""""""""""
 
-**If you need your own config file**: you have to do a few extra things.  If you're using the ``snappl`` config system to set configuration options for your own code, then you will need a ``.yaml`` config file with those options.  At the top of your config file, put the following text:
+If you need your own config file, you have to do a few extra things.  If you're using the ``snappl`` config system to set configuration options for your own code, then you will need a ``.yaml`` config file with those options.  At the top of your config file, put the following text:
 
 .. code-block:: yaml
 
@@ -240,6 +240,8 @@ If you need your own config file
     - ${SNPIT_DEFAULT_CONFIG}
 
 What that will do is make sure to load the standard environment configuration with paths and database connection information.  If you do it right, you may be able to use the same config file for your own code in multiple environments (and maybe even in tests in the self-contained test environment).
+
+Then, when you run your code, set the environment variable ``SNPIT_CONFIG`` to point at the location of your own config file *inside the container*.
 
 **Things not to put in your own config file**: do **not** override anything that is in the ``${SNPIT_DEFAULT_CONFIG}`` file.  You should **not** have a ``system.db`` section in your own config file.  If you have a ``system.paths`` section, it should **only** be to **add** paths that are specific to your code, you should **not** replace any of the paths that are in the default config file.
 
@@ -287,7 +289,7 @@ This will be more involved.  You have to create *two* bash scripts.  First, crea
    #!/bin/bash
 
    cd /home
-   python phrosty/phrosty/be_awesome.py --solve-cosmology --identify-dark-energy --nobel-prizes=3
+   python packages/phrosty/phrosty/be_awesome.py --solve-cosmology --identify-dark-energy --nobel-prizes=3
 
 This script will run *inside a container* running the snpit image.  If you :ref:`use your own custom config file<need_own_config>`, then you would add a line ``export SNPIT_CONFIG=...`` early in this script.  You can do whatever other environment setup you need to do.
 
@@ -303,7 +305,9 @@ Next, create a second script, which we shall call ``dothings_sbatch.sh``, though
 
    bash /global/cfs/cdirs/m4385/env/<launcher> -s /home/dothings.sh
 
-Where you replace ``<launcher>`` with the Launcher from :ref:`database_list`.  You should generally *not* add any commands other than the single ``bash`` command here.  (You can if you know what you're doing.)  You will want to edit the various ``#SBATCH`` directives to go to the queue you want, to get a GPU if you need it, to increase (or decrease) the time.  You may also want additional directives about number of tasks, number of cpus, memory (if you're on the shared queue).  All of this presumes you know how to use ``sbatch``.
+Where you replace ``<launcher>`` with the Launcher from :ref:`database_list`.  You should generally *not* add any commands other than the single ``bash`` command here.  (You can if you know what you're doing.)  You might need to add additional options to the ``bash`` command; run ``bash /global/cfs/cdirs/m4385/env/<launcher> --help`` to see what's there.  In particular, if you are running on GPU nodes you'll want to add ``--whichenv cuda-dev`` to the end of the ``bash`` line.
+
+You will want to edit the various ``#SBATCH`` directives to go to the queue you want, to get a GPU if you need it, to increase (or decrease) the time.  You may also want additional directives about number of tasks, number of cpus, memory (if you're on the shared queue).  All of this presumes you know how to use ``sbatch``.
 
 If you didn't name your first script ``dothings.sh``, also change that name here.
 
@@ -333,7 +337,7 @@ In addition to the :ref:`standard things you do for running the environment<runn
 Make your own temp directory
 ----------------------------
 
-By default, the environments on SMDC uses ``/dev/shm`` for the temp directory (``/snpit_temp`` inside the container for containerized environments).  This is a RAM disk.  It has limited size, *and* it eats up system memory when you use it. But, it's really fast.  If you know that the total size of temp files you'll have written at once is small enough (i.e., it won't fill the disk, and won't use up too much memory for what your code needs), then this is a great place for it.  However, if you write enough big temp files, you need to put them somewhere else.  For reference, a ``mem-med`` node has a 31GB ``/dev/shm`` and 61GB of RAM.  If you don't need to write more than 31GB of temporary files, *and* if your running process won't need the memory you've used for saving temporary files, then ``/dev/shm`` will work well as a scratch/temp directory.  On other nodes, run ``df -h /dev/shm`` to see how big ``/dev/shm`` is, and ``free -h`` to see how much system memory you have.
+By default, the environments on SMDC use ``/dev/shm`` for the temp directory (``/snpit_temp`` inside the container for containerized environments).  This is a RAM disk.  It has limited size, *and* it eats up system memory when you use it. But, it's really fast.  If you know that the total size of temp files you'll have written at once is small enough (i.e., it won't fill the disk, and won't use up too much memory for what your code needs), then this is a great place for it.  However, if you write enough big temp files, you need to put them somewhere else.  For reference, a ``mem-med`` node has a 31GB ``/dev/shm`` and 61GB of RAM.  If you don't need to write more than 31GB of temporary files, *and* if your running process won't need the memory you've used for saving temporary files, then ``/dev/shm`` will work well as a scratch/temp directory.  On other nodes, run ``df -h /dev/shm`` to see how big ``/dev/shm`` is, and ``free -h`` to see how much system memory you have.
 
 The *right* place to put temp files is not immediately obvious.  *If* you're on a node with local storage, then you want to put it there.  (TODO: give some details about nodes on SMDC that have local storage; not all of them do.)  If you have nothing else to do, then we recommend you make a directory:
 
@@ -523,7 +527,7 @@ This is not well-documented yet.  You may be able to get an environment going on
 Using a docker Container
 ------------------------
 
-**Warning**: Currently, we are only able to build our containers for ``x86_64`` (also called ``amd64``) systems.  We have not succeeded in building our containers for ``ARM`` (also called ``arm64``) systems— which includes all Macs.  You *might* be able to run a container from a different architecture on your machine, but performance is likely to be very poor.  This means that for development, you really want to be using an ``x86_64`` Linux machine if that's at all possible.  (We do hope to get the container working for ``ARM``, but it's a thorny problem and not a high priority.  If you want to figure out how to make it work, please do.)
+**Warning**: we build the docker containers only for ``x86_64`` (also called ``amd64``) systems; as such, when you pull them in the instructions below, you'll get containers for that architecture.  Some machines, in particular Macs, have the ``ARM`` (also called ``arm64``) architecture.  Ideally, you want a docker file built for the architecture you're on.  The standard docker images *might* work on an ``ARM`` system, but if so, it's likely some things will be slow.  You may want to try :ref:`building your own container <building_own_container>`.
 
 First, you need to get set up as described under :ref:`running_env`.  In partiular, you need to have made a ``$RUNDIR`` and need to have that as your current working directory.  However, you probably don't need to set up a secrets file, because you are not going to be able to fully use any database on your home system in any event.
 
@@ -533,7 +537,7 @@ First, you need to pull the docker container to your machine with:
 
    docker pull docker.io/rknop/roman-snpit-env:cpu
 
-You might want `cpu-dev`, `cuda`, or `cuda-dev` in place of `cpu` above; you need a `cuda*` version if you want to try to use an NVIDIA GPU on your system.
+You might want ``cpu-dev``, ``cuda``, or ``cuda-dev`` in place of ``cpu`` above; you need a ``cuda*`` version if you want to try to use an NVIDIA GPU on your system.
 
 Next, you need to get a copy of the launcher script.  You can just grab it with:
 
@@ -559,6 +563,42 @@ and you'll be put in a container with the SNPIT environment.  The config file yo
 .. code-block:: console
 
    bash ./launch_container.sh -i docker.io/rknop
+
+If you pulled an image other than the ``cpu`` image, use it by adding a ``-w <imagetype>`` flag to ``launch_container.sh``; for example, to use the ``cuda-dev`` image, run:
+
+.. code-block:: console
+
+   bash ./launch_container.sh -w cuda-dev
+
+
+.. _building_own_container:
+
+Building your own docker image
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If for whatever reason you want to build your own docker image of our environment (e.g. if you're on an ARM machine and you want to try building for your native environment), check out the ``environment`` repo:
+
+.. code-block:: console
+
+   cd packages
+   git clone https://github.com/Roman-Supernova-PIT/environment.git
+
+then, try to build the container:
+
+.. code-block:: console
+
+   cd environment
+   docker build \
+      --build-arg "IMAGE_TYPE=cpu" \
+      --build-arg "VER=local_test" \
+      --target snpit_env \
+      -t local/roman-snpit-env:cpu \
+      -f docker/Dockerfile \
+      .
+
+If you have an NVIDIA GPU on your machine and want to try using the cuda environment, replace ``IMAGE_TYPE=cpu`` with ``IMAGE_TYPE=cuda-dev``, and replace ``roman-snpit-env:cpu`` with ``roman-snpit-env:cuda-dev``.
+
+You can then use this locally-built container by adding ``-i local`` to the ``launch_container.sh`` command described above.
 
 
 Running a Test Environment
