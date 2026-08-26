@@ -58,7 +58,11 @@ jobs:
         run: |
           cd ../packages
           git clone https://github.com/Roman-Supernova-PIT/environment.git
-
+          ### TEMPORARY, UNDO THIS WHEN ENVIRONMENT PR 35 IS MERGED
+          git cd environment
+          git checkout u/rknop/unified_container_launcher
+          ### TEMPORARY
+          
       - name: pull docker images
         run: |
           cd ../packages/environment/test-docker-environment
