@@ -253,14 +253,14 @@ and then run all of:
 
 where ``x.y.z`` is the new version you figured out.
 
-Next, pull the alisa images, so that the "latest version" will be your current version.  **Note:** as of this writing, the standard ``podman-hpc`` doesn't support pulling squashed alias images, hence the absolute path to an alternate ``podman-hpc`` executable.
+Next, pull the alias images, so that the "latest version" will be your current version.
 
 .. code-block:: console
 
-   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu
-   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
-   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cuda
-   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
+   podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu
+   podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
+   podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cuda
+   podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
 
 Fix permissions on NERSC
 ^^^^^^^^^^^^^^^^^^^^^^^^
