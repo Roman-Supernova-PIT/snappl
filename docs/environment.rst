@@ -9,7 +9,7 @@ Roman SNPIT Environment
 Overview
 ========
 
-This section describes the standard environment that the photometry group has been using.  Unless your requirements are a lot different you should try running in this same environment, as at the moment it's the one that gives you access to the database.  If there are standard packages you need that we don't have in this environment, let us know by filing an bssue in the `environment repo <https://github.com/Roman-Supernova-PIT/environment>`_.
+This section describes the standard environment that the photometry group has been using.  Unless your requirements are a lot different you should try running in this same environment, as at the moment it's the one that gives you access to the database.  If there are standard packages you need that we don't have in this environment, let us know by filing an issue in the `environment repo <https://github.com/Roman-Supernova-PIT/environment>`_.
 
 To update the environment, see :ref:`releasenewenv`.
 
@@ -129,7 +129,7 @@ No matter which form of the environment you're going to run in, there are some s
 .. _env_password_file:
 
 
-Create a the password file
+Create the password file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 (This step is not necessary if you are using the "no database connection" environment.)
@@ -596,7 +596,7 @@ then, try to build the container:
       -f docker/Dockerfile \
       .
 
-If you have an NVIDIA GPU on your machine and want to try using the cuda environment, replace ``IMAGE_TYPE=cpu`` with ``IMAGE_TYPE=cuda-dev``, and replace ``roman-snpit-env:cpu`` with ``roman-snpit-env:cuda-dev``.
+If you have an NVIDIA GPU on your machine and want to try using the CUDA environment, replace ``IMAGE_TYPE=cpu`` with ``IMAGE_TYPE=cuda-dev``, and replace ``roman-snpit-env:cpu`` with ``roman-snpit-env:cuda-dev``.
 
 You can then use this locally-built container by adding ``-i local`` to the ``launch_container.sh`` command described above.
 
