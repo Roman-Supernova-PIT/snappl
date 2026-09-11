@@ -1,0 +1,1 @@
+Fixed how RDM passes properties to the cutout images.
