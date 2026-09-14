@@ -1,0 +1,1 @@
+Update documentation so it correctly reflects native shared environment usage.

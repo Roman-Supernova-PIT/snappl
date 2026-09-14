@@ -252,7 +252,7 @@ class ImageCollection:
 
 
 class ImageCollectionOU2024:
-    """Collection of OpenUnivers 2024 FITS images."""
+    """Collection of OpenUniverse 2024 FITS images."""
 
     def __init__( self, base_path=None ):
         self._base_path = None if base_path is None else pathlib.Path( base_path )
@@ -418,7 +418,7 @@ class ImageCollectionManualFITS:
             return FITSImageStdHeaders( path=base_path / path, std_imagenames=True, format=-1 )
 
         else:
-            return FITSImage( path=path, format=-1 )
+            return FITSImage( path=base_path / path, format=-1 )
 
 
 # ======================================================================
@@ -437,7 +437,7 @@ class ImageCollectionManualRDM:
             raise RuntimeError( "Can't do get_image using image_id, observation_id, band, or sca "
                                 "for manual_rdm image collection" )
         if path is None:
-            raise RuntimeError( "path is required for mahual_rdm image collection get_image" )
+            raise RuntimeError( "path is required for manual_rdm image collection get_image" )
 
         base_path = pathlib.Path( base_path ) if base_path is not None else self.base_path
 
@@ -482,7 +482,8 @@ class ImageCollectionDB:
                               'ou2024_nativelocation': 2,
                               'ou2024_stdlocation': 1,
                               'ou2024nov2025': 1,
-                              'roman_datamodel': 100
+                              'roman_datamodel': 100,
+                              'roman_datamodel_needscrdswcs': 101
                               }
 
     def __init__( self, provenance=None, base_path=None ):

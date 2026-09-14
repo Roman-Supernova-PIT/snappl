@@ -253,14 +253,14 @@ and then run all of:
 
 where ``x.y.z`` is the new version you figured out.
 
-Next, pull the alisa images, so that the "latest version" will be your current version.  **Note:** as of this writing, the standard ``podman-hpc`` doesn't support pulling squashed alias images, hence the absolute path to an alternate ``podman-hpc`` executable.
+Next, pull the alias images, so that the "latest version" will be your current version.
 
 .. code-block:: console
 
-   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu
-   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
-   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cuda
-   /global/common/software/das/podman-hpc/bin/podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
+   podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu
+   podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
+   podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cuda
+   podman-hpc --squash-dir /pscratch/sd/m/masao/roman_snpit/podman_images pull registry.nersc.gov/m4385/roman-snpit-env:cpu-dev
 
 Fix permissions on NERSC
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -283,7 +283,29 @@ You *will* get some "Operation not permitted" errors.  If those are all on files
 Pull the environment on SMDC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO
+First, get a node:
+
+.. code-block:: console
+
+  salloc -p mem-med
+
+Once on the node, pull the image to a sif file with:
+
+.. code-block:: console
+
+   APPTAINER_TMPDIR=/dev/shm apptainer pull /data/snpit/roman-snpit-env-cpu-x.y.z.sif docker://registry.nersc.gov/m4385/roman-snpit-env:cpu-x.y.z
+   APPTAINER_TMPDIR=/dev/shm apptainer pull /data/snpit/roman-snpit-env-cpu-dev-x.y.z.sif docker://registry.nersc.gov/m4385/roman-snpit-env:cpu-dev-x.y.z
+
+replacing ``x.y.z`` with the verion number.  As of this writing, the cuda images don't work on SMDC; when they do, pull those too.
+
+If you get error messages about no access, try:
+
+.. code-block:: console
+
+   apptainer registry login --username <your_nersc_username> docker://registry.nersc.gov
+
+and then repeat the ``apptainer pull`` commands above.
+
 
 
 Installing a new database on NERSC Spin

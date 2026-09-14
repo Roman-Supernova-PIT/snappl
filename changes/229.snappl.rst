@@ -1,0 +1,1 @@
+Doc update on starting containerized environment.

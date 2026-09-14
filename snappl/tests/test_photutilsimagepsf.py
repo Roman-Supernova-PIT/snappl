@@ -70,5 +70,5 @@ class TestPhotutilsImagePSF( BaseTestImagePSF ):
 
     # TODO more undersampled tests
 
-    def test_get_imagepsf( self, testpsf ):
-        self.run_test_get_imagepsf( testpsf, oversamp=3. )
+    def test_get_photutilspsf( self, testpsf ):
+        self.run_test_get_photutilspsf( testpsf, oversamp=3. )

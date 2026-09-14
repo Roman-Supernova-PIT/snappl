@@ -122,8 +122,8 @@ def test_image_simulator_one_transient_image(numimageprocs):
         assert totnoise == pytest.approx(np.sqrt(49 * kwargs["sky_noise_rms"][0] ** 2), rel=0.1)
         # REGRESSION ########
         # These values were determined empirically.
-        assert totdata == pytest.approx(53264.195, rel = 1e-5)
-        assert totnoise == pytest.approx(736.676, rel = 1e-5)
+        assert totdata == pytest.approx(53367.52, rel = 1e-5)
+        assert totnoise == pytest.approx(736.685, rel = 1e-5)
         ########################################################
 
         flux = 10 ** ((kwargs["transient_peak_mag"] - kwargs["zeropoints"][0]) / -2.5)

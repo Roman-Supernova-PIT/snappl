@@ -26,7 +26,10 @@ classifiers = [
 dependencies = [
   "astropy>=7.1.0,<8.0.0",
   "fitsio>=1.2.5,<2.0.0",
-  "galsim>=2.8.4,<3.0.0",
+  # NOTE : we pin galsim at 2.8.4 because version 2.8.5 causes regression failures in
+  #  (at least) snappl and campari.  If we want to bump to higher galsim, then we're
+  #  going to have to deal with changing all those tests.
+  "galsim==2.8.4",
   "gwcs>=1.0.3,<2.0.0",
   "h5py>=3.14.0,<4.0.0",
   "numpy>=2.2.6,<3.0.0",
@@ -40,8 +43,8 @@ dependencies = [
   "roman-datamodels>=1.0.0,<2.0.0",
   "scipy>=1.16.2,<2.0.0",
   "simplejson>=3.20.2,<4.0.0",
-  "stpsf",
-  "synphot",
+  "stpsf>=2.2.0,<3.0.0",
+  "synphot>=1.7.0,<2.0.0"
 ]
 license-files = ["LICENSE"]
 

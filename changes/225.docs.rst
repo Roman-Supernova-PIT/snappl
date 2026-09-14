@@ -1,0 +1,2 @@
+* Update environment documentation for changes to creating your own native environment on SMDC.
+* Update tests to work now that we check out packages in a packages subdirectory.  

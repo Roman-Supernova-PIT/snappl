@@ -693,11 +693,11 @@ class DBBase:
         (It's not obvious that this is the best behavior; see comment in
         method source.)
 
-        Paramters
-        ---------
+        Parameters
+        ----------
           columns : list of str, optional
             If given, include these columns in the returned subdict; by
-            default, include all columns from the table.  (But, not not all
+            default, include all columns from the table.  (But, not all
             columns may actually be in the returned subdict; see above.)  If
             the list includes any columns that don't actually exist for the
             table, an exception will be raised.

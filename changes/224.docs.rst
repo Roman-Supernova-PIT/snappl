@@ -1,0 +1,1 @@
+Add 'crds' to the things to mock for sphinx doc building so docs actually build.  Add brief instructions for pulling containers to SMDC.
