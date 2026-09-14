@@ -6,7 +6,8 @@ import simplejson
 
 from snappl.config import Config
 from snappl.snappl_http import retry_post
-from snappl.image import Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders, RomanDatamodelImage
+from snappl.image import ( Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders, RomanDatamodelImage,
+                            RomanDatamodelImage_Needs_CRDS_GWCS )
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
 from snappl.utils import SNPITJsonEncoder
@@ -102,7 +103,8 @@ class ImageCollection:
 
         elif collection == 'manual_rdm':
             return ImageCollectionManualRDM( **kwargs )
-
+        elif collection == 'manual_rdm_crds':
+            return ImageCollectionManualRDM_CRDS( **kwargs )
         else:
             raise ValueError( f"Unknown image collection {collection} (subset {subset})" )
 
@@ -443,6 +445,29 @@ class ImageCollectionManualRDM:
         if not full_filepath.is_file():
             raise FileNotFoundError( f"{full_filepath} does not exist or is not a regular file." )
         return RomanDatamodelImage( full_filepath = base_path / path, no_base_path=True )
+
+
+class ImageCollectionManualRDM_CRDS:
+
+    def __init__( self, base_path=None ):
+        if base_path is None:
+            raise RuntimeError( "manual_rdm_crds collection needs a base_path" )
+        self.base_path = pathlib.Path( base_path )
+
+    def get_image( self, image_id=None, path=None, observation_id=None, band=None, sca=None,
+                   base_path=None, dbclient=None ):
+        if any( i is not None for i in [ image_id, observation_id, band, sca ] ):
+            raise RuntimeError( "Can't do get_image using image_id, observation_id, band, or sca "
+                                "for manual_rdm_crds image collection" )
+        if path is None:
+            raise RuntimeError( "path is required for mahual_rdm_crds image collection get_image" )
+
+        base_path = pathlib.Path( base_path ) if base_path is not None else self.base_path
+
+        full_filepath = base_path / path
+        if not full_filepath.is_file():
+            raise FileNotFoundError( f"{full_filepath} does not exist or is not a regular file." )
+        return RomanDatamodelImage_Needs_CRDS_GWCS( full_filepath = base_path / path, no_base_path=True )
 
 
 
