@@ -7,7 +7,7 @@ import simplejson
 from snappl.config import Config
 from snappl.snappl_http import retry_post
 from snappl.image import ( Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders, RomanDatamodelImage,
-                            RomanDataModelImage_Needs_CRDS_WCS )
+                            RomanDataModelImage_Needs_CRDS_GWCS )
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
 from snappl.utils import SNPITJsonEncoder
@@ -467,7 +467,7 @@ class ImageCollectionManualRDM_CRDS:
         full_filepath = base_path / path
         if not full_filepath.is_file():
             raise FileNotFoundError( f"{full_filepath} does not exist or is not a regular file." )
-        return RomanDataModelImage_Needs_CRDS_WCS( full_filepath = base_path / path, no_base_path=True )
+        return RomanDataModelImage_Needs_CRDS_GWCS( full_filepath = base_path / path, no_base_path=True )
 
 
 
