@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>RomanDatamodelImage &#8212; roman_snpit_snappl 0.1.dev1+gc8926490f documentation</title>
+    <title>RomanDatamodelImage &#8212; roman_snpit_snappl 0.1.dev1+g0e2388efa documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=f7ce3a6c"></script>
+    <script src="../_static/documentation_options.js?v=b4ac6a07"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -130,23 +130,23 @@ files.)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Path of the image relative to the base path for images,
+<li><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Path of the image relative to the base path for images,
 unless less no_base_path is True, in which case this is the
 full absolute path to the image.  For datbase images, you do
 not want to create a path yourself, but leave it at None and
 let the class create the filepath.  See PathedObject.</p></li>
-<li><p><strong>full_filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – The full path to the image.  If you’re using an Image subclass
+<li><p><strong>full_filepath</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – The full path to the image.  If you’re using an Image subclass
 to deal with an image that’s not in the database, you probably
 want to set this to the absolute path of the image, and you
 probably want to set no_base_path to True, but you might also
 set base_path yourself and leave no_base_path at False.</p></li>
-<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Always leave this at None for images associated with
+<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Always leave this at None for images associated with
 database, and the default will be used.  Otherwise, the
 absolute path of the image is base_path / filepath (which
 should be exactly the same as full_filepath).  Must be None
 if no_base_path is True.</p></li>
-<li><p><strong>base_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Synonym for base_path</p></li>
-<li><p><strong>no_base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – For images associated with the database, leave this at
+<li><p><strong>base_dir</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Synonym for base_path</p></li>
+<li><p><strong>no_base_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – For images associated with the database, leave this at
 False, and make filepath relative to the base path (which
 may be system dependent).  For images that aren’t associated
 with the database, you can make this True and set filepath
@@ -157,9 +157,9 @@ database (but is required in that case).</p></li>
 <li><p><strong>provenance_id</strong> (<em>UUID</em><em> or </em><em>str that can be converted to UUID</em><em>, </em><em>default NOne</em>) – The id of the provenance of the image.  Only relevant if the
 image is in the l2image table of the Roman SNPIT internal
 database (but is required in that case).</p></li>
-<li><p><strong>width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
-<li><p><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
-<li><p><strong>format</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default -1</em>) – Index into the table Image._format_def at the bottom of this file.</p></li>
+<li><p><strong>width</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
+<li><p><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – The width and height of the image in pixels if known.</p></li>
+<li><p><strong>format</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default -1</em>) – Index into the table Image._format_def at the bottom of this file.</p></li>
 <li><p><strong>is_superclass</strong> – Used internally, should ONLY ever be set in the
 super().__init__(…)  lines in subclass constructors.  All
 subclasses should set this to True when calling
@@ -292,14 +292,14 @@ If False, the cutout will be returned as a snappl.image.RomanDatamodelImage.</p>
 <dd><p>Get image WCS.  Will be an object of type BaseWCS (from wcs.py) (really likely a subclass).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>wcsclass</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – By default, the subclass of BaseWCS you get back will be
+<dd class="field-odd"><p><strong>wcsclass</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – By default, the subclass of BaseWCS you get back will be
 defined by the Image subclass of the object you call this
 on.  If you want a specific subclass of BaseWCS, you can put
 the name of that class here.  It may not always work; not
 all types of images are able to return all types of wcses.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a> of a subclass of <a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS">snappl.wcs.BaseWCS</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)">object</a> of a subclass of <a class="reference internal" href="snappl.wcs.BaseWCS.html#snappl.wcs.BaseWCS" title="snappl.wcs.BaseWCS">snappl.wcs.BaseWCS</a></p>
 </dd>
 </dl>
 </dd></dl>

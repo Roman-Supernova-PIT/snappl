@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>SegmentationMap &#8212; roman_snpit_snappl 0.1.dev1+gc8926490f documentation</title>
+    <title>SegmentationMap &#8212; roman_snpit_snappl 0.1.dev1+g0e2388efa documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=f7ce3a6c"></script>
+    <script src="../_static/documentation_options.js?v=b4ac6a07"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -124,10 +124,10 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Path of the file relative to base_path.  If no_base_path is True
+<li><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Path of the file relative to base_path.  If no_base_path is True
 (which should <em>never</em> be the case for an object that is associated
 with the database), then this is the full path.</p></li>
-<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Only use one of these; they set the same thing.  (Both parameters
+<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Only use one of these; they set the same thing.  (Both parameters
 are defined for backwards compatibility.)  Most of the time you do
 <em>not</em> want to specify this, but leave it at the default.  If
 no_base_path is True, you <em>must</em> leave these at None.  This is the
@@ -135,7 +135,7 @@ base path for objects of the subclass of PathedObject that is
 being constructed.  By default (which is usually what you want),
 it will use a path that is configured for the type of object that
 the subclass tracks.</p></li>
-<li><p><strong>base_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Only use one of these; they set the same thing.  (Both parameters
+<li><p><strong>base_dir</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Only use one of these; they set the same thing.  (Both parameters
 are defined for backwards compatibility.)  Most of the time you do
 <em>not</em> want to specify this, but leave it at the default.  If
 no_base_path is True, you <em>must</em> leave these at None.  This is the
@@ -143,9 +143,9 @@ base path for objects of the subclass of PathedObject that is
 being constructed.  By default (which is usually what you want),
 it will use a path that is configured for the type of object that
 the subclass tracks.</p></li>
-<li><p><strong>full_filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Usually you don’t want to specify this, but there are cases where
+<li><p><strong>full_filepath</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – Usually you don’t want to specify this, but there are cases where
 you can.</p></li>
-<li><p><strong>no_base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – You may want to set this to True if you are dealing with
+<li><p><strong>no_base_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default False</em>) – You may want to set this to True if you are dealing with
 files that aren’t tracked by the database.  In that case,
 you can’t specify base_path (or base_dir), and filepath and
 full_filepath mean the same thing (and must be the same if
@@ -197,18 +197,18 @@ for some reasdon you give both).</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>provenance</strong> (<a class="reference internal" href="snappl.provenance.Provenance.html#snappl.provenance.Provenance" title="snappl.provenance.Provenance"><em>Provenance</em></a><em>, </em><em>UUID</em><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The Provenacne, or the id of the Provenance, to search.
+<li><p><strong>provenance</strong> (<a class="reference internal" href="snappl.provenance.Provenance.html#snappl.provenance.Provenance" title="snappl.provenance.Provenance"><em>Provenance</em></a><em>, </em><em>UUID</em><em>, or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The Provenacne, or the id of the Provenance, to search.
 Must specify either this, or both of provenance_tag and
 process.</p></li>
-<li><p><strong>provenance_tag</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The provenance tag to search.  Required if provenance is
+<li><p><strong>provenance_tag</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The provenance tag to search.  Required if provenance is
 None.</p></li>
-<li><p><strong>process</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The process of the provenance_tag to search.  Required if
+<li><p><strong>process</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The process of the provenance_tag to search.  Required if
 provenance_tag is given.</p></li>
-<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – If ra and dec are given, will find all segmentation maps
+<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – If ra and dec are given, will find all segmentation maps
 that include this point.</p></li>
-<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – If ra and dec are given, will find all segmentation maps
+<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – If ra and dec are given, will find all segmentation maps
 that include this point.</p></li>
-<li><p><strong>ra_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – <p>If any of these are given, will limit images to things that
+<li><p><strong>ra_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – <p>If any of these are given, will limit images to things that
 fall within the relevant range.  It probably doesn’t make
 sense to include any of these alongside (ra, dec).</p>
 <p>NOTE: this refers the the centra ra of the segmentation map;
@@ -221,7 +221,7 @@ and dec.</p>
 <p>WARNING : ra ranges crossing 0 are not yet properly
 implemented.</p>
 </p></li>
-<li><p><strong>ra_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – <p>If any of these are given, will limit images to things that
+<li><p><strong>ra_max</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – <p>If any of these are given, will limit images to things that
 fall within the relevant range.  It probably doesn’t make
 sense to include any of these alongside (ra, dec).</p>
 <p>NOTE: this refers the the centra ra of the segmentation map;
@@ -234,7 +234,7 @@ and dec.</p>
 <p>WARNING : ra ranges crossing 0 are not yet properly
 implemented.</p>
 </p></li>
-<li><p><strong>dec_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – <p>If any of these are given, will limit images to things that
+<li><p><strong>dec_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – <p>If any of these are given, will limit images to things that
 fall within the relevant range.  It probably doesn’t make
 sense to include any of these alongside (ra, dec).</p>
 <p>NOTE: this refers the the centra ra of the segmentation map;
@@ -247,7 +247,7 @@ and dec.</p>
 <p>WARNING : ra ranges crossing 0 are not yet properly
 implemented.</p>
 </p></li>
-<li><p><strong>dec_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – <p>If any of these are given, will limit images to things that
+<li><p><strong>dec_max</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – <p>If any of these are given, will limit images to things that
 fall within the relevant range.  It probably doesn’t make
 sense to include any of these alongside (ra, dec).</p>
 <p>NOTE: this refers the the centra ra of the segmentation map;
@@ -260,12 +260,12 @@ and dec.</p>
 <p>WARNING : ra ranges crossing 0 are not yet properly
 implemented.</p>
 </p></li>
-<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – If given, only include segmentation maps that go with this band.</p></li>
-<li><p><strong>l2image_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>UUID</em><em>, </em><em>default None</em>) – If given, only find segmentation maps that go with this image.</p></li>
+<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – If given, only include segmentation maps that go with this band.</p></li>
+<li><p><strong>l2image_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>UUID</em><em>, </em><em>default None</em>) – If given, only find segmentation maps that go with this image.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference internal" href="#snappl.segmap.SegmentationMap" title="snappl.segmap.SegmentationMap">SegmentationMap</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference internal" href="#snappl.segmap.SegmentationMap" title="snappl.segmap.SegmentationMap">SegmentationMap</a></p>
 </dd>
 </dl>
 </dd></dl>

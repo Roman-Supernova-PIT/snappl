@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>ImageCollection &#8212; roman_snpit_snappl 0.1.dev1+gc8926490f documentation</title>
+    <title>ImageCollection &#8212; roman_snpit_snappl 0.1.dev1+g0e2388efa documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=f7ce3a6c"></script>
+    <script src="../_static/documentation_options.js?v=b4ac6a07"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -106,7 +106,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="snappl.imagecollection.ImageCollection">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">snappl.imagecollection.</span></span><span class="sig-name descname"><span class="pre">ImageCollection</span></span><a class="reference internal" href="../_modules/snappl/imagecollection.html#ImageCollection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snappl.imagecollection.ImageCollection" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>A class that keeps track of groups of images.</p>
 <p>Never instantiate an object of this class of its subclasses
 directly.  Call the get_collection() class method go get your image
@@ -141,26 +141,26 @@ docstring there.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Relative path of the image to search for.  Usually if you
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Relative path of the image to search for.  Usually if you
 feed it this, you don’t want to feed it nay other
 parameters.</p></li>
-<li><p><strong>mjd_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images at this mjd or later</p></li>
-<li><p><strong>mjd_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images at this mjd or earlier.</p></li>
-<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images that contain this ra</p></li>
-<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images that containe this dec</p></li>
-<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Only include images from this band</p></li>
-<li><p><strong>exptime_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only include images with at least this exptime in seconds.</p></li>
-<li><p><strong>exptime_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only include images with at most this exptime in seconds.</p></li>
-<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Only include images from this sca.</p></li>
-<li><p><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>default None</em>) – By default, the returned images are not sorted in any
+<li><p><strong>mjd_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images at this mjd or later</p></li>
+<li><p><strong>mjd_max</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images at this mjd or earlier.</p></li>
+<li><p><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images that contain this ra</p></li>
+<li><p><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only return images that containe this dec</p></li>
+<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Only include images from this band</p></li>
+<li><p><strong>exptime_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only include images with at least this exptime in seconds.</p></li>
+<li><p><strong>exptime_max</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>default None</em>) – Only include images with at most this exptime in seconds.</p></li>
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Only include images from this sca.</p></li>
+<li><p><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>default None</em>) – By default, the returned images are not sorted in any
 particular way.  Put a keyword here to sort by that value
 (or by those values).  Options include ‘id’,
 ‘provenance_id’, ‘observation_id’, ‘sca’, ‘ra’, ‘dec’, ‘filepath’,
 ‘width’, ‘height’, ‘mjd’, ‘exptime’.  Not all of these are
 necessarily useful, and some of them may be null for many
 objects in the database.</p></li>
-<li><p><strong>limit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Only return this many objects at most.</p></li>
-<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Useful with limit and order_by ; offset the returned value
+<li><p><strong>limit</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Only return this many objects at most.</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Useful with limit and order_by ; offset the returned value
 by this many entries.  You can make repeated calls to
 find_objects to get subsets of objects by passing the same
 order_by and limit, but different offsets each time, to
@@ -172,7 +172,7 @@ slowly build up a list.</p></li>
 snappl.image.Image, but you shouldn’t need to know that.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference internal" href="snappl.image.Image.html#snappl.image.Image" title="snappl.image.Image">snappl.image.Image</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference internal" href="snappl.image.Image.html#snappl.image.Image" title="snappl.image.Image">snappl.image.Image</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -184,12 +184,12 @@ snappl.image.Image, but you shouldn’t need to know that.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>collection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Name of the collection.  Currently defined collections:
+<li><p><strong>collection</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Name of the collection.  Currently defined collections:
 * ou2024 - Open Universe 2024 FITS images
 * manual_fits - FITS images that aren’t really part of a collection
 * manual_rdm - Roman Datamodel images that aren’t really part of a collection or in the database
 * snpitdb - Images from Roman SNPIT internal DB.</p></li>
-<li><p><strong>subset</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – <dl class="simple">
+<li><p><strong>subset</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – <dl class="simple">
 <dt>Name of the subset, if relevant for that collection.</dt><dd><ul>
 <li><dl class="simple">
 <dt>manual_fits</dt><dd><ul>
@@ -207,13 +207,13 @@ snappl.image.Image, but you shouldn’t need to know that.</p>
 </dd>
 </dl>
 </p></li>
-<li><p><strong>provenance_tag</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>defanot None</em>) – The Roman SNPIT internal database provenance tag for the
+<li><p><strong>provenance_tag</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>defanot None</em>) – The Roman SNPIT internal database provenance tag for the
 provenance of the images.  Either provenance_tag or
 provenance is required when collection is ‘snpitdb’.
 Invalid if collection is not ‘snpitdb’.</p></li>
-<li><p><strong>process</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The process to go with provenance_tag; required when
+<li><p><strong>process</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The process to go with provenance_tag; required when
 provenance_tag is not None.</p></li>
-<li><p><strong>provenance</strong> (<a class="reference internal" href="snappl.provenance.Provenance.html#snappl.provenance.Provenance" title="snappl.provenance.Provenance"><em>Provenance</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The Roman SNPIT internal database Provenance or provenance
+<li><p><strong>provenance</strong> (<a class="reference internal" href="snappl.provenance.Provenance.html#snappl.provenance.Provenance" title="snappl.provenance.Provenance"><em>Provenance</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The Roman SNPIT internal database Provenance or provenance
 id for the images.  Either provenance_tag or provenance is
 required when collection is ‘snpitdb’.  Invalid if
 collection is not ‘snpitdb’.</p></li>
@@ -240,16 +240,16 @@ will be made when needed.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>image_id</strong> (<em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The id of the image you want to get.  This is only relevant
+<li><p><strong>image_id</strong> (<em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The id of the image you want to get.  This is only relevant
 for image collections that refer to images in the internal
 Roman SNPIT database, otherwise it is invalid.  If image_id
 is given, then path, observation_id, band, and sca are all ignored.</p></li>
-<li><p><strong>path</strong> (<em>Path</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The path to the relative to base_path.  For some subclasses,
+<li><p><strong>path</strong> (<em>Path</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The path to the relative to base_path.  For some subclasses,
 this must be consistent wiht observation_id, band, and sca if passed.</p></li>
-<li><p><strong>observation_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Observation_Id.  If not given, just use the Path to find the image.</p></li>
-<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Band.</p></li>
-<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – SCA.</p></li>
-<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – The base path for the image collection.  If not given, use
+<li><p><strong>observation_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Observation_Id.  If not given, just use the Path to find the image.</p></li>
+<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Band.</p></li>
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – SCA.</p></li>
+<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – The base path for the image collection.  If not given, use
 the default for the collection from when the collection
 object was instantiated.</p></li>
 <li><p><strong>dbclient</strong> (<a class="reference internal" href="snappl.dbclient.SNPITDBClient.html#snappl.dbclient.SNPITDBClient" title="snappl.dbclient.SNPITDBClient"><em>SNPITDBClient</em></a><em>, </em><em>default None</em>) – Only relevant for image collections that refer to the
@@ -276,10 +276,10 @@ collections will just not implement this method.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>observation_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The identifier of the observation.</p></li>
-<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The band</p></li>
-<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The SCA</p></li>
-<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – If None, use the default value for this collection</p></li>
+<li><p><strong>observation_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The identifier of the observation.</p></li>
+<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The band</p></li>
+<li><p><strong>sca</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The SCA</p></li>
+<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>default None</em>) – If None, use the default value for this collection</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>

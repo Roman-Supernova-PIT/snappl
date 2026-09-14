@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Spectrum1d &#8212; roman_snpit_snappl 0.1.dev1+gc8926490f documentation</title>
+    <title>Spectrum1d &#8212; roman_snpit_snappl 0.1.dev1+g0e2388efa documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-    <script src="../_static/documentation_options.js?v=f7ce3a6c"></script>
+    <script src="../_static/documentation_options.js?v=b4ac6a07"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -140,28 +140,28 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>id</strong> (<em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>NOne</em>) – ID of this lightcurve.  If None, one will be generated, and
+<li><p><strong>id</strong> (<em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>NOne</em>) – ID of this lightcurve.  If None, one will be generated, and
 thereafter aavilable in the id property.</p></li>
-<li><p><strong>data_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – <p>Must follow the format on</p>
+<li><p><strong>data_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – <p>Must follow the format on</p>
 <blockquote>
 <div><p><a class="reference external" href="https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/spectrum_1d">https://github.com/Roman-Supernova-PIT/Roman-Supernova-PIT/wiki/spectrum_1d</a></p>
 </div></blockquote>
 <p>You must give one of data_dict or filepath; it is bad form
 to specify both.</p>
 </p></li>
-<li><p><strong>filepath</strong> (<em>Path</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – File path to find the lightcurve, realtive to base dir.  You
+<li><p><strong>filepath</strong> (<em>Path</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – File path to find the lightcurve, realtive to base dir.  You
 must specify either data_dict or filepath; it is bad form to
 specify both.</p></li>
-<li><p><strong>base_dir</strong> (<em>Path</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Base directory that filepath is relative to.  If None (which
+<li><p><strong>base_dir</strong> (<em>Path</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – Base directory that filepath is relative to.  If None (which
 is what you want if you’re writing things to the database),
 will use the config value of “system.paths.spectra1d”.</p></li>
-<li><p><strong>provenance</strong> (<a class="reference internal" href="snappl.provenance.Provenance.html#snappl.provenance.Provenance" title="snappl.provenance.Provenance"><em>Provenance</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – The provenance of this lightcurve.  You may also set
+<li><p><strong>provenance</strong> (<a class="reference internal" href="snappl.provenance.Provenance.html#snappl.provenance.Provenance" title="snappl.provenance.Provenance"><em>Provenance</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – The provenance of this lightcurve.  You may also set
 data_dict[‘meta’][‘provenance_id’] to the UUID of the
 provenance instead of passing it here.</p></li>
-<li><p><strong>diaobject</strong> (<a class="reference internal" href="snappl.diaobject.DiaObject.html#snappl.diaobject.DiaObject" title="snappl.diaobject.DiaObject"><em>DiaObject</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – The DiaObject this is a spectrum for.  You may also set
+<li><p><strong>diaobject</strong> (<a class="reference internal" href="snappl.diaobject.DiaObject.html#snappl.diaobject.DiaObject" title="snappl.diaobject.DiaObject"><em>DiaObject</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – The DiaObject this is a spectrum for.  You may also set
 data_dict[‘meta’][‘diaobject_id’] to the UUID of the
 diaboject instead of passing it here.</p></li>
-<li><p><strong>diaobject_position_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – Either the improved position as returned form
+<li><p><strong>diaobject_position_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – Either the improved position as returned form
 DiaObject.get_position(), or the value of the id from the
 dictionary returned by that call.  You may also set data_dict[‘meta’][‘diaobject_position_id’]</p></li>
 </ul>
@@ -295,40 +295,40 @@ just not be used to filter the list of returned spectra.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>provenance</strong> (<a class="reference internal" href="snappl.provenance.Provenance.html#snappl.provenance.Provenance" title="snappl.provenance.Provenance"><em>Provenance</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The Provenance, or the id of the Provenacne, of the
+<li><p><strong>provenance</strong> (<a class="reference internal" href="snappl.provenance.Provenance.html#snappl.provenance.Provenance" title="snappl.provenance.Provenance"><em>Provenance</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The Provenance, or the id of the Provenacne, of the
 lightcurve you want.  You must pass either provenance or
 provenance_tag.  (If you pass both, provenance_tag will be
 ignored).</p></li>
-<li><p><strong>provenance_tag</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The provenance tag used to find the provenance of the
+<li><p><strong>provenance_tag</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The provenance tag used to find the provenance of the
 lightcurves you want.  Ignored if provenance is not None.
 Requires process.</p></li>
-<li><p><strong>process</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The process used together with provenance_tag to find the
+<li><p><strong>process</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default None</em>) – The process used together with provenance_tag to find the
 provenance of the lightcurves you want.  Required if
 provenance_tag is not None.</p></li>
 <li><p><strong>dbclient</strong> (<a class="reference internal" href="snappl.dbclient.SNPITDBClient.html#snappl.dbclient.SNPITDBClient" title="snappl.dbclient.SNPITDBClient"><em>SNPITDBClient</em></a><em> or </em><em>None</em>) – The connection to the database (optional).  If you don’t
 pass one, will use the cached connection, or will make a new
 one based on what’s in the config.</p></li>
-<li><p><strong>diaobject</strong> (<a class="reference internal" href="snappl.diaobject.DiaObject.html#snappl.diaobject.DiaObject" title="snappl.diaobject.DiaObject"><em>DiaObject</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – The DiaObject, or the ID of the object, you want spectra for.</p></li>
-<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The band of the images that went into the spectrum</p></li>
+<li><p><strong>diaobject</strong> (<a class="reference internal" href="snappl.diaobject.DiaObject.html#snappl.diaobject.DiaObject" title="snappl.diaobject.DiaObject"><em>DiaObject</em></a><em> or </em><em>UUID</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – The DiaObject, or the ID of the object, you want spectra for.</p></li>
+<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The band of the images that went into the spectrum</p></li>
 <li><p><strong>mjd_start</strong> (<em>float The earliesr mjd</em><em>, </em><em>and latest mjd</em><em>,</em>) – of the individual images that went into the exposure.
 (mjd_end is actually the mjd of the final image, plus it’s
 exposure time converted to days).</p></li>
 <li><p><strong>mjd_end</strong> (<em>float The earliesr mjd</em><em>, </em><em>and latest mjd</em><em>,</em>) – of the individual images that went into the exposure.
 (mjd_end is actually the mjd of the final image, plus it’s
 exposure time converted to days).</p></li>
-<li><p><strong>mjd_start_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Use these if you want to search a range of times.</p></li>
-<li><p><strong>mjd_start_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Use these if you want to search a range of times.</p></li>
-<li><p><strong>mjd_end_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Use these if you want to search a range of times.</p></li>
-<li><p><strong>mjd_end_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Use these if you want to search a range of times.</p></li>
-<li><p><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>default None</em>) – By default, the returned images are not sorted in any
+<li><p><strong>mjd_start_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Use these if you want to search a range of times.</p></li>
+<li><p><strong>mjd_start_max</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Use these if you want to search a range of times.</p></li>
+<li><p><strong>mjd_end_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Use these if you want to search a range of times.</p></li>
+<li><p><strong>mjd_end_max</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Use these if you want to search a range of times.</p></li>
+<li><p><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>default None</em>) – By default, the returned images are not sorted in any
 particular way.  Put a keyword here to sort by that value
 (or by those values).  Options include ‘id’,
 ‘provenance_id’, ‘observation_id’, ‘sca’, ‘ra’, ‘dec’, ‘filepath’,
 ‘width’, ‘height’, ‘mjd’, ‘exptime’.  Not all of these are
 necessarily useful, and some of them may be null for many
 objects in the database.</p></li>
-<li><p><strong>limit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Only return this many objects at most.</p></li>
-<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Useful with limit and order_by ; offset the returned value
+<li><p><strong>limit</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Only return this many objects at most.</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>default None</em>) – Useful with limit and order_by ; offset the returned value
 by this many entries.  You can make repeated calls to
 find_objects to get subsets of objects by passing the same
 order_by and limit, but different offsets each time, to
@@ -373,7 +373,7 @@ Config.</p></li>
 <p>Populates self._data_dict</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – The full path to write the file to.  If None, then will use
+<dd class="field-odd"><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – The full path to write the file to.  If None, then will use
 the base_path and filepath passed at object construction.</p>
 </dd>
 </dl>
@@ -414,7 +414,7 @@ Config.</p>
 <dd><p>Writes the file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – The full path to write the file to.  If None, then will use
+<dd class="field-odd"><p><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a><em>, </em><em>default None</em>) – The full path to write the file to.  If None, then will use
 the base_path and filepath passed at object construction, or
 if those were None, will generate a standard filepath used
 for the database files.  If you’re writing to the database,
