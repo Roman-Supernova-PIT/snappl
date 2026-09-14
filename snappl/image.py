@@ -3033,7 +3033,7 @@ class RomanDatamodelImage( Image ):
         # WORRY : we need to have all attributes from all current and future subclasses... there
         #   must be a better way.  (But I'm afraid of doing ALL attributes.)
         for prop in [ 'observation_id', 'sca', 'band', '_mjd', 'position_angle', 'exptime',
-                      'sky_level', 'zeropoint', 'ra', 'dec',
+                      'sky_level', '_zeropoint', 'ra', 'dec',
                       'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                       'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11' ]:
             SNLogger.debug( f"get_cutout: checking for {prop} in {self.__class__.__name__}" )
