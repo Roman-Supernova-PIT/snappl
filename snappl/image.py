@@ -3038,7 +3038,6 @@ class RomanDatamodelImage( Image ):
                       'sky_level', '_zeropoint', 'ra', 'dec',
                       'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                       'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11' ]:
-            SNLogger.debug( f"get_cutout: checking for {prop} in {self.__class__.__name__}" )
             if hasattr( self, prop ):
                 setattr( snappl_cutout, prop, getattr( self, prop ) )
 
