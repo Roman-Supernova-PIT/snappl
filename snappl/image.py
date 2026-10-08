@@ -1,5 +1,6 @@
 __all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'CompressedFITSImage', 'FITSImageOnDisk',
-            'OpenUniverse2024FITSImage', 'RomanDatamodelImage', 'RomanDatamodelImage_Needs_CRDS_GWCS' ]
+            'OpenUniverse2024FITSImage', 'RomanDatamodelImage', 'RomanDatamodelImageStreaming',
+            'RomanDatamodelImage_Needs_CRDS_GWCS' ]
 
 import re
 import pathlib
@@ -3094,6 +3095,39 @@ class RomanDatamodelImage( Image ):
         self._data = None
         self._noise = None
         self._flags = None
+
+
+# ======================================================================
+
+class RomanDatamodelImageStreaming( RomanDatamodelImage ):
+    """An eagerly realized Roman image read from an ASDF stream or object."""
+
+    def __init__( self, source, **kwargs ):
+        path_kwargs = { 'full_filepath', 'filepath', 'base_path', 'base_dir', 'path', 'no_base_path' }
+        supplied_path_kwargs = path_kwargs.intersection( kwargs )
+        if supplied_path_kwargs:
+            raise ValueError( f"{self.__class__.__name__} does not accept path arguments: "
+                              f"{sorted( supplied_path_kwargs )}" )
+
+        Image.__init__( self, no_base_path=True, **kwargs )
+        self._dm = rdm.open( source, mode='r' )
+        self._dm_meta_cache = copy.deepcopy( self._dm.meta )
+        self._data = None
+        self._noise = None
+        self._flags = None
+        self._sb_data = None
+        self._sb_noise = None
+        self._width = self._dm.shape[1]
+        self._height = self._dm.shape[0]
+        self.get_data( which='all', always_reload=True, cache=True )
+
+    @contextmanager
+    def _with_dm( self ):
+        yield self._dm
+
+    @property
+    def _dm_meta( self ):
+        return self._dm_meta_cache
 
 
 # ======================================================================
