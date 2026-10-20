@@ -196,7 +196,55 @@ This may not work if you don't have enough permissions to push to the environmen
 Build the new environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**WARNING**: this step is long and potentially error prone.  You must have docker installed.  Also, **I strongly recommend you run this on an x86_64 architecture machine** (which means it won't work on a Mac).  If you don't know what that means, then probably you shouldn't be trying to release a new environment.  Right now, we don't deal with muilti-arch images.  Everywhere we run (both Perlmutter and SMDC) is on the ``x86_64`` architecture, so that's what we need.
+**WARNING**: this step is long and potentially error prone.  You must have docker installed.  Also, **I strongly recommend you run this on an x86_64 architecture machine**.  If you don't know what that means, then probably you shouldn't be trying to release a new environment. There are additional steps below for Mac users; skip them if you are on a Linux machine (i.e., ``x86_64`` architecture). Right now, we don't deal with muilti-arch images.  Everywhere we run (both Perlmutter and SMDC) is on the ``x86_64`` architecture, so that's what we need.
+
+**!!! BEGINNING OF ADDITIONAL MAC USER INSTRUCTIONS !!!** 
+
+First, `get homebrew <https://brew.sh/>`__ and then `get colima <https://colima.run/>`__. Make a new profile in colima with:
+
+.. code-block:: console
+
+  colima start snpit --arch x86_64
+
+This will make you a new profile called ``snpit`` with the correct x86_64 architecture with the default docker runtime. If this doesn't work, do:
+
+.. code-block:: console
+
+  brew install qemu
+
+Then, try to make the new profile again. If it still does not work, do:
+
+.. code-block:: console
+
+  brew install lima-additional-guestagents
+
+Try *again*. Now, if this finally works, verify that you did it right. Do:
+
+.. code-block:: console
+
+  colima list 
+
+You should see something like:
+
+.. code-block:: console
+
+  PROFILE    STATUS     ARCH       CPUS    MEMORY    DISK      RUNTIME    ADDRESS
+  default    Stopped    aarch64    2       2GiB      100GiB               
+  snpit      Running    x86_64     2       2GiB      100GiB    docker  
+
+In order to go back in to the profile in the future, just do:
+
+.. code-block:: console
+
+  colima start snpit
+
+If you want this to be the default profile every time you open a shell, add this environment variable to your ``~/.bashrc`` or ``~/.zshrc``:
+
+.. code-block:: console
+
+  export COLIMA_PROFILE=snpit
+
+**!!! END OF ADDITIONAL MAC USER INSTRUCTIONS !!!**
 
 Run:
 
@@ -205,6 +253,8 @@ Run:
   make VER=x.y.z docker-images
 
 where ``x.y.z`` is the new version you just figured out.  This will take a while and will build four docker images, and give each image four names.
+
+
 
 Push the environment
 ^^^^^^^^^^^^^^^^^^^^
