@@ -3100,14 +3100,24 @@ class RomanDatamodelImage( Image ):
 # ======================================================================
 
 class RomanDatamodelImageStreaming( RomanDatamodelImage ):
-    """An eagerly realized Roman image read from an ASDF stream or object."""
+    """An eagerly realized Roman image read from an ASDF stream or object.
+
+    The 'path' argument is saved as an attribute for bookkeeping, but is not used to open the image.
+    The image is opened from the source argument, which can be a stream or an object that can be passed to rdm.open().
+    """
+    @property
+    def path( self ):
+        return self._path
+
+    @path.setter
+    def path( self, new_value ):
+        self._path = new_value
 
     def __init__( self, source, **kwargs ):
         path_kwargs = { 'full_filepath', 'filepath', 'base_path', 'base_dir', 'path', 'no_base_path' }
         supplied_path_kwargs = path_kwargs.intersection( kwargs )
-        if supplied_path_kwargs:
-            raise ValueError( f"{self.__class__.__name__} does not accept path arguments: "
-                              f"{sorted( supplied_path_kwargs )}" )
+        for path_arg in supplied_path_kwargs:
+            setattr( self, path_arg, kwargs.pop( path_arg ) )
 
         Image.__init__( self, no_base_path=True, **kwargs )
         self._dm = rdm.open( source, mode='r' )

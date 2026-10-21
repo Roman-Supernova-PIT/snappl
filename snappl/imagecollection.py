@@ -1,12 +1,16 @@
 __all__ = [ 'ImageCollection', 'ImageCollectionOU2024', 'ImageCollectionManualFITS', 'ImageCollectionDB' ]
 
+import os
 import pathlib
 
 import simplejson
 
+from astroquery.mast import MastMissions
+
 from snappl.config import Config
 from snappl.snappl_http import retry_post
-from snappl.image import ( Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders, RomanDatamodelImage,
+from snappl.image import ( Image, OpenUniverse2024FITSImage, FITSImage, FITSImageStdHeaders,
+                            RomanDatamodelImage, RomanDatamodelImageStreaming,
                             RomanDatamodelImage_Needs_CRDS_GWCS )
 from snappl.provenance import Provenance
 from snappl.dbclient import SNPITDBClient
@@ -103,6 +107,8 @@ class ImageCollection:
 
         elif collection == 'manual_rdm':
             return ImageCollectionManualRDM( **kwargs )
+        elif collection == 'manual_rdm_streaming':
+            return ImageCollectionManualRDM_Streaming( **kwargs )
         elif collection == 'manual_rdm_crds':
             return ImageCollectionManualRDM_CRDS( **kwargs )
         else:
@@ -445,6 +451,30 @@ class ImageCollectionManualRDM:
         if not full_filepath.is_file():
             raise FileNotFoundError( f"{full_filepath} does not exist or is not a regular file." )
         return RomanDatamodelImage( full_filepath = base_path / path, no_base_path=True )
+
+
+class ImageCollectionManualRDM_Streaming:
+    """Reading files streaming from S3 URIs."""
+
+    def __init__( self, base_path=None, token=None ):
+        if token is None:
+            token = os.getenv("MAST_API_TOKEN")
+        self.missions = MastMissions(mission='roman')
+        self.missions.login(token=token)
+        pass
+
+    def get_image( self, image_id=None, path=None, observation_id=None, band=None, sca=None,
+                   base_path=None, dbclient=None ):
+        if any( i is not None for i in [ image_id, observation_id, band, sca ] ):
+            raise RuntimeError( "Can't do get_image using image_id, observation_id, band, or sca "
+                                "for manual_rdm_streaming image collection" )
+        if path is None:
+            raise RuntimeError( "path (URI) is required for manual_rdm_streaming image collection get_image" )
+
+        uri = self.missions.read_product( path )
+        # Eventually we need to move away from assuming that paths exists
+        # But for now its useful to pass this information along as informational.
+        return RomanDatamodelImageStreaming( uri, path=path )
 
 
 class ImageCollectionManualRDM_CRDS:
