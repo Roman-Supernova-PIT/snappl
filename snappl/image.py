@@ -2884,6 +2884,9 @@ class RomanDatamodelImage( Image ):
                 data = np.array( dm.data ) if which in ( 'data', 'all' ) else None
                 noise = np.array( dm.err ) if which in ( 'noise', 'all' ) else None
                 flags = np.array( dm.dq ) if which in ( 'flags', 'all' ) else None
+                # Add DUMO
+                dumo = np.array( dm.dumo, dtype=np.float32 ) if which in ( 'data', 'all' ) else None
+                # data += dumo
 
                 if ( data is not None ) or ( noise is not None ):
                     pixelarea_name = crds.getreferences(
