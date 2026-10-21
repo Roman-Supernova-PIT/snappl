@@ -2616,7 +2616,7 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
 class RomanDatamodelImage( Image ):
     """An image read from a roman datamodel ASDF file.
 
-    See Issue #46 for concerns about performance/memory and imlementation of this object.
+    See Issue #46 for concerns about performance/memory and implementation of this object.
 
     """
     _detectormatch = re.compile( "^WFI([0-9]{2})$" )
