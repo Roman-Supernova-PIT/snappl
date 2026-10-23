@@ -78,6 +78,10 @@ jobs:
           cd snappl_ou2024
           git checkout initialize
           cd ..
+          git clone https://github.com/Roman-Supernova-PIT/snappl_imagesimulator.git
+          cd snappl_imagesimulator
+          git checkout initialize
+          cd ..
           #### END OF CHICKEN AND EGG NOTE part 1
           cd environment/test-docker-environment
           docker compose up -d webserver shell
@@ -88,6 +92,7 @@ jobs:
           #   packages have been released on PyPi, we can change this.
           docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .'
           docker compose exec shell bash -c 'cd /packages/snappl_ou2024 && pip install -e .'
+          docker compose exec shell bash -c 'cd /packages/snappl_imagesimulator && pip install -e .'
           #### END OF CHICKEN AND EGG NOTE part 2
           docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .[test]'
           docker compose exec shell bash -c 'cd /packages/snappl/snappl/tests && pytest -v'
