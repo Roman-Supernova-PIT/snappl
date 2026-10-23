@@ -62,7 +62,8 @@ test = [
     "tox",
     "devpi_process",
     "psycopg>=3.2.9,<4.0.0",
-    "snappl_ou2024"
+    "roman-snpit-snappl-ou2024",
+    "roman-snpit-snappl-imagesimulator"
 ]
 docs = [
     "sphinx",

@@ -71,8 +71,24 @@ jobs:
           cd ..
           # test environment expects then snappl checkout to be in the packages subdir
           mv snappl packages/
-          cd packages/environment/test-docker-environment
+          cd packages
+          #### CHICKEN AND EGG NOTE part 1
+          # See part 2 below
+          git clone https://github.com/Roman-Supernova-PIT/snappl_ou2024.git
+          cd snappl_ou2024
+          git checkout initialize
+          cd ..
+          #### END OF CHICKEN AND EGG NOTE part 1
+          cd environment/test-docker-environment
           docker compose up -d webserver shell
+          #### CHICKEN AND EGG NOTE part 2
+          # Eventually, we should just let the .[test] install of snappl
+          #   install a snappl_ou2024 package, but right now it's not on
+          #   PyPi, as we're in the middle of the breakout.  Once both
+          #   packages have been released on PyPi, we can change this.
+          docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .'
+          docker compose exec shell bash -c 'cd /packages/snappl_ou2024 && pip install -e .'
+          #### END OF CHICKEN AND EGG NOTE part 2
           docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .[test]'
           docker compose exec shell bash -c 'cd /packages/snappl/snappl/tests && pytest -v'
           docker compose down -v

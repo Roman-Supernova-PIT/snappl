@@ -9,7 +9,8 @@ import fitsio.header
 
 import snappl.db.db
 from snappl.image import Image, FITSImage, FITSImageStdHeaders
-from snappl.wcs import AstropyWCS, GalsimWCS
+from snappl.wcs import AstropyWCS
+from snappl_ou2024.wcs import GalsimWCS
 from snappl.provenance import Provenance
 from snappl.config import Config
 

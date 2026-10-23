@@ -1467,8 +1467,8 @@ class Image( PathedObject ):
         classspec = Image._format_def[ image_class_key ][ 'image_class' ]
         if isinstance( classspec, tuple ):
             modulename, classname = classspec
-            importlib.import_module( modulename )
-            cls = getattr( modulename, classname )
+            module = importlib.import_module( modulename )
+            cls = getattr( module, classname )
             return cls
         else:
             return classspec

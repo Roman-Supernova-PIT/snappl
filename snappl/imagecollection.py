@@ -90,8 +90,8 @@ class ImageCollection:
             raise ValueError( "provenance_tag, process, and provenance are only valid for collection snpitdb" )
 
         if collection == 'ou2024':
-            import snappl_ou2024.imagecollectoin.ImageCollectionOU2024
-            return snappl_ou2024.imagecollection.ImageCollectionOU2024( **kwargs )
+            from snappl_ou2024.imagecollection import ImageCollectionOU2024
+            return ImageCollectionOU2024( **kwargs )
 
         elif collection == 'manual_fits':
             if subset is None:
@@ -379,7 +379,7 @@ class ImageCollectionDB:
         if prov_imclass not in self.image_class_to_format:
             raise RuntimeError( "Unknown image_class {image_class} in image provenance" )
         imclass_format = self.image_class_to_format[ prov_imclass ]
-        self.image_class = Image._format_def[ imclass_format ]['image_class']
+        self.image_class = Image.get_image_class( imclass_format )
 
         if base_path is None:
             base_path = Config.get().value( Image._format_def[ imclass_format ]['base_path_config'] )

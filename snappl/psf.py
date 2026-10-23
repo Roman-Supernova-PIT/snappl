@@ -114,8 +114,8 @@ class PSF:
                          'seed' : seed } )
 
         def ou2024_psf_getter( classname ):
-            import snappl_ou2024
-            return getattr( snappl_ou2024, classname )
+            import snappl_ou2024.psf
+            return getattr( snappl_ou2024.psf, classname )
 
         psfclass_to_function_mapping = {
             "photutilsImagePSF": photutilsImagePSF,

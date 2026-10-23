@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 import scipy.ndimage
 from snappl.psf import PSF
-from snappl.image_simulator import get_galaxy_stamp
+from snappl_imagesimulator.image_simulator import get_galaxy_stamp
 from scipy.ndimage import center_of_mass
 
 
