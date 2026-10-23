@@ -89,7 +89,7 @@ jobs:
           docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .'
           docker compose exec shell bash -c 'cd /packages/snappl_ou2024 && pip install -e .'
           #### END OF CHICKEN AND EGG NOTE part 2
-          docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .[tests]'
+          docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .[test]'
           docker compose exec shell bash -c 'cd /packages/snappl/snappl/tests && pytest -v'
           docker compose down -v
           # move the snappl checkout back to where further github
