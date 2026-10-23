@@ -252,7 +252,7 @@ class RDM_L2image_loader:
 # ======================================================================
 
 def main():
-    parser = argparse.ArgumentParser( 'load_ou2024_l2images',
+    parser = argparse.ArgumentParser( 'load_ricksim_images',
                                       description='Load roman datamodel image files from Rick Sims below a directory.',
                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter )
     parser.add_argument( '-p', '--provid', required=True, help="Provenance id" )
