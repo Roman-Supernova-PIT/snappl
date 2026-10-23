@@ -19,12 +19,14 @@ from snappl.image_simulator import ImageSimulator
 from snappl.diaobject import DiaObject
 from snappl.lightcurve import Lightcurve
 from snappl.segmap import SegmentationMap
-from snappl.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
-from snappl.admin.load_ou2024_l2images import OU2024_L2image_loader
 from snappl.config import Config
 from snappl.dbclient import SNPITDBClient
 from snappl.provenance import Provenance
 from snappl.db.db import DBCon
+
+# TODO : refactor tests and fixtures not to need ou2024
+from snappl_ou2024.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
+from snappl_ou2024.admin.load_ou2024_l2images import OU2024_L2image_loader
 
 
 @pytest.fixture( scope='session' )
@@ -60,22 +62,6 @@ def ou2024imagerelpath():
 @pytest.fixture( scope='module' )
 def ou2024imagepath( ou2024imagerelpath, ou2024collection ):
     return str( ou2024collection.base_path / ou2024imagerelpath )
-
-
-@pytest.fixture
-def ou2024image( ou2024collection, ou2024imagerelpath ):
-    return ou2024collection.get_image( path=ou2024imagerelpath )
-
-
-# If you use this next fixture, you aren't supposed
-#   to modify the image!  Make sure any modifications
-#   you make are undone at the end of your test.
-@pytest.fixture( scope='module' )
-def ou2024image_module(  ou2024collection, ou2024imagerelpath ):
-    image = ou2024collection.get_image( path=ou2024imagerelpath )
-    image.get_data( which='all', cache=True )
-    image.get_wcs()
-    return image
 
 
 @pytest.fixture
@@ -127,7 +113,7 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
     fitsim._header = ou2024image_module.get_fits_header()
     fitsim._wcs = ou2024image_module._wcs
     # Undo the internal change that get_fits_header made to ou2024image
-    ou2024image._header = orighdr
+    ou2024image_module._header = orighdr
     img, noi, flg = ou2024image_module.get_data( always_reload=False )
     fitsim._data = img
     fitsim._noise = noi
