@@ -454,14 +454,24 @@ class ImageCollectionManualRDM:
 
 
 class ImageCollectionManualRDM_Streaming:
-    """Reading files streaming from S3 URIs."""
+    """Reading files streaming from S3 URIs.
+
+    Supports optional authentication with MAST_API_TOKEN.  Accepts "token" in the constructor,
+    or will look for the environment variable MAST_API_TOKEN.
+     If neither is present, will use anonymous access.
+    """
 
     def __init__( self, base_path=None, token=None ):
+        # The token is optional; without one we skip login (which would otherwise
+        # fall back to the system keyring) and use anonymous access.
         if token is None:
             token = os.getenv("MAST_API_TOKEN")
         self.missions = MastMissions(mission='roman')
-        self.missions.login(token=token)
-        pass
+
+        # This is a separate block from the first 'if token' because that above block may have loaded a token.
+        # If MAST_API_TOKEN was not set then 'token' will still be None and we skip login.
+        if token:
+            self.missions.login(token=token)
 
     def get_image( self, image_id=None, path=None, observation_id=None, band=None, sca=None,
                    base_path=None, dbclient=None ):

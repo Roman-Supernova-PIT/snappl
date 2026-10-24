@@ -3103,7 +3103,9 @@ class RomanDatamodelImage( Image ):
 # ======================================================================
 
 class RomanDatamodelImageStreaming( RomanDatamodelImage ):
-    """An eagerly realized Roman image read from an ASDF stream or object.
+    """A Roman image read from an ASDF stream or object.
+
+    Will be fully realized into memory, unlike some of the limited loading when reading files on disk in, e.g., the FITSImage class.
 
     The 'path' argument is saved as an attribute for bookkeeping, but is not used to open the image.
     The image is opened from the source argument, which can be a stream or an object that can be passed to rdm.open().
