@@ -44,7 +44,7 @@ def output_directories():
 
 @pytest.fixture( scope='session', autouse=True )
 def init_config():
-    Config.init( '/packages/snappl/snappl/tests/snappl_test_config.yaml', setdefault=True )
+    Config.init( './packages/snappl/snappl/tests/snappl_test_config.yaml', setdefault=True )
 
 
 @pytest.fixture( scope="session" )
@@ -89,7 +89,7 @@ def manual_fits_image( ou2024imagepath):
 
 @pytest.fixture
 def romandatamodel_image_path():
-    return '/packages/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
+    return './packages/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
 
 
 @pytest.fixture
@@ -99,9 +99,54 @@ def romandatamodel_image( romandatamodel_image_path ):
 
 
 @pytest.fixture
+def romandatamodel_image_streaming():
+    """MAST_API_TOKEN needs to be already in the environment"""
+    # Imports
+    import os
+    from astroquery.mast import MastMissions
+
+    # Create MastMissions object and assign mission to 'roman'
+    missions = MastMissions(mission='roman')
+
+    # Login to search and retrieve Roman data
+    token = os.getenv("MAST_API_TOKEN")
+    missions.login(token=token)
+
+    # Make a list of column names to return in the search results. The results will not be ordered
+    # in this order, so we will re-order later. The fileSetName, which we need for retrieval,
+    # is not in this list, but will still be returned.
+    col_list = ['program', 'execution_plan', 'pass', 'segment', 'visit', 'observation',
+                'optical_element', 'exposure_type', 'instrument_name', 'detector', 'productLevel',
+                'product_type', 'exposure_time', 'exposure_start_time', 'exposure_end_time', 'fileSetName']
+
+    # Create a dictionary of search criteria
+    search = {'program': 1047,
+            'pass': 1,
+            'detector': 'WFI04',
+            'optical_element': 'F158',
+            'product_type': 'L2'}
+
+    # Query with column criteria
+    results = missions.query_criteria(
+        **search,
+        select_cols=col_list)
+
+    # Re-order the column names
+    results = results[col_list]
+    products = missions.get_unique_product_list(results)
+    filtered = missions.filter_products(products, file_suffix='_cal')
+
+    # Read one of the products
+    first_index = 0
+    asdf_uri = missions.read_product(filtered['filename'][first_index])
+
+    return asdf_uri
+
+
+@pytest.fixture
 def ricksim_image_paths():
-    return ( '/packages/photometry_test_data/ricksim_data/SNPIT_VISIT606900000_WFI10_F087_L2.asdf',
-             '/packages/photometry_test_data/ricksim_data/TRUTH_VISIT606900000_WFI10_F087_L1.dat.gz' )
+    return ( './packages/photometry_test_data/ricksim_data/SNPIT_VISIT606900000_WFI10_F087_L2.asdf',
+             './packages/photometry_test_data/ricksim_data/TRUTH_VISIT606900000_WFI10_F087_L1.dat.gz' )
 
 
 @pytest.fixture
@@ -138,7 +183,7 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
 
 @pytest.fixture
 def unloaded_fitsimage_basepath():
-    return '/packages/photometry_test_data/simple_gaussian_test/sig1.0/test_60030.0'
+    return './packages/photometry_test_data/simple_gaussian_test/sig1.0/test_60030.0'
 
 
 @pytest.fixture
@@ -587,7 +632,7 @@ def sim_image_and_segmap( stupid_provenance, dbclient ):
                  '-BACK_VALUE', '0.0',
                  '-CHECKIMAGE_TYPE', 'SEGMENTATION',
                  '-CHECKIMAGE_NAME', str( fullsegmappath ),
-                 '-PARAMETERS_NAME', '/packages/snappl/snappl/tests/default.param',
+                 '-PARAMETERS_NAME', './packages/snappl/snappl/tests/default.param',
                  '-FILTER', 'Y',
                  '-FILTER_NAME', '/usr/share/source-extractor/default.conv',
                  '-STARNNW_NAME', '/usr/share/source-extractor/default.nnw'
