@@ -3091,6 +3091,9 @@ class RomanDatamodelImage( Image ):
         else:
             raise TypeError("Flags must be a 2d numpy array of integers.")
 
+    def save( self, new_filepath ):
+        self.dm.save( new_filepath )
+
     def free( self ):
         self._data = None
         self._noise = None
