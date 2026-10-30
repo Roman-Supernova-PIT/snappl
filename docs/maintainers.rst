@@ -196,7 +196,64 @@ This may not work if you don't have enough permissions to push to the environmen
 Build the new environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**WARNING**: this step is long and potentially error prone.  You must have docker installed.  Also, **I strongly recommend you run this on an x86_64 architecture machine** (which means it won't work on a Mac).  If you don't know what that means, then probably you shouldn't be trying to release a new environment.  Right now, we don't deal with muilti-arch images.  Everywhere we run (both Perlmutter and SMDC) is on the ``x86_64`` architecture, so that's what we need.
+**WARNING**: this step is long and potentially error prone.  You must have docker installed.  Also, **I strongly recommend you run this on an x86_64 architecture machine**.  If you don't know what that means, then probably you shouldn't be trying to release a new environment. There are additional steps below for Mac users; skip them if you are on a Linux machine (i.e., ``x86_64`` architecture). Right now, we don't deal with muilti-arch images.  Everywhere we run (both Perlmutter and SMDC) is on the ``x86_64`` architecture, so that's what we need.
+
+**!!! BEGINNING OF ADDITIONAL MAC USER INSTRUCTIONS !!!** 
+
+First, `get homebrew <https://brew.sh/>`__. Install some stuff:
+
+.. code-block:: console
+
+  brew install colima docker docker-buildx lima-additional-guestagents
+
+ Make a new profile in colima with:
+
+.. code-block:: console
+
+  colima start snpit --vm-type=vz --mount-type=virtiofs --vz-rosetta
+
+This will make you a new profile called ``snpit``. Verify that you did it right. Do:
+
+.. code-block:: console
+
+  colima list 
+
+You should see this:
+
+.. code-block:: console
+
+  PROFILE    STATUS     ARCH       CPUS    MEMORY    DISK      RUNTIME    ADDRESS
+  snpit      Running    aarch64    2       2GiB      100GiB    docker  
+
+In order to go back in to the profile in the future, just do:
+
+.. code-block:: console
+
+  colima start snpit
+
+If you want this to be the default profile every time you open a shell, add this environment variable to your ``~/.bashrc`` or ``~/.zshrc``:
+
+.. code-block:: console
+
+  export COLIMA_PROFILE=snpit
+
+Build the container with (and note that whenever the rest of this documentation tells you to build a container, you need to use `buildx` and the `--platform` argument):
+
+.. code-block:: console
+
+  docker buildx build --platform linux/amd64 --ssh default -t container-name:dev .
+
+If this doesn't work because it says something like `ERROR: failed to build: failed to solve: error getting credentials - err: exec: "docker-credential-desktop": executable file not found in $PATH`, try editing your `~/.docker/config.json`. Change where it says `credsStore` to `credStore`. Try again. (I can't believe this worked either.) 
+
+Verify you have built something with the correct architecture:
+
+.. code-block:: console
+
+  docker image inspect container-name:dev | grep Architecture
+
+It should say `"Architecture": "amd64"`. Congrats, you've done it.
+
+**!!! END OF ADDITIONAL MAC USER INSTRUCTIONS !!!**
 
 Run:
 
@@ -205,6 +262,7 @@ Run:
   make VER=x.y.z docker-images
 
 where ``x.y.z`` is the new version you just figured out.  This will take a while and will build four docker images, and give each image four names.
+
 
 Push the environment
 ^^^^^^^^^^^^^^^^^^^^

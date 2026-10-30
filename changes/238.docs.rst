@@ -1,0 +1,1 @@
+Add instructions for building AMD64 architecture docker containers on a Mac.
