@@ -200,37 +200,30 @@ Build the new environment
 
 **!!! BEGINNING OF ADDITIONAL MAC USER INSTRUCTIONS !!!** 
 
-First, `get homebrew <https://brew.sh/>`__ and then `get colima <https://colima.run/>`__. Make a new profile in colima with:
+First, `get homebrew <https://brew.sh/>`__. Install some stuff:
 
 .. code-block:: console
 
-  colima start snpit --arch x86_64
+  brew install colima docker docker-buildx lima-additional-guestagents
 
-This will make you a new profile called ``snpit`` with the correct x86_64 architecture with the default docker runtime. If this doesn't work, do:
-
-.. code-block:: console
-
-  brew install qemu
-
-Then, try to make the new profile again. If it still does not work, do:
+ Make a new profile in colima with:
 
 .. code-block:: console
 
-  brew install lima-additional-guestagents
+  colima start snpit --vm-type=vz --mount-type=virtiofs --vz-rosetta
 
-Try *again*. Now, if this finally works, verify that you did it right. Do:
+This will make you a new profile called ``snpit``. Verify that you did it right. Do:
 
 .. code-block:: console
 
   colima list 
 
-You should see something like:
+You should see this:
 
 .. code-block:: console
 
   PROFILE    STATUS     ARCH       CPUS    MEMORY    DISK      RUNTIME    ADDRESS
-  default    Stopped    aarch64    2       2GiB      100GiB               
-  snpit      Running    x86_64     2       2GiB      100GiB    docker  
+  snpit      Running    aarch64    2       2GiB      100GiB    docker  
 
 In order to go back in to the profile in the future, just do:
 
@@ -244,6 +237,22 @@ If you want this to be the default profile every time you open a shell, add this
 
   export COLIMA_PROFILE=snpit
 
+Build the container with (and note that whenever the rest of this documentation tells you to build a container, you need to use `buildx` and the `--platform` argument):
+
+.. code-block:: console
+
+  docker buildx build --platform linux/amd64 --ssh default -t container-name:dev .
+
+If this doesn't work because it says something like `ERROR: failed to build: failed to solve: error getting credentials - err: exec: "docker-credential-desktop": executable file not found in $PATH`, try editing your `~/.docker/config.json`. Change where it says `credsStore` to `credStore`. Try again. (I can't believe this worked either.) 
+
+Verify you have built something with the correct architecture:
+
+.. code-block:: console
+
+  docker image inspect container-name:dev | grep Architecture
+
+It should say `"Architecture": "amd64"`. Congrats, you've done it.
+
 **!!! END OF ADDITIONAL MAC USER INSTRUCTIONS !!!**
 
 Run:
@@ -253,7 +262,6 @@ Run:
   make VER=x.y.z docker-images
 
 where ``x.y.z`` is the new version you just figured out.  This will take a while and will build four docker images, and give each image four names.
-
 
 
 Push the environment
