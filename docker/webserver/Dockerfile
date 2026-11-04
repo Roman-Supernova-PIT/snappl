@@ -8,6 +8,9 @@
 #
 # The HOST_ADDRESS arg is just used for setting up dehydrated/letsencrypt,
 #   so you can ignore it if you don't need that.
+#
+# You can also add NWORKERS=10 (with any number) to change the number
+#   of gunicorn workers launched.
 
 # ======================================================================
 
@@ -178,5 +181,9 @@ RUN cat /etc/dehydrated/config | perl -pe 's/^WELLKNOWN=.*$/WELLKNOWN=\/tmp\/.we
 RUN echo ${HOST_ADDRESS} >> /etc/dehydrated/domains.txt
 
 EXPOSE 8080
-# ENTRYPOINT [ "/venv/bin/gunicorn", "-b", "0.0.0.0:8080", "--access-logfile", "-", "--error-logfile", "-", "-k", "gevent", "--timeout", "300", "--workers", "10", "roman-snpit-server:application" ]
-ENTRYPOINT [ "/venv/bin/gunicorn", "-b", "0.0.0.0:8080", "-k", "gevent", "--timeout", "300", "--workers", "10", "roman-snpit-server:application" ]
+
+ARG NWORKERS=10
+ENV GUNICORN_NWORKERS=$NWORKERS
+
+ENTRYPOINT /venv/bin/gunicorn -b 0.0.0.0:8080 --access-logfile - --error-logfile - -k gevent --timeout 300 --workers $GUNICORN_NWORKERS roman-snpit-server:application
+# ENTRYPOINT [ "/bin/bash", "-c", "/venv/bin/gunicorn", "-b", "0.0.0.0:8080", "--access-logfile", "-", "--error-logfile", "-", "-k", "gevent", "--timeout", "300", "--workers", ${GUNICORN_NWORKERS}, "roman-snpit-server:application" ]
