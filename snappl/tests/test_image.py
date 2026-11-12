@@ -847,9 +847,23 @@ def test_romandatamodel_image( romandatamodel_image ):
             np.testing.assert_allclose( res, getattr(im, prop), rtol=1e-5 )
 
 
-def test_romandatamodel_image_streaming( romandatamodel_image_streaming, monkeypatch ):
-    print(romandatamodel_image.full_filepath)
-    assert 0 == 1
+def test_romandatamodel_image_streaming_path( romandatamodel_image ):
+    with open( romandatamodel_image.full_filepath, 'rb' ) as stream:
+        im = RomanDatamodelImageStreaming( stream, path='s3://bucket/some/file.asdf' )
+    assert im.path == 's3://bucket/some/file.asdf'
+    assert im.base_path is None
+
+
+def test_romandatamodel_image_streaming_matches_disk( romandatamodel_image ):
+    with open( romandatamodel_image.full_filepath, 'rb' ) as stream:
+        im = RomanDatamodelImageStreaming( stream )
+    # The stream is closed now; everything must already be in memory
+    np.testing.assert_array_equal( im.data, romandatamodel_image.data )
+    np.testing.assert_array_equal( im.flags, romandatamodel_image.flags )
+    assert im.get_wcs() is not None
+
+
+def test_romandatamodel_image_streaming( romandatamodel_image, monkeypatch ):
     with open( romandatamodel_image.full_filepath, 'rb' ) as stream:
         im = RomanDatamodelImageStreaming( stream )
 
