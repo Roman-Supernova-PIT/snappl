@@ -537,7 +537,15 @@ class BulkSaveL2Images( BaseView ):
                                             'properties', 'position_angle', 'processing_status' } )
         data = self.check_json_keys( needed_keys, allowed_keys )
 
+        # ?ignore_conflicts=1 skips the images whose id is already in the table instead of
+        #   failing the whole batch, so that a caller can send the same images again.
+        ignore_conflicts = flask.request.args.get( 'ignore_conflicts', '' ).lower() in ( '1', 'true', 'yes' )
+
         try:
+            if ignore_conflicts:
+                # ON CONFLICT (id) DO NOTHING; returns the number of rows that were inserted.
+                ninserted = db.L2Image.bulk_insert_or_upsert( data )
+                return { "status": "ok", "inserted": ninserted }
             # Passing assume_no_conflict=True here.  That's a poorly named parameter.
             #   What we want is for it to error out if there is a conflict.
             db.L2Image.bulk_insert_or_upsert( data, assume_no_conflict=True )
