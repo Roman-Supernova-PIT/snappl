@@ -13,7 +13,7 @@ from snappl.config import Config
 
 
 class FakeMissions:
-    asdf_path = './packages/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
+    asdf_path = '/packages/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
 
     def __init__( self, mission=None ):
         self.mission = mission

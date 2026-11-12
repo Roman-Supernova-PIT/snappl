@@ -44,7 +44,7 @@ def output_directories():
 
 @pytest.fixture( scope='session', autouse=True )
 def init_config():
-    Config.init( './packages/snappl/snappl/tests/snappl_test_config.yaml', setdefault=True )
+    Config.init( '/packages/snappl/snappl/tests/snappl_test_config.yaml', setdefault=True )
 
 
 @pytest.fixture( scope="session" )
@@ -89,7 +89,7 @@ def manual_fits_image( ou2024imagepath):
 
 @pytest.fixture
 def romandatamodel_image_path():
-    return './packages/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
+    return '/packages/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
 
 
 @pytest.fixture
@@ -145,8 +145,8 @@ def romandatamodel_image_streaming():
 
 @pytest.fixture
 def ricksim_image_paths():
-    return ( './packages/photometry_test_data/ricksim_data/SNPIT_VISIT606900000_WFI10_F087_L2.asdf',
-             './packages/photometry_test_data/ricksim_data/TRUTH_VISIT606900000_WFI10_F087_L1.dat.gz' )
+    return ( '/packages/photometry_test_data/ricksim_data/SNPIT_VISIT606900000_WFI10_F087_L2.asdf',
+             '/packages/photometry_test_data/ricksim_data/TRUTH_VISIT606900000_WFI10_F087_L1.dat.gz' )
 
 
 @pytest.fixture
@@ -183,7 +183,7 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
 
 @pytest.fixture
 def unloaded_fitsimage_basepath():
-    return './packages/photometry_test_data/simple_gaussian_test/sig1.0/test_60030.0'
+    return '/packages/photometry_test_data/simple_gaussian_test/sig1.0/test_60030.0'
 
 
 @pytest.fixture
@@ -632,7 +632,7 @@ def sim_image_and_segmap( stupid_provenance, dbclient ):
                  '-BACK_VALUE', '0.0',
                  '-CHECKIMAGE_TYPE', 'SEGMENTATION',
                  '-CHECKIMAGE_NAME', str( fullsegmappath ),
-                 '-PARAMETERS_NAME', './packages/snappl/snappl/tests/default.param',
+                 '-PARAMETERS_NAME', '/packages/snappl/snappl/tests/default.param',
                  '-FILTER', 'Y',
                  '-FILTER_NAME', '/usr/share/source-extractor/default.conv',
                  '-STARNNW_NAME', '/usr/share/source-extractor/default.nnw'
