@@ -1,5 +1,6 @@
 __all__ = [ 'Image', 'Numpy2DImage', 'FITSImage', 'FITSImageStdHeaders', 'CompressedFITSImage', 'FITSImageOnDisk',
-            'OpenUniverse2024FITSImage', 'RomanDatamodelImage', 'RomanDatamodelImage_Needs_CRDS_GWCS' ]
+            'OpenUniverse2024FITSImage', 'RomanDatamodelImage', 'RomanDatamodelImageStreaming',
+            'RomanDatamodelImage_Needs_CRDS_GWCS' ]
 
 import re
 import pathlib
@@ -2615,7 +2616,7 @@ class OpenUniverse2024FITSImage( CompressedFITSImage ):
 class RomanDatamodelImage( Image ):
     """An image read from a roman datamodel ASDF file.
 
-    See Issue #46 for concerns about performance/memory and imlementation of this object.
+    See Issue #46 for concerns about performance/memory and implementation of this object.
 
     """
     _detectormatch = re.compile( "^WFI([0-9]{2})$" )
@@ -3090,10 +3091,58 @@ class RomanDatamodelImage( Image ):
         else:
             raise TypeError("Flags must be a 2d numpy array of integers.")
 
+    def save( self, new_filepath ):
+        self.dm.save( new_filepath )
+
     def free( self ):
         self._data = None
         self._noise = None
         self._flags = None
+
+
+# ======================================================================
+
+class RomanDatamodelImageStreaming( RomanDatamodelImage ):
+    """A Roman image read from an ASDF stream or object.
+
+    Will be fully realized into memory, unlike some of the limited loading when reading files on disk in, e.g., the FITSImage class.
+
+    The 'path' argument is saved as an attribute for bookkeeping, but is not used to open the image.
+    The image is opened from the source argument, which can be a stream or an object that can be passed to rdm.open().
+    """
+    @property
+    def path( self ):
+        return self._path
+
+    @path.setter
+    def path( self, new_value ):
+        self._path = new_value
+
+    def __init__( self, source, **kwargs ):
+        path_kwargs = { 'full_filepath', 'filepath', 'base_path', 'base_dir', 'path', 'no_base_path' }
+        supplied_path_kwargs = path_kwargs.intersection( kwargs )
+        for path_arg in supplied_path_kwargs:
+            setattr( self, path_arg, kwargs.pop( path_arg ) )
+
+        Image.__init__( self, no_base_path=True, **kwargs )
+        self._dm = rdm.open( source, mode='r' )
+        self._dm_meta_cache = copy.deepcopy( self._dm.meta )
+        self._data = None
+        self._noise = None
+        self._flags = None
+        self._sb_data = None
+        self._sb_noise = None
+        self._width = self._dm.shape[1]
+        self._height = self._dm.shape[0]
+        self.get_data( which='all', always_reload=True, cache=True )
+
+    @contextmanager
+    def _with_dm( self ):
+        yield self._dm
+
+    @property
+    def _dm_meta( self ):
+        return self._dm_meta_cache
 
 
 # ======================================================================

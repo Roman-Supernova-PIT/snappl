@@ -7,8 +7,9 @@ import astropy
 import astropy.io.fits
 import fitsio.header
 
+import roman_datamodels as rdm
 import snappl.db.db
-from snappl.image import Image, FITSImage, FITSImageStdHeaders
+from snappl.image import Image, FITSImage, FITSImageStdHeaders, RomanDatamodelImageStreaming
 from snappl.wcs import AstropyWCS, GalsimWCS
 from snappl.psf import PSF
 from snappl.provenance import Provenance
@@ -844,6 +845,51 @@ def test_romandatamodel_image( romandatamodel_image ):
             assert np.all( res == im.flags )
         else:
             np.testing.assert_allclose( res, getattr(im, prop), rtol=1e-5 )
+
+
+def test_romandatamodel_image_streaming_path( romandatamodel_image ):
+    with open( romandatamodel_image.full_filepath, 'rb' ) as stream:
+        im = RomanDatamodelImageStreaming( stream, path='s3://bucket/some/file.asdf' )
+    assert im.path == 's3://bucket/some/file.asdf'
+    assert im.base_path is None
+
+
+def test_romandatamodel_image_streaming_matches_disk( romandatamodel_image ):
+    with open( romandatamodel_image.full_filepath, 'rb' ) as stream:
+        im = RomanDatamodelImageStreaming( stream )
+    # The stream is closed now; everything must already be in memory
+    np.testing.assert_array_equal( im.data, romandatamodel_image.data )
+    np.testing.assert_array_equal( im.flags, romandatamodel_image.flags )
+    assert im.get_wcs() is not None
+
+
+def test_romandatamodel_image_streaming( romandatamodel_image, monkeypatch ):
+    with open( romandatamodel_image.full_filepath, 'rb' ) as stream:
+        im = RomanDatamodelImageStreaming( stream )
+
+        assert im._filepath is None
+        assert im.base_path is None
+        assert im.data is im._data
+        assert im.noise is im._noise
+        assert im.flags is im._flags
+        assert im.data.shape == ( 4088, 4088 )
+        assert im.data.dtype == '<f4'
+        assert im.noise.dtype == '<f4'
+        assert im.flags.dtype == '<u4'
+        assert im.observation_id == romandatamodel_image.observation_id
+        assert im.sca == romandatamodel_image.sca
+        assert im.band == romandatamodel_image.band
+        assert im.mjd == pytest.approx( romandatamodel_image.mjd )
+        assert im.exptime == pytest.approx( romandatamodel_image.exptime )
+
+        def fail_open( *args, **kwargs ):
+            raise AssertionError( "streaming image reopened its source" )
+
+        monkeypatch.setattr( rdm, 'open', fail_open )
+        assert im.data is im._data
+        assert im.noise is im._noise
+        assert im.flags is im._flags
+        assert im.get_wcs() is not None
 
 
 # These are just copied wholesale from the FITSImage tests -Cole

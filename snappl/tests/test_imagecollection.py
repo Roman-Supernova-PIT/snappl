@@ -5,9 +5,87 @@ import numpy as np
 
 import snappl.db.db
 import snappl.image
+import snappl.imagecollection
 from snappl.provenance import Provenance
-from snappl.imagecollection import ImageCollection, ImageCollectionOU2024, ImageCollectionManualFITS
+from snappl.imagecollection import ( ImageCollection, ImageCollectionOU2024, ImageCollectionManualFITS,
+                                     ImageCollectionManualRDM_Streaming )
 from snappl.config import Config
+
+
+class FakeMissions:
+    asdf_path = '/packages/photometry_test_data/sample_asdf_data/F106_WFI1_MJD60627.5_inject_cal.asdf'
+
+    def __init__( self, mission=None ):
+        self.mission = mission
+        self.login_calls = []
+        self.read_paths = []
+
+    def login( self, token=None ):
+        self.login_calls.append( token )
+
+    def read_product( self, path ):
+        self.read_paths.append( path )
+        return open( self.asdf_path, 'rb' )
+
+
+@pytest.fixture
+def fake_missions( monkeypatch ):
+    monkeypatch.delenv( 'MAST_API_TOKEN', raising=False )
+    created = []
+
+    def factory( mission=None ):
+        created.append( FakeMissions( mission ) )
+        return created[-1]
+
+    monkeypatch.setattr( snappl.imagecollection, 'MastMissions', factory )
+    return created
+
+
+def test_streaming_get_collection( fake_missions ):
+    col = ImageCollection.get_collection( 'manual_rdm_streaming' )
+    assert isinstance( col, ImageCollectionManualRDM_Streaming )
+    assert fake_missions[0].mission == 'roman'
+
+
+def test_streaming_no_token_skips_login( fake_missions ):
+    ImageCollectionManualRDM_Streaming()
+    assert fake_missions[0].login_calls == []
+
+
+def test_streaming_token_from_env( fake_missions, monkeypatch ):
+    monkeypatch.setenv( 'MAST_API_TOKEN', 'envtoken' )
+    ImageCollectionManualRDM_Streaming()
+    assert fake_missions[0].login_calls == [ 'envtoken' ]
+
+
+def test_streaming_token_arg_overrides_env( fake_missions, monkeypatch ):
+    monkeypatch.setenv( 'MAST_API_TOKEN', 'envtoken' )
+    ImageCollectionManualRDM_Streaming( token='argtoken' )
+    assert fake_missions[0].login_calls == [ 'argtoken' ]
+
+
+def test_streaming_empty_env_token_skips_login( fake_missions, monkeypatch ):
+    monkeypatch.setenv( 'MAST_API_TOKEN', '' )
+    ImageCollectionManualRDM_Streaming()
+    assert fake_missions[0].login_calls == []
+
+
+def test_streaming_get_image( fake_missions ):
+    col = ImageCollectionManualRDM_Streaming()
+    im = col.get_image( path='some/uri.asdf' )
+    assert fake_missions[0].read_paths == [ 'some/uri.asdf' ]
+    assert isinstance( im, snappl.image.RomanDatamodelImageStreaming )
+    assert im.path == 'some/uri.asdf'
+    assert im.data.shape == ( 4088, 4088 )
+
+
+def test_streaming_get_image_errors( fake_missions ):
+    col = ImageCollectionManualRDM_Streaming()
+    with pytest.raises( RuntimeError, match='path .* is required' ):
+        col.get_image()
+    for kw in ( 'image_id', 'observation_id', 'band', 'sca' ):
+        with pytest.raises( RuntimeError, match="Can't do get_image" ):
+            col.get_image( path='x', **{ kw: 1 } )
 
 
 def test_get_collection():

@@ -99,6 +99,51 @@ def romandatamodel_image( romandatamodel_image_path ):
 
 
 @pytest.fixture
+def romandatamodel_image_streaming():
+    """MAST_API_TOKEN needs to be already in the environment"""
+    # Imports
+    import os
+    from astroquery.mast import MastMissions
+
+    # Create MastMissions object and assign mission to 'roman'
+    missions = MastMissions(mission='roman')
+
+    # Login to search and retrieve Roman data
+    token = os.getenv("MAST_API_TOKEN")
+    missions.login(token=token)
+
+    # Make a list of column names to return in the search results. The results will not be ordered
+    # in this order, so we will re-order later. The fileSetName, which we need for retrieval,
+    # is not in this list, but will still be returned.
+    col_list = ['program', 'execution_plan', 'pass', 'segment', 'visit', 'observation',
+                'optical_element', 'exposure_type', 'instrument_name', 'detector', 'productLevel',
+                'product_type', 'exposure_time', 'exposure_start_time', 'exposure_end_time', 'fileSetName']
+
+    # Create a dictionary of search criteria
+    search = {'program': 1047,
+            'pass': 1,
+            'detector': 'WFI04',
+            'optical_element': 'F158',
+            'product_type': 'L2'}
+
+    # Query with column criteria
+    results = missions.query_criteria(
+        **search,
+        select_cols=col_list)
+
+    # Re-order the column names
+    results = results[col_list]
+    products = missions.get_unique_product_list(results)
+    filtered = missions.filter_products(products, file_suffix='_cal')
+
+    # Read one of the products
+    first_index = 0
+    asdf_uri = missions.read_product(filtered['filename'][first_index])
+
+    return asdf_uri
+
+
+@pytest.fixture
 def ricksim_image_paths():
     return ( '/packages/photometry_test_data/ricksim_data/SNPIT_VISIT606900000_WFI10_F087_L2.asdf',
              '/packages/photometry_test_data/ricksim_data/TRUTH_VISIT606900000_WFI10_F087_L1.dat.gz' )
