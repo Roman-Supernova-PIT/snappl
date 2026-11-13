@@ -16,7 +16,6 @@ import yaml
 # astro library imports
 import astropy.convolution
 import astropy.nddata
-import crds
 import galsim
 import photutils.psf
 import roman_datamodels as rdm
@@ -2265,6 +2264,9 @@ class RomanDatamodelPSF( PSF ):
           stamp_size : the stamp_size of the stamp that will be returned by get_stamp.  Must be odd.
 
         """
+
+        # See comment in image.py::RomanDatamodelImage.get_data re: importing crds
+        import crds
 
         super().__init__( _parent_class=True, **kwargs )
         self._consumed_args.add( 'size' )

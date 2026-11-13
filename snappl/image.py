@@ -24,7 +24,6 @@ from photutils.background import LocalBackground, MMMBackground, Background2D
 
 import galsim.roman
 import roman_datamodels as rdm
-import crds
 
 from snappl.logger import SNLogger
 from snappl.config import Config
@@ -2868,6 +2867,11 @@ class RomanDatamodelImage( Image ):
         See Image.get_data for definition of parameters.
 
         """
+
+        # Putting import crds down here because just importing crds seems to do some heavyweight stuff
+        # We don't want this to happen just from importing image.
+        import crds
+
         if self._is_cutout:
             raise RuntimeError( f"{self.__class__.__name__} images don't know how to deal with being cutouts." )
 

@@ -1,13 +1,27 @@
-# Build this from the top level of the checkout.
+# syntax=docker/dockerfile:1
 #
-# Build it with
+# To build:
+#   Must be in the top level of snappl checkout
+#   (../.. relative to the directory of this Dockerfile)
+#
+#   WEBSERVER:
+#   ----------
 #   docker build --build-arg HOST_ADDRESS=dns.name \
 #      --target webserver \
 #      -t registy.nersc.gov/m4385/rknop/roman-snpit-db:<VER> \
-#      -f docker/webserver/Dockerfile .
+#      -f docker/base_image/Dockerfile .
 #
-# The HOST_ADDRESS arg is just used for setting up dehydrated/letsencrypt,
-#   so you can ignore it if you don't need that.
+#   The HOST_ADDRESS arg is just used for setting up dehydrated/letsencrypt,
+#     so you can ignore it if you don't need that.
+#
+#   AWS LAMBDA:
+#   -----------
+#   docker build --target lambda-aws-image \
+#      -t <ROB PUT THE RIGHT THING HERE> \
+#      --platform linux/amd64 \
+#      --provenance=false \
+#      --build-arg FUNCTION_DIR=/mnt/snpit-dev/env/lambda-handlers \
+#      -f docker/base_image/Dockerfile .
 
 # ======================================================================
 
@@ -96,6 +110,18 @@ WORKDIR /usr/src/snappl_install
 COPY . /usr/src/snappl_install
 RUN source /venv/bin/activate && pip install .
 
+
+# ======================================================================
+# This is for the test webserver.  It installs crappy keys so you
+#   can connect via https.  It also installs the test SNPIT_CONFIG file.
+# The production webserver is either on NERSC Spin, where the ingress
+#   handles SSL, or on an AWS instance that's only available to our
+#   own environment, so we just use http (no SSL).
+FROM base AS test
+
+COPY --from=build /venv/ /venv/
+ENV PATH=/venv/bin:$PATH
+
 RUN mkdir -p /roman-snpit-db/templates
 RUN mkdir -p /roman-snpit-db/static
 
@@ -104,22 +130,10 @@ RUN cp -p /venv/lib/python3.13/site-packages/rkwebutil/static/* /roman-snpit-db/
 RUN cp -p /venv/lib/python3.13/site-packages/snappl/db/static/* /roman-snpit-db/static/
 RUN cp -p /venv/lib/python3.13/site-packages/snappl/db/templates/* /roman-snpit-db/templates/
 
-
-# ======================================================================
-# This is for the test webserver.  It installs crappy keys so you
-#   can connect via https.  It also installs the test SNPIT_CONFIG file.
-# The production webserver is going to be on Spin and won't do
-#   SSL management itself (the spin ingress handles that).
-FROM base AS test
-
-COPY --from=build /venv/ /venv/
-COPY --from=build /roman-snpit-db/ /roman-snpit-db
-ENV PATH=/venv/bin:$PATH
+RUN mkdir /sessions
 
 WORKDIR /roman-snpit-db
 ENV PYTHONPATH=/roman-snpit-db
-
-RUN mkdir /sessions
 
 COPY docker/webserver/key.pem /usr/src/key.pem
 COPY docker/webserver/cert.pem /usr/src/cert.pem
@@ -128,7 +142,8 @@ COPY docker/webserver/roman-snpit-server.py /roman-snpit-db/
 
 EXPOSE 8080
 ENTRYPOINT [ "gunicorn", "--certfile", "/usr/src/cert.pem", "--keyfile", "/usr/src/key.pem", \
-           "-w", "1", "--threads", "10", "-b", "0.0.0.0:8080", "--timeout", "0", "roman-snpit-server:application" ]
+             "-w", "1", "--threads", "10", "-b", "0.0.0.0:8080", "--timeout", "0", "roman-snpit-server:application" ]
+
 
 # ======================================================================
 # This is for interaction.  It runs something that will stay up
@@ -136,18 +151,12 @@ ENTRYPOINT [ "gunicorn", "--certfile", "/usr/src/cert.pem", "--keyfile", "/usr/s
 FROM base AS shell
 
 COPY --from=build /venv/ /venv/
-COPY --from=build /roman-snpit-db/ /roman-snpit-/db
 ENV PATH=/venv/bin:$PATH
 
-WORKDIR /roman-snpit-db
-ENV PYTHONPATH=/roman-snpit-db
-
-RUN mkdir /sessions
-
-COPY docker/webserver/config-test.yaml /roman-snpit-db/
-COPY docker/webserver/roman-snpit-server.py /roman-snpit-db/
+WORKDIR /home
 
 ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
+
 
 # ======================================================================
 # This is for the production webserver
@@ -157,11 +166,25 @@ COPY --from=build /venv/ /venv/
 COPY --from=build /roman-snpit-db/ /roman-snpit-db
 ENV PATH=/venv/bin:$PATH
 
-WORKDIR /roman-snpit-db
-ENV PYTHONPATH=/roman-snpit-db
-COPY docker/webserver/roman-snpit-server.py /roman-snpit-db/
+RUN mkdir -p /roman-snpit-db/templates
+RUN mkdir -p /roman-snpit-db/static
+
+# Could save a wee bit of image size by making symbolic links instead of copying
+RUN cp -p /venv/lib/python3.13/site-packages/rkwebutil/static/* /roman-snpit-db/static/
+RUN cp -p /venv/lib/python3.13/site-packages/snappl/db/static/* /roman-snpit-db/static/
+RUN cp -p /venv/lib/python3.13/site-packages/snappl/db/templates/* /roman-snpit-db/templates/
 
 RUN mkdir /sessions
+
+WORKDIR /roman-snpit-db
+ENV PYTHONPATH=/roman-snpit-db
+
+RUN mkdir /sessions
+
+COPY docker/webserver/roman-snpit-server.py /roman-snpit-db/
+
+WORKDIR /roman-snpit-db
+ENV PYTHONPATH=/roman-snpit-db
 
 # For using dehydrated to get a LetsEncrypt cert.
 # Manual work will still be required; gunicorn doesn't use these certs,
@@ -180,3 +203,76 @@ RUN echo ${HOST_ADDRESS} >> /etc/dehydrated/domains.txt
 EXPOSE 8080
 # ENTRYPOINT [ "/venv/bin/gunicorn", "-b", "0.0.0.0:8080", "--access-logfile", "-", "--error-logfile", "-", "-k", "gevent", "--timeout", "300", "--workers", "10", "roman-snpit-server:application" ]
 ENTRYPOINT [ "/venv/bin/gunicorn", "-b", "0.0.0.0:8080", "-k", "gevent", "--timeout", "300", "--workers", "10", "roman-snpit-server:application" ]
+
+# ======================================================================
+# This is a build for the AWS lambda image
+FROM build AS lambda-aws-build
+
+RUN source /venv/bin/activate && \
+    pip --no-cache install awslambdaric
+
+# ======================================================================
+# This is for the AWS lambda image.
+#   This staging stage is my vain attempt
+#   to make the final layer, which I'm
+#   editing all the time, be small.
+#   I would have thought that docker
+#   would just do that without even the
+#   stage business, but it's not working.
+FROM base AS lambda-aws-image-staging
+
+COPY --from=lambda-aws-build /venv/ /venv/
+
+# ======================================================================
+FROM lambda-aws-image-staging AS lambda-aws-image
+
+ENV PATH=/venv/bin:$PATH
+
+ENV CRDS_SERVER_URL=https://roman-crds.stsci.edu
+
+# UGH.  What's the right way to do this?  Writing to
+#   a bind-mounted S3 is going to be fraught.
+# REALLY we don't want the lambda functions doing
+#   anything that would trigger a download, but
+#   we need to verify this.  There are some
+#   packages in astronomer-land that do downloads
+#   and write to your home directory when
+#   you just import them, which is bad behavior.
+ENV CRDS_PATH=/tmp
+
+ENTRYPOINT [ "/venv/bin/python", "-m", "awslambdaric" ]
+WORKDIR /tmp
+
+# ****
+# A hardcoded default python script directory.
+# For production, point to the mounted script dir with
+#   --build-arg /path/to/script/dir
+#
+RUN mkdir -p /test_function
+RUN cat <<EOF > /test_function/helloworld.py
+import os
+import json
+import subprocess
+def handler(event, context):
+    df = subprocess.run( ['df', '-h'], capture_output=True )
+    ls = subprocess.run( ['ls', '-l', '/mnt/snpit-dev'], capture_output=True )
+    try:
+        files = os.listdir( "/mnt/snpit-dev" )
+    except Exception as ex:
+        files = str(ex)
+    return { "message": "Hello, world!",
+             "path": os.getenv( "PATH", None ),
+             "pythonpath": os.getenv( "PYTHONPATH", None ),
+             "direc": files,
+             "df": df.stdout.decode('utf-8'),
+             "ls": ls.stdout.decode('utf-8')
+           }
+EOF
+#
+# ****
+
+ARG FUNCTION_DIR="/test_function"
+ENV PYTHONPATH=${FUNCTION_DIR}
+WORKDIR ${FUNCTION_DIR}
+
+CMD [ "helloworld.handler" ]
