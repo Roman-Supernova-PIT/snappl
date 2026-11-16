@@ -464,7 +464,8 @@ class GetL2Image( BaseView ):
 
 class FindL2Images( BaseView ):
     def do_the_things( self ):
-        equalses = { 'id', 'observation_id', 'sca', 'band', 'filepath', 'format', 'processing_status' }
+        equalses = { 'id', 'observation_id', 'sca', 'band', 'filepath', 'format', 'processing_status',
+                     'program' }
         minmaxes = { 'ra', 'dec', 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                      'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                      'width', 'height', 'mjd', 'exptime', 'position_angle' }
@@ -509,7 +510,8 @@ class SaveL2Image( BaseView ):
                         'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                         'filepath', 'format', 'mjd', 'exptime' }
         allowed_keys = needed_keys.union( { 'observation_id', 'sca', 'extension', 'width', 'height',
-                                            'properties', 'position_angle', 'processing_status' } )
+                                            'properties', 'position_angle', 'processing_status',
+                                            'program' } )
         data = self.check_json_keys( needed_keys, allowed_keys )
         keysql, subs = self.build_sql_insert( data.keys() )
         q = sql.SQL( "INSERT INTO l2image(" ) + keysql + sql.SQL( ") VALUES (" ) + sql.SQL( subs ) + sql.SQL( ")" )
@@ -534,7 +536,8 @@ class BulkSaveL2Images( BaseView ):
                         'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                         'filepath', 'format', 'mjd', 'exptime' }
         allowed_keys = needed_keys.union( { 'observation_id', 'sca', 'extension', 'width', 'height',
-                                            'properties', 'position_angle', 'processing_status' } )
+                                            'properties', 'position_angle', 'processing_status',
+                                            'program' } )
         data = self.check_json_keys( needed_keys, allowed_keys )
 
         # ?ignore_conflicts=1 skips the images whose id is already in the table instead of
