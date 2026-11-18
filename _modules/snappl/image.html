@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+gc610d0483 documentation</title>
+    <title>snappl.image &#8212; roman_snpit_snappl 0.1.dev1+gf0ed16b66 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=5a6b8c39" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=f3bc516d" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
-    <script src="../../_static/documentation_options.js?v=58d6e557"></script>
+    <script src="../../_static/documentation_options.js?v=3ff17733"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -443,7 +443,8 @@
                           <span class="n">full_filepath</span><span class="o">=</span><span class="n">full_filepath</span><span class="p">,</span> <span class="n">no_base_path</span><span class="o">=</span><span class="n">no_base_path</span> <span class="p">)</span>
 
         <span class="n">consumed_kwargs</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">'full_filepath'</span><span class="p">,</span> <span class="s1">'filepath'</span><span class="p">,</span> <span class="s1">'base_path'</span><span class="p">,</span> <span class="s1">'base_dir'</span><span class="p">,</span> <span class="s1">'path'</span><span class="p">,</span> <span class="s1">'no_base_path'</span><span class="p">,</span>
-                            <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'provenance_id'</span><span class="p">,</span> <span class="s1">'format'</span><span class="p">,</span> <span class="s1">'is_superclass'</span> <span class="p">}</span>
+                            <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'provenance_id'</span><span class="p">,</span> <span class="s1">'format'</span><span class="p">,</span> <span class="s1">'is_superclass'</span><span class="p">,</span>
+                            <span class="s1">'program'</span><span class="p">,</span> <span class="s1">'queued_at'</span><span class="p">,</span> <span class="s1">'status_updated_at'</span><span class="p">,</span> <span class="s1">'processing_status'</span> <span class="p">}</span>
         <span class="n">consumed_kwargs</span> <span class="o">=</span> <span class="n">consumed_kwargs</span><span class="o">.</span><span class="n">union</span><span class="p">(</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">internal_properties</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_declare_consumed_kwargs</span><span class="p">(</span> <span class="n">consumed_kwargs</span> <span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">is_superclass</span><span class="p">:</span>
