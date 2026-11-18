@@ -34,7 +34,7 @@ class ImageSimulatorPointSource:
 
 
     def render_stamp( self, width, height, x, y, flux, zeropoint=None, gain=1., noisy=True, rng=None, psf = None,
-                      shape = "point", galaxy_kwargs = [], report_poisson_noise=True ):
+                      shape = "point", galaxy_kwargs = [] ):
         SNLogger.debug("Calling render_stamp with x={:.2f}, y={:.2f}, flux={:.2f}".format(x, y, flux))
         if ( ( x <  -psf.stamp_size ) or ( x > height + psf.stamp_size ) or
              ( y <  -psf.stamp_size ) or ( y > width + psf.stamp_size )
@@ -57,32 +57,7 @@ class ImageSimulatorPointSource:
                 rng = np.random.default_rng()
             w = stamp > 0
             var[ w ] = stamp[ w ] / gain
-
-            # print("Typical data sizes in stamp:")
-            # print(np.percentile(stamp[w], [16, 50, 84, 99]))
-            # print("Gain: {:.3f}".format(gain))
-            # print("Typical Poisson noise in stamp:")
-            # print(np.percentile(var[w], [16, 50, 84, 99]))
-            # from matplotlib import pyplot as plt
-            # plt.close()
-            # plt.scatter(stamp[w].flatten(), var[w].flatten(), s=1, alpha=0.5)
-            # xx = np.linspace(0, np.max(stamp[w]), 100)
-            # plt.plot(xx, xx / gain, alpha=0.5, color='red')
-            # plt.xlim(1e-6, 1)
-
-            # plt.xscale("log")
-            # plt.yscale("log")
-            # plt.savefig("poisson_noise_check.png")
-
-            # import pdb; pdb.set_trace()
-
             stamp[w] += rng.normal(0.0, np.sqrt(var[w]))
-
-
-
-            if not report_poisson_noise:
-                # Poisson noise is in the stamp, but don't report it in the variance
-                var[:] = 0.
 
         sx0 = 0
         sx1 = stamp.shape[1]
@@ -122,17 +97,15 @@ class ImageSimulationStar( ImageSimulatorPointSource ):
         self.mag = mag
 
 
-    def render_star( self, width, height, x, y, zeropoint=None, gain=1., noisy=True, rng=None, psf = None, report_poisson_noise=True ):
+    def render_star( self, width, height, x, y, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
         flux = 10 ** ( ( self.mag - zeropoint ) / -2.5 )
         return self.render_stamp( width, height, x, y, flux, zeropoint=zeropoint, gain=gain,
-                                  noisy=noisy, rng=rng, psf=psf, report_poisson_noise=report_poisson_noise )
+                                  noisy=noisy, rng=rng, psf=psf )
 
-    def add_to_image( self, image, varimage, x, y, zeropoint=None, gain=1., noisy=True, rng=None, psf = None,
-                      report_poisson_noise=True ):
+    def add_to_image( self, image, varimage, x, y, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
         stamp, var, imcoords, stampcoords =  self.render_star( image.shape[1], image.shape[0], x, y,
                                                                zeropoint=zeropoint, gain=gain, noisy=noisy,
-                                                               rng=rng, psf=psf,
-                                                               report_poisson_noise=report_poisson_noise )
+                                                               rng=rng, psf=psf )
         if stamp is not None:
             ix0, ix1, iy0, iy1 = imcoords
             sx0, sx1, sy0, sy1 = stampcoords
@@ -172,8 +145,7 @@ class ImageSimulatorTransient( ImageSimulatorPointSource ):
         self.end_mjd = end_mjd
 
 
-    def render_transient( self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None, psf = None,
-                          report_poisson_noise=True ):
+    def render_transient( self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None, psf = None ):
         if ( mjd <= self.start_mjd ) or ( mjd >= self.end_mjd ):
             SNLogger.debug( f"Transient is not active at mjd {mjd}" )
             return None, None, None, None
@@ -188,7 +160,7 @@ class ImageSimulatorTransient( ImageSimulatorPointSource ):
         SNLogger.debug( f"Adding transient with mag {mag:.2f} (flux {flux:.0f}) at mjd {mjd}" )
 
         return self.render_stamp( width, height, x, y, flux, zeropoint=zeropoint, gain=gain,
-                                  noisy=noisy, rng=rng, psf=psf, report_poisson_noise=report_poisson_noise )
+                                  noisy=noisy, rng=rng, psf=psf )
 
 
 class ImageSimulatorStaticSource(ImageSimulatorPointSource):
@@ -200,7 +172,7 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
         self.mag = mag
 
     def render_static_source(self, width, height, x, y, mjd, zeropoint=None, gain=1., noisy=True, rng=None, psf=None,
-                             galaxy_kwargs=[], report_poisson_noise=True):
+                             galaxy_kwargs=[]):
 
         flux = 10 ** ((self.mag - zeropoint) / -2.5)
         SNLogger.debug(f"Adding static source with mag {self.mag:.2f} (flux {flux:.0f}) on mjd {mjd}; "
@@ -214,7 +186,7 @@ class ImageSimulatorStaticSource(ImageSimulatorPointSource):
             shape = "galaxy"
 
         return self.render_stamp(width, height, x, y, flux, zeropoint=zeropoint, gain=gain, noisy=noisy, rng=rng,
-                                 psf=psf, shape=shape, galaxy_kwargs=galaxy_kwargs, report_poisson_noise=report_poisson_noise)
+                                 psf=psf, shape=shape, galaxy_kwargs=galaxy_kwargs)
 
 
 class ImageSimulatorImage:
@@ -262,8 +234,7 @@ class ImageSimulatorImage:
         self.image.data += rng.normal( skymean, skysigma, size=self.image.data.shape )
         self.image.noise += np.full( self.image.noise.shape, skysigma**2 )
 
-    def add_stars( self, stars, rng=None, noisy=False, numstarprocs=12, psf = None, report_poisson_noise=True,
-                   gain=1. ):
+    def add_stars( self, stars, rng=None, noisy=False, numstarprocs=12, psf = None ):
         if rng is None:
             rng = np.random.default_rng()
 
@@ -288,9 +259,7 @@ class ImageSimulatorImage:
                 x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                 try:
                     data = star.render_star( self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                             zeropoint=self.image.get_zeropoint(), gain=gain, rng=rng,
-                                             noisy=noisy, psf=psf,
-                                             report_poisson_noise=report_poisson_noise )
+                                             zeropoint=self.image.get_zeropoint(), rng=rng, noisy=noisy, psf=psf )
                     add_star_to_image( i, data )
                 except Exception as ex:
                     omg( ex )
@@ -300,9 +269,7 @@ class ImageSimulatorImage:
                     x, y = self.image.get_wcs().world_to_pixel( star.ra, star.dec )
                     doer = functools.partial( star.render_star,
                                               self.image.data.shape[1], self.image.data.shape[0], x, y,
-                                              zeropoint=self.image.get_zeropoint(), gain=gain, rng=rng,
-                                              noisy=noisy, psf=psf,
-                                              report_poisson_noise=report_poisson_noise )
+                                              zeropoint=self.image.get_zeropoint(), rng=rng, noisy=noisy, psf=psf )
                     callback = functools.partial( add_star_to_image, i )
                     pool.apply_async( doer, callback=callback, error_callback=omg )
                 pool.close()
@@ -312,7 +279,7 @@ class ImageSimulatorImage:
             raise RuntimeError( "Bad things have happened." )
 
 
-    def add_transient( self, transient, rng=None, noisy=False, psf = None, report_poisson_noise=True, gain=1. ):
+    def add_transient( self, transient, rng=None, noisy=False, psf = None ):
         if rng is None:
             rng = np.random.default_rng()
 
@@ -322,16 +289,14 @@ class ImageSimulatorImage:
           imcoords, stampcoords ) = transient.render_transient( self.image.data.shape[1], self.image.data.shape[0],
                                                                 x, y, self.image.mjd,
                                                                 rng=rng, noisy=noisy, psf=psf,
-                                                                zeropoint=self.image.get_zeropoint(), gain=gain,
-                                                                report_poisson_noise=report_poisson_noise )
+                                                                zeropoint=self.image.get_zeropoint() )
         if stamp is not None:
             ix0, ix1, iy0, iy1 = imcoords
             sx0, sx1, sy0, sy1 = stampcoords
             self.image.data[ iy0:iy1, ix0:ix1 ] += stamp[ sy0:sy1, sx0:sx1 ]
             self.image.noise[ iy0:iy1, ix0:ix1 ] += var[ sy0:sy1, sx0:sx1 ]
 
-    def add_static_source( self, static_source, rng=None, noisy = False, psf=None, galaxy_kwargs=[],
-                           report_poisson_noise=True, gain=1. ):
+    def add_static_source( self, static_source, rng=None, noisy = False, psf=None, galaxy_kwargs=[] ):
         if static_source is not None:
             if rng is None:
                 rng = np.random.default_rng()
@@ -343,9 +308,8 @@ class ImageSimulatorImage:
                                                                             self.image.data.shape[0],
                                                                             x, y, self.image.mjd,
                                                                             zeropoint=self.image.get_zeropoint(),
-                                                                            gain=gain, rng=rng, noisy=noisy, psf=psf,
-                                                                            galaxy_kwargs=galaxy_kwargs,
-                                                                            report_poisson_noise=report_poisson_noise )
+                                                                            rng=rng, noisy=noisy, psf=psf,
+                                                                            galaxy_kwargs=galaxy_kwargs )
             if stamp is not None:
                 ix0, ix1, iy0, iy1 = imcoords
                 sx0, sx1, sy0, sy1 = stampcoords
@@ -394,8 +358,6 @@ class ImageSimulator:
                   no_static_source_noise=False,
                   numstarprocs=12,
                   numimageprocs=1,
-                  no_report_poisson_noise=False,
-                  gain=1.0
                   ):
 
         SNLogger.debug("Sky level {} and sky noise rms {} are in units of electrons.".format(sky_level, sky_noise_rms))
@@ -535,13 +497,6 @@ class ImageSimulator:
         self.static_source_dec = static_source_dec
         self.static_source_mag = static_source_mag
         self.no_static_source_noise = no_static_source_noise
-        self.no_report_poisson_noise = no_report_poisson_noise
-        self.gain = gain
-        if no_report_poisson_noise and ( no_star_noise or no_transient_noise or no_static_source_noise ):
-            raise ValueError( "If no_report_poisson_noise is set, then no_star_noise, no_transient_noise, and "
-                              "no_static_source_noise must all be False. This is because no_report_poisson_noise "
-                              "means that poisson noise is ON, just not included in the noise image, while the "
-                              "other three flags turn off poisson noise entirely." )
 
         self.overwrite = overwrite
         self.numstarprocs = numstarprocs
@@ -642,17 +597,13 @@ class ImageSimulator:
         SNLogger.debug(f"Using PSF class {type(psf)} for image simulation.")
         image.render_sky( self.imdata['skys'][i], self.imdata['skyrmses'][i], rng=sky_rng )
         SNLogger.debug(f"Sky rendered for image {i}.")
-        report_poisson_noise = not self.no_report_poisson_noise
-        image.add_stars( stars, star_rng, numstarprocs=self.numstarprocs, noisy=not self.no_star_noise, psf=psf,
-                         report_poisson_noise=report_poisson_noise, gain=self.gain )
+        image.add_stars( stars, star_rng, numstarprocs=self.numstarprocs, noisy=not self.no_star_noise, psf=psf )
         SNLogger.debug(f"Stars added to image {i}.")
         if self.transient_ra is not None and self.transient_dec is not None:
-            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf=psf,
-                                 report_poisson_noise=report_poisson_noise, gain=self.gain )
+            image.add_transient( transient, rng=transient_rng, noisy=not self.no_transient_noise, psf=psf )
             SNLogger.debug(f"Transient added to image {i}.")
         image.add_static_source(static_source, rng=transient_rng, noisy=not self.no_static_source_noise,
-                                psf=psf, galaxy_kwargs=self.galaxy_kwargs,
-                                report_poisson_noise=report_poisson_noise, gain=self.gain )
+                                psf=psf, galaxy_kwargs=self.galaxy_kwargs )
         SNLogger.debug(f"Static source added to image {i}.")
         image.image.noise = np.sqrt( image.image.noise )
         SNLogger.info( f"Writing {image.image.path}, {image.image.noisepath}, and {image.image.flagspath}" )
@@ -843,13 +794,8 @@ def main():
                         " multiple images (default %(default)s) Note that this and numstarprocs cannot both be > 1." )
     parser.add_argument( '-o', '--overwrite', action='store_true', default=False,
                          help="Overwrite any existing images with the same filename." )
-    parser.add_argument('--no-report-poisson-noise', action='store_true', default=False,
-                        help="If set, Poisson noise is still added to the image, but is not included in the noise image. "
-                             "This is used for some campari tests.")
-    parser.add_argument('--gain', type=float, default=1.0, help="Gain of the detector in e-/DN (default: 1.0)")
 
     args = parser.parse_args()
-
     sim = ImageSimulator( **vars(args) )
     sim()
 
