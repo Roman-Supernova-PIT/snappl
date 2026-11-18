@@ -3043,7 +3043,6 @@ class RomanDatamodelImage( Image ):
                 setattr( snappl_cutout, prop, getattr( self, prop ) )
 
         snappl_cutout.exptime = self.exptime
-        SNLogger.debug(f"Returning cutout with wcs {snappl_cutout._wcs} and data {snappl_cutout.data.flatten()[:5]}")
         return snappl_cutout
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
