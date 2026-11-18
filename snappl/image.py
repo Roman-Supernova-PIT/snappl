@@ -2946,16 +2946,15 @@ class RomanDatamodelImage( Image ):
         return self._dm
 
     def get_wcs( self, wcsclass=None ):
-        # This logic is needed for cutouts to use the WCS they were created with.
-        if ( self._wcs is None ) or (( self._wcs.__class__.__name__ != wcsclass) and (wcsclass is not None)):
-            wcsclass = "RDM_GWCS" if wcsclass is None else wcsclass
+        wcsclass = "RDM_GWCS" if wcsclass is None else wcsclass
+        if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
             if wcsclass == "RDM_GWCS":
                 self._wcs = RDM_GWCS( gwcs=self._dm_meta.wcs )
             else:
                 raise NotImplementedError( "RomanDatamodelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs
 
-    def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=False ):
+    def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=True ):
         """See Image.get_cutout
         The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
 
@@ -3043,7 +3042,6 @@ class RomanDatamodelImage( Image ):
                 setattr( snappl_cutout, prop, getattr( self, prop ) )
 
         snappl_cutout.exptime = self.exptime
-        SNLogger.debug(f"Returning cutout with wcs {snappl_cutout._wcs} and data {snappl_cutout.data.flatten()[:5]}")
         return snappl_cutout
 
     def get_ra_dec_cutout(self, ra, dec, xsize, ysize=None, mode='strict', fill_value=np.nan):
