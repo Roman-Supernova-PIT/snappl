@@ -1,0 +1,1 @@
+Updated logic in RDM_GWCS class so that cutouts get the proper WCS.

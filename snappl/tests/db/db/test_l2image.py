@@ -15,7 +15,8 @@ class TestL2Image( BaseTestDB ):
                                 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                                 'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                                 'filepath', 'extension', 'width', 'height', 'format', 'mjd', 'position_angle',
-                                'exptime', 'properties' ]
+                                'exptime', 'properties', 'queued_at', 'status_updated_at',
+                                'program', 'processing_status' ]
         self.columns = set( self.safe_to_modify )
         self.columns.update( [ 'id', 'provenance_id' ] )
         self.uniques = []

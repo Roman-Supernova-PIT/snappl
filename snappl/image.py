@@ -350,7 +350,8 @@ class Image( PathedObject ):
                           full_filepath=full_filepath, no_base_path=no_base_path )
 
         consumed_kwargs = { 'full_filepath', 'filepath', 'base_path', 'base_dir', 'path', 'no_base_path',
-                            'id', 'provenance_id', 'format', 'is_superclass' }
+                            'id', 'provenance_id', 'format', 'is_superclass',
+                            'queued_at', 'status_updated_at', 'program', 'processing_status' }
         consumed_kwargs = consumed_kwargs.union( set(self.internal_properties.keys()) )
         self._declare_consumed_kwargs( consumed_kwargs )
         if not is_superclass:
@@ -2946,15 +2947,16 @@ class RomanDatamodelImage( Image ):
         return self._dm
 
     def get_wcs( self, wcsclass=None ):
-        wcsclass = "RDM_GWCS" if wcsclass is None else wcsclass
-        if ( self._wcs is None ) or ( self._wcs.__class__.__name__ != wcsclass ):
+        # This logic is needed for cutouts to use the WCS they were created with.
+        if ( self._wcs is None ) or (( self._wcs.__class__.__name__ != wcsclass) and (wcsclass is not None)):
+            wcsclass = "RDM_GWCS" if wcsclass is None else wcsclass
             if wcsclass == "RDM_GWCS":
                 self._wcs = RDM_GWCS( gwcs=self._dm_meta.wcs )
             else:
                 raise NotImplementedError( "RomanDatamodelImage can't (yet?) get a WCS of type {wcsclass}" )
         return self._wcs
 
-    def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=True ):
+    def get_cutout(self, x, y, xsize, ysize=None, mode='strict', fill_value=np.nan, return_FITS=False ):
         """See Image.get_cutout
         The mode and fill_value parameters are passed directly to astropy.nddata.Cutout2D for FITSImage.
 
