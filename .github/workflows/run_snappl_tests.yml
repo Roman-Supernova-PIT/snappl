@@ -32,10 +32,12 @@ jobs:
           cd packages
           git clone http://github.com/Roman-Supernova-PIT/photometry_test_data
 
-      # STPSF needs reference data that isn't in the docker image.  Pin the
-      # data version to match the stpsf version in the environment
-      # (requirements-cpu.txt: stpsf==2.2.0).  Don't use the stpsf-data-LATEST
-      # link: as of 2.3.0 it has a layout that stpsf 2.2.0 can't read.
+      # STPSF needs reference data that isn't in the docker image.  Pin
+      # the data version to match the stpsf version in snappl's
+      # pyproject.snappl (currently pinned at 2.2.0 until we can update
+      # other things to handle newer versions). Don't use the
+      # stpsf-data-LATEST link: as of 2.3.0 it has a layout that stpsf
+      # 2.2.0 can't read.
       # ../packages is bind-mounted at /packages in the shell container, so
       # the data ends up at /packages/stpsf-data (see STPSF_PATH below).
       - name: cache stpsf data
@@ -82,10 +84,28 @@ jobs:
           cd ../packages
           git clone https://github.com/Roman-Supernova-PIT/environment.git
 
-      - name: pull docker images
+      # - name: pull docker images
+      #   run: |
+      #     cd ../packages/environment/test-docker-environment
+      #     docker compose pull mailhog postgres webserver shell
+
+      # This will slow down the snappl tests, but we had some test pass
+      #   that shouldn't have because the saved environment image wasn't
+      #   up to date with current snappl.  So, rebuild them now.  This
+      #   will build them based on the currently checked out snappl in
+      #   ../../snappl, so what we build will be consistent with what's
+      #   in the snappl we're checking.  (We do have to move snappl
+      #   to where it's expected to be, in the packages subdirectory,
+      #   which is different from what github runners give us.)
+
+      - name: build docker images
         run: |
-          cd ../packages/environment/test-docker-environment
-          docker compose pull mailhog postgres webserver shell
+          cd ..
+          mv snappl packages/
+          cd packages/environment/test-docker-environment
+          docker compose build
+          cd ../../../
+          mv packages/snappl ./
 
       - name: run test
         run: |
@@ -103,8 +123,7 @@ jobs:
           # actions will expect it.  (TODO: see if there's a way we
           # can tell the workflow that snappl is checked out in
           # $WHATEVER/packages/snappl, not just $WHATEVER/snappl.)
-          cd ../../
-          mv snappl ../
-          cd ..
+          cd ../../../
+          mv packages/snappl ./
           pwd
           ls -l

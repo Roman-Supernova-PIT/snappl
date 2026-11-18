@@ -1,0 +1,14 @@
+Webserver /createprovenance now also returns the id of the created provenance.
+
+Fix some tests that were previously failing (e.g. pin python version in the changelog workflow, so that if python
+releases before packages on PyPi catch up, we aren't screwed.)
+
+Fix some tests that were previously passing but were not supposed to pass....   Do this by editing the workflow so
+that it always rebuilds the docker images.  This will slow it down, but it means the docker images will have
+consistent snappl (and database, and webserver) with the version of snappl we're trying to test.
+
+(Also, fix the things that should have failed before and now do fail with updated images so that their tests pass.)
+
+Something that's still broken: stpsf downloads its latest data, which is not consistent with the pinned version of
+stpsf we have.  This is fixed (in a previous PR) in github actions, but we need to fix it locally.  For the future.
+(Aside: stpsf silently writes stuff to ~/data.  That's bad behavior for a python package.)
