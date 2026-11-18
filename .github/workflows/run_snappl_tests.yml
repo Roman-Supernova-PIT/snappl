@@ -84,10 +84,28 @@ jobs:
           cd ../packages
           git clone https://github.com/Roman-Supernova-PIT/environment.git
 
-      - name: pull docker images
+      # - name: pull docker images
+      #   run: |
+      #     cd ../packages/environment/test-docker-environment
+      #     docker compose pull mailhog postgres webserver shell
+
+      # This will slow down the snappl tests, but we had some test pass
+      #   that shouldn't have because the saved environment image wasn't
+      #   up to date with current snappl.  So, rebuild them now.  This
+      #   will build them based on the currently checked out snappl in
+      #   ../../snappl, so what we build will be consistent with what's
+      #   in the snappl we're checking.  (We do have to move snappl
+      #   to where it's expected to be, in the packages subdirectory,
+      #   which is different from what github runners give us.)
+
+      - name: build docker images
         run: |
-          cd ../packages/environment/test-docker-environment
-          docker compose pull mailhog postgres webserver shell
+          cd ..
+          mv snappl packages/
+          cd packages/environment/test-docker-environment
+          docker compose build
+          cd ../../../
+          mv packages/snappl ./
 
       - name: run test
         run: |
@@ -105,8 +123,7 @@ jobs:
           # actions will expect it.  (TODO: see if there's a way we
           # can tell the workflow that snappl is checked out in
           # $WHATEVER/packages/snappl, not just $WHATEVER/snappl.)
-          cd ../../
-          mv snappl ../
-          cd ..
+          cd ../../../
+          mv packages/snappl ./
           pwd
           ls -l
