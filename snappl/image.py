@@ -350,7 +350,8 @@ class Image( PathedObject ):
                           full_filepath=full_filepath, no_base_path=no_base_path )
 
         consumed_kwargs = { 'full_filepath', 'filepath', 'base_path', 'base_dir', 'path', 'no_base_path',
-                            'id', 'provenance_id', 'format', 'is_superclass' }
+                            'id', 'provenance_id', 'format', 'is_superclass',
+                            'queued_at', 'status_updated_at', 'program', 'processing_status' }
         consumed_kwargs = consumed_kwargs.union( set(self.internal_properties.keys()) )
         self._declare_consumed_kwargs( consumed_kwargs )
         if not is_superclass:
