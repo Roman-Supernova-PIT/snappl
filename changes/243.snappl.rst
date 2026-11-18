@@ -1,0 +1,1 @@
+Added stamp size arg to Photutils PSF and gave it a proper flux.
