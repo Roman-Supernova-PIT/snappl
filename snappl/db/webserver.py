@@ -200,7 +200,7 @@ class CreateProvenance( BaseProvenance ):
 
             dbcon.commit()
 
-        return { "status": "ok"
+        return { "status": "ok",
                  "provenance_id": str( prov.id ) }
 
 
