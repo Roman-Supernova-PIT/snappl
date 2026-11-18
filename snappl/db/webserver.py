@@ -766,7 +766,7 @@ class SaveDiaForcedSource( BaseView ):
         with db.DBCon( dictcursor=True ) as dbcon:
             posclause = ( sql.SQL( "diaobject_position_id={posid}" ).format( posid=data['diaobject_position_id' ] )
                           if 'diaobject_position_id' in data and data['diaobject_position_id'] is not None
-                          else sql.SQL( "diaobject_postion IS NULL" ) )
+                          else sql.SQL( "diaobject_position_id IS NULL" ) )
             rows = dbcon.execute( sql.SQL( textwrap.dedent(
                 """\
                 SELECT * FROM diaforcedsource
@@ -819,8 +819,9 @@ class SaveDiaForcedSource( BaseView ):
                        }
                 fields = sql.SQL(",").join( sql.Identifier(k) for k in dfp.keys() )
                 values = sql.SQL(",").join( v for v in dfp.values() )
-                dbcon.execute_nofetch( sql.SQL( "INSERT INTO diaforcedphot({fields}) VALUES ({values})" )
+                dbcon.execute_nofetch( sql.SQL( "INSERT INTO diaforcedsource({fields}) VALUES ({values})" )
                                        .format( fields=fields, values=values ) )
+                dbcon.commit()
 
                 return dfp
 

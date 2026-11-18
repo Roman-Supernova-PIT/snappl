@@ -2,9 +2,15 @@ import pytest
 import time
 import uuid
 
+import numpy as np
+from psycopg import sql
+
 from snappl.db.db import DBCon
 from snappl.provenance import Provenance
+from snappl.imagecollection import ImageCollection
 from snappl.image import Image
+from snappl.diaobject import DiaObject
+from snappl.utils import asUUID
 
 
 def test_create_get_provenance( dbclient ):
@@ -197,3 +203,139 @@ def test_save_get_find_images( dbclient ):
             if improv is not None:
                 con.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': improv.id } )
             con.commit()
+
+
+# TODO : update this test to not use ou2024 images.
+# (But, for now, this is to just get this done.)
+def test_diaforcedsource( loaded_ou2024_test_l2images, loaded_ou2024_test_diaobjects, dbclient ):
+    prov = None
+    photids = []
+    try:
+        dobj = DiaObject.find_objects( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
+                                       name='20172782', dbclient=dbclient )
+        dobj = dobj[0]
+        imcol = ImageCollection.get_collection( provenance_tag='dbou2024_test', process='import_ou2024_l2images',
+                                                dbclient=dbclient )
+        images = imcol.find_images( ra=dobj.ra, dec=dobj.dec, order_by='mjd', dbclient=dbclient )
+
+        template_id = images[0].id
+        imids = [ i.id for i in images[1:] ]
+
+        rng = np.random.default_rng()
+        fluxen = rng.uniform( low=10., high=10000., size=(len(imids),) )
+        dfluxen = np.sqrt( 20.**2 + fluxen )
+
+        prov = Provenance( process="fake_lightcurve", major=0, minor=1, params={"fake": True},
+                           upstreams=[ Provenance.get_by_id( images[0].provenance_id ),
+                                       Provenance.get_by_id( dobj.provenance_id ) ] )
+        prov.save_to_db()
+
+        # TODO : test with diaobject_position
+        for imid, flux, dflux in zip( imids, fluxen, dfluxen ):
+            res = dbclient.send( "savediaforcedsource",
+                                 { 'provenance_id': str(prov.id),
+                                   'diaobject_id': str(dobj.id),
+                                   'diaobject_position_id': None,
+                                   'image_id': str(imid),
+                                   'template_id': str(template_id),
+                                   'flux': flux,
+                                   'dflux': dflux } )
+            photids.append( asUUID( res['id'] ) )
+            assert res['provenance_id'] == str( prov.id )
+            assert res['diaobject_id'] == str( dobj.id )
+            assert res['diaobject_position_id'] is None
+            assert res['image_id'] == str( imid )
+            assert res['template_id'] == str( template_id )
+            assert res['flux'] == pytest.approx( flux, abs=0.1, rel=1e-6 )
+            assert res['dflux'] == pytest.approx( dflux, abs=0.1, rel=1e-6 )
+
+        # Make sure they got written
+        with DBCon( dictcursor=True ) as dbcon:
+            for photid, imid, flux, dflux in zip( photids, imids, fluxen, dfluxen ):
+                rows = dbcon.execute( sql.SQL( "SELECT * FROM diaforcedsource WHERE id={pid}" )
+                                      .format( pid=photid ) )
+                assert len(rows) == 1
+                row = rows[0]
+                assert row['id'] == photid
+                assert row['provenance_id'] == prov.id
+                assert row['diaobject_id'] == dobj.id
+                assert row['diaobject_position_id'] is None
+                assert row['image_id'] == imid
+                assert row['template_id'] == template_id
+                assert row['flux'] == pytest.approx( flux, abs=0.1, rel=1e-6 )
+                assert row['dflux'] == pytest.approx( dflux, abs=0.1, rel=1e-6 )
+
+        # Test writing an existing phptometry point
+
+        senddict = { 'provenance_id': str(prov.id),
+                     'diaobject_id': str(dobj.id),
+                     'diaobject_position_id': None,
+                     'image_id': str(imid),
+                     'template_id': str(template_id),
+                     'flux': fluxen[0],
+                     'dflux': dfluxen[0]
+                    }
+
+        dbclient.send( "savediaforcedsource", senddict )
+        import pdb; pdb.set_trace()
+        
+        for atol, rtol in zip( [ 0., 10. ], [ 0., None, 1e-6, 1e-2 ] ):
+            for d in ( False, True ):
+                if d:
+                    mungabsflux = 0.
+                    mungabsdflux = 0.
+                    mungabsdflux = atol
+                    mungreldflux = dfluxen[0] * ( 1e-6 if rtol is None else rtol )
+                else:
+                    mungabsflux = atol                                           
+                    mungabsdflux = dfluxen[0] * ( 1e-6 if rtol is None else rtol )
+                    mungabsdflux = 0.
+                    mungreldflux = 0.
+
+            thissend = senddict | { 'flux': fluxen[0] + mungabsflux * 0.5,
+                                    'dflux': dfluxen[0] + mungabsdflux * 0.5,
+                                    'exist_ok': True,
+                                    'atol': atol,
+                                    'rtol': 0.
+                                   }
+                    
+            res = dbclient.send( "savediaforcedsource", thissend )
+            assert res['flux'] == pytest.approx( fluxen[0], abs=0.1, rel=1e-6 )
+            assert res['dflux'] == pytest.approx( dfluxen[0], abs=0.1, rel=1e-6 )
+            assert thissend['flux'] < res['flux']
+            assert thissend['dflux'] < res['dflux']
+
+            thissend[ 'flux' ] = fluxen[0] + mungabsflux * 1.5
+            thissend[ 'dflux' ] = fluxen[0] + mungabsdflux * 1.5
+            if atol == 0:
+                res = dbclient.send( "savediaforcedsource", thissend )
+                assert res['flux'] == pytest.approx( fluxen[0], abs=0.01, rel=1e-6 )
+                assert res['dflux'] == pytest.approx( dfluxen[0], abs=0.01, rel=1e-6 )
+            else:
+                dbclient.send( "savediaforcedsource", thissend )
+                
+
+        # Test getting a photometry point
+        for photid, imid, flux, dflux in zip( photids, imids, fluxen, dfluxen ):
+            res = dbclient.send( f"getdiaforcedsource/{photid}" )
+            assert res['id'] == str( photid )
+            assert res['provenance_id'] == str( prov.id )
+            assert res['diaobject_id'] == str( dobj.id )
+            assert res['diaobject_position_id'] is None
+            assert res['image_id'] == str( imid )
+            assert res['template_id'] == str( template_id )
+            assert res['flux'] == pytest.approx( flux, abs=0.1, rel=1e-6 )
+            assert res['dflux'] == pytest.approx( dflux, abs=0.1, rel=1e-6 )
+
+        # Test getting a lightcure
+    finally:
+        with DBCon() as dbcon:
+            if len(photids) > 0:
+                dbcon.execute( sql.SQL( "DELETE FROM diaforcedsource WHERE id=ANY(ARRAY[{ids}])" )
+                               .format( ids=sql.SQL(",").join( photids ) ) )
+            if prov is not None:
+                dbcon.execute( sql.SQL( "DELETE FROM provenance_tag WHERE provenance_id={provid}" )
+                               .format( provid=prov.id ) )
+                dbcon.execute( sql.SQL( "DELETE FROM provenance WHERE id={provid}" )
+                               .format( provid=prov.id ) )
+            dbcon.commit()
