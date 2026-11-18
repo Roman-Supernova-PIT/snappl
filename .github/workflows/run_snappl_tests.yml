@@ -32,10 +32,12 @@ jobs:
           cd packages
           git clone http://github.com/Roman-Supernova-PIT/photometry_test_data
 
-      # STPSF needs reference data that isn't in the docker image.  Pin the
-      # data version to match the stpsf version in the environment
-      # (requirements-cpu.txt: stpsf==2.2.0).  Don't use the stpsf-data-LATEST
-      # link: as of 2.3.0 it has a layout that stpsf 2.2.0 can't read.
+      # STPSF needs reference data that isn't in the docker image.  Pin
+      # the data version to match the stpsf version in snappl's
+      # pyproject.snappl (currently pinned at 2.2.0 until we can update
+      # other things to handle newer versions). Don't use the
+      # stpsf-data-LATEST link: as of 2.3.0 it has a layout that stpsf
+      # 2.2.0 can't read.
       # ../packages is bind-mounted at /packages in the shell container, so
       # the data ends up at /packages/stpsf-data (see STPSF_PATH below).
       - name: cache stpsf data
