@@ -1578,9 +1578,7 @@ class ou24PSF_slow( PSF ):
             photon_ops = [ rmutils.getPSF( x+1, y+1, pupil_bin=8 ) ]
             if self._include_photonOps:
                 photon_ops += rmutils.photon_ops
-                #import pdb; pdb.set_trace()
-                SNLogger.debug("Not Adding charge diffusion.")
-                #photon_ops += [ ChargeDiff(rng=rmutils.rng) ]
+                photon_ops += [ ChargeDiff(rng=rmutils.rng) ]
 
             # Note the +1s in galsim.PositionD below; galsim uses 1-indexed pixel positions,
             # whereas snappl uses 0-indexed pixel positions
@@ -2189,7 +2187,6 @@ class GaussianPSF( PSF ):
             self._stamp_cache[ dex ] = np.copy( stamp )
 
         stamp *= flux
-
 
         return stamp
 
