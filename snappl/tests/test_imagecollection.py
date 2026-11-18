@@ -1,70 +1,18 @@
 import pathlib
 import pytest
 import numbers
-import numpy as np
 
 import snappl.db.db
-import snappl.image
 from snappl.provenance import Provenance
-from snappl.imagecollection import ImageCollection, ImageCollectionOU2024, ImageCollectionManualFITS
-from snappl.config import Config
+from snappl.imagecollection import ImageCollection, ImageCollectionManualFITS
 
 
 def test_get_collection():
     with pytest.raises( ValueError, match=r"Unknown image collection foo \(subset None\)" ):
         ImageCollection.get_collection( "foo" )
 
+# TODO : refactor theses tests so they don't depend on snappl_ou2024
 
-def test_imagecollectionou2024_base_path():
-    cfg = Config.get()
-    col = ImageCollection.get_collection( "ou2024" )
-    assert isinstance( col, ImageCollectionOU2024 )
-    assert col.base_path == pathlib.Path( cfg.value('system.ou24.images') )
-
-
-def test_imagecollectionou2024_get_image_path():
-    cfg = Config.get()
-    col = ImageCollection.get_collection( "ou2024" )
-
-    path = col.get_image_path( 13205, 'Y106', 1 )
-    assert path == ( pathlib.Path( cfg.value('system.ou24.images') )
-                     / 'Y106/13205/Roman_TDS_simple_model_Y106_13205_1.fits.gz' )
-
-
-def test_imagecollectionou2024_get_image():
-    cfg = Config.get()
-    col = ImageCollection.get_collection( "ou2024" )
-
-    expectedpath = ( pathlib.Path( cfg.value('system.ou24.images') )
-                     / 'Y106/13205/Roman_TDS_simple_model_Y106_13205_1.fits.gz' )
-    img1 = col.get_image( path=expectedpath )
-    assert isinstance( img1, snappl.image.OpenUniverse2024FITSImage )
-    hdr = img1.get_fits_header()
-    assert img1.path == expectedpath
-    hdr = img1.get_fits_header()
-    assert hdr['MJD-OBS'] == pytest.approx( 62170.424, abs=1e-3 )
-    assert hdr['FILTER'] == 'Y106'
-    assert isinstance( img1.data, np.ndarray )
-    # assert img1.data.dtype == '>f8'
-    assert img1.data.dtype == np.dtype('float64')
-    assert img1.data.shape == ( 4088, 4088 )
-    # assert img1.noise.dtype == '>f4'
-    assert img1.noise.dtype == np.dtype('float32')
-    assert img1.noise.shape == ( 4088, 4088 )
-    assert img1.flags.dtype == np.dtype('uint32')
-    assert img1.flags.shape == ( 4088, 4088 )
-
-    img2 = col.get_image( observation_id='13205', band='Y106', sca=1 )
-    assert img2.path == img1.path
-    assert np.all( img2.data == img1.data )
-
-
-def test_imagecollectionou2024_find_images():
-    col = ImageCollection.get_collection( "ou2024" )
-
-    # TODO, more tests, this is just a quick and basic
-    imgs = col.find_images( band='Y106', ra=7.5510934, dec=-44.8071811 )
-    assert len(imgs) == 135
 
 
 def test_imagecollectionmanualfits_create():

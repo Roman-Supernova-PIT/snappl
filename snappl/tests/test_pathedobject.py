@@ -4,7 +4,7 @@ import pathlib
 
 from snappl.config import Config
 from snappl.image import Image, FITSImage, FITSImageStdHeaders, CompressedFITSImage
-from snappl.image import OpenUniverse2024FITSImage, RomanDatamodelImage
+from snappl.image import RomanDatamodelImage
 from snappl.segmap import SegmentationMap
 from snappl.lightcurve import Lightcurve
 from snappl.spectrum1d import Spectrum1d
@@ -134,22 +134,6 @@ class TestPathedObject_CompressedFITSImage( PathedObjectTestBase ):
         self._class = CompressedFITSImage
         self._expected_base_path = pathlib.Path( Config.get().value( 'system.paths.images' ) )
         self._necessary_extra_args = { 'format': 1 }
-
-
-class TestPathedObject_OpenUniverse2024FITSImage_format1( PathedObjectTestBase ):
-    @pytest.fixture( autouse=True )
-    def setup( self ):
-        self._class = OpenUniverse2024FITSImage
-        self._expected_base_path = pathlib.Path( Config.get().value( 'system.paths.images' ) )
-        self._necessary_extra_args = { 'format': 1 }
-
-
-class TestPathedObject_OpenUniverse2024FITSImage_format2( PathedObjectTestBase ):
-    @pytest.fixture( autouse=True )
-    def setup( self ):
-        self._class = OpenUniverse2024FITSImage
-        self._expected_base_path = pathlib.Path( Config.get().value( 'system.ou24.images' ) )
-        self._necessary_extra_args = { 'format': 2 }
 
 
 class TestPathedObject_RomanDatamodelImage( PathedObjectTestBase ):

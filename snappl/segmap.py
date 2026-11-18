@@ -5,7 +5,7 @@ import uuid
 import simplejson
 
 from snappl.dbclient import SNPITDBClient
-from snappl.image import OpenUniverse2024FITSImage, FITSImageStdHeaders
+from snappl.image import FITSImageStdHeaders
 from snappl.provenance import Provenance
 from snappl.pathedobject import PathedObject
 from snappl.utils import SNPITJsonEncoder, asUUID
@@ -25,9 +25,6 @@ class SegmentationMap( PathedObject ):
 
     """
 
-    image_format_to_class = { 1: OpenUniverse2024FITSImage,
-                              2: FITSImageStdHeaders
-                             }
 
     _base_path_config_item = 'system.paths.segmaps'
 
@@ -58,6 +55,13 @@ class SegmentationMap( PathedObject ):
             self._load_image()
         return self._image
 
+    @classmethod
+    def _get_image_class( cls, image_format ):
+        if image_format == 2:
+            return FITSImageStdHeaders
+        elif image_format == 1:
+            import snappl_ou2024.image
+            return snappl_ou2024.image.OpenUniverse2024FITSImage
 
     def _load_image( self ):
         if self._image is not None:
@@ -66,8 +70,11 @@ class SegmentationMap( PathedObject ):
         if self.filepath is None:
             raise ValueError( "Can't load image when filepath is None." )
         if self.format in ( 1, 2 ):
-            self._image = self.image_format_to_class[self.format]( base_path=self.base_path, filepath=self.filepath,
-                                                                   imagehdu=0, noisehdu=None, flagshdu=None )
+            self._image = SegmentationMap._get_image_class( self.format )( base_path=self.base_path,
+                                                                           filepath=self.filepath,
+                                                                           imagehdu=0,
+                                                                           noisehdu=None,
+                                                                           flagshdu=None )
         else:
             raise ValueError( f"Unknown format {self.format}" )
 

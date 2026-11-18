@@ -15,16 +15,17 @@ from tox.pytest import init_fixture # noqa: F401
 
 from snappl.imagecollection import ImageCollection
 from snappl.image import FITSImage, FITSImageStdHeaders, RomanDatamodelImage, RomanDatamodelImage_Needs_CRDS_GWCS
-from snappl.image_simulator import ImageSimulator
+from snappl_imagesimulator.image_simulator import ImageSimulator
 from snappl.diaobject import DiaObject
 from snappl.lightcurve import Lightcurve
 from snappl.segmap import SegmentationMap
-from snappl.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
-from snappl.admin.load_ou2024_l2images import OU2024_L2image_loader
 from snappl.config import Config
 from snappl.dbclient import SNPITDBClient
 from snappl.provenance import Provenance
 from snappl.db.db import DBCon
+
+from snappl_ou2024.admin.load_snana_ou2024_diaobject import load_snana_ou2024_diaobject
+from snappl_ou2024.admin.load_ou2024_l2images import OU2024_L2image_loader
 
 
 @pytest.fixture( scope='session' )
@@ -127,7 +128,7 @@ def fitsimage_module( ou2024imagepath, ou2024image_module ):
     fitsim._header = ou2024image_module.get_fits_header()
     fitsim._wcs = ou2024image_module._wcs
     # Undo the internal change that get_fits_header made to ou2024image
-    ou2024image._header = orighdr
+    ou2024image_module._header = orighdr
     img, noi, flg = ou2024image_module.get_data( always_reload=False )
     fitsim._data = img
     fitsim._noise = noi

@@ -1,7 +1,7 @@
 import pytest
 
 from snappl.imagecollection import ImageCollection
-from snappl.image import OpenUniverse2024FITSImage
+from snappl_ou2024.image import OpenUniverse2024FITSImage
 from snappl.utils import env_as_bool
 
 
