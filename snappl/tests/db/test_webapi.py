@@ -29,6 +29,7 @@ def test_create_get_provenance( dbclient ):
         for d in [ wayupstreamdict, upstream2dict, upstream1dict, upstream1adict, downstreamdict ]:
             res = dbclient.send( "createprovenance", d )
             assert res[ "status" ] == "ok"
+            assert res[ "provenance_id" ] = d[ "id" ]
 
         for newprov in [ dbclient.send( f"getprovenance/{downstream.id}" ),
                          dbclient.send( "getprovenance/foo/proc3" ) ]:
