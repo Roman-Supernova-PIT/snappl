@@ -43,7 +43,9 @@ dependencies = [
   "roman-datamodels>=1.0.0,<2.0.0",
   "scipy>=1.16.2,<2.0.0",
   "simplejson>=3.20.2,<4.0.0",
-  "stpsf>=2.2.0,<3.0.0",
+  # Have to fix stpsf for now until Issue #248 is fixed
+  # "stpsf>=2.2.0,<3.0.0",
+  "stpsf==2.2.0",
   "synphot>=1.7.0,<2.0.0"
 ]
 license-files = ["LICENSE"]
