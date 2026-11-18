@@ -1,0 +1,1 @@
+Adds columns to l2images tables, as well as the corresponding webserver API changes.
