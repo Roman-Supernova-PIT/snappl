@@ -1,0 +1,1 @@
+Pinning STPSF to 2.2.0 briefly to allow tests to pass.
