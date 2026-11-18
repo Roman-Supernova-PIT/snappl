@@ -464,7 +464,8 @@ class GetL2Image( BaseView ):
 
 class FindL2Images( BaseView ):
     def do_the_things( self ):
-        equalses = { 'id', 'observation_id', 'sca', 'band', 'filepath', 'format' }
+        equalses = { 'id', 'observation_id', 'sca', 'band', 'filepath', 'format', 'processing_status',
+                     'program' }
         minmaxes = { 'ra', 'dec', 'ra_corner_00', 'ra_corner_01', 'ra_corner_10', 'ra_corner_11',
                      'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                      'width', 'height', 'mjd', 'exptime', 'position_angle' }
@@ -509,7 +510,8 @@ class SaveL2Image( BaseView ):
                         'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                         'filepath', 'format', 'mjd', 'exptime' }
         allowed_keys = needed_keys.union( { 'observation_id', 'sca', 'extension', 'width', 'height',
-                                            'properties', 'position_angle' } )
+                                            'properties', 'position_angle', 'processing_status',
+                                            'program' } )
         data = self.check_json_keys( needed_keys, allowed_keys )
         keysql, subs = self.build_sql_insert( data.keys() )
         q = sql.SQL( "INSERT INTO l2image(" ) + keysql + sql.SQL( ") VALUES (" ) + sql.SQL( subs ) + sql.SQL( ")" )
@@ -534,10 +536,19 @@ class BulkSaveL2Images( BaseView ):
                         'dec_corner_00', 'dec_corner_01', 'dec_corner_10', 'dec_corner_11',
                         'filepath', 'format', 'mjd', 'exptime' }
         allowed_keys = needed_keys.union( { 'observation_id', 'sca', 'extension', 'width', 'height',
-                                            'properties', 'position_angle' } )
+                                            'properties', 'position_angle', 'processing_status',
+                                            'program' } )
         data = self.check_json_keys( needed_keys, allowed_keys )
 
+        # ?ignore_conflicts=1 skips the images whose id is already in the table instead of
+        #   failing the whole batch, so that a caller can send the same images again.
+        ignore_conflicts = flask.request.args.get( 'ignore_conflicts', '' ).lower() in ( '1', 'true', 'yes' )
+
         try:
+            if ignore_conflicts:
+                # ON CONFLICT (id) DO NOTHING; returns the number of rows that were inserted.
+                ninserted = db.L2Image.bulk_insert_or_upsert( data )
+                return { "status": "ok", "inserted": ninserted }
             # Passing assume_no_conflict=True here.  That's a poorly named parameter.
             #   What we want is for it to error out if there is a conflict.
             db.L2Image.bulk_insert_or_upsert( data, assume_no_conflict=True )
@@ -545,6 +556,40 @@ class BulkSaveL2Images( BaseView ):
             return f"Got an exception trying to bulk insert images: {ex}", 422
 
         return { "status": "ok" }
+
+
+# ======================================================================
+
+class SetL2ImageStatus( BaseView ):
+    """Move l2images from one processing_status to another.
+
+    Only the listed images that are currently in from_status change, so a caller that is too
+    late (the image has already moved on) does not overwrite the newer status.  Returns the
+    ids that did change.
+    """
+
+    _statuses = ( 'standby', 'ingested', 'queued', 'processing', 'done', 'failed' )
+
+    def do_the_things( self ):
+        data = self.check_json_keys( { 'ids', 'from_status', 'to_status' },
+                                     { 'ids', 'from_status', 'to_status' } )
+        for key in [ 'from_status', 'to_status' ]:
+            if data[key] not in self._statuses:
+                return f"Unknown {key} {data[key]!r}; must be one of {self._statuses}", 422
+        if not isinstance( data['ids'], list ):
+            return "ids must be a list of l2image ids", 422
+        if len( data['ids'] ) == 0:
+            return { 'updated': [] }
+
+        q = ( "UPDATE l2image SET processing_status=%(to_status)s, status_updated_at=NOW(), "
+              "  queued_at=CASE WHEN %(to_status)s='queued' THEN NOW() ELSE queued_at END "
+              "WHERE id=ANY(%(ids)s::uuid[]) AND processing_status=%(from_status)s "
+              "RETURNING id" )
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( q, data )
+            dbcon.commit()
+
+        return { 'updated': [ str( row['id'] ) for row in rows ] }
 
 
 # ======================================================================
@@ -806,6 +851,7 @@ urls = {
     "/findl2images": FindL2Images,
     "/savel2image": SaveL2Image,
     "/bulksavel2images": BulkSaveL2Images,
+    "/setl2imagestatus": SetL2ImageStatus,
 
     "/savesegmap": SaveSegmentationMap,
     "/getsegmap/<segmapid>": GetSegmentationMap,
