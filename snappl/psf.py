@@ -656,7 +656,7 @@ class photutilsImagePSF( PSF ):
 
 
     def __init__( self, peakx=None, peaky=None, oversample_factor=1, data=None, enforce_odd=True, normalize=False,
-                  _parent_class=False, **kwargs ):
+                  stamp_size=None, _parent_class=False, **kwargs ):
         """Create a photutilsImagePSF.
 
         WARNING: x and y have a different meaning from
@@ -772,12 +772,23 @@ class photutilsImagePSF( PSF ):
             PSF flux that falls within its boundaries, and leave
             normalize to False.
 
+          stamp_size: int, default None
+            Side length (image pixels, odd) of stamps returned by
+            get_stamp().  If None, it is set by the size of data.
+            The PSF is evaluated from data, so you might need to
+            pad it with zeros if shifted PSFs would otherwise run off
+            its edge.
+
           _parent_class: bool, default False
             Used internally, do not use.
 
         """
         super().__init__( _parent_class=True, **kwargs )
-        self._consumed_args.update( [ 'peakx', 'peaky', 'oversample_factor', 'data', 'enforce_odd', 'normalize' ] )
+        self._consumed_args.update( [ 'peakx', 'peaky', 'oversample_factor', 'data', 'enforce_odd', 'normalize',
+                                      'stamp_size' ] )
+        if stamp_size is not None and ( int( stamp_size ) != stamp_size or int( stamp_size ) % 2 != 1 ):
+            raise ValueError( f"stamp_size must be an odd integer, got {stamp_size}" )
+        self._stamp_size = None if stamp_size is None else int( stamp_size )
         self._warn_unknown_kwargs( kwargs, _parent_class=_parent_class )
 
         # # If self._x or self._y aren't integers, then photutils is going
@@ -831,6 +842,8 @@ class photutilsImagePSF( PSF ):
     @property
     def stamp_size( self ):
         """The size of the PSF image stamp at image resolution.  Is always odd."""
+        if self._stamp_size is not None:
+            return self._stamp_size
         sz = int( np.floor( self.oversampled_data.shape[0] / self._oversamp ) )
         sz += 1 if sz % 2 == 0 else 0
         return sz
@@ -939,7 +952,8 @@ class photutilsImagePSF( PSF ):
                   - ( y - y0 ) )
         xvals, yvals = np.meshgrid( xvals, yvals )
 
-        return self._pupsf( xvals, yvals ) * ( self.oversample_factor ** 2 )
+        # This was missing! Note that all other PSF classes have x flux here!
+        return self._pupsf( xvals, yvals ) * ( self.oversample_factor ** 2 ) * flux
 
     def getImagePSF( self, imagesampled=True ):
         """Return a photutils.psf.ImagePSF model.  See PSF.getImagePSF."""
