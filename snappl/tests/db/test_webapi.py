@@ -2,9 +2,15 @@ import pytest
 import time
 import uuid
 
+import numpy as np
+from psycopg import sql
+
 from snappl.db.db import DBCon
 from snappl.provenance import Provenance
+from snappl.imagecollection import ImageCollection
 from snappl.image import Image
+from snappl.diaobject import DiaObject
+from snappl.utils import asUUID
 
 
 def test_create_get_provenance( dbclient ):
@@ -198,3 +204,187 @@ def test_save_get_find_images( dbclient ):
             if improv is not None:
                 con.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': improv.id } )
             con.commit()
+
+
+# TODO : update this test to not use ou2024 images.
+# (But, for now, this is to just get this done.)
+def test_diaforcedsource( loaded_ou2024_test_l2images, loaded_ou2024_test_diaobjects, dbclient ):
+    prov = None
+    photids = []
+    try:
+        dobj = DiaObject.find_objects( provenance_tag='dbou2024_test', process='import_ou2024_diaobjects',
+                                       name='20172782', dbclient=dbclient )
+        dobj = dobj[0]
+        imcol = ImageCollection.get_collection( provenance_tag='dbou2024_test', process='import_ou2024_l2images',
+                                                dbclient=dbclient )
+        images = imcol.find_images( ra=dobj.ra, dec=dobj.dec, order_by='mjd', dbclient=dbclient )
+
+        template_id = images[0].id
+        imids = [ i.id for i in images[1:] ]
+
+        rng = np.random.default_rng()
+        fluxen = rng.uniform( low=10., high=10000., size=(len(imids),) )
+        dfluxen = np.sqrt( 20.**2 + fluxen )
+
+        prov = Provenance( process="fake_lightcurve", major=0, minor=1, params={"fake": True},
+                           upstreams=[ Provenance.get_by_id( images[0].provenance_id ),
+                                       Provenance.get_by_id( dobj.provenance_id ) ] )
+        prov.save_to_db( tag='test_diaforcedsource' )
+
+        # TODO : test with diaobject_position
+        for imid, flux, dflux in zip( imids, fluxen, dfluxen ):
+            res = dbclient.send( "savediaforcedsource",
+                                 { 'provenance_id': str(prov.id),
+                                   'diaobject_id': str(dobj.id),
+                                   'diaobject_position_id': None,
+                                   'image_id': str(imid),
+                                   'template_id': str(template_id),
+                                   'flux': flux,
+                                   'dflux': dflux } )
+            photids.append( asUUID( res['id'] ) )
+            assert res['provenance_id'] == str( prov.id )
+            assert res['diaobject_id'] == str( dobj.id )
+            assert res['diaobject_position_id'] is None
+            assert res['image_id'] == str( imid )
+            assert res['template_id'] == str( template_id )
+            assert res['flux'] == pytest.approx( flux, abs=0.1, rel=1e-6 )
+            assert res['dflux'] == pytest.approx( dflux, abs=0.1, rel=1e-6 )
+
+        # Make sure they got written
+        with DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "SELECT COUNT(*) AS n FROM diaforcedsource" )
+            tot_n_diaforcedsource = rows[0]['n']
+            for photid, imid, flux, dflux in zip( photids, imids, fluxen, dfluxen ):
+                rows = dbcon.execute( sql.SQL( "SELECT * FROM diaforcedsource WHERE id={pid}" )
+                                      .format( pid=photid ) )
+                assert len(rows) == 1
+                row = rows[0]
+                assert row['id'] == photid
+                assert row['provenance_id'] == prov.id
+                assert row['diaobject_id'] == dobj.id
+                assert row['diaobject_position_id'] is None
+                assert row['image_id'] == imid
+                assert row['template_id'] == template_id
+                assert row['flux'] == pytest.approx( flux, abs=0.1, rel=1e-6 )
+                assert row['dflux'] == pytest.approx( dflux, abs=0.1, rel=1e-6 )
+
+        # Set up base POST parameters for several following tests
+
+        senddict = { 'provenance_id': str(prov.id),
+                     'diaobject_id': str(dobj.id),
+                     'diaobject_position_id': None,
+                     'image_id': str(imids[0]),
+                     'template_id': str(template_id),
+                     'flux': fluxen[0],
+                     'dflux': dfluxen[0]
+                    }
+
+        # Test writing an existing photometry point
+        with pytest.raises( RuntimeError, match=( "Error response from server: "
+                                                  "Error, diaforcedsource already exists." ) ):
+            dbclient.send( "savediaforcedsource", senddict )
+
+        # Now test exist_ok True with legiitimate matches and mismatches
+        with DBCon() as dbcon:
+            for atol, rtol in zip( [ None, 10. ], [ None, 'default', 1e-6, 1e-2 ] ):
+                for val, err in ( (False, True), (True, False), (True, True) ):
+                    mungabsflux = 0.
+                    mungabsdflux = 0.
+                    mungrelflux = 0.
+                    mungreldflux = 0.
+                    defaultrtol = ( rtol == 'default' )
+                    rtol = 1e-6 if defaultrtol else rtol
+                    if val:
+                        mungabsflux = 0. if atol is None else atol
+                        mungrelflux = fluxen[0] * ( 1e-6 if rtol is None else rtol )
+                    if err:
+                        mungabsflux = 0. if atol is None else atol
+                        mungrelflux = dfluxen[0] * ( 1e-6 if rtol is None else rtol )
+
+                    for ( mungflux, mungdflux ) in [ ( mungabsflux, mungabsdflux ),
+                                                     ( mungrelflux, mungreldflux ),
+                                                     ( mungabsflux + mungabsdflux, mungrelflux + mungreldflux ) ]:
+                        for fac in [ 0.25, 1.5 ]:
+                            # OMG it's a four-loop
+                            thissend = senddict | { 'flux': fluxen[0] + mungflux * fac,
+                                                    'dflux': dfluxen[0] + mungdflux * fac,
+                                                    'exist_ok': True,
+                                                    'atol': atol
+                                                   }
+                            if not defaultrtol:
+                                thissend['rtol'] = rtol
+
+                            if ( ( ( atol is None ) or ( thissend['flux'] - fluxen[0] <= atol ) )
+                                 and
+                                 ( ( rtol is None ) or ( thissend['flux'] - fluxen[0]
+                                                         <= np.fabs( fluxen[0] * rtol ) ) )
+                                 and
+                                 ( ( atol is None ) or ( thissend['dflux'] - dfluxen[0] <= atol ) )
+                                 and
+                                 ( ( rtol is None ) or ( thissend['dflux'] - dfluxen[0]
+                                                         <= np.fabs( dfluxen[0] * rtol ) ) )
+                                ):
+                                # If within tolerances, save should "work", but nothing is saved and
+                                #   we get back what was in the database.
+                                res = dbclient.send( "savediaforcedsource", thissend )
+                                assert res['flux'] == pytest.approx( fluxen[0], abs=0.1, rel=1e-6 )
+                                assert res['dflux'] == pytest.approx( dfluxen[0], abs=0.1, rel=1e-6 )
+                                assert ( thissend['flux'] - res['flux'] ) == pytest.approx( mungflux * fac, abs=0.1 )
+                                assert ( thissend['dflux'] - res['dflux'] ) == pytest.approx( mungdflux * fac, abs=0.1 )
+                                rows, _cols = dbcon.execute( "SELECT COUNT(*) FROM diaforcedsource" )
+                                assert rows[0][0] == tot_n_diaforcedsource
+
+                            else:
+                                # If outside tolerances, there should be an error
+                                with pytest.raises( RuntimeError, match=( r"^Error response from server: "
+                                                                          r"Error, a photometry point already exists "
+                                                                          r"with flux/dflux within tolerances;" ) ):
+                                    dbclient.send( "savediaforcedsource", thissend )
+
+
+        # Test getting a photometry point
+        for photid, imid, flux, dflux in zip( photids, imids, fluxen, dfluxen ):
+            res = dbclient.send( f"getdiaforcedsource/{photid}" )
+            assert res['id'] == str( photid )
+            assert res['provenance_id'] == str( prov.id )
+            assert res['diaobject_id'] == str( dobj.id )
+            assert res['diaobject_position_id'] is None
+            assert res['image_id'] == str( imid )
+            assert res['template_id'] == str( template_id )
+            assert res['flux'] == pytest.approx( flux, abs=0.1, rel=1e-6 )
+            assert res['dflux'] == pytest.approx( dflux, abs=0.1, rel=1e-6 )
+
+        # Test getting a lightcurve
+        for ids in ( False, True ):
+            expected_keys = { 'mjd', 'band', 'flux', 'dflux' }
+            if ids:
+                expected_keys = expected_keys.union( { 'id', 'image_id', 'template_id', 'diaobject_position_id' } )
+
+            for sends in [ f"{prov.id}/{dobj.id}", f"test_diaforcedsource/fake_lightcurve/{dobj.id}" ]:
+                if ids:
+                    res = dbclient.send( f"getdiaforcedsourceltcv/{sends}", { 'include_ids': True } )
+                else:
+                    res = dbclient.send( f"getdiaforcedsourceltcv/{sends}" )
+                assert set( res.keys() ) == expected_keys
+                assert len( res['mjd'] ) == 7
+                assert all ( r == pytest.approx( i.mjd, abs=0.001 ) for r, i in zip( res['mjd'], images[1:] ) )
+                assert all ( r == i.band for r, i in zip( res['band'], images[1:] ) )
+                assert all ( r == pytest.approx( f, abs=0.1, rel=1e-6 ) for r, f in zip( res['flux'], fluxen ) )
+                assert all ( r == pytest.approx( df, abs=0.1, rel=1e-6 ) for r, df in zip( res['dflux'], dfluxen ) )
+                if ids:
+                    assert all( r == str(p) for r, p in zip( res['id'], photids ) )
+                    assert all( r == str(i.id) for r, i in zip( res['image_id'], images[1:] ) )
+                    assert all( r == str(template_id) for r in res['template_id'] )
+                    assert all( r is None for r in res['diaobject_position_id'] )
+
+    finally:
+        with DBCon() as dbcon:
+            if len(photids) > 0:
+                dbcon.execute( sql.SQL( "DELETE FROM diaforcedsource WHERE id=ANY(ARRAY[{ids}])" )
+                               .format( ids=sql.SQL(",").join( photids ) ) )
+            if prov is not None:
+                dbcon.execute( sql.SQL( "DELETE FROM provenance_tag WHERE provenance_id={provid}" )
+                               .format( provid=prov.id ) )
+                dbcon.execute( sql.SQL( "DELETE FROM provenance WHERE id={provid}" )
+                               .format( provid=prov.id ) )
+            dbcon.commit()

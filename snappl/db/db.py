@@ -1096,6 +1096,14 @@ class SegMap( DBBase ):
 
 # ======================================================================
 
+class DiaForcedSource( DBBase ):
+    __tablename__ = "diaforcedsource"
+    _tablemeta = None
+    _pk = [ 'id' ]
+
+
+# ======================================================================
+
 class Lightcurve( DBBase ):
     __tablename__ = "lightcurve"
     _tablemeta = None
