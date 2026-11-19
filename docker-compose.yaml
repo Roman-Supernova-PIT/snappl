@@ -1,0 +1,142 @@
+# This is intended to be a standalone docker test environment that can
+# run locally, or on github CI.  It has a backend database and database
+# web server running, based on the current main of roman-snpit-db
+#
+# To use this environment, see the docs at:
+#   (TODO, put in doc url.)
+
+services:
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+        - "8025:8025"
+
+  postgres:
+    image: ${DB_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-postgres:test20261119a
+    build:
+      context: docker/postgres
+      target: postgres
+    environment:
+      PGPASSWDFILE: /secrets/roman_snpit_test_env_pgpasswd
+      PGPASSWDFILE_RO: /secrets/roman_snpit_test_env_pgpasswd_ro
+    volumes:
+      - type: volume
+        source: postgres_data
+        target: /var/lib/postrgresql/data
+      - type: bind
+        source: snappl/tests/secrets
+        target: /secrets
+        read_only: true
+    healthcheck:
+      test: netcat -w 1 localhost 5432 || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  createdb:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    image: ${DB_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-webserver:test20261119a
+    build:
+      dockerfile: docker/snappl/Dockerfile
+      target: webserver
+    environment:
+      - SNPIT_CONFIG=/roman-snpit-db/config-test.yaml
+    entrypoint:
+      - python
+      - -c
+      - "import snappl.db.migrations.apply_migrations as a; a.apply_migrations()"
+
+  webserver:
+    depends_on:
+      createdb:
+        condition: service_completed_successfully
+      mailhog:
+        condition: service_started
+    healthcheck:
+      test: netcat -w 1 localhost 8080 || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    image: ${DB_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-webserver:test20261119a
+    # That's the same image as createdb
+    environment:
+      - SNPIT_CONFIG=/roman-snpit-db/config-test.yaml
+    ports:
+      - "8080:8080"
+    user: ${USERID:-0}:${GROUPID:-0}
+
+
+  test-shell:
+    depends_on:
+      webserver:
+        condition: service_started
+    image: ${ENV_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-shell-tests:test20261119a
+    build:
+      dockerfile: docker/snappl/Dockerfile
+      target: tests
+    environment:
+      CRDS_PATH: /crds_cache
+    volumes:
+      - type: volume
+        source: dev_storage
+        target: /dev_storage
+      - type: bind
+        source: snappl/tests/secrets
+        target: /secrets
+        read_only: true
+      - type: volume
+        source: crds_cache
+        target: /crds_cache
+      - type: bind
+        source: ../../
+        target: /home
+      - type: bind
+        source: ../../packages
+        target: /packages
+      - type: bind
+        source: ../../packages/photometry_test_data
+        target: /photometry_test_data
+    working_dir: /home
+    user: ${USERID:-0}:${GROUPID:-0}
+    command: tail -f /etc/issue
+
+  shell:
+    depends_on:
+      webserver:
+        condition: service_started
+    image: ${ENV_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-shell:test20261119a
+    build:
+      dockerfile: docker/snappl/Dockerfile
+      target: shell
+    environment:
+      CRDS_PATH: /crds_cache
+    volumes:
+      - type: volume
+        source: dev_storage
+        target: /dev_storage
+      - type: bind
+        source: snappl/tests/secrets
+        target: /secrets
+        read_only: true
+      - type: volume
+        source: crds_cache
+        target: /crds_cache
+      - type: bind
+        source: ../../
+        target: /home
+      - type: bind
+        source: ../../packages
+        target: /packages
+      - type: bind
+        source: ../../packages/photometry_test_data
+        target: /photometry_test_data
+    working_dir: /home
+    user: ${USERID:-0}:${GROUPID:-0}
+    command: tail -f /etc/issue
+
+volumes:
+  postgres_data:
+  crds_cache:
+  dev_storage:
