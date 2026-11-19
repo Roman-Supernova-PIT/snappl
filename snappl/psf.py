@@ -136,10 +136,10 @@ class PSF:
 
             for oupsf in ou24_psf_options:
                 psfclass_to_function_mapping[oupsf] = ou2024_psf_getter(oupsf)
-    
-        except ModuleNotFoundError as e:
+
+        except ModuleNotFoundError:
             SNLogger.warning( "Warning: If you're trying to use OU2024 PSFs"
-                              "you may be missing the snappl_ou2024 module." )
+                               "you may be missing the snappl_ou2024 module: {e}" )
 
         psf_function = psfclass_to_function_mapping[psfclass]
         return psf_function( _called_from_get_psf_object=True, **kwargs )
