@@ -1,0 +1,3 @@
+Break everything dependent on ou2024, and image_simulator, into separate
+modules (and packages) snappl_ou2024 and snappl_imagesimulator.  This
+removes the galsim and roman_imsim dependencies from snappl.
