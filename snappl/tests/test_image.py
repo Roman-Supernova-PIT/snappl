@@ -8,7 +8,7 @@ import astropy.io.fits
 import fitsio.header
 
 import snappl.db.db
-from snappl.image import Image, FITSImage, FITSImageStdHeaders
+from snappl.image import Image, FITSImage, FITSImageStdHeaders, RomanDatamodelImage
 from snappl.wcs import AstropyWCS, GalsimWCS
 from snappl.psf import PSF
 from snappl.provenance import Provenance
@@ -851,6 +851,40 @@ def test_romandatamodel_get_cutout(romandatamodel_image):
     image = romandatamodel_image
     assert image.image_shape == (4088, 4088)
     cutout = image.get_cutout(200, 400, 11)
+    print(type(cutout))
+    assert isinstance(cutout, RomanDatamodelImage)
+    assert isinstance(cutout.data, np.ndarray)
+    assert cutout.image_shape == (11, 11)
+    # Remember numpy arrays are indexed y, x
+    assert np.all(cutout.data == image.data[395:406, 195:206])
+    assert np.all(cutout.noise == image.noise[395:406, 195:206])
+    assert np.all(cutout.flags == image.flags[395:406, 195:206])
+
+    with pytest.raises(astropy.nddata.utils.PartialOverlapError):
+        _ = image.get_cutout(5, 2048, 21)
+
+    with pytest.raises(astropy.nddata.utils.PartialOverlapError):
+        _ = image.get_cutout(2048, 4085, 21)
+
+    with pytest.raises(astropy.nddata.utils.NoOverlapError):
+        _ = image.get_cutout(2048, 4200, 21)
+
+    # Repeat the above but now with mode='partial'
+    cutout = image.get_cutout(5, 2048, 21, mode="partial", fill_value=np.nan)
+    np.testing.assert_equal(cutout.data[:, 0:5], np.nan)
+
+    cutout2 = image.get_cutout(2048, 4085, 21, mode="partial", fill_value=np.nan)
+    np.testing.assert_equal(cutout2.data[-8:, :], np.nan)
+    with pytest.raises(astropy.nddata.utils.NoOverlapError):
+        _ = image.get_cutout(2048, 4200, 21, mode="partial", fill_value=np.nan)
+
+
+# These are just copied wholesale from the FITSImage tests -Cole
+def test_romandatamodel_get_cutout_return_fits(romandatamodel_image):
+    image = romandatamodel_image
+    assert image.image_shape == (4088, 4088)
+    cutout = image.get_cutout(200, 400, 11, return_FITS=True)
+    print(type(cutout))
     assert isinstance(cutout, FITSImage)
     assert isinstance(cutout.data, np.ndarray)
     assert cutout.image_shape == (11, 11)
