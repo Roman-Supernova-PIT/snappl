@@ -113,25 +113,33 @@ class PSF:
                          'image' : image,
                          'seed' : seed } )
 
-        def ou2024_psf_getter( classname ):
-            import snappl_ou2024.psf
-            return getattr( snappl_ou2024.psf, classname )
-
         psfclass_to_function_mapping = {
             "photutilsImagePSF": photutilsImagePSF,
             "OversampledImagePSF": OversampledImagePSF,
             "Sampling_OversampledImagePSF": Sampling_OversampledImagePSF,
             "YamlSerialized_OversampledImagePSF": YamlSerialized_OversampledImagePSF,
             "A25ePSF": A25ePSF,
-            "ou24PSF_slow": ou2024_psf_getter( 'ou24PSF_slow' ),
-            "ou24PSF": ou2024_psf_getter( 'ou24PSF' ),
             "gaussian": GaussianPSF,
             "varying_gaussian": VaryingGaussianPSF,
-            "ou24PSF_slow_photonshoot": ou2024_psf_getter( 'ou24PSF_slow_photonshoot' ),
-            "ou24PSF_photonshoot": ou2024_psf_getter( 'ou24PSF_photonshoot' ),
             "STPSF": STPSF,
             "romandatamodel_psf": RomanDatamodelPSF
         }
+
+        try:
+            import snappl_ou2024.psf
+
+            def ou2024_psf_getter( classname ):
+                return getattr( snappl_ou2024.psf, classname )
+
+            ou24_psf_options = [ "ou24PSF", "ou24PSF_slow",
+                                 "ou24PSF_photonshoot", "ou24PSF_slow_photonshoot" ]
+
+            for oupsf in ou24_psf_options:
+                psfclass_to_function_mapping[oupsf] = ou2024_psf_getter(oupsf)
+    
+        except ModuleNotFoundError as e:
+            SNLogger.warning( "Warning: If you're trying to use OU2024 PSFs"
+                              "you may be missing the snappl_ou2024 module." )
 
         psf_function = psfclass_to_function_mapping[psfclass]
         return psf_function( _called_from_get_psf_object=True, **kwargs )
