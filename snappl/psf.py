@@ -125,21 +125,11 @@ class PSF:
             "romandatamodel_psf": RomanDatamodelPSF
         }
 
-        try:
+        ou24_psf_options = [ "ou24PSF", "ou24PSF_slow",
+                                "ou24PSF_photonshoot", "ou24PSF_slow_photonshoot" ]
+        if psfclass in ou24_psf_options:
             import snappl_ou2024.psf
-
-            def ou2024_psf_getter( classname ):
-                return getattr( snappl_ou2024.psf, classname )
-
-            ou24_psf_options = [ "ou24PSF", "ou24PSF_slow",
-                                 "ou24PSF_photonshoot", "ou24PSF_slow_photonshoot" ]
-
-            for oupsf in ou24_psf_options:
-                psfclass_to_function_mapping[oupsf] = ou2024_psf_getter(oupsf)
-
-        except ModuleNotFoundError:
-            SNLogger.warning( "Warning: If you're trying to use OU2024 PSFs"
-                               "you may be missing the snappl_ou2024 module: {e}" )
+            psfclass_to_function_mapping[psfclass] = getattr(snappl_ou2024.psf, psfclass)
 
         psf_function = psfclass_to_function_mapping[psfclass]
         return psf_function( _called_from_get_psf_object=True, **kwargs )
