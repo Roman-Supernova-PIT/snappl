@@ -1,7 +1,7 @@
 [project]
 name = "roman_snpit_snappl"
 description = "General, database, and photometry utilities for the Roman SNPIT"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dynamic = ["version"]
 authors = [{ name = "Roman Supernova Project Infrastructure Team"}]
 
@@ -43,7 +43,7 @@ dependencies = [
   "roman-datamodels>=1.0.0,<2.0.0",
   "scipy>=1.16.2,<2.0.0",
   "simplejson>=3.20.2,<4.0.0",
-  "stpsf>=2.2.0,<3.0.0",
+  "stpsf>=2.3.1,<3.0.0",
   "synphot>=1.7.0,<2.0.0"
 ]
 license-files = ["LICENSE"]

@@ -54,9 +54,10 @@ def test_get_centered_psf():
 
     cy, cx = scipy.ndimage.center_of_mass(stamp)
     # The roman PSF is asymmetric, so we don't expect the CoM to be the exact center.
-    # The comparison numbers are what MWV got when adapting this test for STPSF
-    assert cx == pytest.approx(19.882, abs=0.01)
-    assert cy == pytest.approx(19.911, abs=0.01)
+    # The comparison numbers were originally what MWV got when adapting this test
+    #   for STPSF; updated 2026-11-18 for stpsf 2.3.1 / stpsf-data 2.3.0.
+    assert cx == pytest.approx(20.131, abs=0.01)
+    assert cy == pytest.approx(20.126, abs=0.01)
 
 
 def test_get_offcenter_psf():
@@ -75,8 +76,8 @@ def test_get_offcenter_psf():
 
     # Reversed because we're directly looking at the ndarray which is y, x
     cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(19.856 + (x - x0), abs=0.2)
-    assert cy == pytest.approx(19.696 + (y - y0), abs=0.2)
+    assert cx == pytest.approx(20.171 + (x - x0), abs=0.2)
+    assert cy == pytest.approx(19.912 + (y - y0), abs=0.2)
 
     # This stamp should just be a shifted version of centerstamp; verify
     #   that.  This check should be much more precise than the
@@ -100,8 +101,8 @@ def test_get_edge_centered_psf():
     assert stamp.sum() == pytest.approx(0.960, abs=0.001)
 
     cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(19.40, abs=0.02)
-    assert cy == pytest.approx(19.911, abs=0.02)
+    assert cx == pytest.approx(19.643, abs=0.02)
+    assert cy == pytest.approx(20.126, abs=0.02)
 
 
 def test_get_corner_centered_psf():
@@ -114,8 +115,8 @@ def test_get_corner_centered_psf():
     assert stamp.sum() == pytest.approx(0.960, abs=0.001)
 
     cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(19.40, abs=0.02)
-    assert cy == pytest.approx(19.42, abs=0.02)
+    assert cx == pytest.approx(19.643, abs=0.02)
+    assert cy == pytest.approx(19.639, abs=0.02)
 
 
 def test_get_offset_corner_centered_psf():
@@ -128,8 +129,8 @@ def test_get_offset_corner_centered_psf():
     assert stamp.shape == (41, 41)
 
     cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(18.40, abs=0.02)
-    assert cy == pytest.approx(22.34, abs=0.03)
+    assert cx == pytest.approx(18.667, abs=0.02)
+    assert cy == pytest.approx(22.564, abs=0.03)
 
 
 def test_get_offset_psf():
@@ -139,5 +140,5 @@ def test_get_offset_psf():
     assert stamp.shape == (41, 41)
 
     cy, cx = scipy.ndimage.center_of_mass(stamp)
-    assert cx == pytest.approx(20.05, abs=0.05)
-    assert cy == pytest.approx(19.71, abs=0.05)
+    assert cx == pytest.approx(20.327, abs=0.05)
+    assert cy == pytest.approx(19.931, abs=0.05)
