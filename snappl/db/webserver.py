@@ -1,5 +1,6 @@
 __all__ = [ 'setup_flask_app' ]
 
+import io
 import re
 import uuid
 import pathlib
@@ -714,14 +715,13 @@ class SaveDiaForcedSource( BaseView ):
          exists.  By default, it's an error to try to save the same
          point more than once.
 
-       atol: real, default 0 (optional)
-
-         If not 0, and exist_ok is true, then flux and dflux must be
+       atol: real or None, default None (optional)
+         If not None, and exist_ok is true, then flux and dflux must be
          within this of an existing point (if there is one) to avoid an
          error.
 
-       rtol: real, default 1e-6 (optional)
-         If not 0, and exist_ok is true, then flux and dflux must be
+       rtol: real or None, default 1e-6 (optional)
+         If not None, and exist_ok is true, then flux and dflux must be
          within this fraction of what exists to avoid an error.
          Remember that fluxes near 0 can easily violate this without
          being meaningful!)
@@ -751,8 +751,9 @@ class SaveDiaForcedSource( BaseView ):
         allowed_keys = needed_keys.union( { 'id', 'diaobject_position_id', 'exist_ok', 'atol', 'rtol' } )
         data = self.check_json_keys( needed_keys, allowed_keys )
         exist_ok = bool( data['exist_ok'] ) if 'exist_ok' in data else False
-        atol = float( data['atol'] ) if 'atol' in data and data['atol'] != 0 else None
-        rtol = float( data['rtol'] ) if 'rtol' in data and data['rtol'] != 0 else 1e-6
+        atol = float( data['atol'] ) if 'atol' in data and data['atol'] is not None else None
+        rtol = ( data['rtol'] ) if 'rtol' in data else 1e-6
+        rtol = float( rtol ) if rtol is not None else None
         flux = float( data['flux'] )
         dflux = float( data['dflux'] )
 
@@ -781,25 +782,43 @@ class SaveDiaForcedSource( BaseView ):
                         posclause=posclause,
                         imgid=data['image_id'],
                         templid=data['template_id'] ) )
-            if len(rows) > 0:
+            if len(rows) > 1:
                 return "Database corruption, forced photometry point multiply defined!", 422
 
             elif len(rows) == 1:
                 if not exist_ok:
                     return "Error, diaforcedsource already exists.", 422
                 row = rows[0]
-                if atol is not None:
-                    if ( ( np.fabs( row['flux'] - flux ) > atol )
-                         or
-                         ( np.fabs( row['dflux'] - dflux ) > atol )
-                        ):
-                        return "Error, lightcurve point already exists with inconsistent flux/dflux", 422
-                if rtol is not None:
-                    if ( ( np.fabs( row['flux'] - flux ) > rtol * np.fabs( row['flux' ] ) )
-                         or
-                         ( np.fabs( row['dflux'] - dflux ) > rtol * np.fabs( row['dflux' ] ) )
-                        ):
-                        return "Error, lightcurve point already exists with inconsistent flux/dflux", 422
+                if atol is None:
+                    flux_atol_ok = True
+                    dflux_atol_ok = True
+                else:
+                    flux_atol_ok = np.fabs( row['flux'] - flux ) <= atol
+                    dflux_atol_ok = np.fabs( row['dflux'] - dflux ) <= atol
+                if rtol is None:
+                    flux_rtol_ok = True
+                    dflux_rtol_ok = True
+                else:
+                    flux_rtol_ok = np.fabs( row['flux'] - flux ) <= rtol * np.fabs( row['flux'] )
+                    dflux_rtol_ok = np.fabs( row['dflux'] - dflux ) <= rtol * np.fabs( row['dflux'] )
+
+                if not all( [ flux_atol_ok, dflux_atol_ok, flux_rtol_ok, dflux_rtol_ok ] ):
+                    strio = io.StringIO()
+                    atolprint = "None" if atol is None else f"{atol:.3g}"
+                    rtolprint = "None" if rtol is None else f"{rtol:.3g}"
+                    strio.write( f"Error, a photometry point already exists with flux/dflux within tolerances;\n"
+                                 f"    passed flux={flux:.6g} ± {dflux:.6g}, "
+                                 f"    existing {row['flux']:.6g} ± {row['dflux']:.6g}\n"
+                                 f"    atol = {atolprint}, rtol = {rtolprint}\n"
+                                 f"  Violates:"
+                                )
+                    comma = ""
+                    for cond, text in zip( [ flux_atol_ok, dflux_atol_ok, flux_rtol_ok, dflux_rtol_ok ],
+                                           [ 'flux atol', 'dflux atol', 'flux rtol', 'dflux rtol' ] ):
+                        if not cond:
+                            strio.write( f"{comma} {text}" )
+                            comma = ","
+                    return strio.getvalue(), 422
 
                 # Just return the consistent existing point
                 return rows[0]
@@ -849,7 +868,7 @@ class GetDiaForcedSource( BaseView ):
             rows = dbcon.execute( sql.SQL( "SELECT * FROM diaforcedsource WHERE id={dpid}" ).format( dpid=sourceid ) )
             if len(rows) == 0:
                 return f"Unknown diaforcedsource {sourceid}", 422
-            elif len(rows) > 0:
+            elif len(rows) > 1:
                 return f"Multiple diaforcedsources with id {sourceid}; this should never happen.", 422
             else:
                 return rows[0]
@@ -929,7 +948,7 @@ class GetDiaForcedSourceLtcv( BaseView ):
 
             include_ids = False
             if flask.request.is_json:
-                include_ids = ( 'include_ids' in flask.requst.json ) and flask.request.json['include_ids']
+                include_ids = ( 'include_ids' in flask.request.json ) and flask.request.json['include_ids']
 
             idvals = ( sql.SQL(", ") +
                        sql.SQL(", ").join( sql.Identifier('p', x) for x in [ 'id', 'image_id', 'template_id',
@@ -938,11 +957,12 @@ class GetDiaForcedSourceLtcv( BaseView ):
                       )
             rows, cols = dbcon.execute( sql.SQL( textwrap.dedent(
                 """\
-                SELECT i.mjd, i.filter AS band, p.flux, p.dflux{idvals}
+                SELECT i.mjd, i.band, p.flux, p.dflux{idvals}
                 FROM diaforcedsource p
                 INNER JOIN l2image i ON p.image_id=i.id
                 WHERE p.diaobject_id={diaobjid}
                   AND p.provenance_id={provid}
+                ORDER BY i.mjd, i.band
                 """
             ) ).format( idvals=idvals, diaobjid=diaobjectid, provid=provid ) )
 
@@ -1141,7 +1161,8 @@ urls = {
 
     "/savediaforcedsource": SaveDiaForcedSource,
     "/getdiaforcedsource/<sourceid>": GetDiaForcedSource,
-    "/getdiaforcedsourceltcv/<provid>/<diaobjectid>": GetDiaForcedSourceLtcv,
+    # Next line, really its "gitdiaforcedsourceltcv/<provid>/<diaobjectid>", but Flask needs this
+    "/getdiaforcedsourceltcv/<provtag>/<process>": GetDiaForcedSourceLtcv,
     "/getdiaforcedsourceltcv/<provtag>/<process>/<diaobjectid>": GetDiaForcedSourceLtcv,
 
     "/savelightcurve": SaveLightcurve,
