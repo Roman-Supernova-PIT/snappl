@@ -1,21 +1,19 @@
 # This is intended to be a standalone docker test environment that can
 # run locally, or on github CI.  It has a backend database and database
 #
-#
 # To use this environment, see the docs at:
 #   (TODO, put in doc url.)
 #
 # I recommend you create a file .env in this directory with contents:
 #    USERID=<uid>
 #    GROUPID=<gid>
-#
-# Where you can find the numeric values of <uid> and <gid> by running
+# where you can find the numeric values of <uid> and <gid> by running
 # "id" on the command line.  (Works at least on Linux and Mac.)  This
-# will make it so that files created inside the container will be
-# used by you.  (The container does create some files and directories
-# in your filesystem if you run tests.)  Otherwise, those files will
-# be owned by root, which means you will need to chown them to yourself
-# to be able to delete them.
+# will make it so that files created inside the container will be owned
+# by you.  (The container does create some files and directories in your
+# filesystem if you run tests, and may in other cases depending on what
+# you do.)  Otherwise, those files will be owned by root, which means
+# you will need to chown them to yourself to be able to delete them.
 #
 # Briefly, if you want to do development:
 #    docker compose build
@@ -28,12 +26,14 @@
 # You can also do development by just doing:
 # Briefly, if you want to do development:
 #    docker compose build
-#    docker compose up -d
+#    docker compose up -d webserver
 # and then running stuff *outside* the container.  You will either
-#    need to have snappl installed in your environemnt with a compatible
-#    config file, or you will need a extracted-from-snappl version
-#    of dbclient.  (Massimo has made something like the latter.)
-#    The database webserver will exist at http://localhost:8080
+#  need to have snappl installed in your environemnt with a compatible
+#  config file, or you will need a extracted-from-snappl version
+#  of dbclient.  (Massimo has made something like the latter.)
+#  The database webserver will exist at http://localhost:8080
+# When you're done using it, just:
+#    docker compose down -v
 #
 # To run snappl tests:
 #    docker compose build
