@@ -1,13 +1,3 @@
 replaceable_preloads:
   - /snpit_test_config.yaml
-  - /test_config_for_db.yaml
-
-system:
-  paths:
-    spectra1d: /packages/snappl/snappl/tests/spectra1d
-    lightcurves: /packages/snappl/snappl/tests/lightcurves
-    segmaps: /packages/snappl/snappl/tests/segmaps
-    images: /packages/snappl/snappl/tests/images
-
-    temp_dir: /tmp
-    dev_storage: /packages/snappl/tests/dev_storage
+  - /test_db_config.yaml

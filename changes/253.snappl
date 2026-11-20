@@ -1,0 +1,9 @@
+Create a docker-compose.yaml at the base of the checkout that starts up
+the test environment.  The tests no longer need an "environment"
+checkout to run.  Other modifications that go along with this.
+
+This should make it possible (by not building the "test-shell" target of
+the docker-compose file) to build images without needing to install
+galsim, which will *hopefully* make it possible to do *something* in the
+native architecture on a Mac.  (You still won't be able to run all the
+snappl tests on a Mac, because some of them need galsim to run.)

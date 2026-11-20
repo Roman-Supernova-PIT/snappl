@@ -1,0 +1,180 @@
+# This is intended to be a standalone docker test environment that can
+# run locally, or on github CI.  It has a backend database and database
+#
+# To use this environment, see the docs at:
+#   (TODO, put in doc url.)
+#
+# I recommend you create a file .env in this directory with contents:
+#    USERID=<uid>
+#    GROUPID=<gid>
+# where you can find the numeric values of <uid> and <gid> by running
+# "id" on the command line.  (Works at least on Linux and Mac.)  This
+# will make it so that files created inside the container will be owned
+# by you.  (The container does create some files and directories in your
+# filesystem if you run tests, and may in other cases depending on what
+# you do.)  Otherwise, those files will be owned by root, which means
+# you will need to chown them to yourself to be able to delete them.
+#
+# Briefly, if you want to do development:
+#    docker compose build
+#    docker compose up -d shell
+#    docker compose exec -it shell /bin/bash
+#    [Inside the container]
+#      <do things, exit when done>
+#    docker compose down -v
+#
+# You can also do development by just doing:
+# Briefly, if you want to do development:
+#    docker compose build
+#    docker compose up -d webserver
+# and then running stuff *outside* the container.  You will either
+#  need to have snappl installed in your environemnt with a compatible
+#  config file, or you will need a extracted-from-snappl version
+#  of dbclient.  (Massimo has made something like the latter.)
+#  The database webserver will exist at http://localhost:8080
+# When you're done using it, just:
+#    docker compose down -v
+#
+# To run snappl tests:
+#    docker compose build
+#    docker compose up -d test-shell
+#    docker compose exec -it test-shell /bin/bash
+#    [Inside the container]
+#      cd /packages/snappl/snappl/tests
+#      nohup pytest -v --color=yes < /dev/null > pytest.out 2>&1 &
+#      tail -f pytest.out
+#      <Hit ctrl-C when tests are done>
+#      exit
+#    docker compose down -v
+#
+# NOTE FOR TESTS : it requires, right now, to have exactly the right
+#   version of stpsf data checked out in packages.  Run this in your
+#   packages directory:
+#    curl -sSfL -o stpsf-data.tar.gz https://stsci.box.com/shared/static/mjst9j056ibf2uph4gxy8qxmi89tjzwk.gz
+#    tar xpf stpsf-data.tar.gz
+#    rm stpsf-data.tar.gz
+#
+# Of course, you can do other things inside test-shell.  The "nohup
+# pytest" runs all the tests and writes the output to pytest.out in the
+# tests directory.  It takes tens of minutes to run.
+
+
+services:
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+        - "8025:8025"
+
+  postgres:
+    image: ${DB_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-postgres:test20261119a
+    build:
+      context: docker/postgres
+      target: postgres
+    environment:
+      PGPASSWDFILE: /secrets/roman_snpit_test_env_pgpasswd
+      PGPASSWDFILE_RO: /secrets/roman_snpit_test_env_pgpasswd_ro
+    volumes:
+      - postgres_data:/var/lib/postrgresql/data
+      - ./snappl/tests/secrets:/secrets:ro
+    healthcheck:
+      test: netcat -w 1 localhost 5432 || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  createdb:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    image: ${DB_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-webserver:test20261119a
+    build:
+      dockerfile: docker/snappl/Dockerfile
+      target: test-webserver
+      args:
+        - USERID=${USERID:-0}
+        - GROUPID=${GROUPID:-0}
+    entrypoint:
+      - python
+      - -c
+      - "import snappl.db.migrations.apply_migrations as a; a.apply_migrations()"
+
+  webserver:
+    depends_on:
+      createdb:
+        condition: service_completed_successfully
+      mailhog:
+        condition: service_started
+    healthcheck:
+      test: netcat -w 1 localhost 8080 || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - sessions:/sessions
+    image: ${DB_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-webserver:test20261119a
+    # That's the same image as createdb, so don't put a build: here.
+    ports:
+      - "8080:8080"
+    user: ${USERID:-0}:${GROUPID:-0}
+
+
+  test-shell:
+    depends_on:
+      webserver:
+        condition: service_started
+    image: ${ENV_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-shell-tests:test20261119a
+    build:
+      dockerfile: docker/snappl/Dockerfile
+      target: tests
+      args:
+        - USERID=${USERID:-0}
+        - GROUPID=${GROUPID:-0}
+    environment:
+      CRDS_PATH: /crds_cache
+      STPSF_PATH: /stpsf-data
+    volumes:
+      - dev_storage:/dev_storage
+      - temp_dir:/temp_dir
+      - crds_cache:/crds_cache
+      - ./snappl/tests/secrets:/secrets:ro
+      - ../../:/home
+      - ../../packages:/packages
+      - ../../packages/photometry_test_data:/photometry_test_data
+      - ../../packages/snappl_tests_data:/data
+      - ../../packages/stpsf-data:/stpsf-data
+    working_dir: /home
+    user: ${USERID:-0}:${GROUPID:-0}
+    command: tail -f /etc/issue
+
+  shell:
+    depends_on:
+      webserver:
+        condition: service_started
+    image: ${ENV_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-shell:test20261119a
+    build:
+      dockerfile: docker/snappl/Dockerfile
+      target: shell
+      args:
+        - USERID=${USERID:-0}
+        - GROUPID=${GROUPID:-0}
+    environment:
+      CRDS_PATH: /crds_cache
+    volumes:
+      - dev_storage:/dev_storage
+      - temp_dir:/temp_dir
+      - crds_cache:/crds_cache
+      - ./snappl/tests/secrets:/secrets:ro
+      - ../../:/home
+      - ../../packages:/packages
+      - ../../packages/photometry_test_data:/photometry_test_data
+      - ../../packages/snappl_tests_data:/data
+    working_dir: /home
+    user: ${USERID:-0}:${GROUPID:-0}
+    command: tail -f /etc/issue
+
+volumes:
+  postgres_data:
+  crds_cache:
+  dev_storage:
+  temp_dir:
+  sessions:

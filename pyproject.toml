@@ -25,6 +25,7 @@ classifiers = [
 #   these packages.
 dependencies = [
   "astropy>=7.1.0,<8.0.0",
+  "crds>=14.0.6,<15.0.0",
   "fitsio>=1.2.5,<2.0.0",
   "gwcs>=1.0.3,<2.0.0",
   "h5py>=3.14.0,<4.0.0",
@@ -60,6 +61,8 @@ test = [
     "pytest",
     "pytest-doctestplus",
     "pytest-cov",
+    "pytest-timestamper",
+    "remote-pdb",
     "requests",
     "tox",
     "devpi_process",

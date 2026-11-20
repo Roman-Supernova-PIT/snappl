@@ -1,0 +1,28 @@
+# Config file for snappl tests
+
+system:
+  db:
+    url: https://webserver:8080/
+    username: test
+    password: test_password
+    passwordfile: null
+
+  paths:
+    temp_dir: /temp_dir
+    dev_storage: /dev_storage
+
+    spectra1d: /data/spectra1d
+    lightcurves: /data/lightcurves
+    segmaps: /data/segmaps
+    images: /data/l2images
+
+    snappl:
+      A25ePSF_path: /packages/snappl/snappl/tests/testdata/A25ePSF
+
+  ou24:
+    simdex_server: https://roman-desc-simdex.lbl.gov
+    tds_base: /packages/photometry_test_data/ou2024
+    config_file: /packages/photometry_test_data/ou2024/tds.yaml
+    sn_truth_dir: /packages/photometry_test_data/ou2024/snana_truth
+    images: /packages/photometry_test_data/ou2024/images/simple_model
+    sims_sed_library: /packages/photometry_test_data/ou2024/sims_sed_library

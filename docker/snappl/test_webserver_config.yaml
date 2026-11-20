@@ -1,0 +1,13 @@
+preloads:
+  - /test_db_config.yaml
+
+system:
+  webserver:
+    flask_secret_key: o6950bi77gvbc2jie49lklotwll69ayv
+    sessionstore: /sessions
+    emailfrom: nobody@nowhere.org
+    smtpserver: mailhog
+    smtpport: 1025
+    smtpusessl: False
+    smtpusername: NULL
+    smtppassword: NULL
