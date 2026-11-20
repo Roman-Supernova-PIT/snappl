@@ -156,10 +156,13 @@ RUN cp -p /venv/lib/python3.13/site-packages/snappl/db/templates/* /roman-snpit-
 # ======================================================================
 # Build for tests
 #
-# This does NOT do a pip install .[test] in snappl, becasue
-#   almost certainly you will want to do pip install -e .[test] in
-#   the snappl checkout inside the container when actually
-#   developing.
+# Although this does a pip install .[test] in snappl,
+#   you will probably want to do pip install -e .[test]
+#   in your snappl checkout inside the container so you
+#   test the version of the code you're editing right now.
+# The advantage of doing this here is that it pulls in the
+#   additional test prereqs that a base snappl install
+#   won't have (including galsim).
 
 FROM build AS build-tests
 
@@ -209,7 +212,7 @@ ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
 
 # ======================================================================
 # For interaction, including the packages (and roman_imsim)
-#   needed to run the tests in this directory.
+#   needed to run the tests in snappl/tests.
 
 FROM base AS tests
 
@@ -258,8 +261,9 @@ ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
 #
 # It does NOT use SSL; you would need to modify the entrypoint to do that
 #   with something that passes --keyfile and --certfile to gunicorn.
-#   (On NERSC Spin, you do not want SSL; that's handled externally#
-#   by the ingress.)
+#   (On NERSC Spin, you do not want SSL; that's handled externally
+#   by the ingress.  On AWS, we work in a fully private environment,
+#   so we just use http and don't worry about it.)
 #
 # There is some stuff so that you can use letsencrypt (via dehydrated).
 #   That was put in during the two week gap when LBL wasn't able to
