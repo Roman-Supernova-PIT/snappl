@@ -32,30 +32,20 @@ jobs:
           cd packages
           git clone http://github.com/Roman-Supernova-PIT/photometry_test_data
 
-      # STPSF needs reference data that isn't in the docker image.  Pin
-      # the data version to match the stpsf version in snappl's
-      # pyproject.snappl (currently pinned at 2.2.0 until we can update
-      # other things to handle newer versions). Don't use the
-      # stpsf-data-LATEST link: as of 2.3.0 it has a layout that stpsf
-      # 2.2.0 can't read.
+      # STPSF needs reference data that isn't in the docker image.  This
+      # grabs stpsf-data-LATEST (the same tarball stpsf auto-downloads), so it
+      # is not cached and may change under us; if a new data release breaks
+      # the stpsf version pip installs (snappl requires stpsf>=2.3.1), pin a
+      # versioned tarball from https://stpsf.readthedocs.io/en/latest/installation.html
       # ../packages is bind-mounted at /packages in the shell container, so
       # the data ends up at /packages/stpsf-data (see STPSF_PATH below).
-      - name: cache stpsf data
-        id: cache-stpsf-data
-        uses: actions/cache@v4
-        with:
-          path: ../packages/stpsf-data
-          key: stpsf-data-2.2.0
-
       - name: download stpsf data
-        if: steps.cache-stpsf-data.outputs.cache-hit != 'true'
         run: |
           cd ../packages
-          curl -sSfL -o stpsf-data.tar.gz https://stsci.box.com/shared/static/mjst9j056ibf2uph4gxy8qxmi89tjzwk.gz
+          curl -sSfL -o stpsf-data.tar.gz https://stsci.box.com/shared/static/kqfolg2bfzqc4mjkgmujo06d3iaymahv.gz
           tar xzf stpsf-data.tar.gz
           rm stpsf-data.tar.gz
-          cat stpsf-data/version.txt
-          test -f stpsf-data/WFI/WIM_F062_zernikes_cycle10.csv
+          echo "stpsf-data version: $(cat stpsf-data/version.txt)"
 
       - name: log into github container registry
         uses: docker/login-action@v3
