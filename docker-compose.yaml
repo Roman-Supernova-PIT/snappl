@@ -1,6 +1,6 @@
 # This is intended to be a standalone docker test environment that can
 # run locally, or on github CI.  It has a backend database and database
-# web server running, based on the current main of roman-snpit-db
+#
 #
 # To use this environment, see the docs at:
 #   (TODO, put in doc url.)
@@ -24,6 +24,16 @@
 #    [Inside the container]
 #      <do things, exit when done>
 #    docker compose down -v
+#
+# You can also do development by just doing:
+# Briefly, if you want to do development:
+#    docker compose build
+#    docker compose up -d
+# and then running stuff *outside* the container.  You will either
+#    need to have snappl installed in your environemnt with a compatible
+#    config file, or you will need a extracted-from-snappl version
+#    of dbclient.  (Massimo has made something like the latter.)
+#    The database webserver will exist at http://localhost:8080
 #
 # To run snappl tests:
 #    docker compose build

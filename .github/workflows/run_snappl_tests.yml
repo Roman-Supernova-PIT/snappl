@@ -119,7 +119,7 @@ jobs:
           # actions will expect it.  (TODO: see if there's a way we
           # can tell the workflow that snappl is checked out in
           # $WHATEVER/packages/snappl, not just $WHATEVER/snappl.)
-          cd ../../../
+          cd ../../
           mv packages/snappl ./
           pwd
           ls -l
