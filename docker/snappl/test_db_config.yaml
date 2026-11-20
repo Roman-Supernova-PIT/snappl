@@ -1,0 +1,10 @@
+system:
+  db:
+    postgres_host: postgres
+    postgres_port: 5432
+    postgres_database: roman_snpit
+    postgres_username: postgres
+    postgres_password: fragile
+    postgres_password_file: null
+    echoqueries: true
+    alwaysexplain: false

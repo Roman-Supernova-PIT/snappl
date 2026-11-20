@@ -4,6 +4,43 @@
 #
 # To use this environment, see the docs at:
 #   (TODO, put in doc url.)
+#
+# I recommend you create a file .env in this directory with contents:
+#    USERID=<uid>
+#    GROUPID=<gid>
+#
+# Where you can find the numeric values of <uid> and <gid> by running
+# "id" on the command line.  (Works at least on Linux and Mac.)  This
+# will make it so that files created inside the container will be
+# used by you.  (The container does create some files and directories
+# in your filesystem if you run tests.)  Otherwise, those files will
+# be owned by root, which means you will need to chown them to yourself
+# to be able to delete them.
+#
+# Briefly, if you want to do development:
+#    docker compose build
+#    docker compose up -d shell
+#    docker compose exec -it shell /bin/bash
+#    [Inside the container]
+#      <do things, exit when done>
+#    docker compose down -v
+#
+# To run snappl tests:
+#    docker compose build
+#    docker compose up -d test-shell
+#    docker compose exec -it test-shell /bin/bash
+#    [Inside the container]
+#      cd /packages/snappl/snappl/tests
+#      nohup pytest -v --color=yes < /dev/null > pytest.out 2>&1 &
+#      tail -f pytest.out
+#      <Hit ctrl-C when tests are done>
+#      exit
+#    docker compose down -v
+#
+# Of course, you can do other things inside test-shell.  The "nohup
+# pytest" runs all the tests and writes the output to pytest.out in the
+# tests directory.  It takes tens of minutes to run.
+
 
 services:
   mailhog:
@@ -20,13 +57,8 @@ services:
       PGPASSWDFILE: /secrets/roman_snpit_test_env_pgpasswd
       PGPASSWDFILE_RO: /secrets/roman_snpit_test_env_pgpasswd_ro
     volumes:
-      - type: volume
-        source: postgres_data
-        target: /var/lib/postrgresql/data
-      - type: bind
-        source: snappl/tests/secrets
-        target: /secrets
-        read_only: true
+      - postgres_data:/var/lib/postrgresql/data
+      - ./snappl/tests/secrets:/secrets:ro
     healthcheck:
       test: netcat -w 1 localhost 5432 || exit 1
       interval: 5s
@@ -40,9 +72,10 @@ services:
     image: ${DB_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-webserver:test20261119a
     build:
       dockerfile: docker/snappl/Dockerfile
-      target: webserver
-    environment:
-      - SNPIT_CONFIG=/roman-snpit-db/config-test.yaml
+      target: test-webserver
+      args:
+        - USERID=${USERID:-0}
+        - GROUPID=${GROUPID:-0}
     entrypoint:
       - python
       - -c
@@ -59,10 +92,10 @@ services:
       interval: 5s
       timeout: 10s
       retries: 5
+    volumes:
+      - sessions:/sessions
     image: ${DB_DOCKER_ARCHIVE:-ghcr.io/roman-supernova-pit}/snappl-test-webserver:test20261119a
-    # That's the same image as createdb
-    environment:
-      - SNPIT_CONFIG=/roman-snpit-db/config-test.yaml
+    # That's the same image as createdb, so don't put a build: here.
     ports:
       - "8080:8080"
     user: ${USERID:-0}:${GROUPID:-0}
@@ -76,28 +109,20 @@ services:
     build:
       dockerfile: docker/snappl/Dockerfile
       target: tests
+      args:
+        - USERID=${USERID:-0}
+        - GROUPID=${GROUPID:-0}
     environment:
       CRDS_PATH: /crds_cache
     volumes:
-      - type: volume
-        source: dev_storage
-        target: /dev_storage
-      - type: bind
-        source: snappl/tests/secrets
-        target: /secrets
-        read_only: true
-      - type: volume
-        source: crds_cache
-        target: /crds_cache
-      - type: bind
-        source: ../../
-        target: /home
-      - type: bind
-        source: ../../packages
-        target: /packages
-      - type: bind
-        source: ../../packages/photometry_test_data
-        target: /photometry_test_data
+      - dev_storage:/dev_storage
+      - temp_dir:/temp_dir
+      - crds_cache:/crds_cache
+      - ./snappl/tests/secrets:/secrets:ro
+      - ../../:/home
+      - ../../packages:/packages
+      - ../../packages/photometry_test_data:/photometry_test_data
+      - ../../packages/snappl_tests_data:/data
     working_dir: /home
     user: ${USERID:-0}:${GROUPID:-0}
     command: tail -f /etc/issue
@@ -110,28 +135,20 @@ services:
     build:
       dockerfile: docker/snappl/Dockerfile
       target: shell
+      args:
+        - USERID=${USERID:-0}
+        - GROUPID=${GROUPID:-0}
     environment:
       CRDS_PATH: /crds_cache
     volumes:
-      - type: volume
-        source: dev_storage
-        target: /dev_storage
-      - type: bind
-        source: snappl/tests/secrets
-        target: /secrets
-        read_only: true
-      - type: volume
-        source: crds_cache
-        target: /crds_cache
-      - type: bind
-        source: ../../
-        target: /home
-      - type: bind
-        source: ../../packages
-        target: /packages
-      - type: bind
-        source: ../../packages/photometry_test_data
-        target: /photometry_test_data
+      - dev_storage:/dev_storage
+      - temp_dir:/temp_dir
+      - crds_cache:/crds_cache
+      - ./snappl/tests/secrets:/secrets:ro
+      - ../../:/home
+      - ../../packages:/packages
+      - ../../packages/photometry_test_data:/photometry_test_data
+      - ../../packages/snappl_tests_data:/data
     working_dir: /home
     user: ${USERID:-0}:${GROUPID:-0}
     command: tail -f /etc/issue
@@ -140,3 +157,5 @@ volumes:
   postgres_data:
   crds_cache:
   dev_storage:
+  temp_dir:
+  sessions:

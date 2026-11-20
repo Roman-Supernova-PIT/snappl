@@ -1,4 +1,13 @@
-# Build this from the top level of the snappl checkout.
+# This has four final build-targets:
+#    shell : A shell that has snappl installed and a running database and webserver.
+#            It assumess you're using the RUNDIR/packages standard.  Use this
+#            for development.
+#
+#    tests: A shell that is used for running snappl tests in snappl/tests.
+#
+#    webserver: A production webserver.  See below.
+#
+#    test-webserver: The webserver used for running snappl tests.
 #
 # For a NERSC Spin webserver, build it with:
 #   docker build --build-arg HOST_ADDRESS=dns.name \
@@ -9,11 +18,17 @@
 # The HOST_ADDRESS arg is just used for setting up dehydrated/letsencrypt,
 #   so you can ignore it if you don't need that.
 #
-# This is also used by the docker-compose.yaml file in tests.
+# For a webserver running on an AWS EC2 instance, build it with:
+#    TODO
 
 # ======================================================================
 FROM debian:trixie-20261104 AS base
 LABEL maintainer="Rob Knop <rknop@pobox.com>"
+
+ARG USERID=0
+ARG GROUPID=0
+ENV USERID=${USERID}
+ENV GROUPID=${GROUPID}
 
 SHELL ["/bin/bash", "-c"]
 
@@ -129,6 +144,12 @@ RUN cp -p /venv/lib/python3.13/site-packages/snappl/db/templates/* /roman-snpit-
 
 # ======================================================================
 # Build for tests
+#
+# This does NOT do a pip install .[test] in snappl, becasue
+#   almost certainly you will want to do pip install -e .[test] in
+#   the snappl checkout inside the container when actually
+#   developing.
+
 FROM build AS build-tests
 
 WORKDIR /usr/src/snappl_install
@@ -150,24 +171,99 @@ RUN git clone https://github.com/matroxel/roman_imsim.git \
 
 
 # ======================================================================
-# This is for the test webserver.  It installs crappy keys so you
-#   can connect via https.  It also installs the test SNPIT_CONFIG file.
-# The production webserver is going to be on Spin and won't do
-#   SSL management itself (the spin ingress handles that).
+# This is for interaction.  It runs something that will stay up
+#   that you can exec a shell on.
+FROM base AS shell
+
+COPY --from=build /venv/ /venv/
+ENV PATH=/venv/bin:$PATH
+
+# So the user can pip install
+RUN chown -R ${USERID}:${GROUPID} /venv
+
+# Create directories for stuff that docker-compose.yaml uses
+RUN mkdir -p /dev_storage && chown ${USERID}:${GROUPID} /dev_storage
+RUN mkdir -p /temp_dir && chown ${USERID}:${GROUPID} /temp_dir
+RUN mkdir -p /crds_cache && chown ${USERID}:${GROUPID} /crds_cache
+
+# Work in what our docs call RUNDIR
+WORKDIR /home
+
+COPY docker/snappl/snpit_test_config.yaml /snpit_test_config.yaml
+ENV SNPIT_CONFIG=/snpit_test_config.yaml
+ENV SNPIT_DEFAULT_CONFIG=/snpit_test_config.yaml
+
+ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
+
+
+# ======================================================================
+# For interaction, including the packages (and roman_imsim)
+#   needed to run the tests in this directory.
+
+FROM base AS tests
+
+
+COPY --from=build-tests /venv/ /venv/
+COPY --from=build-tests /roman_imsim/ /roman_imsim/
+COPY --from=build-webserver /roman-snpit-db/ /roman-snpit-db/
+
+# So the user can pip install
+RUN chown -R ${USERID}:${GROUPID} /venv
+
+ENV PATH=/venv/bin:$PATH
+ENV PYTHONPATH=/roman_imsim
+
+# Create directories for stuff that docker-compose.yaml uses
+RUN mkdir -p /dev_storage && chown ${USERID}:${GROUPID} /dev_storage
+RUN mkdir -p /temp_dir && chown ${USERID}:${GROUPID} /temp_dir
+RUN mkdir -p /crds_cache && chown ${USERID}:${GROUPID} /crds_cache
+
+# This link is needed for our tests.
+RUN ln -s /packages/photometry_test_data /photometry_test_data
+
+# The tests need the direct-to-db config file in addition to the regular one
+COPY docker/snappl/test_db_config.yaml /test_db_config.yaml
+COPY docker/snappl/snpit_test_config.yaml /snpit_test_config.yaml
+
+# This will get overridden by the init_config fixture in snappl/tests/conftest.py
+# But it's here so that somebody just running python in a test shell will have
+#   a default config that works.
+ENV SNPIT_CONFIG=/snpit_test_config.yaml
+ENV SNPIT_DEFAULT_CONFIG=/snpit_test_config.yaml
+
+WORKDIR /home
+
+ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
+
+
+# ======================================================================
+# This is for the production webserver.
+#
+# It does NOT use SSL; you would need to modify the entrypoint to do that
+#   with something that passes --keyfile and --certfile to gunicorn.
+#   (On NERSC Spin, you do not want SSL; that's handled externally#
+#   by the ingress.)
+#
+# There is some stuff so that you can use letsencrypt (via dehydrated).
+#   That was put in during the two week gap when LBL wasn't able to
+#   issue certificates....  If you aren't using letsencrypt, you can
+#   ignore this.  See comments below, there is hand-work required.
+
 FROM base AS webserver
 
 COPY --from=build-webserver /venv/ /venv/
 COPY --from=build-webserver /roman-snpit-db/ /roman-snpit-db
 ENV PATH=/venv/bin:$PATH
 
+# So the user can pip install
+RUN chown -R ${USERID}:${GROUPID} /venv
+
 WORKDIR /roman-snpit-db
 ENV PYTHONPATH=/roman-snpit-db
 
-RUN mkdir /sessions
+RUN mkdir -p /sessions && chown ${USERID}:${GROUPID} /sessions
 
-COPY docker/snappl/key.pem /usr/src/key.pem
-COPY docker/snappl/cert.pem /usr/src/cert.pem
-COPY docker/snappl/config-test.yaml /roman-snpit-db/
+# The actual webap code that gunicorn will run
 COPY docker/snappl/roman-snpit-server.py /roman-snpit-db/
 
 # For using dehydrated to get a LetsEncrypt cert.
@@ -184,50 +280,28 @@ RUN cat /etc/dehydrated/config | perl -pe 's/^WELLKNOWN=.*$/WELLKNOWN=\/tmp\/.we
   && mv /etc/dehydrated.config-new /etc/dehydrated/config && rm -f /etc/dehydrated.config-new
 RUN echo ${HOST_ADDRESS} >> /etc/dehydrated/domains.txt
 
-ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
-# ENTRYPOINT [ "/venv/bin/gunicorn", "-b", "0.0.0.0:8080", "--access-logfile", "-", "--error-logfile", "-", "-k", "gevent", "--timeout", "300", "--workers", "10", "roman-snpit-server:application" ]
-# ENTRYPOINT [ "/venv/bin/gunicorn", "-b", "0.0.0.0:8080", "-k", "gevent", "--timeout", "300", "--workers", "10", "roman-snpit-server:application" ]
-# EXPOSE 8080
+ENTRYPOINT [ "/venv/bin/gunicorn", "-b", "0.0.0.0:8080", "--error-logfile", \
+             "-", "-k", "gevent", "--timeout", "300", "--workers", "10", \
+             "roman-snpit-server:application" ]
+EXPOSE 8080
 
 
 # ======================================================================
-# This is for interaction.  It runs something that will stay up
-#   that you can exec a shell on.
-FROM base AS shell
+# This is for the test webserver used in snappl tests.
 
-COPY --from=build /venv/ /venv/
-ENV PATH=/venv/bin:$PATH
+FROM webserver AS test-webserver
 
-WORKDIR /home
+# Config files used in tests
+COPY docker/snappl/test_db_config.yaml /test_db_config.yaml
+COPY docker/snappl/test_webserver_config.yaml /test_webserver_config.yaml
 
-ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
+# Config file for test webserver
+ENV SNPIT_CONFIG=/test_webserver_config.yaml
+ENV SNPIT_DEFAULT_CONFIG=/test_webserver_conifg.yaml
 
+# Crappy self-signed keys for use in tests.  Never use these in production.
+COPY docker/snappl/key.pem /usr/src/key.pem
+COPY docker/snappl/cert.pem /usr/src/cert.pem
 
-# ======================================================================
-# For interaction, including the packages (and roman_imsim)
-#   needed to run the tests in this directory.
-
-FROM base AS tests
-
-COPY --from=build-tests /venv/ /venv/
-COPY --from=build-tests /roman_imsim/ /roman_imsim/
-COPY --from=build-webserver /roman-snpit-db/ /roman-snpit-db/
-
-ENV PATH=/venv/bin:$PATH
-ENV PYTHONPATH=/roman_imsim
-
-# This link is needed for our tests.
-RUN ln -s /packages/photometry_test_data /photometry_test_data
-
-# Need copies of the webserver config file for tests
-COPY docker/snappl/config-test.yaml /roman-snpit-db/
-COPY docker/snappl/roman-snpit-server.py /roman-snpit-db/
-
-# Other config files needed in / for tests
-COPY docker/snappl/default_snpit_pipeline_config.yaml /default_snpit_pipeline_config.yaml
-COPY docker/snappl/snpit_test_config.yaml /snpit_test_config.yaml
-COPY docker/snappl/test_config_for_db.yaml /test_config_for_db.yaml
-
-WORKDIR /home
-
-ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
+ENTRYPOINT [ "gunicorn", "--certfile", "/usr/src/cert.pem", "--keyfile", "/usr/src/key.pem", \
+           "-w", "1", "--threads", "10", "-b", "0.0.0.0:8080", "--timeout", "0", "roman-snpit-server:application" ]
