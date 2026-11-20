@@ -388,3 +388,302 @@ def test_diaforcedsource( loaded_ou2024_test_l2images, loaded_ou2024_test_diaobj
                 dbcon.execute( sql.SQL( "DELETE FROM provenance WHERE id={provid}" )
                                .format( provid=prov.id ) )
             dbcon.commit()
+
+
+def test_processing_run( dbclient, stupid_object ):
+    process = 'test_processing_run'
+    epoch = 60000123
+    key = { 'process': process, 'diaobject_id': str(stupid_object), 'epoch': epoch }
+    provid = None
+    try:
+        # A run that does not exist is created as 'processing'
+        res = dbclient.send( "startprocessingrun", { **key, 'execution': 'exec-1' } )
+        assert res['status'] == 'processing'
+        assert res['execution'] == 'exec-1'
+        assert res['epoch'] == epoch
+        assert res['started_at'] is not None and res['finished_at'] is None
+        runid = res['id']
+
+        # Starting it again is not refused: it is the same row, started again by another execution
+        res = dbclient.send( "startprocessingrun", { **key, 'execution': 'exec-2' } )
+        assert res['status'] == 'processing'
+        assert res['id'] == runid
+        assert res['execution'] == 'exec-2'
+
+        # Finish it
+        provid = Provenance( process="test_processing_run_product", major=1, minor=0 )
+        provid.save_to_db()
+        res = dbclient.send( "finishprocessingrun", { **key, 'status': 'done', 'provenance_id': str(provid.id) } )
+        assert res['updated'] is True
+        assert res['status'] == 'done'
+        assert res['provenance_id'] == str( provid.id )
+        assert res['finished_at'] is not None
+        assert res['execution'] == 'exec-2'
+
+        # A late or repeated finish does not change it
+        res = dbclient.send( "finishprocessingrun", { **key, 'status': 'failed', 'message': 'too late' } )
+        assert res['updated'] is False
+        assert res['status'] == 'done'
+        assert res['message'] is None
+
+        # A run that is done can be started again (a repeat on purpose); starting it clears what it said
+        res = dbclient.send( "startprocessingrun", { **key, 'execution': 'exec-5' } )
+        assert res['id'] == runid
+        assert res['status'] == 'processing'
+        assert res['provenance_id'] is None and res['finished_at'] is None
+        assert res['execution'] == 'exec-5'
+        res = dbclient.send( "finishprocessingrun", { **key, 'status': 'done', 'provenance_id': str(provid.id) } )
+        assert res['updated'] is True and res['status'] == 'done'
+
+        # A failed run can be started again, and starting it clears what it said
+        failkey = { **key, 'epoch': epoch + 1 }
+        res = dbclient.send( "startprocessingrun", failkey )
+        assert res['status'] == 'processing'
+        res = dbclient.send( "finishprocessingrun", { **failkey, 'status': 'failed', 'message': 'it broke',
+                                                      'execution': 'exec-3' } )
+        assert ( res['status'], res['message'], res['execution'] ) == ( 'failed', 'it broke', 'exec-3' )
+        res = dbclient.send( "startprocessingrun", { **failkey, 'execution': 'exec-4' } )
+        assert res['status'] == 'processing'
+        assert res['message'] is None and res['finished_at'] is None and res['provenance_id'] is None
+        assert res['execution'] == 'exec-4'
+
+        # Find
+        res = dbclient.send( "findprocessingruns", { 'process': process } )
+        assert { r['epoch'] for r in res } == { epoch, epoch + 1 }
+        res = dbclient.send( "findprocessingruns", { 'process': process, 'status': 'done' } )
+        assert [ r['epoch'] for r in res ] == [ epoch ]
+        res = dbclient.send( "findprocessingruns", { 'diaobject_id': str(stupid_object), 'epoch': epoch + 1 } )
+        assert [ r['status'] for r in res ] == [ 'processing' ]
+        res = dbclient.send( "findprocessingruns", { 'process': process, 'order_by': 'epoch', 'limit': 1 } )
+        assert [ r['epoch'] for r in res ] == [ epoch ]
+        assert dbclient.send( "findprocessingruns", { 'process': 'no_such_process' } ) == []
+
+        # Errors
+        with pytest.raises( RuntimeError, match='^Error response from server.*No run of' ):
+            dbclient.send( "finishprocessingrun", { **key, 'epoch': epoch + 5, 'status': 'done' } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*Unknown status' ):
+            dbclient.send( "finishprocessingrun", { **key, 'status': 'processing' } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*epoch must be an integer' ):
+            dbclient.send( "startprocessingrun", { **key, 'epoch': '60000123' } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*epoch must be an integer' ):
+            dbclient.send( "startprocessingrun", { **key, 'epoch': True } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*diaobject_id must be a UUID' ):
+            dbclient.send( "startprocessingrun", { **key, 'diaobject_id': 'not-a-uuid' } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*process must be' ):
+            dbclient.send( "startprocessingrun", { **key, 'process': '  ' } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*Missing required keys' ):
+            dbclient.send( "startprocessingrun", { 'process': process } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*Unknown keys' ):
+            dbclient.send( "startprocessingrun", { **key, 'bogus': 1 } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*violates foreign key' ):
+            dbclient.send( "startprocessingrun", { **key, 'diaobject_id': str( uuid.uuid4() ) } )
+    finally:
+        with DBCon() as con:
+            con.execute( "DELETE FROM processing_run WHERE process=%(p)s", { 'p': process } )
+            if provid is not None:
+                con.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': provid.id } )
+            con.commit()
+
+
+def test_spectrum1d_with_included_images( dbclient, stupid_provenance, stupid_object ):
+    images = []
+    spectra = []
+    try:
+        for i in range( 3 ):
+            ra = 180. + i
+            images.append( Image( id=uuid.uuid4(), filepath=f'spec_included_image_{i}',
+                                  provenance_id=stupid_provenance, width=1024, height=1024,
+                                  observation_id=str(i), sca=1, band='PRISM', ra=ra, dec=0.,
+                                  ra_corner_00=ra-0.2, ra_corner_01=ra-0.2, ra_corner_10=ra+0.2,
+                                  ra_corner_11=ra+0.2, dec_corner_00=-0.2, dec_corner_01=0.2,
+                                  dec_corner_10=-0.2, dec_corner_11=0.2, mjd=60000.+i, exptime=100, format=1 ) )
+            images[-1]._position_angle = 0.
+            images[-1].save_to_db()
+        ids = [ str(i.id) for i in images ]
+
+        specid = str( uuid.uuid4() )
+        spectra.append( specid )
+        payload = { 'id': specid, 'provenance_id': str(stupid_provenance), 'diaobject_id': str(stupid_object),
+                    'diaobject_position_id': None, 'band': 'PRISM', 'filepath': 's3://bucket/spec_output/final/a.parquet',
+                    'mjd_start': 60000., 'mjd_end': 60002.01, 'epoch': 60001000,
+                    'included_image_ids': [ ids[2], ids[0] ] }
+
+        res = dbclient.send( "savespectrum1d", payload )
+        assert res['id'] == specid
+        assert res['filepath'] == 's3://bucket/spec_output/final/a.parquet'
+        assert res['diaobject_position_id'] is None
+        assert res['included_image_ids'] == sorted( [ ids[0], ids[2] ] )
+
+        res = dbclient.send( f"getspectrum1d/{specid}" )
+        assert res['included_image_ids'] == sorted( [ ids[0], ids[2] ] )
+
+        res = dbclient.send( "findspectra1d", { 'provenance': str(stupid_provenance), 'diaobject_id': str(stupid_object),
+                                                'filepath': 's3://bucket/spec_output/final/a.parquet' } )
+        assert [ r['id'] for r in res ] == [ specid ]
+        assert res[0]['included_image_ids'] == sorted( [ ids[0], ids[2] ] )
+        assert dbclient.send( "findspectra1d", { 'provenance': str(stupid_provenance),
+                                                  'filepath': 's3://bucket/spec_output/final/other.parquet' } ) == []
+
+        # The same registration again changes nothing
+        res = dbclient.send( "savespectrum1d", payload )
+        assert res['included_image_ids'] == sorted( [ ids[0], ids[2] ] )
+        assert len( dbclient.send( "findspectra1d", { 'provenance': str(stupid_provenance) } ) ) == 1
+
+        # A run again for the same key points to the new file (its version is in its name) and
+        # replaces the images that went in
+        payload2 = { **payload, 'filepath': 's3://bucket/spec_output/final/a_v2.parquet', 'mjd_end': 60003.0,
+                     'included_image_ids': ids }
+        res = dbclient.send( "savespectrum1d", payload2 )
+        assert res['filepath'] == 's3://bucket/spec_output/final/a_v2.parquet'
+        assert res['mjd_end'] == 60003.0
+        assert res['included_image_ids'] == sorted( ids )
+
+        # No list sent: the images are left as they are
+        payload3 = { k: v for k, v in payload2.items() if k != 'included_image_ids' }
+        payload3['filepath'] = 's3://bucket/spec_output/final/a_v3.parquet'
+        res = dbclient.send( "savespectrum1d", payload3 )
+        assert res['filepath'] == 's3://bucket/spec_output/final/a_v3.parquet'
+        assert res['included_image_ids'] == sorted( ids )
+
+        # An empty list means none
+        res = dbclient.send( "savespectrum1d", { **payload3, 'included_image_ids': [] } )
+        assert res['included_image_ids'] == []
+
+        # What identifies a spectrum cannot change under its id
+        with pytest.raises( RuntimeError, match='^Error response from server.*different epoch' ):
+            dbclient.send( "savespectrum1d", { **payload, 'epoch': 60002000 } )
+        # The database's own unique key (provenance, object, epoch) refuses another id
+        with pytest.raises( RuntimeError, match='^Error response from server.*unique' ):
+            dbclient.send( "savespectrum1d", { **payload, 'id': str( uuid.uuid4() ) } )
+        # Unknown images and bad ids
+        with pytest.raises( RuntimeError, match='^Error response from server.*foreign key' ):
+            dbclient.send( "savespectrum1d", { **payload, 'included_image_ids': [ str( uuid.uuid4() ) ] } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*must be UUIDs' ):
+            dbclient.send( "savespectrum1d", { **payload, 'included_image_ids': [ 'x' ] } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*must be a list' ):
+            dbclient.send( "savespectrum1d", { **payload, 'included_image_ids': ids[0] } )
+
+        # A spectrum written the old way (nine fields, no images) still works
+        old = { 'id': str( uuid.uuid4() ), 'provenance_id': str(stupid_provenance),
+                'diaobject_id': str(stupid_object), 'diaobject_position_id': None, 'band': 'PRISM',
+                'filepath': 'old.hdf5', 'mjd_start': 60000., 'mjd_end': 60001., 'epoch': 60005000 }
+        spectra.append( old['id'] )
+        res = dbclient.send( "savespectrum1d", old )
+        assert res['included_image_ids'] == []
+    finally:
+        with DBCon() as con:
+            if len( spectra ) > 0:
+                con.execute( "DELETE FROM spectrum1d_included_image WHERE spectrum1d_id=ANY(%(ids)s::uuid[])",
+                             { 'ids': spectra } )
+                con.execute( "DELETE FROM spectrum1d WHERE id=ANY(%(ids)s::uuid[])", { 'ids': spectra } )
+            if len( images ) > 0:
+                con.execute( "DELETE FROM l2image WHERE id=ANY(%(ids)s)", { 'ids': [ i.id for i in images ] } )
+            con.commit()
+
+
+def test_findl2images_without_a_provenance( dbclient ):
+    """No provenance: the images of every provenance are searched; with one, only its images."""
+    provs = []
+    images = []
+    try:
+        for n in range( 2 ):
+            prov = Provenance( process=f"test_findl2images_any_{n}", major=1, minor=0 )
+            prov.save_to_db()
+            provs.append( prov )
+            im = Image( id=uuid.uuid4(), filepath=f'findl2images_any_{uuid.uuid4()}', provenance_id=prov.id,
+                        width=1024, height=1024, observation_id=f'any{n}', sca=n+1, band='PRISM',
+                        ra=150.0, dec=2.0, ra_corner_00=149.9, ra_corner_01=149.9, ra_corner_10=150.1,
+                        ra_corner_11=150.1, dec_corner_00=1.9, dec_corner_01=2.1, dec_corner_10=1.9,
+                        dec_corner_11=2.1, mjd=60000.+n, exptime=100, format=1 )
+            im._position_angle = 0.
+            im.save_to_db()
+            images.append( im )
+        ids = { str(i.id) for i in images }
+        query = { 'band': 'PRISM', 'ra': 150.0, 'dec': 2.0 }
+
+        res = dbclient.send( "findl2images", query )
+        assert ids <= { str(r['id']) for r in res }
+        res = dbclient.send( "findl2images", { **query, 'provenance': str(provs[0].id) } )
+        assert [ str(r['id']) for r in res ] == [ str(images[0].id) ]
+        res = dbclient.send( "findl2images", { **query, 'ra': 10.0, 'dec': -50.0 } )
+        assert ids.isdisjoint( { str(r['id']) for r in res } )
+        with pytest.raises( RuntimeError, match='^Error response from server.*process needs provenance_tag' ):
+            dbclient.send( "findl2images", { **query, 'process': 'test_findl2images_any_0' } )
+    finally:
+        with DBCon() as con:
+            for im in images:
+                con.execute( "DELETE FROM l2image WHERE id=%(id)s", { 'id': im.id } )
+            for prov in provs:
+                con.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
+            con.commit()
+
+
+def test_one_file_under_two_provenances( dbclient ):
+    """filepath is not unique: a file processed again is a row of its own, under its provenance."""
+    provs = []
+    ids = []
+    filepath = f'mast:ROMAN/product/two_provenances_{uuid.uuid4()}_cal.asdf'
+    try:
+        for n in range( 2 ):
+            prov = Provenance( process="test_two_provenances", major=1, minor=0,
+                               params={ 'calibration_software_version': f'1.0.{n}' } )
+            prov.save_to_db()
+            provs.append( prov )
+        rows = []
+        for n, prov in enumerate( provs ):
+            ids.append( str( uuid.uuid4() ) )
+            rows.append( { 'id': ids[-1], 'provenance_id': str(prov.id), 'band': 'PRISM', 'ra': 151.0, 'dec': 3.0,
+                           'ra_corner_00': 150.9, 'ra_corner_01': 150.9, 'ra_corner_10': 151.1,
+                           'ra_corner_11': 151.1, 'dec_corner_00': 2.9, 'dec_corner_01': 3.1,
+                           'dec_corner_10': 2.9, 'dec_corner_11': 3.1, 'filepath': filepath, 'format': 100,
+                           'mjd': 60000., 'exptime': 100., 'observation_id': 'two_prov', 'sca': 1,
+                           'filedate': f'2026-11-0{n+1}T12:00:00+00:00' } )
+
+        # The bulk save with ignore_conflicts: both rows go in, although they have the same filepath
+        columns = { key: [ row[key] for row in rows ] for key in rows[0] }
+        res = dbclient.send( "bulksavel2images?ignore_conflicts=1", columns )
+        assert res['inserted'] == 2
+        found = dbclient.send( "findl2images", { 'filepath': filepath } )
+        assert sorted( str(r['id']) for r in found ) == sorted( ids )
+        # filedate is saved and returned, and tells the two apart
+        by_id = { str(r['id']): r for r in found }
+        assert by_id[ids[0]]['filedate'] < by_id[ids[1]]['filedate']
+        assert by_id[ids[0]]['provenance_id'] != by_id[ids[1]]['provenance_id']
+
+        # The same rows again change nothing
+        res = dbclient.send( "bulksavel2images?ignore_conflicts=1", columns )
+        assert res['inserted'] == 0
+        assert len( dbclient.send( "findl2images", { 'filepath': filepath } ) ) == 2
+
+        # The id is the only unique key left: the same id again is refused by savel2image
+        with pytest.raises( RuntimeError, match='^Error response from server' ):
+            dbclient.send( "savel2image", rows[0] )
+
+        # The segmentation maps of the two processings of the file have one file too
+        segpath = filepath.replace( '_cal.', '_segm.' )
+        segids = []
+        for row in rows:
+            segids.append( str( uuid.uuid4() ) )
+            dbclient.send( "savesegmap", { 'id': segids[-1], 'provenance_id': row['provenance_id'], 'band': 'PRISM',
+                                           'ra': 151.0, 'dec': 3.0, 'ra_corner_00': 150.9, 'ra_corner_01': 150.9,
+                                           'ra_corner_10': 151.1, 'ra_corner_11': 151.1, 'dec_corner_00': 2.9,
+                                           'dec_corner_01': 3.1, 'dec_corner_10': 2.9, 'dec_corner_11': 3.1,
+                                           'filepath': segpath, 'format': 0, 'l2image_id': row['id'] } )
+        for row in rows:
+            found = dbclient.send( "findsegmaps", { 'provenance': row['provenance_id'], 'filepath': segpath } )
+            assert [ r['l2image_id'] for r in found ] == [ row['id'] ]
+
+        # An image saved without filedate has none
+        plain = dict( rows[0], id=str( uuid.uuid4() ), observation_id='two_prov_plain' )
+        del plain['filedate']
+        ids.append( plain['id'] )
+        dbclient.send( "savel2image", plain )
+        found = dbclient.send( "findl2images", { 'filepath': filepath, 'provenance': str(provs[0].id) } )
+        assert { str(r['id']): r['filedate'] for r in found }[plain['id']] is None
+    finally:
+        with DBCon() as con:
+            con.execute( "DELETE FROM segmap WHERE filepath=%(path)s", { 'path': filepath.replace( '_cal.', '_segm.' ) } )
+            con.execute( "DELETE FROM l2image WHERE id=ANY(%(ids)s::uuid[])", { 'ids': ids } )
+            for prov in provs:
+                con.execute( "DELETE FROM provenance WHERE id=%(id)s", { 'id': prov.id } )
+            con.commit()

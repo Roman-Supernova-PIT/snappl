@@ -479,12 +479,16 @@ class FindL2Images( BaseView ):
         allowed_keys = allowed_keys.union( minmaxes )
         data = self.check_json_keys( set(), allowed_keys, minmax_keys=minmaxes )
 
-        q = sql.SQL( "SELECT * FROM l2image WHERE " )
-
         with db.DBCon( dictcursor=True ) as dbcon:
-            data, provid = self.get_provenance_id( data, dbcon=dbcon )
-            conditions = [ sql.SQL( "provenance_id=%(provid)s" ) ]
-            subdict = { 'provid': provid }
+            conditions = []
+            subdict = {}
+            if ( 'provenance' in data ) or ( 'provenance_tag' in data ):
+                data, provid = self.get_provenance_id( data, dbcon=dbcon )
+                conditions = [ sql.SQL( "provenance_id=%(provid)s" ) ]
+                subdict = { 'provid': provid }
+            elif 'process' in data:
+                return "process needs provenance_tag", 422
+            # With no provenance given, the images of every provenance are searched.
 
             ( data,
               conditions,
@@ -499,8 +503,10 @@ class FindL2Images( BaseView ):
             if len(data) != 0:
                 return f"Error, unknown parameters: {data.keys()}", 422
 
-            q += conditions + finalclause
-            return dbcon.execute( q, subdict )
+            q = sql.SQL( "SELECT * FROM l2image" )
+            if conditions != sql.SQL( "" ):
+                q += sql.SQL( " WHERE " ) + conditions
+            return dbcon.execute( q + finalclause, subdict )
 
 
 # ======================================================================
@@ -516,7 +522,7 @@ class SaveL2Image( BaseView ):
                         'filepath', 'format', 'mjd', 'exptime' }
         allowed_keys = needed_keys.union( { 'observation_id', 'sca', 'extension', 'width', 'height',
                                             'properties', 'position_angle', 'processing_status',
-                                            'program' } )
+                                            'program', 'filedate' } )
         data = self.check_json_keys( needed_keys, allowed_keys )
         keysql, subs = self.build_sql_insert( data.keys() )
         q = sql.SQL( "INSERT INTO l2image(" ) + keysql + sql.SQL( ") VALUES (" ) + sql.SQL( subs ) + sql.SQL( ")" )
@@ -542,7 +548,7 @@ class BulkSaveL2Images( BaseView ):
                         'filepath', 'format', 'mjd', 'exptime' }
         allowed_keys = needed_keys.union( { 'observation_id', 'sca', 'extension', 'width', 'height',
                                             'properties', 'position_angle', 'processing_status',
-                                            'program' } )
+                                            'program', 'filedate' } )
         data = self.check_json_keys( needed_keys, allowed_keys )
 
         # ?ignore_conflicts=1 skips the images whose id is already in the table instead of
@@ -1054,27 +1060,93 @@ class FindLightcurves( BaseView ):
 
 # ======================================================================
 
-class SaveSpectrum1d( BaseView ):
+class Spectrum1dBase( BaseView ):
+    """Shared by the spectrum1d views: the images that went into a spectrum."""
+
+    @staticmethod
+    def parse_image_ids( ids ):
+        """Check a list of l2image ids from the client; returns them sorted, without repeats, as strings."""
+        if not isinstance( ids, list ):
+            raise RuntimeError( "included_image_ids must be a list of l2image ids" )
+        try:
+            return sorted( set( str( uuid.UUID( str(i) ) ) for i in ids ) )
+        except ValueError as ex:
+            raise RuntimeError( f"included_image_ids must be UUIDs: {ex}" ) from ex
+
+    @staticmethod
+    def add_included_image_ids( dbcon, rows ):
+        """Add 'included_image_ids' (sorted strings) to every row (a list of dicts), in one query."""
+        for row in rows:
+            row['included_image_ids'] = []
+        if len( rows ) == 0:
+            return rows
+        found = dbcon.execute( "SELECT spectrum1d_id, l2image_id FROM spectrum1d_included_image "
+                               "WHERE spectrum1d_id=ANY(%(ids)s::uuid[])",
+                               { 'ids': [ str(row['id']) for row in rows ] } )
+        byspectrum = {}
+        for item in found:
+            byspectrum.setdefault( str( item['spectrum1d_id'] ), [] ).append( str( item['l2image_id'] ) )
+        for row in rows:
+            row['included_image_ids'] = sorted( byspectrum.get( str( row['id'] ), [] ) )
+        return rows
+
+
+class SaveSpectrum1d( Spectrum1dBase ):
+    """Save a spectrum1d, together with the images that went into it.
+
+    Saving an id that exists is a repeat of the same registration, not an error: the provenance,
+    the object and the epoch (which identify the spectrum) must be the same, and the other
+    columns, and the included images if they are sent, are replaced by the new values.  The
+    unique key (provenance, object, epoch) is the database's own, so another id for the same key
+    is refused.  Returns the row, with 'included_image_ids'.
+    """
+
+    _identity = ( 'provenance_id', 'diaobject_id', 'epoch' )
+    _changeable = ( 'diaobject_position_id', 'band', 'filepath', 'mjd_start', 'mjd_end' )
+
     def do_the_things( self ):
         needed_keys = { 'id', 'provenance_id', 'diaobject_id', 'diaobject_position_id', 'band',
                          'filepath', 'mjd_start', 'mjd_end', 'epoch' }
-        allowed_keys = needed_keys
+        allowed_keys = needed_keys.union( { 'included_image_ids' } )
         data = self.check_json_keys( needed_keys, allowed_keys )
-
-        keysql, subs = self.build_sql_insert( data.keys() )
-        q = sql.SQL( "INSERT INTO spectrum1d(" ) + keysql + sql.SQL( ") VALUES (" ) + sql.SQL( subs ) + sql.SQL( ")" )
+        included = data.pop( 'included_image_ids', None )
+        if included is not None:
+            included = self.parse_image_ids( included )
 
         with db.DBCon( dictcursor=True ) as dbcon:
-            dbcon.execute( q, data )
-            row = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': data['id']} )
+            existing = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", { 'id': data['id'] } )
+            if len( existing ) == 0:
+                keysql, subs = self.build_sql_insert( data.keys() )
+                dbcon.execute( sql.SQL( "INSERT INTO spectrum1d(" ) + keysql + sql.SQL( ") VALUES (" )
+                               + sql.SQL( subs ) + sql.SQL( ")" ), data )
+            else:
+                for key in self._identity:
+                    if str( existing[0][key] ) != str( data[key] ):
+                        return ( f"spectrum1d {data['id']} exists with a different {key} "
+                                 f"({existing[0][key]}, not {data[key]})" ), 422
+                changes = [ k for k in self._changeable if k in data ]
+                # The names come from the fixed list above, so they are safe to put in the query text
+                setsql = sql.SQL( ", " ).join( sql.SQL( f"{k}=%({k})s" ) for k in changes )
+                dbcon.execute( sql.SQL( "UPDATE spectrum1d SET " ) + setsql + sql.SQL( " WHERE id=%(id)s" ), data )
+
+            if included is not None:
+                dbcon.execute( "DELETE FROM spectrum1d_included_image WHERE spectrum1d_id=%(id)s",
+                               { 'id': data['id'] } )
+                if len( included ) > 0:
+                    dbcon.execute( "INSERT INTO spectrum1d_included_image(spectrum1d_id, l2image_id) "
+                                   "SELECT %(id)s, i FROM unnest(%(ids)s::uuid[]) AS i",
+                                   { 'id': data['id'], 'ids': included } )
+
+            rows = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", { 'id': data['id'] } )
+            self.add_included_image_ids( dbcon, rows )
             dbcon.commit()
 
-        return row
+        return rows[0]
 
 
 # ======================================================================
 
-class GetSpectrum1d( BaseView ):
+class GetSpectrum1d( Spectrum1dBase ):
     def do_the_things( self, spectrumid ):
         with db.DBCon( dictcursor=True ) as dbcon:
             rows = dbcon.execute( "SELECT * FROM spectrum1d WHERE id=%(id)s", {'id': spectrumid} )
@@ -1083,12 +1155,13 @@ class GetSpectrum1d( BaseView ):
             elif len(rows) > 1:
                 return f"Multiple spectrum1d with id {spectrumid}; this should never happen.", 422
             else:
+                self.add_included_image_ids( dbcon, rows )
                 return rows[0]
 
 
 # ======================================================================
 
-class FindSpectra1d( BaseView ):
+class FindSpectra1d( Spectrum1dBase ):
     def do_the_things( self ):
         equalses = { 'id', 'diaobject_id', 'band', 'filepath' }
         minmaxes = { 'mjd_start', 'mjd_end', 'epoch' }
@@ -1113,7 +1186,126 @@ class FindSpectra1d( BaseView ):
                 return f"Error, unknown parametrs: {data.keys()}", 422
 
             q += conditions + finalclause
-            return dbcon.execute( q, subdict )
+            rows = dbcon.execute( q, subdict )
+            return self.add_included_image_ids( dbcon, rows )
+
+
+# ======================================================================
+
+class ProcessingRunBase( BaseView ):
+    """Shared by the processing_run views: a run is identified by (process, diaobject_id, epoch)."""
+
+    @staticmethod
+    def check_run_key( data ):
+        """Validate the three values that identify a run; returns them as (str, str, int)."""
+        process = data['process']
+        if ( not isinstance( process, str ) ) or ( process.strip() == '' ):
+            raise RuntimeError( "process must be a non-empty string" )
+        try:
+            objid = str( uuid.UUID( str( data['diaobject_id'] ) ) )
+        except ValueError as ex:
+            raise RuntimeError( f"diaobject_id must be a UUID: {ex}" ) from ex
+        epoch = data['epoch']
+        if isinstance( epoch, bool ) or ( not isinstance( epoch, int ) ):
+            raise RuntimeError( "epoch must be an integer (millidays)" )
+        return process, objid, epoch
+
+
+class StartProcessingRun( ProcessingRunBase ):
+    """Start a run, or start it again.
+
+    A run that does not exist is created as 'processing'.  One that exists is set back to
+    'processing' whatever its status was (a run is repeated on purpose: a new release, a
+    corrected configuration), and its message, provenance and finish time are cleared.
+    Returns the row.  The record says what the last start did; it does not refuse a start.
+    """
+
+    def do_the_things( self ):
+        data = self.check_json_keys( { 'process', 'diaobject_id', 'epoch' },
+                                     { 'process', 'diaobject_id', 'epoch', 'execution' } )
+        process, objid, epoch = self.check_run_key( data )
+        subs = { 'id': str( uuid.uuid4() ), 'process': process, 'diaobject_id': objid, 'epoch': epoch,
+                 'execution': data.get( 'execution' ) }
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "INSERT INTO processing_run(id, process, diaobject_id, epoch, status, execution, "
+                                  "                           started_at, status_updated_at) "
+                                  "VALUES (%(id)s, %(process)s, %(diaobject_id)s, %(epoch)s, 'processing', "
+                                  "        %(execution)s, NOW(), NOW()) "
+                                  "ON CONFLICT (process, diaobject_id, epoch) DO UPDATE "
+                                  "  SET status='processing', execution=EXCLUDED.execution, message=NULL, "
+                                  "      provenance_id=NULL, started_at=NOW(), finished_at=NULL, "
+                                  "      status_updated_at=NOW() "
+                                  "RETURNING *", subs )
+            dbcon.commit()
+
+        return rows[0]
+
+
+class FinishProcessingRun( ProcessingRunBase ):
+    """Finish a run that is 'processing', as 'done' or 'failed'.
+
+    A run that is not 'processing' is not changed (a late or repeated call): the row is returned
+    with 'updated': false.  An unknown run is an error.
+    """
+
+    _statuses = ( 'done', 'failed' )
+
+    def do_the_things( self ):
+        data = self.check_json_keys( { 'process', 'diaobject_id', 'epoch', 'status' },
+                                     { 'process', 'diaobject_id', 'epoch', 'status', 'provenance_id',
+                                       'execution', 'message' } )
+        process, objid, epoch = self.check_run_key( data )
+        if data['status'] not in self._statuses:
+            return f"Unknown status {data['status']!r}; must be one of {self._statuses}", 422
+        provid = data.get( 'provenance_id' )
+        if provid is not None:
+            try:
+                provid = str( uuid.UUID( str( provid ) ) )
+            except ValueError as ex:
+                return f"provenance_id must be a UUID: {ex}", 422
+        subs = { 'process': process, 'diaobject_id': objid, 'epoch': epoch, 'status': data['status'],
+                 'provenance_id': provid, 'execution': data.get( 'execution' ),
+                 'message': data.get( 'message' ) }
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( "UPDATE processing_run SET status=%(status)s, "
+                                  "  provenance_id=%(provenance_id)s::uuid, "
+                                  "  execution=COALESCE(%(execution)s, execution), "
+                                  "  message=%(message)s, finished_at=NOW(), status_updated_at=NOW() "
+                                  "WHERE process=%(process)s AND diaobject_id=%(diaobject_id)s "
+                                  "  AND epoch=%(epoch)s AND status='processing' "
+                                  "RETURNING *", subs )
+            updated = len( rows ) > 0
+            if not updated:
+                rows = dbcon.execute( "SELECT * FROM processing_run "
+                                      "WHERE process=%(process)s AND diaobject_id=%(diaobject_id)s "
+                                      "  AND epoch=%(epoch)s", subs )
+                if len( rows ) == 0:
+                    return f"No run of {process} for object {objid} and epoch {epoch}", 422
+            dbcon.commit()
+
+        row = rows[0]
+        row['updated'] = updated
+        return row
+
+
+class FindProcessingRuns( BaseView ):
+    def do_the_things( self ):
+        equalses = { 'id', 'process', 'diaobject_id', 'epoch', 'status', 'execution', 'provenance_id' }
+        allowed_keys = equalses.union( { 'order_by', 'limit', 'offset' } )
+        data = self.check_json_keys( set(), allowed_keys )
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            ( data, conditions, subdict, finalclause ) = self.make_sql_conditions( data, equalses=equalses,
+                                                                                   conditions=[], subdict={} )
+            if len(data) != 0:
+                return f"Error, unknown parameters: {list(data.keys())}", 422
+
+            q = sql.SQL( "SELECT * FROM processing_run" )
+            if conditions != sql.SQL( "" ):
+                q += sql.SQL( " WHERE " ) + conditions
+            return dbcon.execute( q + finalclause, subdict )
 
 
 # ======================================================================
@@ -1173,6 +1365,10 @@ urls = {
     "/savespectrum1d": SaveSpectrum1d,
     "/getspectrum1d/<spectrumid>": GetSpectrum1d,
     "/findspectra1d": FindSpectra1d,
+
+    "/startprocessingrun": StartProcessingRun,
+    "/finishprocessingrun": FinishProcessingRun,
+    "/findprocessingruns": FindProcessingRuns,
 
     "/.well-known/acme-challenge/<f>": LetsEncrypt
 }
