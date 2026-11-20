@@ -112,8 +112,8 @@ jobs:
           mv snappl packages/
           cd packages/snappl
           docker compose up -d test-shell
-          docker compose exec shell bash -c 'cd /packages/snappl && pip install -e .[test]'
-          docker compose exec -e STPSF_PATH=/packages/stpsf-data shell bash -c 'cd /packages/snappl/snappl/tests && pytest -v'
+          docker compose exec test-shell bash -c 'cd /packages/snappl && pip install -e .[test]'
+          docker compose exec -e STPSF_PATH=/packages/stpsf-data test-shell bash -c 'cd /packages/snappl/snappl/tests && pytest -v'
           docker compose down -v
           # move the snappl checkout back to where further github
           # actions will expect it.  (TODO: see if there's a way we

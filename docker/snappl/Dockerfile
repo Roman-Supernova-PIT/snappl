@@ -71,6 +71,17 @@ ENV CRDS_SERVER_URL=https://roman-crds.stsci.edu
 # This next one isn't obvious, users may want to customize at runtime
 ENV CRDS_PATH=/tmp
 
+# Make sure the user is in /etc/passwd.  (The stpsf library seems to need this?)
+RUN /bin/bash -c "if [ ${USERID} -ne 0 ]; then \
+                    echo snappl_user:x:${USERID}:${GROUPID}::/home:/bin/bash >> /etc/passwd ; \
+                    echo snappl_user:*:200000:::::: >> /etc/shadow ; \
+                    cat /etc/group | perl -pe 's/(sudo.*)$/\\1:snappl_user/' > /etc/group.new ; \
+                    mv /etc/group.new /etc/group ; \
+                  fi"
+RUN /bin/bash -c "if [ ${GROUPID} -ne 0 ]; then \
+                    echo snappl_user:x:${GROUPID}: >> /etc/group ; \
+                  fi"
+
 # Sanity
 RUN ln -s /usr/bin/python3 /usr/bin/python
 ENV LESS=-XLRi
@@ -202,10 +213,16 @@ ENTRYPOINT [ "tail", "-f", "/etc/issue" ]
 
 FROM base AS tests
 
-
 COPY --from=build-tests /venv/ /venv/
 COPY --from=build-tests /roman_imsim/ /roman_imsim/
 COPY --from=build-webserver /roman-snpit-db/ /roman-snpit-db/
+
+# segmap test needs SExtractor
+RUN apt-get update \
+    && apt-get -y install source-extractor \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+RUN ln -s /usr/bin/source-extractor /usr/bin/sextractor
 
 # So the user can pip install
 RUN chown -R ${USERID}:${GROUPID} /venv

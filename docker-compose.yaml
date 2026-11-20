@@ -37,6 +37,13 @@
 #      exit
 #    docker compose down -v
 #
+# NOTE FOR TESTS : it requires, right now, to have exactly the right
+#   version of stpsf data checked out in packages.  Run this in your
+#   packages directory:
+#    curl -sSfL -o stpsf-data.tar.gz https://stsci.box.com/shared/static/mjst9j056ibf2uph4gxy8qxmi89tjzwk.gz
+#    tar xpf stpsf-data.tar.gz
+#    rm stpsf-data.tar.gz
+#
 # Of course, you can do other things inside test-shell.  The "nohup
 # pytest" runs all the tests and writes the output to pytest.out in the
 # tests directory.  It takes tens of minutes to run.
@@ -114,6 +121,7 @@ services:
         - GROUPID=${GROUPID:-0}
     environment:
       CRDS_PATH: /crds_cache
+      STPSF_PATH: /stpsf-data
     volumes:
       - dev_storage:/dev_storage
       - temp_dir:/temp_dir
@@ -123,6 +131,7 @@ services:
       - ../../packages:/packages
       - ../../packages/photometry_test_data:/photometry_test_data
       - ../../packages/snappl_tests_data:/data
+      - ../../packages/stpsf-data:/stpsf-data
     working_dir: /home
     user: ${USERID:-0}:${GROUPID:-0}
     command: tail -f /etc/issue
