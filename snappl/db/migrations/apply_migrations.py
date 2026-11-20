@@ -25,9 +25,12 @@ def apply_migrations():
 
         with DBCon() as conn:
             try:
+                # COLLATE "C": the files are sorted below by Python, which compares code points, and a database
+                #   with a locale such as en_US.UTF-8 orders names differently (it ignores "_"), so the two
+                #   lists would no longer match, for example 20261118_x.sql and 20261118a_x.sql.
                 rows, _cols = conn.execute( "SELECT filename,md5sum,applied_time "
                                             "FROM _migrations_applied "
-                                            "ORDER BY filename" )
+                                            'ORDER BY filename COLLATE "C"' )
                 applied = [ row[0] for row in rows ]
                 md5sums = [ row[1] for row in rows ]
                 when = [ row[2] for row in rows ]

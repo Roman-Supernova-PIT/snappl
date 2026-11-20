@@ -1120,6 +1120,14 @@ class Spectrum1d( DBBase ):
 
 # ======================================================================
 
+class ProcessingRun( DBBase ):
+    __tablename__ = "processing_run"
+    _tablemeta = None
+    _pk = [ 'id' ]
+
+
+# ======================================================================
+
 # class DiaObjectClassification( DBBase ):
 #     __tablename__ = "diaobject_classification"
 #     _tablemeta = None
