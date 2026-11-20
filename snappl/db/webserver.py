@@ -1,12 +1,15 @@
 __all__ = [ 'setup_flask_app' ]
 
+import io
 import re
 import uuid
 import pathlib
+import textwrap
 
 import flask
 import flask_session
 from psycopg import sql
+import numpy as np
 
 from rkwebutil import rkauth_flask
 
@@ -14,6 +17,7 @@ from snappl.config import Config
 from snappl.db import db
 from snappl.db.baseview import BaseView
 from snappl.logger import SNLogger
+from snappl.utils import asUUID
 
 
 # ======================================================================
@@ -200,7 +204,8 @@ class CreateProvenance( BaseProvenance ):
 
             dbcon.commit()
 
-        return { "status": "ok" }
+        return { "status": "ok",
+                 "provenance_id": str( prov.id ) }
 
 
 # ======================================================================
@@ -670,6 +675,304 @@ class FindSegmentationMap( BaseView ):
 
 # ======================================================================
 
+class SaveDiaForcedSource( BaseView ):
+    """Create a new diaforcedsource.
+
+    Call api endpoint /savediaforcedsource
+
+    POST data must be a json dictionary with keys:
+       id: str of UUID
+         (optional) the uuid of the diaforcedsource.  If one is not
+         given, a new one will be generated.
+
+       provenance_id: str of UUID
+         provenance id for diaforcedsource
+
+       diaobject_id: str of UUID
+         the object this is a measurement of
+
+       diaobject_position_id: str of UUID  (optional)
+         the position of the object used for the measurement.
+         If this is null, it means the ra/dec from the diaobject
+         table was used.
+
+       image_id: str of UUID
+         the science image
+
+       template_id: str of UUID
+         the template image.  diaforcedphot implicitly assumes a one
+         science minus one template subtraction.  If we want to subtract
+         a coadded template, then that coadded template should be in the
+         database and this should be its id
+
+       flux: float
+         flux in nJy
+
+       dflux: float
+         uncertainty on flux
+
+       exist_ok: bool (optional)
+         If 1 (or something that's true), we're ok if the point already
+         exists.  By default, it's an error to try to save the same
+         point more than once.
+
+       atol: real or None, default None (optional)
+         If not None, and exist_ok is true, then flux and dflux must be
+         within this of an existing point (if there is one) to avoid an
+         error.
+
+       rtol: real or None, default 1e-6 (optional)
+         If not None, and exist_ok is true, then flux and dflux must be
+         within this fraction of what exists to avoid an error.
+         Remember that fluxes near 0 can easily violate this without
+         being meaningful!)
+
+    If id is not given, a new one will be generated.
+
+    Returns
+    -------
+      Either a 422 if there's a problem, a 500 if something went
+      horribly wrong, or a 400 with a json dictionary with keys:
+       id
+       provenance_id
+       diaobject_id
+       diaobject_position_id
+       image_id
+       template_id
+       flux
+       dflux
+
+    """
+
+    def do_the_things( self ):
+        if not flask.request.is_json:
+            return "Expected diaforcedsource info in json POST data, didtn't get any.", 422
+
+        needed_keys = { 'provenance_id', 'diaobject_id', 'image_id', 'template_id', 'flux', 'dflux' }
+        allowed_keys = needed_keys.union( { 'id', 'diaobject_position_id', 'exist_ok', 'atol', 'rtol' } )
+        data = self.check_json_keys( needed_keys, allowed_keys )
+        exist_ok = bool( data['exist_ok'] ) if 'exist_ok' in data else False
+        atol = float( data['atol'] ) if 'atol' in data and data['atol'] is not None else None
+        rtol = ( data['rtol'] ) if 'rtol' in data else 1e-6
+        rtol = float( rtol ) if rtol is not None else None
+        flux = float( data['flux'] )
+        dflux = float( data['dflux'] )
+
+        # RACE CONDITION WARNING.  Right now we don't lock the diaforcedphot table.  It's possible
+        #    that somebody will insert a consistent point in between when we check if it's there
+        #    and when we insert it ourselves.  If that happens, then it will violate the unique
+        #    constraint in the database and there will be an error return.  Better behavior
+        #    would be to lock the table (scary) so we don't have to return an error.  Hopefully
+        #    this will not happen often enough to be a problem.
+
+        with db.DBCon( dictcursor=True ) as dbcon:
+            posclause = ( sql.SQL( "diaobject_position_id={posid}" ).format( posid=data['diaobject_position_id' ] )
+                          if 'diaobject_position_id' in data and data['diaobject_position_id'] is not None
+                          else sql.SQL( "diaobject_position_id IS NULL" ) )
+            rows = dbcon.execute( sql.SQL( textwrap.dedent(
+                """\
+                SELECT * FROM diaforcedsource
+                WHERE provenance_id={provid}
+                  AND diaobject_id={objid}
+                  AND {posclause}
+                  AND image_id={imgid}
+                  AND template_id={templid}
+                """
+            ) ).format( provid=data['provenance_id'],
+                        objid=data['diaobject_id'],
+                        posclause=posclause,
+                        imgid=data['image_id'],
+                        templid=data['template_id'] ) )
+            if len(rows) > 1:
+                return "Database corruption, forced photometry point multiply defined!", 422
+
+            elif len(rows) == 1:
+                if not exist_ok:
+                    return "Error, diaforcedsource already exists.", 422
+                row = rows[0]
+                if atol is None:
+                    flux_atol_ok = True
+                    dflux_atol_ok = True
+                else:
+                    flux_atol_ok = np.fabs( row['flux'] - flux ) <= atol
+                    dflux_atol_ok = np.fabs( row['dflux'] - dflux ) <= atol
+                if rtol is None:
+                    flux_rtol_ok = True
+                    dflux_rtol_ok = True
+                else:
+                    flux_rtol_ok = np.fabs( row['flux'] - flux ) <= rtol * np.fabs( row['flux'] )
+                    dflux_rtol_ok = np.fabs( row['dflux'] - dflux ) <= rtol * np.fabs( row['dflux'] )
+
+                if not all( [ flux_atol_ok, dflux_atol_ok, flux_rtol_ok, dflux_rtol_ok ] ):
+                    strio = io.StringIO()
+                    atolprint = "None" if atol is None else f"{atol:.3g}"
+                    rtolprint = "None" if rtol is None else f"{rtol:.3g}"
+                    strio.write( f"Error, a photometry point already exists with flux/dflux within tolerances;\n"
+                                 f"    passed flux={flux:.6g} ± {dflux:.6g}, "
+                                 f"    existing {row['flux']:.6g} ± {row['dflux']:.6g}\n"
+                                 f"    atol = {atolprint}, rtol = {rtolprint}\n"
+                                 f"  Violates:"
+                                )
+                    comma = ""
+                    for cond, text in zip( [ flux_atol_ok, dflux_atol_ok, flux_rtol_ok, dflux_rtol_ok ],
+                                           [ 'flux atol', 'dflux atol', 'flux rtol', 'dflux rtol' ] ):
+                        if not cond:
+                            strio.write( f"{comma} {text}" )
+                            comma = ","
+                    return strio.getvalue(), 422
+
+                # Just return the consistent existing point
+                return rows[0]
+
+            else:
+                dfp = { 'id': asUUID( data['id'] ) if 'id' in data and data['id'] is not None else uuid.uuid4(),
+                        'provenance_id': asUUID( data['provenance_id'] ),
+                        'diaobject_id': asUUID( data['diaobject_id'] ),
+                        'diaobject_position_id': ( asUUID( data['diaobject_position_id'] )
+                                                   if ( ( 'diaobject_position_id' in data ) and
+                                                        ( data['diaobject_position_id'] is not None ) )
+                                                   else None ),
+                        'image_id': asUUID( data['image_id'] ),
+                        'template_id': asUUID( data['template_id'] ),
+                        'flux': flux,
+                        'dflux': dflux
+                       }
+                fields = sql.SQL(",").join( sql.Identifier(k) for k in dfp.keys() )
+                values = sql.SQL(",").join( v for v in dfp.values() )
+                dbcon.execute_nofetch( sql.SQL( "INSERT INTO diaforcedsource({fields}) VALUES ({values})" )
+                                       .format( fields=fields, values=values ) )
+                dbcon.commit()
+
+                return dfp
+
+
+# ======================================================================
+
+class GetDiaForcedSource( BaseView ):
+    """Get a diaforcedsource.
+
+    Call api endpoint /getdiaforcedsource/<diaforcedsource_id>
+
+    Returns a dictionary with keys:
+      id
+      provenance_id
+      diaobject_id
+      diaobject_position_id   (may be null)
+      image_id
+      template_id
+      flux
+      dflux
+    """
+
+    def do_the_things( self, sourceid ):
+        with db.DBCon( dictcursor=True ) as dbcon:
+            rows = dbcon.execute( sql.SQL( "SELECT * FROM diaforcedsource WHERE id={dpid}" ).format( dpid=sourceid ) )
+            if len(rows) == 0:
+                return f"Unknown diaforcedsource {sourceid}", 422
+            elif len(rows) > 1:
+                return f"Multiple diaforcedsources with id {sourceid}; this should never happen.", 422
+            else:
+                return rows[0]
+
+
+# ======================================================================
+class GetDiaForcedSourceLtcv( BaseView ):
+    """Get a sequence of forced photometry.
+
+    Call either with
+       /getdiaforcedsourceltcv/<provid>/<diaobjectid>
+
+    or
+       /getdiaforcedsourceltcv/<provtag>/<process>/<diaobjectid>
+
+    Optionally, you may include a json-encoded dictionary in POST data with keys:
+
+    include_ids: bool
+      Return lightcurve will include id, diaobject_position_id, image_id
+      and template_id.  Note that if you don't ask for this, you may get
+      back multiple points from the same mjd without any way of
+      distinguishing them.  (The difference would be different template
+      ids.)
+
+    WARNING: if you don't give include_ids, you will have no way of
+    knowing if all the forced photometry used the same position.  (If
+    you do give include_ids, then you can look at the
+    diaobject_position_id.)  If we really do provenances right, then
+    this inconsistency shouldn't ever happen.
+
+    Returns
+    -------
+      Json dictionary, the values of which are lists.  All the lists
+      should have the same number of elements.  You can feed this into
+      pandas.DataFrame (for example).  Keys:
+
+        mjd : list of float
+
+        band : list of str
+
+        flux : list of float
+
+        dflux : list of float
+
+      If you specified include_ids, there will be three additional keys:
+
+        id : list of str (str() of uuid)
+
+        image_id : list of str (str() of uuid)
+
+        template_id : list of str (str() of uuid)
+
+        diaobject_position_id : list of str or None (str() of uuid; None means used diaobject position)
+
+    """
+
+    def do_the_things( self, provtag, process, diaobjectid=None ):
+        with db.DBCon() as dbcon:
+            if diaobjectid is None:
+                provid = provtag
+                diaobjectid = process
+            else:
+                rows, cols = dbcon.execute( sql.SQL( textwrap.dedent(
+                    """\
+                    SELECT p.id FROM provenance p
+                    INNER JOIN provenance_tag t ON p.id=t.provenance_id
+                    WHERE t.process={proc} and t.tag={tag}
+                    """
+                ) ).format( proc=process, tag=provtag ) )
+                if len(rows) == 0:
+                    return f"Can't find provenance for tag {provtag} and process {process}", 422
+                elif len(rows) > 1:
+                    return ( f"Multiple provenances for tag {provtag} and process {process}; "
+                             f"this should never happen", 422 )
+                else:
+                    provid = rows[0][0]
+
+            include_ids = False
+            if flask.request.is_json:
+                include_ids = ( 'include_ids' in flask.request.json ) and flask.request.json['include_ids']
+
+            idvals = ( sql.SQL(", ") +
+                       sql.SQL(", ").join( sql.Identifier('p', x) for x in [ 'id', 'image_id', 'template_id',
+                                                                            'diaobject_position_id' ] )
+                       if include_ids else sql.SQL( "" )
+                      )
+            rows, cols = dbcon.execute( sql.SQL( textwrap.dedent(
+                """\
+                SELECT i.mjd, i.band, p.flux, p.dflux{idvals}
+                FROM diaforcedsource p
+                INNER JOIN l2image i ON p.image_id=i.id
+                WHERE p.diaobject_id={diaobjid}
+                  AND p.provenance_id={provid}
+                ORDER BY i.mjd, i.band
+                """
+            ) ).format( idvals=idvals, diaobjid=diaobjectid, provid=provid ) )
+
+            return { cols[i]: [ row[i] for row in rows ] for i in range( len(cols) ) }
+
+
+
+# ======================================================================
+
 class SaveLightcurve( BaseView ):
     def do_the_things( self ):
         if not flask.request.is_json:
@@ -856,6 +1159,12 @@ urls = {
     "/savesegmap": SaveSegmentationMap,
     "/getsegmap/<segmapid>": GetSegmentationMap,
     "/findsegmaps": FindSegmentationMap,
+
+    "/savediaforcedsource": SaveDiaForcedSource,
+    "/getdiaforcedsource/<sourceid>": GetDiaForcedSource,
+    # Next line, really its "gitdiaforcedsourceltcv/<provid>/<diaobjectid>", but Flask needs this
+    "/getdiaforcedsourceltcv/<provtag>/<process>": GetDiaForcedSourceLtcv,
+    "/getdiaforcedsourceltcv/<provtag>/<process>/<diaobjectid>": GetDiaForcedSourceLtcv,
 
     "/savelightcurve": SaveLightcurve,
     "/getlightcurve/<ltcvid>": GetLightcurve,
