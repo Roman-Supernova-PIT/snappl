@@ -199,6 +199,31 @@ def check_wcs():
         assert np.all( xs == pytest.approx( xvals, abs=0.1 ) )
         assert np.all( ys == pytest.approx( yvals, abs=0.1 ) )
 
+        # Check that 1-element arrays and lists come back as arrays, not floats
+        #  (numpy >= 2.4 refuses float() on arrays with ndim > 0), and that
+        #  0-dimensional arrays are treated as scalars.
+        data = testdata[0]
+        raprec = arcsecprecision/3600./np.cos(data['dec'] * np.pi/180.)
+        for wrap in ( lambda v: np.array( [ v ] ), lambda v: [ v ] ):
+            ras, decs = wcs.pixel_to_world( wrap( data['x'] ), wrap( data['y'] ) )
+            assert isinstance( ras, np.ndarray ) and ras.shape == ( 1, )
+            assert isinstance( decs, np.ndarray ) and decs.shape == ( 1, )
+            assert ras[0] == pytest.approx( data['ra'], abs=raprec )
+            assert decs[0] == pytest.approx( data['dec'], abs=arcsecprecision/3600. )
+
+            xs, ys = wcs.world_to_pixel( wrap( data['ra'] ), wrap( data['dec'] ) )
+            assert isinstance( xs, np.ndarray ) and xs.shape == ( 1, )
+            assert isinstance( ys, np.ndarray ) and ys.shape == ( 1, )
+            assert xs[0] == pytest.approx( data['x'], abs=invabs )
+            assert ys[0] == pytest.approx( data['y'], abs=invabs )
+
+        ra, dec = wcs.pixel_to_world( np.array( data['x'] ), np.array( data['y'] ) )
+        assert isinstance( ra, float )
+        assert isinstance( dec, float )
+        x, y = wcs.world_to_pixel( np.array( data['ra'] ), np.array( data['dec'] ) )
+        assert isinstance( x, float )
+        assert isinstance( y, float )
+
     return wcs_checker
 
 
