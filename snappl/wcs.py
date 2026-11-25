@@ -211,7 +211,8 @@ class AstropyWCS(BaseWCS):
     def pixel_to_world( self, x, y ):
         ra, dec = self._wcs.pixel_to_world_values( x, y )
         # Decide by dimensionality, not size: a 1-element array is still an array,
-        #  and numpy refuses float() on arrays with ndim > 0.
+        #  and numpy refuses float() on arrays with ndim > 0. This was causing campari
+        # to break. -Cole
         if np.ndim( x ) == 0:
             ra = float( ra )
             dec = float( dec )
