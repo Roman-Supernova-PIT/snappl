@@ -1,0 +1,1 @@
+Snappl now checks dimensionality of the arrays inside the WCS class to prevent a bug with arrays of size 1.

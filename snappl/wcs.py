@@ -63,9 +63,11 @@ class BaseWCS:
         -------
           ra, dec : floats or arrays of floats, decimal degrees
 
-          You will get back two floats if x an y were floats.  If x and
-          y were lists (or other sequences), you will get back two numpy
-          arrays of floats.
+          You will get back two floats if x and y were scalars
+          (including 0-dimensional numpy arrays).  If x and y were
+          lists, other sequences, or numpy arrays with ndim >= 1 --
+          including arrays with only one element -- you will get back
+          two numpy arrays of floats.
 
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement pixel_to_world" )
@@ -87,8 +89,10 @@ class BaseWCS:
 
            Pixel position on the image; the center of the lower-left pixel is (0.0, 0.0).
 
-           If ra and dec were floats, x and y are floats.  If ra and dec
-           were sequences of floats, x and y will be numpy arrays of floats.
+           If ra and dec were scalars (including 0-dimensional numpy
+           arrays), x and y are floats.  If ra and dec were sequences
+           or numpy arrays with ndim >= 1 -- including arrays with only
+           one element -- x and y will be numpy arrays of floats.
 
         """
         raise NotImplementedError( f"{self.__class__.__name__} needs to implement world_to_pixel" )
@@ -206,10 +210,10 @@ class AstropyWCS(BaseWCS):
 
     def pixel_to_world( self, x, y ):
         ra, dec = self._wcs.pixel_to_world_values( x, y )
-        # I'm a little irritated that a non-single-value ndarray is not a collections.abc.Sequence
-        if not ( isinstance( x, collections.abc.Sequence )
-                 or ( isinstance( x, np.ndarray ) and x.size > 1 )
-                ):
+        # Decide by dimensionality, not size: a 1-element array is still an array,
+        #  and numpy refuses float() on arrays with ndim > 0. This was causing campari
+        # to break. -Cole
+        if np.ndim( x ) == 0:
             ra = float( ra )
             dec = float( dec )
         return ra, dec
@@ -218,9 +222,7 @@ class AstropyWCS(BaseWCS):
         frame = self._wcs.wcs.radesys.lower()  # Needs to be lowercase for SkyCoord
         scs = SkyCoord( ra, dec, unit=(u.deg, u.deg), frame = frame)
         x, y = self._wcs.world_to_pixel( scs )
-        if not ( isinstance( ra, collections.abc.Sequence )
-                 or ( isinstance( ra, np.ndarray ) and y.size > 1 )
-                ):
+        if np.ndim( ra ) == 0:
             x = float( x )
             y = float( y )
         return x, y
@@ -259,9 +261,7 @@ class GWCS(BaseWCS):
         # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)) like astropy WCS, so no need to convert
         SkyCoord = self._gwcs.pixel_to_world(x, y)
         ra, dec = SkyCoord.ra.deg, SkyCoord.dec.deg
-        if not ( isinstance( x, collections.abc.Sequence )
-                 or ( isinstance( x, np.ndarray ) and ra.size > 1 )
-                ):
+        if np.ndim( x ) == 0:
             ra = float( ra )
             dec = float( dec )
         return ra, dec
@@ -274,9 +274,7 @@ class GWCS(BaseWCS):
         # ADSF WCSes are 0-indexed (lower-left pixel is (0.5,0.5)) like astropy WCS, so no need to convert
         skyCoord = SkyCoord( ra, dec, unit=(u.deg, u.deg), frame=self._gwcs.output_frame.reference_frame )
         x, y = self._gwcs.world_to_pixel(skyCoord)
-        if not ( isinstance( ra, collections.abc.Sequence )
-                 or ( isinstance( ra, np.ndarray ) and y.size > 1 )
-                ):
+        if np.ndim( ra ) == 0:
             x = float( x )
             y = float( y )
         return x, y
